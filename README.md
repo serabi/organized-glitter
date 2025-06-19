@@ -287,24 +287,6 @@ The project includes comprehensive test coverage for:
 - Authentication flows
 - Data management logic
 
-## Performance Optimization
-
-The application is optimized for performance with:
-
-- **Bundle Optimization**: Tree-shaking and code splitting
-- **Image Optimization**: Automatic compression for uploaded images
-- **Caching**: Efficient React Query caching strategies
-- **Build Output**: Optimized production builds with Terser
-- **Loading States**: Proper loading and error states throughout the app
-
-## Security Features
-
-- **Authentication**: Secure user authentication with PocketBase
-- **Data Validation**: Client and server-side validation with Zod schemas
-- **HTTPS**: All connections secured with HTTPS in production
-- **Environment Variables**: Sensitive data protected via environment variables
-- **User Data Protection**: Comprehensive account deletion and data export features
-
 ## Deployment
 
 The application is deployed on Vercel at [organizedglitter.app](https://organizedglitter.app).
