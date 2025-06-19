@@ -87,6 +87,7 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
+.mcp.json
 
 # Deployment
 .vercel

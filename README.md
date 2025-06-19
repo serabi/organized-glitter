@@ -202,7 +202,7 @@ For local development, you'll need to set up your own PocketBase instance:
 
 5. **Configure collections**
    
-   You'll need to set up the required collections for the application. Please contact Sarah for the appropriate schemas. Use the PocketBase admin interface or a migration script to create these collections with the appropriate fields.
+   You'll need to set up the required collections for the application. You can find a list of the collections in the [Database Readme](database_readme.md) Use the PocketBase admin interface or a migration script to create these collections with the appropriate fields.
 
 6. **Update environment variables**
    
