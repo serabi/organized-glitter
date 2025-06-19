@@ -289,25 +289,9 @@ The project includes comprehensive test coverage for:
 
 ## Deployment
 
-The application is deployed on Vercel at [organizedglitter.app](https://organizedglitter.app).
+The application is deployed at [organizedglitter.app](https://organizedglitter.app).
 
-### Production Deployment
 
-1. **Build the app**
-
-   ```bash
-   npm run build
-   ```
-
-2. **Deploy to Vercel**
-
-   - Connected to GitHub for automatic deployments
-   - Environment variables configured in Vercel dashboard
-   - Custom domain configured
-
-3. **Performance Monitoring**
-   - Vercel Analytics for performance tracking
-   - Bundle analysis for optimization opportunities
 
 ## Database Schema
 
