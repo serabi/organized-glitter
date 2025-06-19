@@ -1,0 +1,160 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Migration logs (may contain sensitive URLs)
+scripts/*migration*.txt
+
+# Database backups (may contain sensitive URLs/tokens)
+backups/*/data.sql
+backups/*/complete_backup.sql
+backups/
+temp_migrations/
+temp_archive/
+*.sql
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Build outputs
+dist
+dist-ssr
+*.local
+out
+
+# Cache directories
+.cache
+.parcel-cache
+.npm
+.eslintcache
+.stylelintcache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional files
+.node_repl_history
+*.tgz
+.yarn-integrity
+
+# Environment variables
+.env
+.env.*
+!.env.example
+!.env.template
+scripts/.env
+
+# PocketBase schema config (contains admin credentials)
+.pocketbase-schema.config.ts
+
+# PocketBase binary and data
+/pocketbase
+pb_data/
+pb_hooks/
+pb_migrations/
+local-pb-db/
+
+# Supabase
+.supabase
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.vscode-test
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS generated files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Deployment
+.vercel
+.netlify
+
+# Development tools
+.kilocode
+.kilocode/*
+.kilocode/mcp.json
+.mcp/
+.mcp.json
+
+# Backup and temporary files
+*.backup
+*.tmp
+*.temp
+
+# Yarn v2
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# Test artifacts
+.bundle-history.json
+
+.env.local
+
+# TypeScript build info cache files
+*.tsbuildinfo
+
+# Coverage reports
+coverage/
+# Temporary storage for untested migrations
+/temp_migrations/
+/temp_archive/
+organized-glitter-worker/.wrangler/
+
+# Personal/Internal Development Files (exclude from open source)
+CLAUDE.md
+.claude/
+screenshots/
+project-code-review/
+docs/agent_guidelines/
+docs/archives/
+docs/*
+
+# Debug/Development Files (exclude from open source)
+debug-console.js
+debug-stats.js
+llms-full.txt
+performance-reports/
+
+# Scripts directory (may contain credentials)
+scripts/
+scripts/*
+
+# Production-specific configuration files (exclude from open source)
+vercel.json
+api/send-feedback.js
+
+# Additional sensitive patterns
+**/*password*
+**/*secret*
+**/*credential*
+*.backup
+*.bak
+*_backup.*
+backup_*
+*.dump

@@ -1,0 +1,282 @@
+@import './styles/scrollbar.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 250 30% 98%;
+    --foreground: 250 20% 20%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 250 20% 20%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 250 20% 20%;
+
+    --primary: 270 60% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 250 20% 96%;
+    --secondary-foreground: 250 20% 20%;
+
+    --muted: 250 20% 96%;
+    --muted-foreground: 250 10% 50%;
+
+    --accent: 345 80% 70%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 250 15% 90%;
+    --input: 250 15% 90%;
+    --ring: 270 60% 60%;
+
+    --radius: 0.75rem;
+
+    /* Scrollbar CSS variables with responsive sizing */
+    --scrollbar-size: clamp(6px, 1.5vw, 8px);
+    --scrollbar-size-desktop: clamp(8px, 2vw, 12px);
+    --scrollbar-size-table: clamp(12px, 3vw, 16px);
+    --scrollbar-track-bg: var(--muted) / 0.2;
+    --scrollbar-thumb-bg: var(--muted-foreground) / 0.4;
+    --scrollbar-thumb-hover-bg: var(--muted-foreground) / 0.6;
+    --scrollbar-thumb-border: var(--muted) / 0.3;
+  }
+
+  .dark {
+    --background: 250 25% 15%;
+    --foreground: 250 15% 95%;
+
+    --card: 250 25% 15%;
+    --card-foreground: 250 15% 95%;
+
+    --popover: 250 20% 18%;
+    --popover-foreground: 250 15% 95%;
+
+    --primary: 270 70% 65%;
+    --primary-foreground: 250 15% 95%;
+
+    --secondary: 250 20% 25%;
+    --secondary-foreground: 250 15% 95%;
+
+    --muted: 250 20% 25%;
+    --muted-foreground: 250 10% 70%;
+
+    --accent: 345 80% 70%;
+    --accent-foreground: 250 15% 95%;
+
+    --destructive: 0 74% 42%;
+    --destructive-foreground: 250 15% 95%;
+
+    --border: 250 20% 25%;
+    --input: 250 20% 25%;
+    --ring: 270 70% 65%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  /* Set overscroll color to match theme background */
+  html {
+    background-color: hsl(var(--background));
+    height: 100%;
+    overscroll-behavior: none;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings:
+      'rlig' 1,
+      'calt' 1;
+    min-height: 100%;
+    overscroll-behavior: none;
+  }
+
+  /* Utility class for hiding scrollbars when needed */
+  .hide-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Chrome-specific scroll bar fixes - Simplified specificity */
+  .table-scroll-area ::-webkit-scrollbar,
+  .table-scroll-area [data-radix-scroll-area-viewport] ::-webkit-scrollbar,
+  [data-radix-scroll-area-root] ::-webkit-scrollbar {
+    width: var(--scrollbar-size-table);
+    height: var(--scrollbar-size-table);
+    background: hsl(var(--muted));
+    display: block;
+  }
+
+  .table-scroll-area ::-webkit-scrollbar-thumb,
+  .table-scroll-area [data-radix-scroll-area-viewport] ::-webkit-scrollbar-thumb,
+  [data-radix-scroll-area-root] ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 8px;
+    border: 2px solid hsl(var(--muted));
+    min-height: 20px;
+    min-width: 20px;
+  }
+
+  .table-scroll-area ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground));
+  }
+
+  .table-scroll-area ::-webkit-scrollbar-thumb:focus-visible {
+    background: hsl(var(--muted-foreground));
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: -2px;
+  }
+
+  .table-scroll-area ::-webkit-scrollbar-track,
+  .table-scroll-area [data-radix-scroll-area-viewport] ::-webkit-scrollbar-track,
+  [data-radix-scroll-area-root] ::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+    border-radius: 8px;
+  }
+
+  /* Base scrollbar styling for components that need visible scrollbars */
+  .custom-scrollbar {
+    /* Firefox */
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--scrollbar-thumb-bg)) hsl(var(--scrollbar-track-bg));
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: var(--scrollbar-size);
+    height: var(--scrollbar-size);
+    background: hsl(var(--scrollbar-track-bg));
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--scrollbar-thumb-bg));
+    border-radius: 4px;
+    border: 1px solid hsl(var(--scrollbar-thumb-border));
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--scrollbar-thumb-hover-bg));
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:focus-visible {
+    background: hsl(var(--scrollbar-thumb-hover-bg));
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: -2px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: hsl(var(--scrollbar-track-bg));
+    border-radius: 4px;
+  }
+
+  /* Enhanced scrollbar for desktop interaction */
+  @media (hover: hover) and (pointer: fine) {
+    .custom-scrollbar::-webkit-scrollbar {
+      width: var(--scrollbar-size-desktop);
+      height: var(--scrollbar-size-desktop);
+    }
+  }
+
+  /* For iOS Safari */
+  @supports (-webkit-touch-callout: none) {
+    body {
+      /* The following line is needed to prevent elastic scrolling on iOS */
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-semibold text-foreground;
+  }
+}
+
+@layer components {
+  .diamond-pattern {
+    background-color: hsla(250, 30%, 98%, 1);
+    background-image:
+      radial-gradient(at 30% 36%, hsla(270, 60%, 95%, 0.6) 0px, transparent 50%),
+      radial-gradient(at 80% 0%, hsla(345, 80%, 95%, 0.4) 0px, transparent 50%),
+      radial-gradient(at 0% 50%, hsla(290, 60%, 95%, 0.3) 0px, transparent 50%),
+      radial-gradient(at 85% 90%, hsla(320, 70%, 95%, 0.3) 0px, transparent 50%);
+  }
+
+  .dark .diamond-pattern {
+    background-color: hsla(250, 25%, 15%, 1);
+    background-image:
+      radial-gradient(at 30% 36%, hsla(270, 70%, 20%, 0.6) 0px, transparent 50%),
+      radial-gradient(at 80% 0%, hsla(345, 80%, 20%, 0.4) 0px, transparent 50%),
+      radial-gradient(at 0% 50%, hsla(290, 60%, 20%, 0.3) 0px, transparent 50%),
+      radial-gradient(at 85% 90%, hsla(320, 70%, 20%, 0.3) 0px, transparent 50%);
+  }
+
+  .glass-card {
+    @apply border border-white/70 bg-white/70 shadow-lg backdrop-blur-sm;
+  }
+
+  .dark .glass-card {
+    @apply border border-gray-800/70 bg-gray-900/70 shadow-lg backdrop-blur-sm;
+  }
+
+  .shimmer {
+    @apply relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-shimmer before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent;
+  }
+
+  .dark .shimmer {
+    @apply before:via-gray-700/20;
+  }
+
+  /* Additional styles for better dark mode dropdown visibility */
+  .dark [data-radix-select-content],
+  .dark [data-radix-dropdown-menu-content] {
+    @apply border-gray-700 bg-gray-800 text-gray-100;
+  }
+
+  .dark [data-radix-menubar-content] {
+    @apply border-gray-700 bg-gray-800 text-gray-100;
+  }
+
+  .dark [data-radix-command-dialog] {
+    @apply border-gray-700 bg-gray-800 text-gray-100;
+  }
+
+  /* Improve date input visibility in dark mode */
+  input[type='date'] {
+    @apply cursor-pointer;
+  }
+
+  .dark input[type='date'] {
+    @apply rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white;
+  }
+
+  .dark input[type='date']::-webkit-calendar-picker-indicator {
+    @apply opacity-70 invert filter hover:opacity-100;
+  }
+
+  /* Fix for image gallery dialog close button on mobile devices */
+  .image-gallery-dialog [data-radix-dialog-close] {
+    @apply fixed right-4 top-4 z-[60] rounded-full bg-white/20 p-2 backdrop-blur-sm transition-colors hover:bg-white/40;
+  }
+
+  .image-gallery-dialog [data-radix-dialog-close] svg {
+    @apply h-5 w-5 text-white;
+  }
+}

@@ -1,0 +1,217 @@
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { pb } from '@/lib/pocketbase';
+import { AuthContext } from './context';
+import { AuthProviderProps, PocketBaseUser } from '../AuthContext.types';
+import { resetPostHog } from '@/utils/posthog';
+import { analytics } from '@/services/analytics';
+import { createLogger } from '@/utils/secureLogger';
+
+const authLogger = createLogger('AuthProvider');
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  authLogger.debug('AuthProvider component rendering/re-rendering...');
+  const [user, setUser] = useState<PocketBaseUser | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [initialCheckComplete, setInitialCheckComplete] = useState(false);
+  const isSigningOut = useRef(false);
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    authLogger.debug(`AuthProvider useEffect running. Setting up fresh auth listeners.`);
+
+    // Always set up fresh listeners on every mount
+    isMounted.current = true;
+    setIsLoading(true);
+
+    // Add timeout protection to prevent infinite loading
+    const authTimeout = setTimeout(() => {
+      authLogger.warn('Auth initialization timed out after 15 seconds');
+      if (isMounted.current) {
+        setIsLoading(false);
+        setInitialCheckComplete(true);
+      }
+    }, 15000);
+
+    // Initialize PocketBase auth state
+    const initializeAuth = () => {
+      try {
+        // Check if already authenticated with PocketBase
+        const isValid = pb.authStore.isValid;
+        const currentUser = pb.authStore.record as PocketBaseUser | null;
+
+        authLogger.debug('Initial auth check:', {
+          isValid,
+          hasUser: !!currentUser,
+          userId: currentUser?.id,
+        });
+
+        if (isMounted.current) {
+          if (isValid && currentUser) {
+            authLogger.debug('Setting initial user state:', currentUser.id);
+            console.log('[AuthProvider] Initial auth check: User IS valid and present.', {
+              id: currentUser.id,
+              email: currentUser.email,
+              username: currentUser.username,
+            });
+            setUser(currentUser);
+            setIsAuthenticated(true);
+
+            // Identify user in PostHog with enhanced context
+            analytics.identifyUserWithContext(currentUser.id, {
+              email: currentUser.email,
+              username: currentUser.username,
+              avatar: currentUser.avatar,
+              beta_tester: currentUser.beta_tester,
+              created: currentUser.created,
+            });
+          } else {
+            authLogger.debug('No valid session found');
+            console.log('[AuthProvider] Initial auth check: User IS NOT valid or present.');
+            setUser(null);
+            setIsAuthenticated(false);
+          }
+
+          setIsLoading(false);
+          setInitialCheckComplete(true);
+        }
+
+        // Set up auth store change listener - ALWAYS set this up fresh
+        authLogger.debug('Setting up fresh PocketBase authStore onChange listener');
+        const removeListener = pb.authStore.onChange((token, record) => {
+          console.log('[AuthProvider] pb.authStore.onChange triggered.', {
+            tokenExists: !!token,
+            recordExists: !!record,
+            recordId: record?.id,
+          });
+          authLogger.debug('PocketBase authStore onChange fired with:', {
+            hasToken: !!token,
+            hasRecord: !!record,
+            userId: record?.id,
+          });
+          // Skip processing if we're in the middle of signing out
+          if (isSigningOut.current) {
+            authLogger.debug('Skipping auth change during signout');
+            return;
+          }
+
+          authLogger.debug('Auth state changed:', {
+            hasToken: !!token,
+            hasRecord: !!record,
+            userId: record?.id,
+          });
+
+          if (isMounted.current) {
+            if (token && record) {
+              const userData = record as unknown as PocketBaseUser;
+              setUser(userData);
+              setIsAuthenticated(true);
+              setIsLoading(false);
+              setInitialCheckComplete(true);
+
+              // Identify user in PostHog with enhanced context
+              analytics.identifyUserWithContext(userData.id, {
+                email: userData.email,
+                username: userData.username,
+                avatar: userData.avatar,
+                beta_tester: userData.beta_tester,
+                created: userData.created,
+              });
+            } else {
+              authLogger.debug('Clearing user state');
+              setUser(null);
+              setIsAuthenticated(false);
+              setIsLoading(false);
+              setInitialCheckComplete(true);
+
+              // Reset PostHog analytics on logout
+              resetPostHog();
+            }
+          }
+        });
+
+        return removeListener;
+      } catch (error) {
+        authLogger.error('Error during auth initialization:', error);
+        if (isMounted.current) {
+          setIsLoading(false);
+          setInitialCheckComplete(true);
+        }
+        return () => {};
+      } finally {
+        clearTimeout(authTimeout);
+      }
+    };
+
+    const removeListener = initializeAuth();
+
+    // Cleanup function
+    return () => {
+      authLogger.debug('Cleaning up auth listeners - removing PocketBase onChange listener');
+      clearTimeout(authTimeout);
+      isMounted.current = false;
+      removeListener();
+    };
+  }, []);
+
+  const signOut = useCallback(async () => {
+    // Prevent multiple simultaneous logout attempts
+    if (isSigningOut.current) {
+      authLogger.debug('SignOut already in progress, skipping...');
+      return { success: true, error: null };
+    }
+
+    isSigningOut.current = true;
+    setIsLoading(true);
+
+    try {
+      authLogger.debug('Starting logout process...');
+
+      // Clear local state first
+      setUser(null);
+      setIsAuthenticated(false);
+
+      // Clear PocketBase auth store (this is all we need for logout)
+      pb.authStore.clear();
+
+      // Track logout event
+      analytics.auth.logout();
+
+      authLogger.debug('Logout completed successfully');
+      return { success: true, error: null };
+    } catch (err) {
+      authLogger.error('Logout error:', err);
+
+      // Even if something fails, ensure local state is cleared
+      setUser(null);
+      setIsAuthenticated(false);
+      pb.authStore.clear();
+
+      if (err instanceof Error) {
+        return { success: false, error: new Error(err.message) };
+      }
+
+      return { success: false, error: new Error('An unexpected error occurred during logout') };
+    } finally {
+      setIsLoading(false);
+      // Reset the signing out flag after a brief delay to prevent race conditions
+      setTimeout(() => {
+        isSigningOut.current = false;
+      }, 100);
+    }
+  }, []);
+
+  // Memoize the context value to prevent unnecessary re-renders
+  const value = useMemo(
+    () => ({
+      user,
+      isAuthenticated,
+      isLoading,
+      initialCheckComplete,
+      signOut,
+    }),
+    [user, isAuthenticated, isLoading, initialCheckComplete, signOut]
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};

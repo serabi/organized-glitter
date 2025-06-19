@@ -1,0 +1,114 @@
+/* General Styles */
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #faf7fe;
+  min-height: 100vh;
+}
+
+#root {
+  background-color: #faf7fe;
+  min-height: 100vh;
+  opacity: 0; /* Initial state, JS will change to 1 when app loads */
+  transition: opacity 0.2s ease-in;
+}
+
+/* Error Screen Styles */
+#app-error {
+  display: none; /* JS will manage visibility */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #faf7fe;
+  padding: 2rem;
+  box-sizing: border-box;
+  z-index: 10000;
+  justify-content: center;
+  align-items: center;
+}
+
+#app-error > div {
+  /* Direct child div of #app-error */
+  max-width: 480px;
+  background: white;
+  border-radius: 0.5rem;
+  padding: 2rem;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  text-align: center;
+}
+
+#app-error .error-icon-container {
+  background: #fee2e2;
+  color: #b91c1c; /* This color will be inherited by the SVG's currentColor */
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+}
+
+#app-error h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #1e293b;
+}
+
+#app-error p {
+  /* General paragraph styling within error message */
+  color: #64748b;
+  margin-bottom: 1.5rem;
+}
+
+#error-details {
+  background: #f8fafc;
+  padding: 1rem;
+  border-radius: 0.375rem;
+  margin-bottom: 1.5rem;
+  text-align: left;
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #64748b;
+  max-height: 200px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+#retry-button {
+  background: #7c3aed;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+#retry-button:hover {
+  background: #6d28d9;
+}
+
+#retry-button:active {
+  background: #5b21b6;
+}
+
+#app-error .contact-support-text {
+  /* Specific paragraph for contact support */
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  color: #64748b;
+  margin-bottom: 0; /* Override general p margin if needed */
+}
+
+#app-error .contact-support-text a {
+  color: #7c3aed;
+  text-decoration: none;
+}

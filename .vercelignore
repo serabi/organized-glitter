@@ -1,0 +1,10 @@
+# Vercel ignore file to ensure all necessary files are included
+# Don't ignore any source files that might be needed for the build
+
+# Only ignore build outputs and development files
+node_modules
+.env.local
+.env
+coverage
+*.log
+.DS_Store

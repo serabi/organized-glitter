@@ -1,0 +1,64 @@
+User-agent: Googlebot
+Allow: /
+Allow: /about
+Allow: /privacy
+Allow: /terms
+Allow: /login
+Allow: /register
+Disallow: /dashboard
+Disallow: /overview
+Disallow: /profile
+Disallow: /projects
+Disallow: /advanced
+Disallow: /companies
+Disallow: /artists
+Disallow: /import
+Disallow: /delete-account
+Disallow: /test-*
+
+User-agent: Bingbot
+Allow: /
+Allow: /about
+Allow: /privacy
+Allow: /terms
+Allow: /login
+Allow: /register
+Disallow: /dashboard
+Disallow: /overview
+Disallow: /profile
+Disallow: /projects
+Disallow: /advanced
+Disallow: /companies
+Disallow: /artists
+Disallow: /import
+Disallow: /delete-account
+Disallow: /test-*
+
+User-agent: Twitterbot
+Allow: /
+Allow: /about
+
+User-agent: facebookexternalhit
+Allow: /
+Allow: /about
+
+User-agent: *
+Allow: /
+Allow: /about
+Allow: /privacy
+Allow: /terms
+Allow: /login
+Allow: /register
+Disallow: /dashboard
+Disallow: /overview
+Disallow: /profile
+Disallow: /projects
+Disallow: /advanced
+Disallow: /companies
+Disallow: /artists
+Disallow: /import
+Disallow: /delete-account
+Disallow: /test-*
+
+# Sitemap location
+Sitemap: https://organizedglitter.app/sitemap.xml

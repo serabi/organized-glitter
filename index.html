@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Organized Glitter - Your Diamond Art Progress Tracker</title>
+    <meta
+      name="description"
+      content="Track and manage your diamond art projects with ease - made with love by a fellow diamond art enthusiast"
+    />
+    <meta name="author" content="Sarah (Serabi Crafts)" />
+    <meta
+      name="keywords"
+      content="diamond art, diamond painting, craft stash, inventory tracker, diamond drills, craft organization"
+    />
+    <meta name="robots" content="index, follow" />
+    <!-- Cache busting for new image upload limits -->
+    <meta name="build-version" content="2025-05-26-v2" />
+    <!-- Theme color will be set by theme-color.js -->
+    <meta name="theme-color" id="theme-color" content="#faf7fe" />
+    <script src="/theme-color.js" defer></script>
+
+    <!-- Favicon -->
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="stylesheet" href="/css/loading.css" />
+    <link rel="stylesheet" href="/css/error.css" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:title" content="Organized Glitter - Your Diamond Art Progress Tracker" />
+    <meta
+      property="og:description"
+      content="Track and manage your diamond art projects with ease. Perfect for diamond painting enthusiasts to organize their diamond art stash and track progress."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://organizedglitter.app/images/og-image.jpg" />
+    <meta property="og:url" content="https://organizedglitter.app" />
+    <meta property="og:site_name" content="Organized Glitter" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Organized Glitter - Your Diamond Art Progress Tracker" />
+    <meta
+      name="twitter:description"
+      content="The ultimate tool for diamond art enthusiasts to organize and track their diamond art projects."
+    />
+    <meta name="twitter:image" content="https://organizedglitter.app/images/og-image.jpg" />
+    <meta name="twitter:site" content="@organizedglitter" />
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Organized Glitter",
+        "description": "Track and manage your diamond art projects with ease. Perfect for diamond painting enthusiasts to organize their diamond art stash and track progress.",
+        "applicationCategory": "LifestyleApplication",
+        "operatingSystem": "Web",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "creator": {
+          "@type": "Organization",
+          "name": "Organized Glitter",
+          "url": "https://organizedglitter.app"
+        },
+        "featureList": [
+          "Track multiple diamond art projects",
+          "Monitor progress with photos",
+          "Organize by status and category",
+          "Accessible on all web browsers"
+        ],
+        "screenshot": {
+          "@type": "ImageObject",
+          "url": "https://organizedglitter.app/images/screenshot.jpg",
+          "width": "1280",
+          "height": "800"
+        },
+        "applicationSubCategory": "Craft Organization",
+        "keywords": ["diamond art", "diamond painting", "craft organization", "project tracker"],
+        "datePublished": "2023-01-01",
+        "version": "1.0",
+        "mainEntityOfPage": {
+          "@type": "WebPage",
+          "@id": "https://organizedglitter.app"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "Organized Glitter",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://organizedglitter.app/images/logo.png",
+            "width": "512",
+            "height": "512"
+          }
+        },
+        "funder": {
+          "@type": "Person",
+          "name": "Sarah (Serabi)",
+          "url": "https://organizedglitter.app"
+        },
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://organizedglitter.app/search?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      }
+    </script>
+
+    <!-- Additional Organization Schema -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Organized Glitter",
+        "url": "https://organizedglitter.app",
+        "logo": "https://organizedglitter.app/images/logo.png",
+        "description": "The ultimate web tool for diamond art enthusiasts to organize and track their diamond art projects.",
+        "sameAs": ["https://www.instagram.com/organized_glitter"],
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "email": "contact@organizedglitter.app",
+          "contactType": "customer service",
+          "url": "https://organizedglitter.app/about"
+        }
+      }
+    </script>
+  </head>
+
+  <body>
+    <div id="root">
+      <!-- Loading State -->
+      <div id="app-loading">
+        <div>
+          <!-- Logo or App Icon -->
+          <div class="loading-logo-container">
+            <svg
+              width="64"
+              height="64"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="M12 2L3 7L12 12L21 7L12 2Z" fill="currentColor" />
+              <path
+                d="M3 13L12 18L21 13M12 22V12"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </div>
+
+          <!-- Loading Spinner -->
+          <div class="spinner"></div>
+
+          <h1>Organized Glitter</h1>
+
+          <p>Loading your diamond art collection...</p>
+
+          <div id="slow-load-warning">
+            <p>This is taking longer than expected. Please check your internet connection.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error State -->
+      <div id="app-error">
+        <div>
+          <div class="error-icon-container">
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M12 9V11M12 15H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </div>
+
+          <h2>Something went wrong</h2>
+
+          <p>
+            We're having trouble loading the application. This might be due to a poor internet
+            connection or an issue on our end.
+          </p>
+
+          <div id="error-details"></div>
+
+          <button id="retry-button">Try Again</button>
+
+          <p class="contact-support-text">
+            Still having trouble?
+            <a href="mailto:contact@organizedglitter.app">Contact support</a>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <script src="/js/loading.js" defer></script>
+    <!-- Load React -->
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

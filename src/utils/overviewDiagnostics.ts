@@ -1,0 +1,262 @@
+/**
+ * Overview Performance Diagnostics
+ *
+ * This utility helps diagnose why the Overview page startedQuery is taking 4648ms
+ * despite optimizations and database indexes.
+ */
+
+import { pb } from '@/lib/pocketbase';
+import { Collections } from '@/types/pocketbase.types';
+
+export interface DiagnosticResult {
+  totalProjects: number;
+  projectsWithDates: number;
+  dateDataQuality: {
+    emptyStrings: number;
+    nullValues: number;
+    invalidDates: number;
+    validDates: number;
+  };
+  sampleDates: string[];
+  queryTiming: {
+    basicUserQuery: number;
+    dateFilteredQuery: number;
+    optimizedQuery: number;
+  };
+  recommendations: string[];
+}
+
+/**
+ * Run comprehensive diagnostics on the user's project data
+ * to identify the root cause of slow Overview queries
+ */
+export async function runOverviewDiagnostics(userId: string): Promise<DiagnosticResult> {
+  const currentYear = new Date().getFullYear();
+  const diagnostics: DiagnosticResult = {
+    totalProjects: 0,
+    projectsWithDates: 0,
+    dateDataQuality: {
+      emptyStrings: 0,
+      nullValues: 0,
+      invalidDates: 0,
+      validDates: 0,
+    },
+    sampleDates: [],
+    queryTiming: {
+      basicUserQuery: 0,
+      dateFilteredQuery: 0,
+      optimizedQuery: 0,
+    },
+    recommendations: [],
+  };
+
+  console.log('[Diagnostics] Starting comprehensive Overview performance analysis...');
+
+  let allProjects: Array<{
+    id: string;
+    date_started: string | null;
+    created: string;
+    updated: string;
+  }> = [];
+  const actualProjectCount = () => allProjects.length;
+
+  try {
+    // Test 1: Basic user query timing with full pagination
+    console.log('[Diagnostics] Test 1: Basic user query with pagination...');
+    const basicStart = performance.now();
+
+    // First, get the total count and first batch
+    const firstBatch = await pb.collection(Collections.Projects).getList(1, 500, {
+      filter: `user = "${userId}"`,
+      fields: 'id,date_started,created,updated',
+      requestKey: `diagnostic-all-${userId}-${Date.now()}`,
+      $autoCancel: false,
+    });
+
+    diagnostics.totalProjects = firstBatch.totalItems;
+    allProjects = [...firstBatch.items];
+
+    // If there are more projects, fetch them in batches
+    if (firstBatch.totalItems > 500) {
+      const totalPages = Math.ceil(firstBatch.totalItems / 500);
+      console.log(
+        `[Diagnostics] Fetching ${firstBatch.totalItems} projects across ${totalPages} pages...`
+      );
+
+      for (let page = 2; page <= totalPages; page++) {
+        const batch = await pb.collection(Collections.Projects).getList(page, 500, {
+          filter: `user = "${userId}"`,
+          fields: 'id,date_started,created,updated',
+          requestKey: `diagnostic-batch-${page}-${userId}-${Date.now()}`,
+          $autoCancel: false,
+        });
+        allProjects.push(...batch.items);
+      }
+    }
+
+    diagnostics.queryTiming.basicUserQuery = performance.now() - basicStart;
+
+    console.log(
+      `[Diagnostics] Found ${diagnostics.totalProjects} total projects (retrieved ${allProjects.length}) in ${diagnostics.queryTiming.basicUserQuery.toFixed(0)}ms`
+    );
+
+    // Verify data integrity
+    if (allProjects.length !== diagnostics.totalProjects) {
+      console.warn(
+        `[Diagnostics] Warning: Retrieved ${allProjects.length} projects but totalItems was ${diagnostics.totalProjects}`
+      );
+      diagnostics.recommendations.push(
+        `⚠️ Data retrieval mismatch: Retrieved ${allProjects.length} projects but expected ${diagnostics.totalProjects}`
+      );
+    }
+
+    // Test 2: Analyze date data quality
+    console.log('[Diagnostics] Test 2: Analyzing date data quality...');
+    const projects = allProjects;
+
+    projects.forEach(project => {
+      const dateStarted = project.date_started;
+
+      if (dateStarted === null || dateStarted === undefined) {
+        diagnostics.dateDataQuality.nullValues++;
+      } else if (dateStarted === '' || dateStarted.trim() === '') {
+        diagnostics.dateDataQuality.emptyStrings++;
+      } else {
+        // Try to parse the date
+        try {
+          const parsed = new Date(dateStarted);
+          if (isNaN(parsed.getTime())) {
+            diagnostics.dateDataQuality.invalidDates++;
+          } else {
+            diagnostics.dateDataQuality.validDates++;
+            if (diagnostics.sampleDates.length < 10) {
+              diagnostics.sampleDates.push(dateStarted);
+            }
+          }
+        } catch {
+          diagnostics.dateDataQuality.invalidDates++;
+        }
+      }
+    });
+
+    diagnostics.projectsWithDates = diagnostics.dateDataQuality.validDates;
+
+    // Test 3: Date-filtered query timing (the problematic one)
+    console.log('[Diagnostics] Test 3: Date-filtered query timing...');
+    const dateStart = performance.now();
+    const dateFiltered = await pb.collection(Collections.Projects).getList(1, 1, {
+      filter: `user = "${userId}" && date_started >= "${currentYear}-01-01"`,
+      fields: 'id',
+      requestKey: `diagnostic-date-${userId}-${currentYear}-${Date.now()}`,
+      $autoCancel: false,
+    });
+    diagnostics.queryTiming.dateFilteredQuery = performance.now() - dateStart;
+
+    console.log(
+      `[Diagnostics] Date-filtered query found ${dateFiltered.totalItems} projects in ${diagnostics.queryTiming.dateFilteredQuery.toFixed(0)}ms`
+    );
+
+    // Test 4: Optimized query timing
+    console.log('[Diagnostics] Test 4: Optimized query timing...');
+    const optStart = performance.now();
+    const optimized = await pb.collection(Collections.Projects).getList(1, 1, {
+      filter: `user = "${userId}" && date_started != "" && date_started != null && date_started >= "${currentYear}-01-01"`,
+      fields: 'id',
+      requestKey: `diagnostic-opt-${userId}-${currentYear}-${Date.now()}`,
+      $autoCancel: false,
+    });
+    diagnostics.queryTiming.optimizedQuery = performance.now() - optStart;
+
+    console.log(
+      `[Diagnostics] Optimized query found ${optimized.totalItems} projects in ${diagnostics.queryTiming.optimizedQuery.toFixed(0)}ms`
+    );
+
+    // Generate recommendations
+    console.log('[Diagnostics] Generating recommendations...');
+
+    if (diagnostics.totalProjects === 0) {
+      diagnostics.recommendations.push('✅ User has no projects - Overview should be instant');
+    }
+
+    if (diagnostics.dateDataQuality.emptyStrings > 0) {
+      diagnostics.recommendations.push(
+        `⚠️ Found ${diagnostics.dateDataQuality.emptyStrings} projects with empty string dates - database cleanup recommended`
+      );
+    }
+
+    if (diagnostics.dateDataQuality.nullValues > diagnostics.dateDataQuality.emptyStrings) {
+      diagnostics.recommendations.push(
+        '✅ Good: Most unset dates are properly null, not empty strings'
+      );
+    }
+
+    if (diagnostics.queryTiming.dateFilteredQuery > 1000) {
+      diagnostics.recommendations.push(
+        `❌ Date-filtered query is slow (${diagnostics.queryTiming.dateFilteredQuery.toFixed(0)}ms) - database indexes may not be working`
+      );
+    }
+
+    if (diagnostics.queryTiming.optimizedQuery > 1000) {
+      diagnostics.recommendations.push(
+        `❌ Even optimized query is slow (${diagnostics.queryTiming.optimizedQuery.toFixed(0)}ms) - deeper database issue suspected`
+      );
+    }
+
+    if (diagnostics.queryTiming.basicUserQuery > 500) {
+      diagnostics.recommendations.push(
+        `⚠️ Basic user query is slow (${diagnostics.queryTiming.basicUserQuery.toFixed(0)}ms) - user index may be missing`
+      );
+    }
+
+    // Use actual retrieved count for accurate data quality analysis
+    const retrievedCount = actualProjectCount();
+    const dataQualityRatio = diagnostics.dateDataQuality.validDates / Math.max(1, retrievedCount);
+    if (dataQualityRatio < 0.1 && retrievedCount > 10) {
+      diagnostics.recommendations.push(
+        '💡 Most projects have no start dates - consider skipping date queries for this user'
+      );
+    }
+
+    console.log('[Diagnostics] Analysis complete!');
+    console.table({
+      'Total Projects (Reported)': diagnostics.totalProjects,
+      'Total Projects (Retrieved)': retrievedCount,
+      'Projects with Valid Dates': diagnostics.dateDataQuality.validDates,
+      'Empty String Dates': diagnostics.dateDataQuality.emptyStrings,
+      'Null Dates': diagnostics.dateDataQuality.nullValues,
+      'Data Quality Ratio': `${(dataQualityRatio * 100).toFixed(1)}%`,
+      'Basic Query Time': `${diagnostics.queryTiming.basicUserQuery.toFixed(0)}ms`,
+      'Date Query Time': `${diagnostics.queryTiming.dateFilteredQuery.toFixed(0)}ms`,
+      'Optimized Query Time': `${diagnostics.queryTiming.optimizedQuery.toFixed(0)}ms`,
+    });
+
+    console.log('[Diagnostics] Recommendations:', diagnostics.recommendations);
+  } catch (error) {
+    console.error('[Diagnostics] Error during analysis:', error);
+    diagnostics.recommendations.push('❌ Diagnostic analysis failed - check console for errors');
+  }
+
+  return diagnostics;
+}
+
+/**
+ * Quick diagnostic that can be called from browser console
+ * Usage: window.runOverviewDiagnostics()
+ */
+export function enableDiagnosticConsoleAccess() {
+  if (typeof window !== 'undefined') {
+    (
+      window as {
+        runOverviewDiagnostics?: (userId?: string) => Promise<DiagnosticResult | undefined>;
+      }
+    ).runOverviewDiagnostics = async (userId?: string) => {
+      const currentUserId = userId || pb.authStore.record?.id;
+      if (!currentUserId) {
+        console.error('No user ID provided and no authenticated user found');
+        return;
+      }
+      return await runOverviewDiagnostics(currentUserId);
+    };
+    console.log('🔍 Diagnostics enabled! Run: window.runOverviewDiagnostics()');
+  }
+}

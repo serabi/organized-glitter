@@ -1,0 +1,245 @@
+import { lazy, Suspense } from 'react';
+import MainLayout from '@/components/layout/MainLayout';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useProfileReactQuery } from '@/hooks/useProfileReactQuery';
+import { useAuthRedirect } from '@/hooks/useAuthRedirect';
+import { useUpdateBetaTesterStatusMutation } from '@/hooks/mutations/useUpdateBetaTesterStatusMutation';
+import { useAvatar } from '@/hooks/useAvatar';
+import ProfileHeader from '@/components/profile/ProfileHeader';
+import ProfilePersonalInfo from '@/components/profile/ProfilePersonalInfo';
+import AccountSettings from '@/components/profile/AccountSettings';
+import DataImportExportSettings from '@/components/profile/DataImportExportSettings';
+import PayPalSupportSection from '@/components/profile/PayPalSupportSection';
+import { useToast } from '@/hooks/use-toast';
+import type { AvatarConfig } from '@/types/avatar';
+
+// Lazy load tab components for better performance
+const CompanyListTab = lazy(() => import('@/components/profile/CompanyListTab'));
+const ArtistListTab = lazy(() => import('@/components/profile/ArtistListTab'));
+const TagListTab = lazy(() => import('@/components/profile/TagListTab'));
+
+const Profile = () => {
+  // Authentication and redirect handling
+  const { user, isLoading: authLoading } = useAuthRedirect();
+  console.log(
+    '[Profile.tsx] User from useAuthRedirect():',
+    user ? { id: user.id, email: user.email, username: user.username } : null,
+    'AuthLoading:',
+    authLoading
+  );
+
+  // Profile data with React Query
+  const {
+    name,
+    setName,
+    email,
+    avatarUrl,
+    setAvatarUrl,
+    loading: profileActionLoading,
+    setLoading,
+    profileLoading,
+    refreshProfile,
+    // Beta tester status
+    isBetaTester,
+  } = useProfileReactQuery();
+  console.log('[Profile.tsx] Data from useProfileReactQuery():', {
+    name,
+    email,
+    profileLoading,
+    isBetaTester,
+  });
+
+  const updateBetaTesterMutation = useUpdateBetaTesterStatusMutation();
+
+  // Helper function to update beta tester status (replaces setIsBetaTester)
+  const setIsBetaTester = async (newStatus: boolean) => {
+    if (!user?.id) return;
+    try {
+      await updateBetaTesterMutation.mutateAsync({
+        userId: user.id,
+        isBetaTester: newStatus,
+      });
+    } catch (error) {
+      console.error('Error updating beta tester status:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update beta tester status',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Avatar management
+  const { revertToInitials } = useAvatar();
+
+  const { toast } = useToast();
+
+  // Handle avatar updates with React Query cache invalidation
+  const handleAvatarUpdate = async (config: AvatarConfig) => {
+    console.log('[Profile] handleAvatarUpdate called with config:', config);
+
+    try {
+      if (config.type === 'upload' && config.uploadUrl) {
+        // The avatar is already uploaded by AvatarManager
+        // Add cache-busting parameter to force refresh
+        const cacheBustedUrl = `${config.uploadUrl}?t=${Date.now()}`;
+
+        // Update the local state immediately with cache-busted URL
+        setAvatarUrl(cacheBustedUrl);
+
+        // Force multiple cache refreshes to ensure consistency
+        refreshProfile();
+        setTimeout(() => refreshProfile(), 500);
+        setTimeout(() => refreshProfile(), 1000);
+
+        toast({
+          title: 'Success',
+          description: 'Your avatar has been updated successfully!',
+          variant: 'default',
+        });
+      } else if (config.type === 'initials') {
+        // Use the useAvatar hook for initials handling
+        await revertToInitials();
+
+        toast({
+          title: 'Success',
+          description: 'Avatar reverted to initials successfully!',
+          variant: 'default',
+        });
+      }
+    } catch (error) {
+      console.error('Error updating avatar:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update avatar. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Show loading state while authentication or profile is being loaded
+  if (authLoading || profileLoading) {
+    return (
+      <MainLayout>
+        <div className="container mx-auto max-w-5xl px-4 py-8">
+          <div className="flex min-h-[400px] items-center justify-center">
+            <div className="text-center">
+              <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+              <p className="text-muted-foreground">Loading profile...</p>
+            </div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // Don't render if user is not authenticated (useAuthRedirect will handle redirect)
+  if (!user) {
+    return null;
+  }
+
+  return (
+    <MainLayout>
+      <div className="container mx-auto max-w-5xl px-4 py-4 md:py-8">
+        <div className="space-y-6">
+          <ProfileHeader />
+
+          <Tabs defaultValue="profile" className="w-full">
+            <div className="sticky top-16 z-10 -mx-4 border-b border-border/50 bg-background px-4 pb-4 pt-2 md:top-0 md:mx-0 md:px-0">
+              <div className="overflow-x-auto">
+                <TabsList className="grid w-full min-w-fit grid-cols-4">
+                  <TabsTrigger value="profile" className="px-2 text-xs sm:px-4 sm:text-sm">
+                    Profile Settings
+                  </TabsTrigger>
+                  <TabsTrigger value="companies" className="px-2 text-xs sm:px-4 sm:text-sm">
+                    Company List
+                  </TabsTrigger>
+                  <TabsTrigger value="artists" className="px-2 text-xs sm:px-4 sm:text-sm">
+                    Artist List
+                  </TabsTrigger>
+                  <TabsTrigger value="tags" className="px-2 text-xs sm:px-4 sm:text-sm">
+                    Tags
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <TabsContent value="profile" className="space-y-6">
+                <ProfilePersonalInfo
+                  userId={user?.id}
+                  username={name}
+                  setName={setName}
+                  email={email}
+                  avatarUrl={avatarUrl}
+                  setAvatarUrl={setAvatarUrl}
+                  loading={profileActionLoading} // Updated loading prop
+                  setLoading={setLoading}
+                  profileLoading={profileLoading}
+                  isBetaTester={isBetaTester}
+                  onBetaTesterChange={newStatus => {
+                    setIsBetaTester(newStatus);
+                  }}
+                  // Avatar management props
+                  onAvatarUpdate={handleAvatarUpdate}
+                />
+
+                <AccountSettings
+                  loading={profileActionLoading}
+                  email={email}
+                  name={name}
+                  setName={setName}
+                  userId={user?.id}
+                />
+
+                {/* Use existing DataImportExportSettings component */}
+                <DataImportExportSettings profileLoading={profileLoading} />
+
+                {/* Support Section */}
+                <PayPalSupportSection />
+              </TabsContent>
+
+              <TabsContent value="companies">
+                <Suspense
+                  fallback={
+                    <div className="flex items-center justify-center py-8">
+                      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+                    </div>
+                  }
+                >
+                  <CompanyListTab />
+                </Suspense>
+              </TabsContent>
+
+              <TabsContent value="artists">
+                <Suspense
+                  fallback={
+                    <div className="flex items-center justify-center py-8">
+                      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+                    </div>
+                  }
+                >
+                  <ArtistListTab />
+                </Suspense>
+              </TabsContent>
+
+              <TabsContent value="tags">
+                <Suspense
+                  fallback={
+                    <div className="flex items-center justify-center py-8">
+                      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+                    </div>
+                  }
+                >
+                  <TagListTab />
+                </Suspense>
+              </TabsContent>
+            </div>
+          </Tabs>
+        </div>
+      </div>
+    </MainLayout>
+  );
+};
+
+export default Profile;

@@ -1,0 +1,139 @@
+/* Advanced Scrollbar Styling for Cross-Browser Compatibility */
+
+/* Base scrollbar utilities */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) hsl(var(--muted));
+}
+
+.scrollbar-thick {
+  scrollbar-width: auto;
+  scrollbar-color: hsl(var(--muted-foreground)) hsl(var(--muted));
+}
+
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Advanced Edit Table specific scrollbars */
+.scrollbar-table {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) hsl(var(--muted));
+  -webkit-overflow-scrolling: touch;
+  /* Ensure scroll containers actually create overflow */
+  overflow: auto !important;
+}
+
+/* WebKit browsers (Chrome, Safari, Edge) - Use higher specificity to override global rules */
+body .scrollbar-table::-webkit-scrollbar {
+  height: 16px !important;
+  width: 16px !important;
+  background: hsl(var(--muted)) !important;
+  display: block !important;
+}
+
+body .scrollbar-table::-webkit-scrollbar-track {
+  background: hsl(var(--muted)) !important;
+  border-radius: 8px;
+}
+
+body .scrollbar-table::-webkit-scrollbar-thumb {
+  background: hsl(var(--border)) !important;
+  border-radius: 8px;
+  border: 2px solid hsl(var(--muted));
+  min-height: 20px;
+  min-width: 20px;
+}
+
+body .scrollbar-table::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground)) !important;
+}
+
+body .scrollbar-table::-webkit-scrollbar-thumb:active {
+  background: hsl(var(--foreground)) !important;
+}
+
+/* Corner where horizontal and vertical scrollbars meet */
+body .scrollbar-table::-webkit-scrollbar-corner {
+  background: hsl(var(--muted)) !important;
+}
+
+/* Mobile responsive scrollbars */
+@media (max-width: 768px) {
+  .scrollbar-table::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+  }
+
+  .scrollbar-table::-webkit-scrollbar-thumb {
+    border: 1px solid hsl(var(--muted));
+  }
+}
+
+/* Ensure scrollbars are always visible on desktop */
+@media (hover: hover) and (pointer: fine) {
+  .scrollbar-table {
+    scrollbar-width: auto;
+  }
+
+  .scrollbar-table::-webkit-scrollbar {
+    display: block !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .scrollbar-table {
+    scrollbar-color: ButtonText ButtonFace;
+  }
+
+  .scrollbar-table::-webkit-scrollbar-thumb {
+    background: ButtonText;
+    border-color: ButtonFace;
+  }
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .scrollbar-table::-webkit-scrollbar-thumb {
+    transition: none;
+  }
+}
+
+/* Force visibility classes for specific use cases */
+.scrollbar-always-visible {
+  overflow: scroll !important;
+}
+
+body .scrollbar-always-visible::-webkit-scrollbar {
+  display: block !important;
+  width: 16px !important;
+  height: 16px !important;
+  background: hsl(var(--muted)) !important;
+}
+
+body .scrollbar-always-visible::-webkit-scrollbar-track {
+  background: hsl(var(--muted)) !important;
+  border-radius: 8px;
+}
+
+body .scrollbar-always-visible::-webkit-scrollbar-thumb {
+  background: hsl(var(--border)) !important;
+  border-radius: 8px;
+  border: 2px solid hsl(var(--muted));
+  min-height: 20px;
+  min-width: 20px;
+}
+
+body .scrollbar-always-visible::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground)) !important;
+}
+
+body .scrollbar-always-visible::-webkit-scrollbar-thumb:active {
+  background: hsl(var(--foreground)) !important;
+}
