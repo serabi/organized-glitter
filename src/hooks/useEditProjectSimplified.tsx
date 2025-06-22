@@ -283,8 +283,10 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
           console.log('[NAVIGATION DEBUG] Removed beforeunload listener');
 
           const targetUrl = `/projects/${projectId}`;
-          console.log('[NAVIGATION DEBUG] Attempting navigation to:', targetUrl);
-          window.location.href = targetUrl;
+          console.log('[NAVIGATION DEBUG] Attempting SPA navigation to:', targetUrl);
+          
+          // Use React Router navigation instead of hard refresh to avoid chunk loading issues
+          unsafeNavigate(targetUrl);
         } else {
           console.log(
             '[NAVIGATION DEBUG] Success condition NOT met. Has error:',
