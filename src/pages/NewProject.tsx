@@ -24,7 +24,7 @@ import { NewProjectStatsTab } from '@/components/projects/tabs/NewProjectStatsTa
 
 const NewProject = () => {
   const { user, isLoading: authLoading } = useAuth();
-  const { companyNames, artistNames, isLoading: metadataLoading } = useMetadata();
+  const { companyNames, artistNames, isLoading } = useMetadata();
   const createProjectMutation = useCreateProject();
   const createCompanyMutation = useCreateCompany();
   const createArtistMutation = useCreateArtist();
@@ -163,7 +163,7 @@ const NewProject = () => {
     }
   };
 
-  if (authLoading || metadataLoading) {
+  if (authLoading || isLoading.companies || isLoading.artists || isLoading.tags) {
     return (
       <MainLayout isAuthenticated={!!user}>
         <div className="container mx-auto max-w-6xl px-4 py-6">

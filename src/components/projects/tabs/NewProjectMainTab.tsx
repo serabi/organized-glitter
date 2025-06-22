@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ProjectFormValues } from '@/types/project';
+import { ProjectFormValues, ProjectStatus } from '@/types/project';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,6 +17,17 @@ import { ProjectImageSection } from '@/components/projects/form-sections/Project
 import { useImageUpload } from '@/hooks/useImageUpload';
 import ArtistSelect from '@/components/projects/form/ArtistSelect';
 import CompanySelect from '@/components/projects/form/CompanySelect';
+
+// Type-safe status options that match ProjectStatus type
+const STATUS_OPTIONS: Record<ProjectStatus, string> = {
+  wishlist: 'Wishlist',
+  purchased: 'Purchased', 
+  stash: 'In Stash',
+  progress: 'In Progress',
+  completed: 'Completed',
+  archived: 'Archived',
+  destashed: 'Destashed',
+} as const;
 
 interface NewProjectMainTabProps {
   formData: ProjectFormValues;
@@ -62,44 +73,44 @@ export const NewProjectMainTab = ({
 
   return (
     <div className="space-y-6">
-      {/* Basic Information */}
+      {/* Project Image Section */}
       <Card>
         <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="title">Project Title *</Label>
-              <Input
-                id="title"
-                value={formData.title || ''}
-                onChange={(e) => handleInputChange('title', e.target.value)}
-                placeholder="Enter project title"
-                disabled={isSubmitting}
-                style={{ fontSize: '16px' }} // Prevent iOS zoom
-                required
-              />
-            </div>
+          <div className="space-y-2">
+            <Label>Project Image</Label>
+            <ProjectImageSection
+              imageUrl={imageUploadHook.preview || formData.imageUrl || ''}
+              isUploading={imageUploadHook.uploading}
+              uploadError={imageUploadHook.error}
+              selectedFileName={imageUploadHook.file?.name}
+              selectedFile={formData.imageFile}
+              onImageChange={handleImageChange}
+              onImageRemove={() => handleInputChange('imageFile', null)}
+              disabled={isSubmitting}
+              imageUploadHook={imageUploadHook}
+            />
+          </div>
+        </CardContent>
+      </Card>
 
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={formData.status || 'wishlist'}
-                onValueChange={(value) => handleInputChange('status', value)}
-                disabled={isSubmitting}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="wishlist">Wishlist</SelectItem>
-                  <SelectItem value="purchased">Purchased</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="archived">Archived</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+      {/* Basic Info Section */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="title">Project Title *</Label>
+                <Input
+                  id="title"
+                  value={formData.title || ''}
+                  onChange={(e) => handleInputChange('title', e.target.value)}
+                  placeholder="Enter project title"
+                  disabled={isSubmitting}
+                  style={{ fontSize: '16px' }} // Prevent iOS zoom
+                  required
+                />
+              </div>
 
-            <div className="space-y-2">
               <CompanySelect
                 companies={companies}
                 value={formData.company || ''}
@@ -109,7 +120,27 @@ export const NewProjectMainTab = ({
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select
+                  value={formData.status || 'wishlist'}
+                  onValueChange={(value) => handleInputChange('status', value as ProjectStatus)}
+                  disabled={isSubmitting}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(STATUS_OPTIONS).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <ArtistSelect
                 artists={artists}
                 value={formData.artist || ''}
@@ -118,7 +149,53 @@ export const NewProjectMainTab = ({
                 onArtistAdded={async () => {}} // Will be handled in parent
               />
             </div>
+          </div>
+        </CardContent>
+      </Card>
 
+      {/* Type of Kit and Tags Section */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Type of Kit Section */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="space-y-2">
+              <Label htmlFor="kit_category">Type of Kit</Label>
+              <Select
+                value={formData.kit_category || 'full'}
+                onValueChange={(value) => handleInputChange('kit_category', value)}
+                disabled={isSubmitting}
+              >
+                <SelectTrigger id="kit_category">
+                  <SelectValue placeholder="Select type of kit..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="full">Full Sized</SelectItem>
+                  <SelectItem value="mini">Mini</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Tags Section */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="space-y-2">
+              <Label>Tags</Label>
+              <InlineTagManager 
+                tags={projectTags}
+                onChange={handleTagsChange}
+                disabled={isSubmitting}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Additional Fields Section */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="drillShape">Drill Shape</Label>
               <Select
@@ -137,56 +214,6 @@ export const NewProjectMainTab = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="kit_category">Kit Category</Label>
-              <Select
-                value={formData.kit_category || 'full'}
-                onValueChange={(value) => handleInputChange('kit_category', value)}
-                disabled={isSubmitting}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select kit category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="full">Full Drill</SelectItem>
-                  <SelectItem value="partial">Partial Drill</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Tags */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="space-y-2">
-            <Label>Tags</Label>
-            <InlineTagManager 
-              tags={projectTags}
-              onChange={handleTagsChange}
-              disabled={isSubmitting}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Notes and URL */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="generalNotes">General Notes</Label>
-              <Textarea
-                id="generalNotes"
-                value={formData.generalNotes || ''}
-                onChange={(e) => handleInputChange('generalNotes', e.target.value)}
-                placeholder="Add any notes about this project..."
-                disabled={isSubmitting}
-                rows={4}
-              />
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="sourceUrl">Source URL</Label>
               <Input
                 id="sourceUrl"
@@ -201,18 +228,18 @@ export const NewProjectMainTab = ({
         </CardContent>
       </Card>
 
-      {/* Project Image */}
+      {/* Notes Section */}
       <Card>
         <CardContent className="pt-6">
           <div className="space-y-2">
-            <Label>Project Image</Label>
-            <ProjectImageSection
-              imageUrl={null} // For new projects
-              selectedFile={formData.imageFile}
-              onImageChange={handleImageChange}
-              onImageRemove={() => handleInputChange('imageFile', null)}
+            <Label htmlFor="generalNotes">General Notes</Label>
+            <Textarea
+              id="generalNotes"
+              value={formData.generalNotes || ''}
+              onChange={(e) => handleInputChange('generalNotes', e.target.value)}
+              placeholder="Add any notes about this project..."
+              className="min-h-[100px]"
               disabled={isSubmitting}
-              imageUploadHook={imageUploadHook}
             />
           </div>
         </CardContent>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ProjectType, ProjectFormValues } from '@/types/project';
+import { ProjectType, ProjectFormValues, ProjectStatus } from '@/types/project';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,6 +17,17 @@ import { ProjectImageSection } from '@/components/projects/form-sections/Project
 import { useImageUpload } from '@/hooks/useImageUpload';
 import ArtistSelect from '@/components/projects/form/ArtistSelect';
 import CompanySelect from '@/components/projects/form/CompanySelect';
+
+// Type-safe status options that match ProjectStatus type
+const STATUS_OPTIONS: Record<ProjectStatus, string> = {
+  wishlist: 'Wishlist',
+  purchased: 'Purchased', 
+  stash: 'In Stash',
+  progress: 'In Progress',
+  completed: 'Completed',
+  archived: 'Archived',
+  destashed: 'Destashed',
+} as const;
 
 interface ProjectMainTabSimpleProps {
   project: ProjectType;
@@ -73,15 +84,6 @@ export const ProjectMainTabSimple = ({
     }
   };
 
-  const statusOptions = [
-    { value: 'wishlist', label: 'Wishlist' },
-    { value: 'purchased', label: 'Purchased' },
-    { value: 'stash', label: 'Stash' },
-    { value: 'progress', label: 'In Progress' },
-    { value: 'completed', label: 'Completed' },
-    { value: 'archived', label: 'Archived' },
-    { value: 'destashed', label: 'Destashed' },
-  ];
 
   if (!formData) {
     return <div>Loading form data...</div>;
@@ -112,14 +114,14 @@ export const ProjectMainTabSimple = ({
                 <Label htmlFor="title">Project Title</Label>
                 <Input
                   id="title"
-                  value={formData.title || ''}
+                  value={formData?.title || ''}
                   onChange={e => handleInputChange('title', e.target.value)}
                   disabled={isSubmitting}
                 />
               </div>
 
               <CompanySelect
-                value={formData.company || ''}
+                value={formData?.company || ''}
                 onChange={value => handleInputChange('company', value)}
                 companies={companies}
                 disabled={isSubmitting}
@@ -130,17 +132,17 @@ export const ProjectMainTabSimple = ({
               <div className="space-y-2">
                 <Label htmlFor="status">Status</Label>
                 <Select
-                  onValueChange={value => handleInputChange('status', value)}
-                  value={formData.status}
+                  onValueChange={value => handleInputChange('status', value as ProjectStatus)}
+                  value={formData?.status || 'wishlist'}
                   disabled={isSubmitting}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select status..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {statusOptions.map(option => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
+                    {Object.entries(STATUS_OPTIONS).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -148,7 +150,7 @@ export const ProjectMainTabSimple = ({
               </div>
 
               <ArtistSelect
-                value={formData.artist || ''}
+                value={formData?.artist || ''}
                 onChange={value => handleInputChange('artist', value)}
                 artists={artists}
                 disabled={isSubmitting}
@@ -167,7 +169,7 @@ export const ProjectMainTabSimple = ({
               <Label htmlFor="kit_category">Type of Kit</Label>
               <Select
                 onValueChange={value => handleInputChange('kit_category', value)}
-                value={formData.kit_category || ''}
+                value={formData?.kit_category || ''}
                 disabled={isSubmitting}
               >
                 <SelectTrigger id="kit_category">
@@ -204,7 +206,7 @@ export const ProjectMainTabSimple = ({
             <Label htmlFor="generalNotes">General Notes</Label>
             <Textarea
               id="generalNotes"
-              value={formData.generalNotes || ''}
+              value={formData?.generalNotes || ''}
               onChange={e => handleInputChange('generalNotes', e.target.value)}
               placeholder="Add any notes about this project..."
               className="min-h-[100px]"
