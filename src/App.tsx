@@ -17,9 +17,9 @@
  */
 
 import React, { useEffect } from 'react';
-import { AppProviders } from '@/components/layout/AppProviders';
-import { AppRoutes } from '@/components/routing/AppRoutes';
-import { useAppInitialization } from '@/hooks/useAppInitialization';
+import { AppProviders } from '@/components/layout/AppProviders.tsx';
+import { AppRoutes } from '@/components/routing/AppRoutes.tsx';
+import { useAppInitialization } from '@/hooks/useAppInitialization.ts';
 
 /**
  * Main App component
@@ -46,15 +46,13 @@ const App: React.FC = () => {
 
   return (
     <div
-      className="min-h-screen bg-background text-foreground"
+      className="min-h-screen bg-background text-foreground mobile-app-container"
       style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
+        width: '100%',
         overflow: 'auto',
-        WebkitOverflowScrolling: 'touch',
+        // Use modern CSS instead of deprecated webkit properties
+        overscrollBehavior: 'none',
+        touchAction: 'manipulation',
       }}
     >
       <AppProviders>

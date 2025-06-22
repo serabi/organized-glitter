@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { ProjectFormValues, ProjectPersistPayload } from '@/types/project';
 import { ProjectFormSchemaType } from '@/schemas/project.schema';
 import { useToast } from '@/components/ui/use-toast';
@@ -37,10 +37,44 @@ export const useProjectFormLogic = ({
   const imageUploadUI = useImageUpload('project-images');
   const [selectedFileName, setSelectedFileName] = useState<string | undefined>(undefined);
 
+  // Mobile-friendly debounced onChange handler
+  const debouncedOnChangeRef = useRef<NodeJS.Timeout>();
+  const mobileOnChange = useCallback((data: ProjectFormSchemaType) => {
+    if (!onChange) return;
+    
+    // Clear previous timeout
+    if (debouncedOnChangeRef.current) {
+      clearTimeout(debouncedOnChangeRef.current);
+    }
+    
+    // Use longer debounce on mobile to prevent freezing during rapid input
+    const debounceTime = window.innerWidth < 1024 ? 500 : 200;
+    
+    debouncedOnChangeRef.current = setTimeout(() => {
+      const convertedData = convertSchemaToFormValues(data);
+      const uniqueTagIds = Array.from(new Set(projectTags.map(tag => tag.id)));
+      const payload: ProjectPersistPayload = {
+        ...convertedData,
+        tags: projectTags,
+        tagIds: uniqueTagIds,
+      };
+      onChange(payload);
+    }, debounceTime);
+  }, [onChange, projectTags]);
+
   // Update projectTags when initialData.tags changes
   useEffect(() => {
     setProjectTags(initialData.tags || []);
   }, [initialData.tags]);
+
+  // Cleanup debounced onChange on unmount
+  useEffect(() => {
+    return () => {
+      if (debouncedOnChangeRef.current) {
+        clearTimeout(debouncedOnChangeRef.current);
+      }
+    };
+  }, []);
 
   // Use the project form hook to manage form state
   const rhfMethods = useProjectForm({
@@ -78,19 +112,7 @@ export const useProjectFormLogic = ({
         setLocalIsLoading(false);
       }
     },
-    onChange: (data: ProjectFormSchemaType) => {
-      if (onChange) {
-        const convertedData = convertSchemaToFormValues(data);
-        // Include locally managed tag state in onChange as well
-        const uniqueTagIds = Array.from(new Set(projectTags.map(tag => tag.id)));
-        const payload: ProjectPersistPayload = {
-          ...convertedData,
-          tags: projectTags,
-          tagIds: uniqueTagIds,
-        };
-        onChange(payload);
-      }
-    },
+    onChange: mobileOnChange,
   });
 
   const {

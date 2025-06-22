@@ -55,10 +55,10 @@ export function MetadataProvider({ children }: MetadataProviderProps) {
     artists: Array.isArray(artistsQuery.data) ? artistsQuery.data : [],
     tags: Array.isArray(tagsQuery.data) ? tagsQuery.data : [],
     companyNames: Array.isArray(companiesQuery.data)
-      ? companiesQuery.data.map(company => company.name)
+      ? companiesQuery.data.map(company => company.name).filter(Boolean)
       : [],
     artistNames: Array.isArray(artistsQuery.data)
-      ? artistsQuery.data.map(artist => artist.name)
+      ? artistsQuery.data.map(artist => artist.name).filter(Boolean)
       : [],
     isLoading: {
       companies: companiesQuery.isLoading,

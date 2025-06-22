@@ -10,9 +10,9 @@ import { usePostHogPageTracking } from '@/hooks/usePostHogPageTracking';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import NotFound from '@/pages/NotFound';
-import ForgotPassword from '@/pages/ForgotPassword';
-import ResetPassword from '@/pages/ResetPassword';
-import ConfirmPasswordReset from '@/pages/ConfirmPasswordReset';
+import ForgotPassword from '@/pages/ForgotPassword.tsx';
+import ResetPassword from '@/pages/ResetPassword.tsx';
+import ConfirmPasswordReset from '@/pages/ConfirmPasswordReset.tsx';
 import VerifyEmail from '@/pages/VerifyEmail';
 import EmailConfirmation from '@/pages/EmailConfirmation';
 
@@ -21,7 +21,7 @@ import Privacy from '@/pages/Privacy';
 import Terms from '@/pages/Terms';
 
 // Lazy load password and email change pages
-const ChangePassword = lazy(() => import('@/pages/ChangePassword'));
+const ChangePassword = lazy(() => import('@/pages/ChangePassword.tsx'));
 const ChangeEmail = lazy(() => import('@/pages/ChangeEmail'));
 const ConfirmEmailChange = lazy(() => import('@/pages/ConfirmEmailChange'));
 
@@ -87,6 +87,7 @@ const Import = lazy(() => import('@/pages/Import'));
 const DeleteAccount = lazy(() => import('@/pages/DeleteAccount'));
 const SupportSuccess = lazy(() => import('@/pages/SupportSuccess'));
 
+
 /**
  * Main application routing configuration
  * Handles all route definitions with proper authentication wrapping
@@ -139,7 +140,9 @@ export const AppRoutes: React.FC = () => {
         element={
           <ProtectedRoute>
             <Suspense fallback={<PageLoading />}>
-              <NewProject />
+              <MetadataProvider>
+                <NewProject />
+              </MetadataProvider>
             </Suspense>
           </ProtectedRoute>
         }
@@ -304,6 +307,7 @@ export const AppRoutes: React.FC = () => {
           </ProtectedRoute>
         }
       />
+
 
       {/* Public information routes */}
       <Route path="/about" element={<About />} />

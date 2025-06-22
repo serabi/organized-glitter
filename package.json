@@ -35,7 +35,8 @@
     "path-to-regexp": ">=6.2.0",
     "undici": "^5.28.5",
     "glob": "^10.0.0",
-    "sourcemap-codec": "npm:@jridgewell/sourcemap-codec@^1.4.15"
+    "sourcemap-codec": "npm:@jridgewell/sourcemap-codec@^1.4.15",
+    "typescript": "~5.6.2"
   },
   "vitest": {
     "environment": "jsdom",
@@ -60,7 +61,7 @@
   "scripts": {
     "dev": "vite",
     "dev:vercel": "vercel dev",
-    "build": "tsc -b && vite build",
+    "build": "vite build",
     "build:with-sitemap": "npm run generate:sitemap:js && vite build",
     "build:analyze": "npm run build && npx tsx scripts/analyze-bundle.ts",
     "bundle:monitor": "npx tsx scripts/bundle-size-monitor.ts",
