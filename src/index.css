@@ -187,15 +187,40 @@
     }
   }
 
-  /* For iOS Safari */
-  @supports (-webkit-touch-callout: none) {
+  /* Universal mobile browser optimizations */
+  @media (hover: none) and (pointer: coarse) {
     body {
-      /* The following line is needed to prevent elastic scrolling on iOS */
-      position: fixed;
-      width: 100%;
-      height: 100%;
-      overflow: auto;
-      -webkit-overflow-scrolling: touch;
+      /* Prevent elastic scrolling on all mobile browsers */
+      overscroll-behavior: none;
+      /* Better touch interaction */
+      touch-action: manipulation;
+      /* Modern mobile viewport handling with fallback */
+      min-height: 100vh; /* Fallback for older browsers */
+      min-height: 100dvh; /* Dynamic viewport height for mobile */
+    }
+    
+    /* Optimize form inputs for mobile */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="tel"],
+    input[type="url"],
+    textarea,
+    select {
+      /* Prevent zoom on input focus across mobile browsers */
+      font-size: 16px !important;
+      /* Better mobile touch handling */
+      touch-action: manipulation;
+    }
+    
+    /* Improve mobile touch targets */
+    button,
+    [role="button"],
+    input[type="submit"],
+    input[type="button"] {
+      touch-action: manipulation;
+      min-height: 44px; /* iOS and Android recommended minimum */
     }
   }
 
@@ -210,6 +235,27 @@
 }
 
 @layer components {
+  /* Universal mobile-friendly touch behavior */
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
+  
+  .mobile-input {
+    font-size: 16px; /* Prevent mobile zoom */
+    touch-action: manipulation;
+  }
+  
+  .mobile-touch-target {
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
+  }
+
+  .mobile-app-container {
+    min-height: 100vh; /* Fallback for older browsers */
+    min-height: 100dvh; /* Modern dynamic viewport height for mobile */
+  }
+
   .diamond-pattern {
     background-color: hsla(250, 30%, 98%, 1);
     background-image:

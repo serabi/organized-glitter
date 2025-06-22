@@ -36,12 +36,22 @@ export const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
         <input
           id="title"
           name="title"
+          type="text"
           value={title}
           onChange={onTitleChange}
           placeholder="Enter project title"
           required
           disabled={isSubmitting}
-          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          autoComplete="off"
+          inputMode="text"
+          autoCapitalize="words"
+          autoCorrect="on"
+          spellCheck="true"
+          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation"
+          style={{
+            fontSize: '16px', // Prevent iOS zoom on input focus
+            touchAction: 'manipulation',
+          }}
         />
       </FormField>
 
