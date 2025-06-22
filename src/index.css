@@ -279,4 +279,62 @@
   .image-gallery-dialog [data-radix-dialog-close] svg {
     @apply h-5 w-5 text-white;
   }
+
+  /* 
+   * iOS Safari Form Compatibility Fix
+   * Addresses form freezing issues on iOS Safari (Issue #2)
+   * https://github.com/serabi/organized-glitter/issues/2
+   */
+  
+  /* Disable animations for users who prefer reduced motion (accessibility + iOS Safari compatibility) */
+  @media (prefers-reduced-motion: reduce) {
+    [data-state="open"],
+    [data-state="closed"] {
+      animation: none !important;
+      transition: none !important;
+    }
+    
+    .animate-in,
+    .animate-out,
+    .fade-in-0,
+    .fade-out-0,
+    .zoom-in-95,
+    .zoom-out-95,
+    .slide-in-from-top-2,
+    .slide-in-from-bottom-2,
+    .slide-in-from-left-2,
+    .slide-in-from-right-2 {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+
+  /* Additional iOS Safari specific fixes for form interactions */
+  @supports (-webkit-touch-callout: none) {
+    /* Improve touch responsiveness for select dropdowns on iOS */
+    [data-radix-select-trigger],
+    [data-radix-select-content] {
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    
+    /* Prevent iOS Safari zoom on form focus */
+    input[type="text"],
+    input[type="email"],
+    input[type="url"],
+    input[type="tel"],
+    textarea,
+    select {
+      font-size: max(16px, 1rem);
+    }
+    
+    /* Optimize rendering performance for complex dropdowns */
+    [data-radix-select-content] {
+      -webkit-overflow-scrolling: touch;
+      transform: translateZ(0);
+      will-change: transform;
+    }
+  }
 }
