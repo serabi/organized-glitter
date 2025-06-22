@@ -11,7 +11,7 @@ import { useMetadata } from '@/contexts/MetadataContext';
 import { useCreateProject } from '@/hooks/mutations/useCreateProject';
 import { useCreateCompany } from '@/hooks/mutations/useCreateCompany';
 import { useCreateArtist } from '@/hooks/mutations/useCreateArtist';
-import { useNavigate } from 'react-router-dom';
+import { useNavigationWithWarning } from '@/hooks/useNavigationWithWarning';
 import { toast } from '@/components/ui/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -28,7 +28,12 @@ const NewProject = () => {
   const createProjectMutation = useCreateProject();
   const createCompanyMutation = useCreateCompany();
   const createArtistMutation = useCreateArtist();
-  const navigate = useNavigate();
+  
+  // Use enhanced navigation with state management
+  const { unsafeNavigate, navigationState } = useNavigationWithWarning({
+    isDirty: false, // New project creation doesn't need dirty state checking
+    message: '',
+  });
 
   const [activeTab, setActiveTab] = useState('main');
   const [submitting, setSubmitting] = useState(false);
@@ -69,7 +74,7 @@ const NewProject = () => {
   const clearError = () => setError(null);
   
   const handleCancel = () => {
-    navigate('/dashboard');
+    unsafeNavigate('/dashboard');
   };
 
   const handleFormChange = (data: ProjectFormValues) => {
@@ -158,7 +163,7 @@ const NewProject = () => {
         description: 'Project created successfully!',
       });
 
-      navigate(`/projects/${newProject.id}`);
+      unsafeNavigate(`/projects/${newProject.id}`);
     } catch (error) {
       console.error('Failed to create project:', error);
       setError('Failed to create project. Please try again.');
@@ -222,9 +227,9 @@ const NewProject = () => {
 
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={handleCancel} disabled={submitting}>
+            <Button variant="ghost" size="sm" onClick={handleCancel} disabled={submitting || navigationState.isNavigating}>
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
+              {navigationState.isNavigating ? 'Navigating...' : 'Back'}
             </Button>
             <h1 className="text-2xl font-bold">Create New Project</h1>
           </div>
@@ -265,13 +270,20 @@ const NewProject = () => {
                 type="button"
                 variant="outline"
                 onClick={handleCancel}
-                disabled={submitting}
+                disabled={submitting || navigationState.isNavigating}
               >
-                Cancel
+                {navigationState.isNavigating ? 'Navigating...' : 'Cancel'}
               </Button>
-              <Button onClick={() => handleSubmit(formData)} disabled={submitting || !formData.title?.trim()}>
+              <Button 
+                onClick={() => handleSubmit(formData)} 
+                disabled={submitting || navigationState.isNavigating || !formData.title?.trim()}
+              >
                 <Save className="mr-2 h-4 w-4" />
-                {submitting ? 'Creating...' : 'Create Project'}
+                {submitting
+                  ? 'Creating...'
+                  : navigationState.isNavigating
+                    ? 'Creating & Navigating...'
+                    : 'Create Project'}
               </Button>
             </div>
           </CardContent>

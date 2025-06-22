@@ -48,15 +48,26 @@ export const useNavigationWithWarning = ({
 
   // Listen for location changes to reset navigation state
   useEffect(() => {
-    if (navigationTarget.current && location.pathname === navigationTarget.current) {
-      // Navigation completed successfully
-      if (isMounted.current) {
-        setNavigationState({ isNavigating: false, error: null });
-      }
-      navigationTarget.current = null;
-      if (navigationTimeout.current) {
-        clearTimeout(navigationTimeout.current);
-        navigationTimeout.current = null;
+    if (navigationTarget.current) {
+      // Check if navigation completed successfully
+      // Handle both exact matches and pattern matches for dynamic routes
+      const targetMatches = 
+        location.pathname === navigationTarget.current ||
+        // Handle dynamic routes like /projects/[id] - if target starts with /projects/ and current does too
+        (navigationTarget.current.startsWith('/projects/') && location.pathname.startsWith('/projects/')) ||
+        // Handle other dynamic route patterns as needed
+        location.pathname.includes(navigationTarget.current.split('/').slice(0, -1).join('/'));
+      
+      if (targetMatches) {
+        // Navigation completed successfully
+        if (isMounted.current) {
+          setNavigationState({ isNavigating: false, error: null });
+        }
+        navigationTarget.current = null;
+        if (navigationTimeout.current) {
+          clearTimeout(navigationTimeout.current);
+          navigationTimeout.current = null;
+        }
       }
     }
   }, [location.pathname]);
