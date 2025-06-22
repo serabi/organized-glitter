@@ -114,8 +114,11 @@ const ChangePassword = () => {
 
       // Then update the password using the proper PocketBase method
       // Using oldPassword field for secure password changes
+      if (!user?.id) {
+        throw new Error('User ID not available');
+      }
       await pb.collection('users').update(
-        user!.id,
+        user.id,
         {
           password: newPassword,
           passwordConfirm: confirmPassword,

@@ -26,6 +26,29 @@ const ConfirmPasswordReset = () => {
   const { toast } = useToast();
   const { token } = useParams<{ token: string }>();
 
+  // Password validation function (matches ChangePassword component)
+  const validatePassword = (password: string): string[] => {
+    const errors: string[] = [];
+
+    if (password.length < 8) {
+      errors.push('Password must be at least 8 characters long');
+    }
+
+    if (!/[A-Z]/.test(password)) {
+      errors.push('Password must contain at least one uppercase letter');
+    }
+
+    if (!/[a-z]/.test(password)) {
+      errors.push('Password must contain at least one lowercase letter');
+    }
+
+    if (!/\d/.test(password)) {
+      errors.push('Password must contain at least one number');
+    }
+
+    return errors;
+  };
+
   // Validate token on mount
   useEffect(() => {
     if (!token) {
@@ -52,8 +75,10 @@ const ConfirmPasswordReset = () => {
       return;
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters long');
+    // Validate password strength (match ChangePassword component requirements)
+    const passwordErrors = validatePassword(password);
+    if (passwordErrors.length > 0) {
+      setError(passwordErrors.join('. '));
       return;
     }
 
@@ -127,7 +152,7 @@ const ConfirmPasswordReset = () => {
               </CardTitle>
               <CardDescription>
                 {!success
-                  ? 'Your new password must be at least 6 characters long'
+                  ? 'Your new password must be at least 8 characters long and contain uppercase, lowercase, and numeric characters'
                   : 'You can now log in with your new password'}
               </CardDescription>
             </CardHeader>
