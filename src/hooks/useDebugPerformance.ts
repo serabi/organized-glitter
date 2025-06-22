@@ -23,7 +23,7 @@ export const useDebugPerformance = (label: string, enabled: boolean = false) => 
     }
   }
 
-  const logEvent = (event: string, data?: any) => {
+  const logEvent = (event: string, data?: unknown) => {
     if (!enabled) return;
     const timestamp = new Date().toLocaleTimeString();
     const elapsed = Date.now() - startTimeRef.current;

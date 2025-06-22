@@ -139,9 +139,11 @@ export const AppRoutes: React.FC = () => {
         path="/projects/new"
         element={
           <ProtectedRoute>
-            <Suspense fallback={<PageLoading />}>
-              <NewProject />
-            </Suspense>
+            <MetadataProvider>
+              <Suspense fallback={<PageLoading />}>
+                <NewProject />
+              </Suspense>
+            </MetadataProvider>
           </ProtectedRoute>
         }
       />
