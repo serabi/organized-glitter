@@ -12,6 +12,7 @@ import { useCreateProject } from '@/hooks/mutations/useCreateProject';
 import { useCreateCompany } from '@/hooks/mutations/useCreateCompany';
 import { useCreateArtist } from '@/hooks/mutations/useCreateArtist';
 import { useNavigationWithWarning } from '@/hooks/useNavigationWithWarning';
+import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -34,6 +35,9 @@ const NewProject = () => {
     isDirty: false, // New project creation doesn't need dirty state checking
     message: '',
   });
+  
+  // Also get direct React Router navigate for comparison
+  const directNavigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState('main');
   const [submitting, setSubmitting] = useState(false);
@@ -163,7 +167,22 @@ const NewProject = () => {
         description: 'Project created successfully!',
       });
 
-      unsafeNavigate(`/projects/${newProject.id}`);
+      console.log('[NewProject] About to navigate to:', `/projects/${newProject.id}`);
+      console.log('[NewProject] unsafeNavigate function:', unsafeNavigate);
+      console.log('[NewProject] directNavigate function:', directNavigate);
+      
+      // Try enhanced navigation first
+      try {
+        unsafeNavigate(`/projects/${newProject.id}`);
+        console.log('[NewProject] Enhanced navigation call completed');
+      } catch (enhancedError) {
+        console.error('[NewProject] Enhanced navigation failed:', enhancedError);
+        
+        // Fallback to direct React Router navigation
+        console.log('[NewProject] Falling back to direct navigation');
+        directNavigate(`/projects/${newProject.id}`);
+        console.log('[NewProject] Direct navigation call completed');
+      }
     } catch (error) {
       console.error('Failed to create project:', error);
       setError('Failed to create project. Please try again.');

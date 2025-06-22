@@ -48,17 +48,22 @@ export const useNavigationWithWarning = ({
 
   // Listen for location changes to reset navigation state
   useEffect(() => {
+    console.log('[Navigation] Location changed to:', location.pathname);
+    console.log('[Navigation] Current navigation target:', navigationTarget.current);
+    
     if (navigationTarget.current) {
       // Check if navigation completed successfully
       // Handle both exact matches and pattern matches for dynamic routes
-      const targetMatches = 
-        location.pathname === navigationTarget.current ||
-        // Handle dynamic routes like /projects/[id] - if target starts with /projects/ and current does too
-        (navigationTarget.current.startsWith('/projects/') && location.pathname.startsWith('/projects/')) ||
-        // Handle other dynamic route patterns as needed
-        location.pathname.includes(navigationTarget.current.split('/').slice(0, -1).join('/'));
+      const exactMatch = location.pathname === navigationTarget.current;
+      const projectRouteMatch = navigationTarget.current.startsWith('/projects/') && location.pathname.startsWith('/projects/');
+      const patternMatch = location.pathname.includes(navigationTarget.current.split('/').slice(0, -1).join('/'));
+      
+      console.log('[Navigation] Route matching:', { exactMatch, projectRouteMatch, patternMatch });
+      
+      const targetMatches = exactMatch || projectRouteMatch || patternMatch;
       
       if (targetMatches) {
+        console.log('[Navigation] Target matches! Resetting navigation state');
         // Navigation completed successfully
         if (isMounted.current) {
           setNavigationState({ isNavigating: false, error: null });
@@ -68,6 +73,8 @@ export const useNavigationWithWarning = ({
           clearTimeout(navigationTimeout.current);
           navigationTimeout.current = null;
         }
+      } else {
+        console.log('[Navigation] No target match, keeping navigation state');
       }
     }
   }, [location.pathname]);
@@ -247,12 +254,23 @@ export const useNavigationWithWarning = ({
     navigateWithWarning,
     navigate: navigateWithWarning, // Alias for convenience
     unsafeNavigate: (to: string, options?: { replace?: boolean }) => {
+      console.log('[Navigation] unsafeNavigate called with:', to, options);
+      console.log('[Navigation] navigate function:', navigate);
+      console.log('[Navigation] Current location:', location.pathname);
+      
       setNavigationState({ isNavigating: true, error: null });
+      console.log('[Navigation] Navigation state set to isNavigating: true');
+      
       startNavigationTimeout(to);
+      console.log('[Navigation] Navigation timeout started for:', to);
+      
       try {
+        console.log('[Navigation] Calling React Router navigate...');
         navigate(to, options);
+        console.log('[Navigation] React Router navigate call completed');
         // Note: Navigation state will be reset when location changes or timeout occurs
       } catch (error) {
+        console.error('[Navigation] Navigation error:', error);
         // Clear navigation tracking on immediate error
         navigationTarget.current = null;
         if (navigationTimeout.current) {
