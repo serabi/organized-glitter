@@ -20,10 +20,11 @@ import { useCreateCompany } from '@/hooks/mutations/useCreateCompany';
 import { useCreateArtist } from '@/hooks/mutations/useCreateArtist';
 import { useMetadata } from '@/contexts/MetadataContext';
 import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import { Loader2, AlertTriangle } from 'lucide-react';
 import { createLogger } from '@/utils/secureLogger';
+import { useDebugPerformance } from '@/hooks/useDebugPerformance';
 
 const logger = createLogger('NewProject');
 
@@ -39,9 +40,17 @@ const NewProject = () => {
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
+  // Debug mode detection
+  const [searchParams] = useSearchParams();
+  const isDebugMode = searchParams.get('debug') === 'true';
+  const [debugEvents, setDebugEvents] = useState<string[]>([]);
+
   const { user } = useAuth();
   const { companyNames, artistNames, isLoading } = useMetadata();
   const metadataLoading = isLoading.companies || isLoading.artists;
+
+  // Debug performance monitoring
+  const { metrics, logEvent } = useDebugPerformance('NewProject', isDebugMode);
 
   // React Query mutations
   const createProjectMutation = useCreateProject();
@@ -52,6 +61,15 @@ const NewProject = () => {
 
   // Create a ref to store the form methods
   const formRef = useRef<ProjectFormRef>(null);
+
+  // Debug event logging
+  const addDebugEvent = useCallback((event: string, data?: any) => {
+    if (!isDebugMode) return;
+    const timestamp = new Date().toLocaleTimeString();
+    const message = `${timestamp}: ${event}${data ? ` - ${JSON.stringify(data)}` : ''}`;
+    setDebugEvents(prev => [...prev.slice(-20), message]);
+    logEvent(event, data);
+  }, [isDebugMode, logEvent]);
 
   // Memoize initial data to prevent unnecessary form resets
   const initialData = useMemo(() => {
@@ -71,11 +89,13 @@ const NewProject = () => {
     const validateUser = () => {
       if (!isMounted) return;
 
+      addDebugEvent('Auth validation started', { userId: user?.id });
       setAuthLoading(true);
       setAuthError(null);
 
       if (!user?.id) {
         if (isMounted) {
+          addDebugEvent('Auth validation failed: No user ID');
           setAuthError('No authenticated user found. Please log in to create a project.');
           setAuthLoading(false);
         }
@@ -86,6 +106,7 @@ const NewProject = () => {
       if (!isValidPocketBaseId(user.id)) {
         console.error('User ID is not a valid PocketBase ID format:', user.id);
         if (isMounted) {
+          addDebugEvent('Auth validation failed: Invalid ID format', { userId: user.id });
           setAuthError(
             'User authentication format is invalid. Please try logging out and back in.'
           );
@@ -97,6 +118,7 @@ const NewProject = () => {
       // Only set validatedUserId if we have a valid PocketBase ID
       console.log('Successfully validated user ID:', user.id);
       if (isMounted) {
+        addDebugEvent('Auth validation successful', { userId: user.id });
         setValidatedUserId(user.id);
         setAuthLoading(false);
       }
@@ -107,23 +129,28 @@ const NewProject = () => {
     return () => {
       isMounted = false;
     };
-  }, [user?.id]);
+  }, [user?.id, addDebugEvent]);
 
   const handleCreateProject = useCallback(
     async (formData: ProjectFormValues): Promise<void> => {
       let newProjectId: string | null = null;
 
       try {
+        addDebugEvent('Project creation started', { title: formData.title?.trim() });
+
         // Validate required fields
         if (!formData.title?.trim()) {
+          addDebugEvent('Project creation failed: Empty title');
           throw new Error('Project title is required');
         }
 
         if (!formData.userId) {
+          addDebugEvent('Project creation failed: No user ID');
           throw new Error('User not authenticated');
         }
 
         if (!isValidPocketBaseId(formData.userId)) {
+          addDebugEvent('Project creation failed: Invalid user ID format');
           throw new Error(
             'User authentication is incomplete. Please refresh the page and try again.'
           );
@@ -182,6 +209,14 @@ const NewProject = () => {
         }
 
         // Step 3: Create the project
+        addDebugEvent('Creating project with data', {
+          title: formData.title.trim(),
+          userId: formData.userId,
+          status: formData.status || 'wishlist',
+          hasImage: !!formData.imageFile,
+          tagCount: formData.tagIds?.length || 0,
+        });
+
         const projectData = {
           title: formData.title.trim(),
           user: formData.userId,
@@ -206,15 +241,19 @@ const NewProject = () => {
         const newProject = await createProjectMutation.mutateAsync(projectData);
         newProjectId = newProject.id;
 
+        addDebugEvent('Project created successfully', { projectId: newProjectId });
         logger.info('Project created successfully:', newProjectId);
 
         // Step 4: Navigate to project page only after successful project creation
+        addDebugEvent('Navigating to project page', { projectId: newProjectId });
         navigate(`/projects/${newProjectId}`);
       } catch (error) {
+        addDebugEvent('Project creation failed', { error: error.message });
         logger.error('Error in project creation flow:', error);
 
         // If project was created but navigation failed, still provide feedback
         if (newProjectId) {
+          addDebugEvent('Project created but navigation failed', { projectId: newProjectId });
           toast({
             title: 'Project Created',
             description:
@@ -234,6 +273,7 @@ const NewProject = () => {
       companyNames,
       artistNames,
       navigate,
+      addDebugEvent,
     ]
   );
 
@@ -276,11 +316,14 @@ const NewProject = () => {
               isLoading={isCreatingProject || metadataLoading}
               onCompanyAdded={async (newCompany: string) => {
                 if (!formRef.current) return;
+                addDebugEvent('Company added via dialog', { company: newCompany });
                 logger.debug('New company added via form dialog:', newCompany);
                 try {
                   // Set the new company as selected
                   formRef.current.setValue('company', newCompany);
+                  addDebugEvent('Company value set in form', { company: newCompany });
                 } catch (error) {
+                  addDebugEvent('Error setting company in form', { error: error.message });
                   logger.error('Error setting company:', error);
                   toast({
                     title: 'Error',
@@ -291,11 +334,14 @@ const NewProject = () => {
               }}
               onArtistAdded={async (newArtist: string) => {
                 if (!formRef.current) return;
+                addDebugEvent('Artist added via dialog', { artist: newArtist });
                 logger.debug('New artist added via form dialog:', newArtist);
                 try {
                   // Set the new artist as selected
                   formRef.current.setValue('artist', newArtist);
+                  addDebugEvent('Artist value set in form', { artist: newArtist });
                 } catch (error) {
+                  addDebugEvent('Error setting artist in form', { error: error.message });
                   logger.error('Error setting artist:', error);
                   toast({
                     title: 'Error',
@@ -322,6 +368,36 @@ const NewProject = () => {
             </div>
           )}
         </div>
+
+        {/* Debug overlay */}
+        {isDebugMode && (
+          <div className="fixed bottom-4 right-4 max-w-sm bg-black/90 text-white p-4 rounded-lg text-xs font-mono z-50 max-h-96 overflow-y-auto">
+            <div className="font-bold mb-2">Debug Info</div>
+            
+            <div className="mb-3">
+              <div className="text-yellow-300">Performance:</div>
+              <div>Renders: {metrics.renderCount}</div>
+              <div>Avg Render Time: {metrics.averageRenderTime.toFixed(0)}ms</div>
+              {metrics.isHighFrequencyRendering && (
+                <div className="text-red-400">⚠ High Frequency Rendering</div>
+              )}
+              {metrics.memoryUsage && (
+                <div>Memory: {metrics.memoryUsage.used} / {metrics.memoryUsage.limit}</div>
+              )}
+            </div>
+
+            <div>
+              <div className="text-green-300 mb-1">Recent Events:</div>
+              <div className="space-y-1 max-h-40 overflow-y-auto">
+                {debugEvents.slice(-10).map((event, index) => (
+                  <div key={index} className="text-xs break-words">
+                    {event}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </MainLayout>
   );

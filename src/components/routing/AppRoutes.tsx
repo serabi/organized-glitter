@@ -87,8 +87,6 @@ const Import = lazy(() => import('@/pages/Import'));
 const DeleteAccount = lazy(() => import('@/pages/DeleteAccount'));
 const SupportSuccess = lazy(() => import('@/pages/SupportSuccess'));
 
-// Debug pages (temporary)
-const DebugMobileInput = lazy(() => import('@/pages/DebugMobileInput'));
 
 /**
  * Main application routing configuration
@@ -308,15 +306,6 @@ export const AppRoutes: React.FC = () => {
         }
       />
 
-      {/* Debug routes (temporary for mobile testing) */}
-      <Route
-        path="/debug-mobile-input"
-        element={
-          <Suspense fallback={<PageLoading />}>
-            <DebugMobileInput />
-          </Suspense>
-        }
-      />
 
       {/* Public information routes */}
       <Route path="/about" element={<About />} />
