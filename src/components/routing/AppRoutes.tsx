@@ -140,9 +140,7 @@ export const AppRoutes: React.FC = () => {
         element={
           <ProtectedRoute>
             <Suspense fallback={<PageLoading />}>
-              <MetadataProvider>
-                <NewProject />
-              </MetadataProvider>
+              <NewProject />
             </Suspense>
           </ProtectedRoute>
         }
