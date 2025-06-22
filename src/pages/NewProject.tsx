@@ -4,7 +4,7 @@
  * Full-featured form for creating diamond painting projects using EditProject layout
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAuth } from '@/hooks/useAuth';
 import { useMetadata } from '@/contexts/MetadataContext';
@@ -34,10 +34,10 @@ const NewProject = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Form data state
+  // Form data state - initialize userId as empty, will be set when user loads
   const [formData, setFormData] = useState<ProjectFormValues>({
     title: '',
-    userId: user?.id || '',
+    userId: '',
     status: 'wishlist',
     company: '',
     artist: '',
@@ -54,8 +54,17 @@ const NewProject = () => {
     kit_category: 'full',
     imageFile: null,
     tags: [],
-    tagIds: [],
   });
+
+  // Update userId when user becomes available
+  useEffect(() => {
+    if (user?.id && !formData.userId) {
+      setFormData(prev => ({
+        ...prev,
+        userId: user.id
+      }));
+    }
+  }, [user?.id, formData.userId]);
 
   const clearError = () => setError(null);
   
@@ -139,7 +148,7 @@ const NewProject = () => {
         height: data.height ? Number(data.height) : null,
         kit_category: data.kit_category || 'full',
         image: data.imageFile || null,
-        tagIds: data.tagIds || [],
+        tagIds: data.tags?.map(tag => tag.id) || [],
       };
 
       const newProject = await createProjectMutation.mutateAsync(projectData);

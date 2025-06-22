@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import {
@@ -24,6 +24,7 @@ const ResetPassword = () => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const redirectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Check if we have a valid hash/token in the URL
   useEffect(() => {
@@ -104,7 +105,7 @@ const ResetPassword = () => {
       setConfirmPassword('');
 
       // Redirect to login after 3 seconds
-      setTimeout(() => {
+      redirectTimeoutRef.current = setTimeout(() => {
         // addBreadcrumb removed
         navigate('/login');
       }, 3000);
@@ -120,6 +121,15 @@ const ResetPassword = () => {
       setLoading(false);
     }
   };
+
+  // Cleanup timeout on component unmount
+  useEffect(() => {
+    return () => {
+      if (redirectTimeoutRef.current) {
+        clearTimeout(redirectTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <MainLayout>

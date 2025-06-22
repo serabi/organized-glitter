@@ -66,8 +66,7 @@ export const NewProjectMainTab = ({
   // Handle tags change
   const handleTagsChange = (tags: Tag[]) => {
     setProjectTags(tags);
-    const tagIds = tags.map(tag => tag.id);
-    const updatedData = { ...formData, tags, tagIds };
+    const updatedData = { ...formData, tags };
     onChange(updatedData);
   };
 
@@ -83,11 +82,8 @@ export const NewProjectMainTab = ({
               isUploading={imageUploadHook.uploading}
               uploadError={imageUploadHook.error}
               selectedFileName={imageUploadHook.file?.name}
-              selectedFile={formData.imageFile}
               onImageChange={handleImageChange}
               onImageRemove={() => handleInputChange('imageFile', null)}
-              disabled={isSubmitting}
-              imageUploadHook={imageUploadHook}
             />
           </div>
         </CardContent>
@@ -183,9 +179,9 @@ export const NewProjectMainTab = ({
             <div className="space-y-2">
               <Label>Tags</Label>
               <InlineTagManager 
-                tags={projectTags}
-                onChange={handleTagsChange}
-                disabled={isSubmitting}
+                initialTags={projectTags}
+                onTagsChange={handleTagsChange}
+                className={isSubmitting ? 'opacity-50 pointer-events-none' : ''}
               />
             </div>
           </CardContent>
