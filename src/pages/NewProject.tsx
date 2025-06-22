@@ -377,13 +377,7 @@ const NewProject = () => {
             <div className="mb-3">
               <div className="text-yellow-300">Performance:</div>
               <div>Renders: {metrics.renderCount}</div>
-              <div>Avg Render Time: {metrics.averageRenderTime.toFixed(0)}ms</div>
-              {metrics.isHighFrequencyRendering && (
-                <div className="text-red-400">⚠ High Frequency Rendering</div>
-              )}
-              {metrics.memoryUsage && (
-                <div>Memory: {metrics.memoryUsage.used} / {metrics.memoryUsage.limit}</div>
-              )}
+              <div>Uptime: {Math.floor((Date.now() - metrics.startTime) / 1000)}s</div>
             </div>
 
             <div>
