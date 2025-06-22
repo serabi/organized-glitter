@@ -150,8 +150,11 @@ scripts/*
 vercel.json
 api/send-feedback.js
 
-# Additional sensitive patterns
-**/*password*
+# Additional sensitive patterns (but allow page components)
+**/*password*.txt
+**/*password*.json
+**/*password*.env
+**/*password*.config
 **/*secret*
 **/*credential*
 *.backup

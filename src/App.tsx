@@ -17,9 +17,9 @@
  */
 
 import React, { useEffect } from 'react';
-import { AppProviders } from '@/components/layout/AppProviders';
-import { AppRoutes } from '@/components/routing/AppRoutes';
-import { useAppInitialization } from '@/hooks/useAppInitialization';
+import { AppProviders } from '@/components/layout/AppProviders.tsx';
+import { AppRoutes } from '@/components/routing/AppRoutes.tsx';
+import { useAppInitialization } from '@/hooks/useAppInitialization.ts';
 
 /**
  * Main App component
