@@ -61,7 +61,7 @@
   "scripts": {
     "dev": "vite",
     "dev:vercel": "vercel dev",
-    "build": "tsc -b && vite build",
+    "build": "vite build",
     "build:with-sitemap": "npm run generate:sitemap:js && vite build",
     "build:analyze": "npm run build && npx tsx scripts/analyze-bundle.ts",
     "bundle:monitor": "npx tsx scripts/bundle-size-monitor.ts",
