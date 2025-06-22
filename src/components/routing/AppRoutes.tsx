@@ -87,6 +87,9 @@ const Import = lazy(() => import('@/pages/Import'));
 const DeleteAccount = lazy(() => import('@/pages/DeleteAccount'));
 const SupportSuccess = lazy(() => import('@/pages/SupportSuccess'));
 
+// Debug pages (temporary)
+const DebugMobileInput = lazy(() => import('@/pages/DebugMobileInput'));
+
 /**
  * Main application routing configuration
  * Handles all route definitions with proper authentication wrapping
@@ -302,6 +305,16 @@ export const AppRoutes: React.FC = () => {
               <SupportSuccess />
             </Suspense>
           </ProtectedRoute>
+        }
+      />
+
+      {/* Debug routes (temporary for mobile testing) */}
+      <Route
+        path="/debug-mobile-input"
+        element={
+          <Suspense fallback={<PageLoading />}>
+            <DebugMobileInput />
+          </Suspense>
         }
       />
 
