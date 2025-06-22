@@ -55,12 +55,12 @@ export const useNavigationWithWarning = ({
       // Check if navigation completed successfully
       // Handle both exact matches and pattern matches for dynamic routes
       const exactMatch = location.pathname === navigationTarget.current;
-      const projectRouteMatch = navigationTarget.current.startsWith('/projects/') && location.pathname.startsWith('/projects/');
+      // Only match if we're actually at the target, not just in the same route family
       const patternMatch = location.pathname.includes(navigationTarget.current.split('/').slice(0, -1).join('/'));
       
-      console.log('[Navigation] Route matching:', { exactMatch, projectRouteMatch, patternMatch });
+      console.log('[Navigation] Route matching:', { exactMatch, patternMatch, target: navigationTarget.current, current: location.pathname });
       
-      const targetMatches = exactMatch || projectRouteMatch || patternMatch;
+      const targetMatches = exactMatch;
       
       if (targetMatches) {
         console.log('[Navigation] Target matches! Resetting navigation state');
