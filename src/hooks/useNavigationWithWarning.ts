@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface UseNavigationWithWarningProps {
   isDirty: boolean;
@@ -25,16 +25,59 @@ export const useNavigationWithWarning = ({
   confirmationDialog,
 }: UseNavigationWithWarningProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const isMounted = useRef(true);
   const [navigationState, setNavigationState] = useState<NavigationState>({
     isNavigating: false,
     error: null,
   });
+  
+  // Track navigation target and timeout
+  const navigationTarget = useRef<string | null>(null);
+  const navigationTimeout = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     return () => {
       isMounted.current = false;
+      // Clear navigation timeout on unmount
+      if (navigationTimeout.current) {
+        clearTimeout(navigationTimeout.current);
+      }
     };
+  }, []);
+
+  // Listen for location changes to reset navigation state
+  useEffect(() => {
+    if (navigationTarget.current && location.pathname === navigationTarget.current) {
+      // Navigation completed successfully
+      if (isMounted.current) {
+        setNavigationState({ isNavigating: false, error: null });
+      }
+      navigationTarget.current = null;
+      if (navigationTimeout.current) {
+        clearTimeout(navigationTimeout.current);
+        navigationTimeout.current = null;
+      }
+    }
+  }, [location.pathname]);
+
+  // Helper function to start navigation timeout
+  const startNavigationTimeout = useCallback((targetPath: string) => {
+    navigationTarget.current = targetPath;
+    
+    // Clear any existing timeout
+    if (navigationTimeout.current) {
+      clearTimeout(navigationTimeout.current);
+    }
+    
+    // Set timeout to reset navigation state if it takes too long (fallback)
+    navigationTimeout.current = setTimeout(() => {
+      if (isMounted.current) {
+        setNavigationState({ isNavigating: false, error: null });
+      }
+      navigationTarget.current = null;
+      navigationTimeout.current = null;
+    }, 5000); // 5 second timeout
   }, []);
   // Safe navigation function that checks for unsaved changes
   const navigateWithWarning = useCallback(
@@ -52,13 +95,17 @@ export const useNavigationWithWarning = ({
 
         if (confirmed) {
           setNavigationState({ isNavigating: true, error: null });
+          startNavigationTimeout(to);
           try {
             navigate(to, options);
-            // Reset navigation state after successful navigation
-            if (isMounted.current) {
-              setNavigationState({ isNavigating: false, error: null });
-            }
+            // Note: Navigation state will be reset when location changes or timeout occurs
           } catch (error) {
+            // Clear navigation tracking on immediate error
+            navigationTarget.current = null;
+            if (navigationTimeout.current) {
+              clearTimeout(navigationTimeout.current);
+              navigationTimeout.current = null;
+            }
             if (isMounted.current) {
               setNavigationState({
                 isNavigating: false,
@@ -69,13 +116,17 @@ export const useNavigationWithWarning = ({
         }
       } else {
         setNavigationState({ isNavigating: true, error: null });
+        startNavigationTimeout(to);
         try {
           navigate(to, options);
-          // Reset navigation state after successful navigation
-          if (isMounted.current) {
-            setNavigationState({ isNavigating: false, error: null });
-          }
+          // Note: Navigation state will be reset when location changes or timeout occurs
         } catch (error) {
+          // Clear navigation tracking on immediate error
+          navigationTarget.current = null;
+          if (navigationTimeout.current) {
+            clearTimeout(navigationTimeout.current);
+            navigationTimeout.current = null;
+          }
           if (isMounted.current) {
             setNavigationState({
               isNavigating: false,
@@ -85,7 +136,7 @@ export const useNavigationWithWarning = ({
         }
       }
     },
-    [isDirty, message, navigate, confirmationDialog]
+    [isDirty, message, navigate, confirmationDialog, startNavigationTimeout]
   );
 
   // Store reference to the beforeunload handler for proper cleanup
@@ -128,21 +179,25 @@ export const useNavigationWithWarning = ({
         // Destructure to separate standard React Router options from custom ones
         const { forceReload, ...navigateOptions } = options || {};
 
-        // Always try React Router first with only standard options
-        navigate(to, navigateOptions);
-
-        // Reset navigation state after successful navigation
-        if (isMounted.current) {
-          setNavigationState({ isNavigating: false, error: null });
-        }
-
-        // Only use window.location as fallback if explicitly requested
         if (forceReload) {
+          // For force reload, don't track with timeout since we're doing a hard refresh
           setTimeout(() => {
             window.location.href = to;
           }, 100); // Small delay to let React Router attempt first
+        } else {
+          // Track navigation for SPA navigation
+          startNavigationTimeout(to);
+          // Always try React Router first with only standard options
+          navigate(to, navigateOptions);
+          // Note: Navigation state will be reset when location changes or timeout occurs
         }
       } catch (error) {
+        // Clear navigation tracking on immediate error
+        navigationTarget.current = null;
+        if (navigationTimeout.current) {
+          clearTimeout(navigationTimeout.current);
+          navigationTimeout.current = null;
+        }
         if (isMounted.current) {
           setNavigationState({
             isNavigating: false,
@@ -154,7 +209,7 @@ export const useNavigationWithWarning = ({
         window.location.href = to;
       }
     },
-    [navigate]
+    [navigate, startNavigationTimeout]
   );
 
   // Force navigation bypasses unsaved changes warning
@@ -182,13 +237,17 @@ export const useNavigationWithWarning = ({
     navigate: navigateWithWarning, // Alias for convenience
     unsafeNavigate: (to: string, options?: { replace?: boolean }) => {
       setNavigationState({ isNavigating: true, error: null });
+      startNavigationTimeout(to);
       try {
         navigate(to, options);
-        // Reset navigation state after successful navigation
-        if (isMounted.current) {
-          setNavigationState({ isNavigating: false, error: null });
-        }
+        // Note: Navigation state will be reset when location changes or timeout occurs
       } catch (error) {
+        // Clear navigation tracking on immediate error
+        navigationTarget.current = null;
+        if (navigationTimeout.current) {
+          clearTimeout(navigationTimeout.current);
+          navigationTimeout.current = null;
+        }
         if (isMounted.current) {
           setNavigationState({
             isNavigating: false,
