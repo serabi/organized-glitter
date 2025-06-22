@@ -162,6 +162,17 @@ pb.afterSend = function (response: Response, data: unknown): unknown {
   // Note: PocketBase SDK only provides (response, data) - no third parameter
   const now = performance.now();
   let cleaned = false;
+  
+  // Clear request deduplication cache for failed requests
+  if (response.status >= 400) {
+    // Find and remove failed requests from pending cache
+    for (const [requestKey, promise] of pendingRequests.entries()) {
+      if (requestKey.includes(response.url)) {
+        pendingRequests.delete(requestKey);
+        pbLogger.debug(`Cleared failed request from cache: ${requestKey}`);
+      }
+    }
+  }
 
   // Try to find the request by extracting method from the stored timing entries
   // We'll need to infer the method by matching URL patterns
@@ -270,12 +281,18 @@ pb.afterSend = function (response: Response, data: unknown): unknown {
       status: response.status,
       nextInterval: getMinRequestInterval(),
     });
-  } else {
+  } else if (response.status >= 200 && response.status < 300) {
     // Reset counter on successful requests
     if (consecutiveRateLimits > 0) {
       pbLogger.info('Rate limit cleared, resetting interval');
       consecutiveRateLimits = 0;
     }
+  } else if (response.status >= 400) {
+    // Log client/server errors for debugging
+    pbLogger.warn(`Request failed with status ${response.status}:`, {
+      url: response.url,
+      status: response.status,
+    });
   }
   return data;
 };

@@ -31,13 +31,77 @@ interface ProjectWithExpand extends ProjectsResponse {
  * Fetches a single project with all related data (company, artist, tags, progress notes)
  */
 const fetchProjectDetail = async (projectId: string): Promise<ProjectType> => {
-  // Fetch project with related data
-  const projectRecord = await pb
-    .collection(Collections.Projects)
-    .getOne<ProjectWithExpand>(projectId, {
-      expand: 'company,artist,project_tags_via_project.tag',
-      requestKey: `project-detail-${projectId}`,
-    });
+  // First, fetch the basic project record without expand to ensure it exists
+  let projectRecord: ProjectWithExpand;
+  
+  try {
+    // Try the full expand query first
+    projectRecord = await pb
+      .collection(Collections.Projects)
+      .getOne<ProjectWithExpand>(projectId, {
+        expand: 'company,artist,project_tags_via_project.tag',
+        requestKey: `project-detail-${projectId}`,
+      });
+  } catch (error) {
+    // If expand fails, try without expand to get basic project data
+    console.warn('Full expand failed, trying basic query:', error);
+    
+    projectRecord = await pb
+      .collection(Collections.Projects)
+      .getOne<ProjectWithExpand>(projectId, {
+        requestKey: `project-detail-basic-${projectId}`,
+      });
+    
+    // Now try to expand relationships individually to see which ones work
+    try {
+      if (projectRecord.company) {
+        const companyExpanded = await pb
+          .collection(Collections.Projects)
+          .getOne<ProjectWithExpand>(projectId, {
+            expand: 'company',
+            requestKey: `project-company-${projectId}`,
+          });
+        if (companyExpanded.expand?.company) {
+          projectRecord.expand = { ...projectRecord.expand, company: companyExpanded.expand.company };
+        }
+      }
+    } catch (companyError) {
+      console.warn('Company expand failed:', companyError);
+    }
+    
+    try {
+      if (projectRecord.artist) {
+        const artistExpanded = await pb
+          .collection(Collections.Projects)
+          .getOne<ProjectWithExpand>(projectId, {
+            expand: 'artist',
+            requestKey: `project-artist-${projectId}`,
+          });
+        if (artistExpanded.expand?.artist) {
+          projectRecord.expand = { ...projectRecord.expand, artist: artistExpanded.expand.artist };
+        }
+      }
+    } catch (artistError) {
+      console.warn('Artist expand failed:', artistError);
+    }
+    
+    try {
+      const tagsExpanded = await pb
+        .collection(Collections.Projects)
+        .getOne<ProjectWithExpand>(projectId, {
+          expand: 'project_tags_via_project.tag',
+          requestKey: `project-tags-${projectId}`,
+        });
+      if (tagsExpanded.expand?.project_tags_via_project) {
+        projectRecord.expand = { 
+          ...projectRecord.expand, 
+          project_tags_via_project: tagsExpanded.expand.project_tags_via_project 
+        };
+      }
+    } catch (tagsError) {
+      console.warn('Tags expand failed:', tagsError);
+    }
+  }
 
   // Process tags from expanded data
   let tags: Array<{
@@ -116,9 +180,14 @@ export const useProjectDetailQuery = (projectId: string | undefined) => {
     enabled: !!projectId,
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: (failureCount, error) => {
-      // Don't retry on 404 errors (project not found)
+      // Don't retry on 404 errors, but be more specific about what constitutes a real 404
       if (error && typeof error === 'object' && 'status' in error && error.status === 404) {
-        return false;
+        // If the error message suggests it's an expand issue, allow retry
+        const errorMessage = 'message' in error ? String(error.message) : '';
+        if (errorMessage.includes('expand') || errorMessage.includes('relation')) {
+          return failureCount < 2; // Allow some retries for expand failures
+        }
+        return false; // True 404 - project doesn't exist
       }
       return failureCount < 3;
     },
