@@ -256,37 +256,40 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
           // Invalidate React Query cache to ensure fresh data on navigation
           console.log('[NAVIGATION DEBUG] Invalidating React Query cache for project:', projectId);
 
-          // Invalidate cache in background and navigate immediately
-          Promise.all([
-            queryClient.invalidateQueries({
-              queryKey: queryKeys.projects.detail(projectId),
-            }),
-            queryClient.invalidateQueries({
-              queryKey: queryKeys.projects.lists(),
-            }),
-            queryClient.invalidateQueries({
-              queryKey: queryKeys.projects.advanced(user?.id || ''),
-            }),
-          ])
-            .then(() => {
-              console.log('[NAVIGATION DEBUG] Cache invalidation completed');
-            })
-            .catch(error => {
-              console.error('[NAVIGATION DEBUG] Cache invalidation error:', error);
-            });
+          // Wait for cache invalidation to complete before navigation
+          try {
+            await Promise.all([
+              queryClient.invalidateQueries({
+                queryKey: queryKeys.projects.detail(projectId),
+              }),
+              queryClient.invalidateQueries({
+                queryKey: queryKeys.projects.lists(),
+              }),
+              queryClient.invalidateQueries({
+                queryKey: queryKeys.projects.advanced(user?.id || ''),
+              }),
+            ]);
+            console.log('[NAVIGATION DEBUG] Cache invalidation completed successfully');
+          } catch (error) {
+            console.error('[NAVIGATION DEBUG] Cache invalidation error:', error);
+            // Continue with navigation even if cache invalidation fails
+          }
 
-          // Navigate immediately without waiting for cache invalidation
-          console.log('[NAVIGATION DEBUG] Navigating immediately to project:', projectId);
+          // Navigate after cache invalidation completes
+          console.log('[NAVIGATION DEBUG] Navigating to project after cache invalidation:', projectId);
 
           // Manually remove beforeunload listener to prevent navigation confirmation
           removeBeforeUnloadListener();
           console.log('[NAVIGATION DEBUG] Removed beforeunload listener');
 
           const targetUrl = `/projects/${projectId}`;
-          console.log('[NAVIGATION DEBUG] Attempting SPA navigation to:', targetUrl);
+          console.log('[NAVIGATION DEBUG] Attempting navigation to:', targetUrl);
           
-          // Use React Router navigation instead of hard refresh to avoid chunk loading issues
-          unsafeNavigate(targetUrl);
+          // Use hard navigation in development to avoid HMR conflicts, SPA navigation in production
+          unsafeNavigate(targetUrl, { 
+            replace: true, 
+            forceHardNavInDev: true // This will force window.location.href in development
+          });
         } else {
           console.log(
             '[NAVIGATION DEBUG] Success condition NOT met. Has error:',

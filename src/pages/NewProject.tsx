@@ -171,16 +171,19 @@ const NewProject = () => {
       console.log('[NewProject] unsafeNavigate function:', unsafeNavigate);
       console.log('[NewProject] directNavigate function:', directNavigate);
       
-      // Try enhanced navigation first
+      // Use hard navigation in development to avoid HMR conflicts, SPA navigation in production
       try {
-        unsafeNavigate(`/projects/${newProject.id}`);
+        unsafeNavigate(`/projects/${newProject.id}`, { 
+          replace: true,
+          forceHardNavInDev: true // This will force window.location.href in development
+        });
         console.log('[NewProject] Enhanced navigation call completed');
       } catch (enhancedError) {
         console.error('[NewProject] Enhanced navigation failed:', enhancedError);
         
-        // Fallback to direct React Router navigation
+        // Fallback to direct React Router navigation with replace
         console.log('[NewProject] Falling back to direct navigation');
-        directNavigate(`/projects/${newProject.id}`);
+        directNavigate(`/projects/${newProject.id}`, { replace: true });
         console.log('[NewProject] Direct navigation call completed');
       }
     } catch (error) {
