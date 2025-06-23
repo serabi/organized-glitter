@@ -321,7 +321,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
         setSubmitting(false);
       }
     },
-    [toast, projectId, queryClient, user?.id, removeBeforeUnloadListener]
+    [toast, projectId, queryClient, user?.id, removeBeforeUnloadListener, unsafeNavigate]
   );
 
   const handleCancel = useCallback(async () => {

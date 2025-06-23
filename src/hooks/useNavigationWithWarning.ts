@@ -237,7 +237,7 @@ export const useNavigationWithWarning = ({
 
   // Check if we're in development mode (Vite HMR can interfere with navigation)
   const isDevelopment = useMemo(() => {
-    return import.meta.env.DEV || process.env.NODE_ENV === 'development';
+    return import.meta.env.DEV;
   }, []);
 
   // Smart navigation that avoids full page reload when possible
