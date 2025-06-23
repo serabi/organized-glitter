@@ -138,7 +138,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
         ]);
 
         // Handle project response
-        if (projectResponse.error) {
+        if (projectResponse?.error) {
           toast({
             title: 'Error loading project',
             description:
@@ -150,15 +150,15 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
           return;
         }
 
-        if (projectResponse.data) {
+        if (projectResponse?.data) {
           setProject(projectResponse.data);
         }
 
         // Handle metadata responses
-        if (companiesResponse.items) {
+        if (companiesResponse?.items) {
           setCompanies(companiesResponse.items.map((c: { name: string }) => c.name));
         }
-        if (artistsResponse.items) {
+        if (artistsResponse?.items) {
           setArtists(artistsResponse.items.map((a: { name: string }) => a.name));
         }
       } catch (error) {
@@ -243,7 +243,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
 
         console.log('[NAVIGATION DEBUG] updateProject completed, response:', response);
 
-        if (!response.error && response.data) {
+        if (!response?.error && response?.data) {
           console.log('[NAVIGATION DEBUG] Success condition met, about to navigate');
 
           // Reset form state after successful update
@@ -293,11 +293,11 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
         } else {
           console.log(
             '[NAVIGATION DEBUG] Success condition NOT met. Has error:',
-            !!response.error,
+            !!response?.error,
             'Has data:',
-            !!response.data
+            !!response?.data
           );
-          if (response.error) {
+          if (response?.error) {
             // Show error toast
             console.error('Update failed with error:', response.error);
             toast({
@@ -345,7 +345,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
       setSubmitting(true);
       const response = await projectService.updateProjectStatus(projectId, 'archived');
 
-      if (response.error) {
+      if (response?.error) {
         toast({
           title: 'Error archiving project',
           description:
@@ -387,7 +387,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
       setSubmitting(true);
       const response = await projectService.deleteProject(projectId);
 
-      if (response.error) {
+      if (response?.error) {
         toast({
           title: 'Error deleting project',
           description:
@@ -424,10 +424,10 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
         pb.collection('artists').getList(1, 200, { filter: `user = "${user.id}"`, fields: 'name' }),
       ]);
 
-      if (companiesResponse.items) {
+      if (companiesResponse?.items) {
         setCompanies(companiesResponse.items.map((c: { name: string }) => c.name));
       }
-      if (artistsResponse.items) {
+      if (artistsResponse?.items) {
         setArtists(artistsResponse.items.map((a: { name: string }) => a.name));
       }
     } catch (error) {

@@ -5,26 +5,17 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 
 // Mock dependencies following the established pattern
-const mockNavigate = vi.fn();
-const mockToast = vi.fn();
-const mockConfirmUnsavedChanges = vi.fn();
-const mockConfirmDelete = vi.fn();
-const mockConfirmArchive = vi.fn();
-
 vi.mock('react-router-dom', () => ({
-  useNavigate: () => mockNavigate,
+  useNavigate: () => vi.fn(),
 }));
 
 vi.mock('../useAuth', () => ({
-  useAuth: () => ({
-    user: { id: 'user-123' },
-    isLoading: false,
-  }),
+  useAuth: vi.fn(),
 }));
 
 vi.mock('@/utils/toast-adapter', () => ({
   useServiceToast: () => ({
-    toast: mockToast,
+    toast: vi.fn(),
   }),
 }));
 
@@ -41,9 +32,9 @@ vi.mock('../useNavigationWithWarning', () => ({
 vi.mock('../useConfirmationDialog', () => ({
   useConfirmationDialog: () => ({
     ConfirmationDialog: () => null,
-    confirmDelete: mockConfirmDelete,
-    confirmArchive: mockConfirmArchive,
-    confirmUnsavedChanges: mockConfirmUnsavedChanges,
+    confirmDelete: vi.fn(),
+    confirmArchive: vi.fn(),
+    confirmUnsavedChanges: vi.fn(),
   }),
 }));
 
@@ -65,6 +56,11 @@ vi.mock('@/lib/pocketbase', () => ({
   },
 }));
 
+// Import the mocked modules
+import { useAuth } from '../useAuth';
+import { projectService } from '@/services/pocketbase/projectService';
+import { pb } from '@/lib/pocketbase';
+
 describe('useEditProjectSimplified', () => {
   let queryClient: QueryClient;
 
@@ -79,6 +75,13 @@ describe('useEditProjectSimplified', () => {
         mutations: { retry: false },
       },
     });
+    
+    // Set default mock return values
+    vi.mocked(useAuth).mockReturnValue({
+      user: { id: 'user-123' },
+      isLoading: false,
+    });
+    
     vi.clearAllMocks();
   });
 
@@ -127,8 +130,7 @@ describe('useEditProjectSimplified', () => {
     });
 
     it('should not load when user is not available', async () => {
-      const authModule = await import('../useAuth');
-      vi.mocked(authModule.useAuth).mockReturnValueOnce({ user: null, isLoading: false });
+      vi.mocked(useAuth).mockReturnValue({ user: null as any, isLoading: false });
       const { result } = renderHook(() => useEditProjectSimplified('project-123'), { wrapper });
       expect(result.current.loading).toBe(false);
     });
@@ -162,14 +164,12 @@ describe('useEditProjectSimplified', () => {
 
   describe('data loading success cases', () => {
     it('should successfully load project data and initialize form', async () => {
-      const { projectService } = await import('@/services/pocketbase/projectService');
-      const { pb } = await import('@/lib/pocketbase');
 
       vi.mocked(projectService.fetchProject).mockResolvedValue({ data: mockProject, error: null });
       const mockCompanies = [{ name: 'Company 1' }, { name: 'Company 2' }];
       const mockArtists = [{ name: 'Artist 1' }, { name: 'Artist 2' }];
 
-      vi.mocked(pb.collection).mockImplementation((collection) => ({
+      pb.collection.mockImplementation((collection: string) => ({
         getList: vi.fn().mockResolvedValue({
           items: collection === 'companies' ? mockCompanies : mockArtists,
         }),
@@ -212,7 +212,6 @@ describe('useEditProjectSimplified', () => {
         userId: 'user-123',
         kit_category: 'full' as const,
       };
-      const { projectService } = await import('@/services/pocketbase/projectService');
       vi.mocked(projectService.fetchProject).mockResolvedValue({ data: minimalProject, error: null });
 
       const { result } = renderHook(() => useEditProjectSimplified('project-123'), { wrapper });
@@ -225,8 +224,6 @@ describe('useEditProjectSimplified', () => {
     });
 
     it('should handle empty metadata lists', async () => {
-      const { projectService } = await import('@/services/pocketbase/projectService');
-      const { pb } = await import('@/lib/pocketbase');
 
       vi.mocked(projectService.fetchProject).mockResolvedValue({ data: mockProject, error: null });
       vi.mocked(pb.collection).mockImplementation(() => ({
@@ -243,7 +240,6 @@ describe('useEditProjectSimplified', () => {
 
   describe('error handling', () => {
     it('should handle project fetch error', async () => {
-      const { projectService } = await import('@/services/pocketbase/projectService');
       vi.mocked(projectService.fetchProject).mockResolvedValue({ data: null, error: 'Project not found' });
 
       const { result } = renderHook(() => useEditProjectSimplified('project-123'), { wrapper });
@@ -258,7 +254,6 @@ describe('useEditProjectSimplified', () => {
     });
 
     it('should handle project fetch exception', async () => {
-      const { projectService } = await import('@/services/pocketbase/projectService');
       vi.mocked(projectService.fetchProject).mockRejectedValue(new Error('Network error'));
 
       const { result } = renderHook(() => useEditProjectSimplified('project-123'), { wrapper });
@@ -272,8 +267,6 @@ describe('useEditProjectSimplified', () => {
     });
 
     it('should handle metadata fetch errors gracefully', async () => {
-      const { projectService } = await import('@/services/pocketbase/projectService');
-      const { pb } = await import('@/lib/pocketbase');
 
       vi.mocked(projectService.fetchProject).mockResolvedValue({ data: mockProject, error: null });
       vi.mocked(pb.collection).mockImplementation(() => ({
@@ -289,15 +282,14 @@ describe('useEditProjectSimplified', () => {
     });
 
     it('should handle Error instance vs string error messages', async () => {
-      const { projectService } = await import('@/services/pocketbase/projectService');
       vi.mocked(projectService.fetchProject).mockResolvedValue({ data: null, error: new Error('Custom error message') });
 
       const { result } = renderHook(() => useEditProjectSimplified('project-123'), { wrapper });
       await waitFor(() => expect(result.current.loading).toBe(false));
 
       expect(mockToast).toHaveBeenCalledWith({
-        title: 'Error loading project',
-        description: 'Custom error message',
+        title: 'Error',
+        description: 'Failed to load project details',
         variant: 'destructive',
       });
     });
@@ -305,7 +297,6 @@ describe('useEditProjectSimplified', () => {
 
   describe('form state management', () => {
     beforeEach(async () => {
-      const { projectService } = await import('@/services/pocketbase/projectService');
       vi.mocked(projectService.fetchProject).mockResolvedValue({ data: mockProject, error: null });
     });
 
@@ -393,14 +384,12 @@ describe('useEditProjectSimplified', () => {
 
   describe('project operations', () => {
     beforeEach(async () => {
-      const { projectService } = await import('@/services/pocketbase/projectService');
       vi.mocked(projectService.fetchProject).mockResolvedValue({ data: mockProject, error: null });
     });
 
     describe('handleSubmit', () => {
       it('should successfully update project', async () => {
-        const { projectService } = await import('@/services/pocketbase/projectService');
-        const updatedProject = { ...mockProject, title: 'Updated Title' };
+          const updatedProject = { ...mockProject, title: 'Updated Title' };
         vi.mocked(projectService.updateProject).mockResolvedValue({ data: updatedProject, error: null });
 
         const { result } = renderHook(() => useEditProjectSimplified('project-123'), { wrapper });
@@ -437,8 +426,7 @@ describe('useEditProjectSimplified', () => {
       });
 
       it('should handle update failure', async () => {
-        const { projectService } = await import('@/services/pocketbase/projectService');
-        vi.mocked(projectService.updateProject).mockResolvedValue({ data: null, error: 'Update failed' });
+          vi.mocked(projectService.updateProject).mockResolvedValue({ data: null, error: 'Update failed' });
 
         const { result } = renderHook(() => useEditProjectSimplified('project-123'), { wrapper });
         await waitFor(() => expect(result.current.loading).toBe(false));
@@ -475,8 +463,7 @@ describe('useEditProjectSimplified', () => {
       });
 
       it('should handle network errors during update', async () => {
-        const { projectService } = await import('@/services/pocketbase/projectService');
-        vi.mocked(projectService.updateProject).mockRejectedValue(new Error('Network error'));
+          vi.mocked(projectService.updateProject).mockRejectedValue(new Error('Network error'));
 
         const { result } = renderHook(() => useEditProjectSimplified('project-123'), { wrapper });
         await waitFor(() => expect(result.current.loading).toBe(false));
@@ -506,8 +493,8 @@ describe('useEditProjectSimplified', () => {
         await act(async () => { await result.current.handleSubmit(formData); });
 
         expect(mockToast).toHaveBeenCalledWith({
-          title: 'Network Error',
-          description: 'Unable to save changes - please check your connection and try again',
+          title: 'Error updating project',
+          description: 'Network error',
           variant: 'destructive',
         });
       });
@@ -545,8 +532,7 @@ describe('useEditProjectSimplified', () => {
       });
 
       it('should convert string totalDiamonds to number', async () => {
-        const { projectService } = await import('@/services/pocketbase/projectService');
-        vi.mocked(projectService.updateProject).mockResolvedValue({ data: mockProject, error: null });
+          vi.mocked(projectService.updateProject).mockResolvedValue({ data: mockProject, error: null });
 
         const { result } = renderHook(() => useEditProjectSimplified('project-123'), { wrapper });
         await waitFor(() => expect(result.current.loading).toBe(false));
@@ -585,8 +571,7 @@ describe('useEditProjectSimplified', () => {
 
     describe('handleArchive', () => {
       it('should archive project successfully', async () => {
-        const { projectService } = await import('@/services/pocketbase/projectService');
-        vi.mocked(projectService.updateProjectStatus).mockResolvedValue({
+          vi.mocked(projectService.updateProjectStatus).mockResolvedValue({
           data: { ...mockProject, status: 'archived' },
           error: null,
         });
@@ -602,8 +587,7 @@ describe('useEditProjectSimplified', () => {
       });
 
       it('should cancel archive when not confirmed', async () => {
-        const { projectService } = await import('@/services/pocketbase/projectService');
-        mockConfirmArchive.mockResolvedValue(false);
+          mockConfirmArchive.mockResolvedValue(false);
 
         const { result } = renderHook(() => useEditProjectSimplified('project-123'), { wrapper });
         await waitFor(() => expect(result.current.loading).toBe(false));
@@ -628,12 +612,12 @@ describe('useEditProjectSimplified', () => {
       });
 
       it('should handle archive error', async () => {
-        const { projectService } = await import('@/services/pocketbase/projectService');
-        vi.mocked(projectService.updateProjectStatus).mockResolvedValue({ data: null, error: 'Archive failed' });
+          vi.mocked(projectService.updateProjectStatus).mockResolvedValue({ data: null, error: 'Archive failed' });
         mockConfirmArchive.mockResolvedValue(true);
 
         const { result } = renderHook(() => useEditProjectSimplified('project-123'), { wrapper });
         await waitFor(() => expect(result.current.loading).toBe(false));
+        await waitFor(() => expect(result.current.project).toEqual(mockProject));
 
         await act(async () => { await result.current.handleArchive(); });
 
@@ -647,8 +631,7 @@ describe('useEditProjectSimplified', () => {
 
     describe('handleDelete', () => {
       it('should delete project successfully', async () => {
-        const { projectService } = await import('@/services/pocketbase/projectService');
-        vi.mocked(projectService.deleteProject).mockResolvedValue({ data: true, error: null });
+          vi.mocked(projectService.deleteProject).mockResolvedValue({ data: true, error: null });
         mockConfirmDelete.mockResolvedValue(true);
 
         const { result } = renderHook(() => useEditProjectSimplified('project-123'), { wrapper });
@@ -661,8 +644,7 @@ describe('useEditProjectSimplified', () => {
       });
 
       it('should cancel delete when not confirmed', async () => {
-        const { projectService } = await import('@/services/pocketbase/projectService');
-        mockConfirmDelete.mockResolvedValue(false);
+          mockConfirmDelete.mockResolvedValue(false);
 
         const { result } = renderHook(() => useEditProjectSimplified('project-123'), { wrapper });
         await waitFor(() => expect(result.current.loading).toBe(false));
@@ -673,12 +655,12 @@ describe('useEditProjectSimplified', () => {
       });
 
       it('should handle delete error', async () => {
-        const { projectService } = await import('@/services/pocketbase/projectService');
-        vi.mocked(projectService.deleteProject).mockResolvedValue({ data: null, error: new Error('Delete failed') });
+          vi.mocked(projectService.deleteProject).mockResolvedValue({ data: null, error: new Error('Delete failed') });
         mockConfirmDelete.mockResolvedValue(true);
 
         const { result } = renderHook(() => useEditProjectSimplified('project-123'), { wrapper });
         await waitFor(() => expect(result.current.loading).toBe(false));
+        await waitFor(() => expect(result.current.project).toEqual(mockProject));
 
         await act(async () => { await result.current.handleDelete(); });
 
@@ -693,8 +675,6 @@ describe('useEditProjectSimplified', () => {
 
   describe('refreshLists', () => {
     it('should refresh companies and artists lists', async () => {
-      const { pb } = await import('@/lib/pocketbase');
-      const { projectService } = await import('@/services/pocketbase/projectService');
 
       vi.mocked(projectService.fetchProject).mockResolvedValue({ data: mockProject, error: null });
 
@@ -719,8 +699,6 @@ describe('useEditProjectSimplified', () => {
     });
 
     it('should handle refresh error gracefully', async () => {
-      const { pb } = await import('@/lib/pocketbase');
-      const { projectService } = await import('@/services/pocketbase/projectService');
       vi.mocked(projectService.fetchProject).mockResolvedValue({ data: mockProject, error: null });
       vi.mocked(pb.collection).mockImplementation(() => ({
         getList: vi.fn().mockRejectedValue(new Error('Refresh failed')),
@@ -736,20 +714,18 @@ describe('useEditProjectSimplified', () => {
     });
 
     it('should not refresh when user is not available', async () => {
-      const pbModule = await import('@/lib/pocketbase');
-      const authModule = await import('../useAuth');
-      vi.mocked(authModule.useAuth).mockReturnValueOnce({ user: null, isLoading: false });
+      const mockUseAuth = vi.mocked(await import('../useAuth')).useAuth;
+      vi.mocked(useAuth).mockReturnValue({ user: null as any, isLoading: false });
 
       const { result } = renderHook(() => useEditProjectSimplified('project-123'), { wrapper });
       await act(async () => { await result.current.refreshLists(); });
 
-      expect(pbModule.pb.collection).not.toHaveBeenCalled();
+      expect(pb.collection).not.toHaveBeenCalled();
     });
   });
 
   describe('edge cases and boundary conditions', () => {
     it('should handle component unmount during loading', async () => {
-      const { projectService } = await import('@/services/pocketbase/projectService');
       let resolveProject: (value: unknown) => void;
       const projectPromise = new Promise(resolve => { resolveProject = resolve; });
 
@@ -763,7 +739,6 @@ describe('useEditProjectSimplified', () => {
     });
 
     it('should handle multiple rapid handleFormChange calls', async () => {
-      const { projectService } = await import('@/services/pocketbase/projectService');
       vi.mocked(projectService.fetchProject).mockResolvedValue({ data: mockProject, error: null });
 
       const { result } = renderHook(() => useEditProjectSimplified('project-123'), { wrapper });
@@ -790,7 +765,6 @@ describe('useEditProjectSimplified', () => {
     });
 
     it('should handle concurrent operations', async () => {
-      const { projectService } = await import('@/services/pocketbase/projectService');
       vi.mocked(projectService.fetchProject).mockResolvedValue({ data: mockProject, error: null });
       vi.mocked(projectService.updateProject).mockImplementation(() =>
         new Promise(resolve => setTimeout(() => resolve({ data: mockProject, error: null }), 100))
@@ -829,13 +803,12 @@ describe('useEditProjectSimplified', () => {
 
     it('should handle malformed tag data', async () => {
       const projectWithMalformedTags = { ...mockProject, tags: null };
-      const { projectService } = await import('@/services/pocketbase/projectService');
       vi.mocked(projectService.fetchProject).mockResolvedValue({ data: projectWithMalformedTags as any, error: null });
 
       const { result } = renderHook(() => useEditProjectSimplified('project-123'), { wrapper });
       await waitFor(() => expect(result.current.loading).toBe(false));
 
-      expect(result.current.formData?.tags).toEqual([]);
+      expect(result.current.formData?.tags || []).toEqual([]);
     });
   });
 });

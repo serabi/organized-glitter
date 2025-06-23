@@ -6,6 +6,7 @@ import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', () => ({
   useNavigate: () => mockNavigate,
+  useLocation: () => ({ pathname: '/test', search: '', hash: '', state: null, key: 'default' }),
 }));
 
 // Mock window.confirm
@@ -26,11 +27,40 @@ Object.defineProperty(window, 'removeEventListener', {
   value: mockRemoveEventListener,
 });
 
+// Mock window.location
+Object.defineProperty(window, 'location', {
+  writable: true,
+  configurable: true,
+  value: {
+    pathname: '/test',
+    search: '',
+    hash: '',
+    href: 'http://localhost:3000/test',
+    hostname: 'localhost',
+    port: '3000',
+    protocol: 'http:',
+  },
+});
+
 describe('useNavigationWithWarning', () => {
   const mockConfirmUnsavedChanges = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset window.location mock before each test
+    Object.defineProperty(window, 'location', {
+      writable: true,
+      configurable: true,
+      value: {
+        pathname: '/test',
+        search: '',
+        hash: '',
+        href: 'http://localhost:3000/test',
+        hostname: 'localhost',
+        port: '3000',
+        protocol: 'http:',
+      },
+    });
   });
 
   afterEach(() => {
@@ -796,3 +826,4 @@ describe('edge cases and boundary conditions', () => {
       expect(mockNavigate).toHaveBeenCalledWith('/unsafe-path', undefined);
     });
   });
+});

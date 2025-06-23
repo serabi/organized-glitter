@@ -32,19 +32,155 @@ export const useNavigationWithWarning = ({
     error: null,
   });
   
-  // Track navigation target and timeout
+  // Check if we're in development mode (Vite HMR can interfere with navigation)
+  const isDevelopment = useMemo(() => {
+    return import.meta.env.DEV;
+  }, []);
+  
+  // Track navigation target and timeouts
   const navigationTarget = useRef<string | null>(null);
   const navigationTimeout = useRef<NodeJS.Timeout | null>(null);
+  const verificationTimeouts = useRef<NodeJS.Timeout[]>([]);
+
+  // Helper functions for navigation matching
+  const isValidProjectRouteTransition = useCallback((target: string, current: string): boolean => {
+    if (!target || !current) return false;
+    const isProjectRoute = target.startsWith('/projects/') && current.startsWith('/projects/');
+    if (!isProjectRoute) return false;
+    
+    const targetParts = target.split('/');
+    const currentParts = current.split('/');
+    
+    // Check if it's a valid project route transition (same project ID)
+    return targetParts[2] === currentParts[2] && current === target;
+  }, []);
+
+  const isValidDynamicRouteMatch = useCallback((target: string, current: string): boolean => {
+    // Pattern match for other dynamic routes (but not projects to avoid conflicts)
+    if (!target || !current) return false;
+    if (target.startsWith('/projects/') || current.startsWith('/projects/')) {
+      return false;
+    }
+    
+    // Only match if current contains the parent path of target
+    const targetParentPath = target.split('/').slice(0, -1).join('/');
+    return targetParentPath.length > 0 && current.includes(targetParentPath);
+  }, []);
+
+  const checkNavigationMatch = useCallback((target: string, current: string): boolean => {
+    // Exact match is always valid
+    const exactMatch = current === target;
+    if (exactMatch) return true;
+    
+    // Check for valid project route transitions
+    const projectMatch = isValidProjectRouteTransition(target, current);
+    if (projectMatch) return true;
+    
+    // Check for valid dynamic route matches
+    const dynamicMatch = isValidDynamicRouteMatch(target, current);
+    return dynamicMatch;
+  }, [isValidProjectRouteTransition, isValidDynamicRouteMatch]);
+
+  // Cleanup function to clear all pending timeouts
+  const clearAllNavigationTimeouts = useCallback(() => {
+    if (navigationTimeout.current) {
+      clearTimeout(navigationTimeout.current);
+      navigationTimeout.current = null;
+    }
+    verificationTimeouts.current.forEach(timeout => clearTimeout(timeout));
+    verificationTimeouts.current = [];
+  }, []);
+
+  // Reset navigation state and cleanup
+  const resetNavigationState = useCallback(() => {
+    if (isMounted.current) {
+      setNavigationState({ isNavigating: false, error: null });
+    }
+    navigationTarget.current = null;
+    clearAllNavigationTimeouts();
+  }, [clearAllNavigationTimeouts]);
+
+  // Consolidated navigation verification with sequential checks
+  const startNavigationVerification = useCallback((targetPath: string) => {
+    // Clear any existing verification timeouts
+    verificationTimeouts.current.forEach(timeout => clearTimeout(timeout));
+    verificationTimeouts.current = [];
+
+    // First check: Basic navigation completion (100ms)
+    const firstCheck = setTimeout(() => {
+      if (!isMounted.current || navigationTarget.current !== targetPath) return;
+
+      if (isDevelopment) {
+        console.log('[Navigation] Post-navigation check - Current location:', window.location.pathname);
+        console.log('[Navigation] Post-navigation check - Target was:', targetPath);
+        console.log('[Navigation] Post-navigation check - Match?', window.location.pathname === targetPath);
+      }
+      
+      // If location hasn't changed after 100ms, navigation might have failed silently
+      if (window.location.pathname !== targetPath) {
+        if (isDevelopment) {
+          console.warn('[Navigation] ⚠️ React Router navigation may have failed - location unchanged after 100ms');
+          console.log('[Navigation] Attempting fallback navigation with window.location...');
+        }
+        
+        // Fallback to window.location
+        try {
+          window.location.href = targetPath;
+        } catch (fallbackError) {
+          console.error('[Navigation] Fallback navigation also failed:', fallbackError);
+          if (isMounted.current) {
+            setNavigationState({
+              isNavigating: false,
+              error: 'Navigation failed - please try again or refresh the page',
+            });
+          }
+        }
+      }
+    }, 100);
+
+    // Second check: Render verification (500ms)
+    const secondCheck = setTimeout(() => {
+      if (!isMounted.current || navigationTarget.current !== targetPath) return;
+
+      if (isDevelopment) {
+        console.log('[Navigation] Render verification check - Current location:', window.location.pathname);
+        console.log('[Navigation] Render verification check - Target was:', targetPath);
+      }
+      
+      if (window.location.pathname === targetPath && navigationTarget.current === targetPath) {
+        if (isDevelopment) {
+          console.log('[Navigation] ✅ Navigation and render verification passed');
+        }
+        // Double-check that navigation state was properly reset
+        if (isMounted.current && navigationTarget.current === targetPath) {
+          if (isDevelopment) {
+            console.log('[Navigation] Force-clearing navigation state after render verification');
+          }
+          resetNavigationState();
+        }
+      } else if (window.location.pathname !== targetPath) {
+        if (isDevelopment) {
+          console.warn('[Navigation] ⚠️ Render verification failed - attempting hard navigation fallback');
+        }
+        try {
+          window.location.href = targetPath;
+        } catch (fallbackError) {
+          console.error('[Navigation] Hard navigation fallback failed:', fallbackError);
+        }
+      }
+    }, 500);
+
+    // Store timeouts for cleanup
+    verificationTimeouts.current = [firstCheck, secondCheck];
+  }, [isDevelopment, resetNavigationState]);
 
   useEffect(() => {
     return () => {
       isMounted.current = false;
-      // Clear navigation timeout on unmount
-      if (navigationTimeout.current) {
-        clearTimeout(navigationTimeout.current);
-      }
+      // Clear all navigation timeouts on unmount
+      clearAllNavigationTimeouts();
     };
-  }, []);
+  }, [clearAllNavigationTimeouts]);
 
   // Listen for location changes to reset navigation state
   useEffect(() => {
@@ -52,63 +188,51 @@ export const useNavigationWithWarning = ({
     const actualLocation = window.location.pathname;
     const reactRouterLocation = location.pathname;
     
-    console.log('[Navigation] Location change detected');
-    console.log('[Navigation] React Router location:', reactRouterLocation);
-    console.log('[Navigation] Actual browser location:', actualLocation);
-    console.log('[Navigation] Locations match:', reactRouterLocation === actualLocation);
-    console.log('[Navigation] Current navigation target:', navigationTarget.current);
-    console.log('[Navigation] Navigation state:', navigationState);
-    console.log('[Navigation] Current timeout:', navigationTimeout.current ? 'Active' : 'None');
+    if (isDevelopment) {
+      console.log('[Navigation] Location change detected');
+      console.log('[Navigation] React Router location:', reactRouterLocation);
+      console.log('[Navigation] Actual browser location:', actualLocation);
+      console.log('[Navigation] Locations match:', reactRouterLocation === actualLocation);
+      console.log('[Navigation] Current navigation target:', navigationTarget.current);
+      console.log('[Navigation] Navigation state:', navigationState);
+      console.log('[Navigation] Current timeout:', navigationTimeout.current ? 'Active' : 'None');
+    }
     
     if (navigationTarget.current) {
       // Use actual browser location for navigation completion detection
       // This fixes the issue where React Router location.pathname can be stale
-      const exactMatch = actualLocation === navigationTarget.current;
+      const targetMatches = checkNavigationMatch(navigationTarget.current, actualLocation);
       
-      // Special handling for project routes - match when going from /projects/id/edit to /projects/id
-      const isProjectRoute = navigationTarget.current.startsWith('/projects/') && actualLocation.startsWith('/projects/');
-      const projectIdMatch = isProjectRoute && 
-        navigationTarget.current.split('/')[2] === actualLocation.split('/')[2] &&
-        actualLocation === navigationTarget.current; // Ensure we're at the exact target, not just same project
-      
-      // Pattern match for other dynamic routes (but not projects to avoid the previous bug)
-      const patternMatch = !isProjectRoute && actualLocation.includes(navigationTarget.current.split('/').slice(0, -1).join('/'));
-      
-      console.log('[Navigation] Route matching analysis:', { 
-        exactMatch, 
-        projectIdMatch, 
-        patternMatch, 
-        isProjectRoute,
-        target: navigationTarget.current, 
-        current: actualLocation,
-        reactRouterCurrent: reactRouterLocation,
-        targetParts: navigationTarget.current.split('/'),
-        currentParts: actualLocation.split('/'),
-        willMatch: exactMatch || projectIdMatch || patternMatch
-      });
-      
-      const targetMatches = exactMatch || projectIdMatch || patternMatch;
+      if (isDevelopment) {
+        console.log('[Navigation] Route matching analysis:', { 
+          target: navigationTarget.current, 
+          current: actualLocation,
+          reactRouterCurrent: reactRouterLocation,
+          targetParts: navigationTarget.current.split('/'),
+          currentParts: actualLocation.split('/'),
+          matches: targetMatches
+        });
+      }
       
       if (targetMatches) {
-        console.log('[Navigation] ✅ Target matches! Resetting navigation state');
-        console.log('[Navigation] Clearing timeout and resetting state');
+        if (isDevelopment) {
+          console.log('[Navigation] ✅ Target matches! Resetting navigation state');
+          console.log('[Navigation] Clearing timeout and resetting state');
+        }
         // Navigation completed successfully
-        if (isMounted.current) {
-          setNavigationState({ isNavigating: false, error: null });
-        }
-        navigationTarget.current = null;
-        if (navigationTimeout.current) {
-          clearTimeout(navigationTimeout.current);
-          navigationTimeout.current = null;
-        }
+        resetNavigationState();
       } else {
-        console.log('[Navigation] ❌ No target match, keeping navigation state');
-        console.log('[Navigation] Will timeout in:', navigationTimeout.current ? 'some time' : 'no timeout set');
+        if (isDevelopment) {
+          console.log('[Navigation] ❌ No target match, keeping navigation state');
+          console.log('[Navigation] Will timeout in:', navigationTimeout.current ? 'some time' : 'no timeout set');
+        }
       }
     } else {
-      console.log('[Navigation] No navigation target set, ignoring location change');
+      if (isDevelopment) {
+        console.log('[Navigation] No navigation target set, ignoring location change');
+      }
     }
-  }, [location.pathname, navigationState]);
+  }, [location.pathname, navigationState, isDevelopment, checkNavigationMatch, resetNavigationState]);
 
   // Helper function to start navigation timeout
   const startNavigationTimeout = useCallback((targetPath: string) => {
@@ -119,21 +243,29 @@ export const useNavigationWithWarning = ({
       clearTimeout(navigationTimeout.current);
     }
     
-    console.log('[Navigation] Setting timeout for navigation to:', targetPath);
+    if (isDevelopment) {
+      console.log('[Navigation] Setting timeout for navigation to:', targetPath);
+    }
     
     // Set timeout to reset navigation state if it takes too long (fallback)
     navigationTimeout.current = setTimeout(() => {
-      console.log('[Navigation] Navigation timeout reached for:', targetPath);
-      console.log('[Navigation] Current location:', window.location.pathname);
+      if (isDevelopment) {
+        console.log('[Navigation] Navigation timeout reached for:', targetPath);
+        console.log('[Navigation] Current location:', window.location.pathname);
+      }
       
       if (isMounted.current) {
         // Check one more time if we actually reached the target
         const actuallyAtTarget = window.location.pathname === targetPath;
         if (actuallyAtTarget) {
-          console.log('[Navigation] Actually at target, resetting navigation state (timeout fallback)');
+          if (isDevelopment) {
+            console.log('[Navigation] Actually at target, resetting navigation state (timeout fallback)');
+          }
           setNavigationState({ isNavigating: false, error: null });
         } else {
-          console.log('[Navigation] Navigation timeout - still not at target, setting error state');
+          if (isDevelopment) {
+            console.log('[Navigation] Navigation timeout - still not at target, setting error state');
+          }
           setNavigationState({ 
             isNavigating: false, 
             error: `Navigation to ${targetPath} timed out. Current location: ${window.location.pathname}` 
@@ -143,7 +275,7 @@ export const useNavigationWithWarning = ({
       navigationTarget.current = null;
       navigationTimeout.current = null;
     }, 5000); // 5 second timeout
-  }, []);
+  }, [isDevelopment, resetNavigationState]);
   // Safe navigation function that checks for unsaved changes
   const navigateWithWarning = useCallback(
     async (to: string, options?: { replace?: boolean }) => {
@@ -212,7 +344,8 @@ export const useNavigationWithWarning = ({
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (isDirty) {
         e.preventDefault();
-        e.returnValue = message;
+        // Modern browsers ignore the returnValue, but setting it is still required for compatibility
+        e.returnValue = '';
         return message;
       }
     };
@@ -235,11 +368,6 @@ export const useNavigationWithWarning = ({
     }
   }, []);
 
-  // Check if we're in development mode (Vite HMR can interfere with navigation)
-  const isDevelopment = useMemo(() => {
-    return import.meta.env.DEV;
-  }, []);
-
   // Smart navigation that avoids full page reload when possible
   const smartNavigate = useCallback(
     (to: string, options?: { replace?: boolean; forceReload?: boolean; forceHardNavInDev?: boolean }) => {
@@ -254,19 +382,23 @@ export const useNavigationWithWarning = ({
         const shouldUseHardNav = forceReload || (isDevelopment && forceHardNavInDev);
 
         if (shouldUseHardNav) {
-          console.log('[Navigation] Using hard navigation due to:', {
-            forceReload,
-            forceHardNavInDev,
-            isDevelopment,
-            reason: forceReload ? 'forceReload requested' : 'HMR interference prevention'
-          });
+          if (isDevelopment) {
+            console.log('[Navigation] Using hard navigation due to:', {
+              forceReload,
+              forceHardNavInDev,
+              isDevelopment,
+              reason: forceReload ? 'forceReload requested' : 'HMR interference prevention'
+            });
+          }
           
           // For hard navigation, don't track with timeout since we're doing a hard refresh
           setTimeout(() => {
             window.location.href = to;
           }, 100); // Small delay to let React Router attempt first
         } else {
-          console.log('[Navigation] Using SPA navigation in production mode');
+          if (isDevelopment) {
+            console.log('[Navigation] Using SPA navigation in production mode');
+          }
           // Track navigation for SPA navigation
           startNavigationTimeout(to);
           // Always try React Router first with only standard options
@@ -275,11 +407,8 @@ export const useNavigationWithWarning = ({
         }
       } catch (error) {
         // Clear navigation tracking on immediate error
+        clearAllNavigationTimeouts();
         navigationTarget.current = null;
-        if (navigationTimeout.current) {
-          clearTimeout(navigationTimeout.current);
-          navigationTimeout.current = null;
-        }
         if (isMounted.current) {
           setNavigationState({
             isNavigating: false,
@@ -291,7 +420,7 @@ export const useNavigationWithWarning = ({
         window.location.href = to;
       }
     },
-    [navigate, startNavigationTimeout, isDevelopment]
+    [navigate, startNavigationTimeout, isDevelopment, clearAllNavigationTimeouts]
   );
 
   // Force navigation bypasses unsaved changes warning
@@ -318,17 +447,21 @@ export const useNavigationWithWarning = ({
     navigateWithWarning,
     navigate: navigateWithWarning, // Alias for convenience
     unsafeNavigate: (to: string, options?: { replace?: boolean; forceHardNavInDev?: boolean }) => {
-      console.log('[Navigation] unsafeNavigate called with:', to, options);
-      console.log('[Navigation] navigate function:', navigate);
-      console.log('[Navigation] Current location:', location.pathname);
-      console.log('[Navigation] Development mode:', isDevelopment);
+      if (isDevelopment) {
+        console.log('[Navigation] unsafeNavigate called with:', to, options);
+        console.log('[Navigation] navigate function:', navigate);
+        console.log('[Navigation] Current location:', location.pathname);
+        console.log('[Navigation] Development mode:', isDevelopment);
+      }
       
       // In development mode, force hard navigation for critical project flows to avoid HMR conflicts
       const shouldForceHardNav = isDevelopment && (options?.forceHardNavInDev ?? false);
       
       if (shouldForceHardNav) {
-        console.log('[Navigation] 🔄 Forcing hard navigation in development to avoid HMR conflicts');
-        console.log('[Navigation] Redirecting to:', to);
+        if (isDevelopment) {
+          console.log('[Navigation] 🔄 Forcing hard navigation in development to avoid HMR conflicts');
+          console.log('[Navigation] Redirecting to:', to);
+        }
         
         // Use immediate hard navigation to bypass HMR interference
         window.location.href = to;
@@ -336,13 +469,19 @@ export const useNavigationWithWarning = ({
       }
       
       setNavigationState({ isNavigating: true, error: null });
-      console.log('[Navigation] Navigation state set to isNavigating: true');
+      if (isDevelopment) {
+        console.log('[Navigation] Navigation state set to isNavigating: true');
+      }
       
       startNavigationTimeout(to);
-      console.log('[Navigation] Navigation timeout started for:', to);
+      if (isDevelopment) {
+        console.log('[Navigation] Navigation timeout started for:', to);
+      }
       
       try {
-        console.log('[Navigation] Calling React Router navigate...');
+        if (isDevelopment) {
+          console.log('[Navigation] Calling React Router navigate...');
+        }
         
         // Check if navigate function is available and active
         if (typeof navigate !== 'function') {
@@ -355,70 +494,19 @@ export const useNavigationWithWarning = ({
         navigate(to, options);
         
         const endTime = Date.now();
-        console.log('[Navigation] React Router navigate call completed in', endTime - startTime, 'ms');
+        if (isDevelopment) {
+          console.log('[Navigation] React Router navigate call completed in', endTime - startTime, 'ms');
+        }
         
-        // Add a delay to check if both URL and component render correctly
-        setTimeout(() => {
-          console.log('[Navigation] Post-navigation check - Current location:', window.location.pathname);
-          console.log('[Navigation] Post-navigation check - Target was:', to);
-          console.log('[Navigation] Post-navigation check - Match?', window.location.pathname === to);
-          
-          // If location hasn't changed after 100ms, navigation might have failed silently
-          if (window.location.pathname !== to && navigationTarget.current === to) {
-            console.warn('[Navigation] ⚠️ React Router navigation may have failed - location unchanged after 100ms');
-            console.log('[Navigation] Attempting fallback navigation with window.location...');
-            
-            // Fallback to window.location
-            try {
-              window.location.href = to;
-            } catch (fallbackError) {
-              console.error('[Navigation] Fallback navigation also failed:', fallbackError);
-              if (isMounted.current) {
-                setNavigationState({
-                  isNavigating: false,
-                  error: 'Navigation failed - please try again or refresh the page',
-                });
-              }
-            }
-          }
-        }, 100);
-
-        // Add additional check for component render state after 500ms
-        setTimeout(() => {
-          console.log('[Navigation] Render verification check - Current location:', window.location.pathname);
-          console.log('[Navigation] Render verification check - Target was:', to);
-          
-          if (window.location.pathname === to && navigationTarget.current === to) {
-            console.log('[Navigation] ✅ Navigation and render verification passed');
-            // Double-check that navigation state was properly reset
-            if (isMounted.current && navigationTarget.current === to) {
-              console.log('[Navigation] Force-clearing navigation state after render verification');
-              setNavigationState({ isNavigating: false, error: null });
-              navigationTarget.current = null;
-              if (navigationTimeout.current) {
-                clearTimeout(navigationTimeout.current);
-                navigationTimeout.current = null;
-              }
-            }
-          } else if (window.location.pathname !== to && navigationTarget.current === to) {
-            console.warn('[Navigation] ⚠️ Render verification failed - attempting hard navigation fallback');
-            try {
-              window.location.href = to;
-            } catch (fallbackError) {
-              console.error('[Navigation] Hard navigation fallback failed:', fallbackError);
-            }
-          }
-        }, 500);
+        // Start consolidated navigation verification
+        startNavigationVerification(to);
         
         // Note: Navigation state will be reset when location changes or timeout occurs
       } catch (error) {
         console.error('[Navigation] Navigation error:', error);
         // Clear navigation tracking on immediate error
+        clearAllNavigationTimeouts();
         navigationTarget.current = null;
-        if (navigationTimeout.current) {
-          clearTimeout(navigationTimeout.current);
-          navigationTimeout.current = null;
-        }
         if (isMounted.current) {
           setNavigationState({
             isNavigating: false,

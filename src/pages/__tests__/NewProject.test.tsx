@@ -18,10 +18,18 @@ vi.mock('@/lib/pocketbase', () => ({
   },
 }));
 
-vi.mock('@/hooks/mutations/useCreateProject');
-vi.mock('@/hooks/useUserMetadata');
-vi.mock('@/hooks/mutations/useCreateCompany');
-vi.mock('@/hooks/mutations/useCreateArtist');
+vi.mock('@/hooks/mutations/useCreateProject', () => ({
+  useCreateProject: vi.fn(),
+}));
+vi.mock('@/hooks/useUserMetadata', () => ({
+  useUserMetadata: vi.fn(),
+}));
+vi.mock('@/hooks/mutations/useCreateCompany', () => ({
+  useCreateCompany: vi.fn(),
+}));
+vi.mock('@/hooks/mutations/useCreateArtist', () => ({
+  useCreateArtist: vi.fn(),
+}));
 vi.mock('@/contexts/MetadataContext', () => ({
   useMetadata: vi.fn(),
 }));
@@ -37,10 +45,22 @@ vi.mock('@/components/layout/MainLayout', () => ({
 vi.mock('@/components/projects/NewProjectHeader', () => ({
   default: vi.fn(),
 }));
-vi.mock('lucide-react', () => ({
-  Loader2: vi.fn(),
-  AlertTriangle: vi.fn(),
-}));
+vi.mock('lucide-react', async () => {
+  const actual = await vi.importActual('lucide-react');
+  return {
+    ...actual,
+    // Mock specific icons as components that render simple divs
+    Loader2: () => <div data-testid="loader2-icon" />,
+    AlertTriangle: () => <div data-testid="alert-triangle-icon" />,
+    ArrowLeft: () => <div data-testid="arrow-left-icon" />,
+    Save: () => <div data-testid="save-icon" />,
+    Plus: () => <div data-testid="plus-icon" />,
+    Check: () => <div data-testid="check-icon" />,
+    X: () => <div data-testid="x-icon" />,
+    Upload: () => <div data-testid="upload-icon" />,
+    ChevronDown: () => <div data-testid="chevron-down-icon" />,
+  };
+});
 vi.mock('@/hooks/use-toast', () => ({
   useToast: () => ({
     toast: vi.fn(),
@@ -56,24 +76,32 @@ vi.mock('react-router-dom', async () => {
 
 // Import everything after mocks
 import NewProject from '../NewProject';
-import { useCreateProject } from '@/hooks/mutations/useCreateProject';
-import { useUserMetadata } from '@/hooks/useUserMetadata';
-import { useCreateCompany } from '@/hooks/mutations/useCreateCompany';
-import { useCreateArtist } from '@/hooks/mutations/useCreateArtist';
-import { useMetadata } from '@/contexts/MetadataContext';
 import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
-import ProjectForm from '@/components/projects/ProjectForm';
-import MainLayout from '@/components/layout/MainLayout';
-import NewProjectHeader from '@/components/projects/NewProjectHeader';
-import { Loader2, AlertTriangle } from 'lucide-react';
+
+// Type-only imports to avoid module resolution issues (Mock already imported above)
+
+// Get mocked functions from the vi.mocked calls
+const useCreateProject = vi.fn();
+const pb = { authStore: { model: null as any } };
+const useUserMetadata = vi.fn();
+const useCreateCompany = vi.fn();
+const useCreateArtist = vi.fn();
+const useMetadata = vi.fn();
+const useNavigate = vi.fn();
+const ProjectForm = vi.fn();
+const MainLayout = vi.fn();
+const NewProjectHeader = vi.fn();
+const Loader2 = vi.fn();
+const AlertTriangle = vi.fn();
+
+// Type assertions for mocked functions to help TypeScript
 
 const mockUseCreateProject = useCreateProject as Mock;
 const mockUseUserMetadata = useUserMetadata as Mock;
 const mockUseCreateCompany = useCreateCompany as Mock;
 const mockUseCreateArtist = useCreateArtist as Mock;
 const mockUseMetadata = useMetadata as Mock;
-const mockUseAuth = useAuth as Mock;
+const mockUseAuth = vi.mocked(useAuth);
 const mockUseNavigate = useNavigate as Mock;
 const mockProjectForm = ProjectForm as unknown as Mock;
 const mockMainLayout = MainLayout as unknown as Mock;
@@ -564,7 +592,7 @@ describe('Loading States', () => {
       });
 
       // Mock pocketbase authStore as invalid
-      vi.mocked(require('@/lib/pocketbase')).pb.authStore.model = null;
+      vi.mocked(pb).authStore.model = null;
 
       renderNewProject();
 
@@ -596,7 +624,7 @@ describe('Loading States', () => {
       const pbUserId = 'pb-user-id';
       const authUserId = 'auth-user-id';
 
-      vi.mocked(require('@/lib/pocketbase')).pb.authStore.model = { id: pbUserId };
+      vi.mocked(pb).authStore.model = { id: pbUserId };
 
       mockUseAuth.mockReturnValue({
         user: { id: authUserId, email: 'test@example.com', username: 'testuser' },
@@ -616,7 +644,7 @@ describe('Loading States', () => {
     it('should fallback to useAuth user when pocketbase authStore is null', async () => {
       const authUserId = 'auth-user-id';
       
-      vi.mocked(require('@/lib/pocketbase')).pb.authStore.model = null;
+      vi.mocked(pb).authStore.model = null;
 
       mockUseAuth.mockReturnValue({
         user: { id: authUserId, email: 'test@example.com', username: 'testuser' },
@@ -1437,7 +1465,7 @@ describe('Loading States', () => {
     it('should work with custom query client configurations', async () => {
       const customQueryClient = new QueryClient({
         defaultOptions: {
-          queries: { retry: 3, staleTime: 60000, cacheTime: 300000 },
+          queries: { retry: 3, staleTime: 60000, gcTime: 300000 },
           mutations: { retry: 1, onError: vi.fn() },
         },
       });
@@ -1513,3 +1541,4 @@ describe('Loading States', () => {
       expect(mockNavigate).toHaveBeenCalledTimes(1);
     });
   });
+});
