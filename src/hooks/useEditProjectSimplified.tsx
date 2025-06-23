@@ -202,8 +202,6 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
 
   const handleSubmit = useCallback(
     async (data: ProjectFormValues) => {
-      console.log('[NAVIGATION DEBUG] handleSubmit called');
-
       if (!projectId) {
         toast({
           title: 'Error',
@@ -229,9 +227,6 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
           tagIds,
         };
 
-        // Update the project and wait for completion - service handles all toasts
-        console.log('[NAVIGATION DEBUG] About to call updateProject');
-
         // Handle any potential promise rejections from updateProject
         const response = await projectService
           .updateProject(projectId, dataToSubmit)
@@ -241,22 +236,13 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
             return { error: error instanceof Error ? error.message : String(error), data: null };
           });
 
-        console.log('[NAVIGATION DEBUG] updateProject completed, response:', response);
-
         if (!response?.error && response?.data) {
-          console.log('[NAVIGATION DEBUG] Success condition met, about to navigate');
-
           // Reset form state after successful update
           setIsDirty(false);
           setHasSelectedNewImage(false);
           setProject(response.data);
 
-          console.log('[NAVIGATION DEBUG] State updated');
-
           // Invalidate React Query cache to ensure fresh data on navigation
-          console.log('[NAVIGATION DEBUG] Invalidating React Query cache for project:', projectId);
-
-          // Wait for cache invalidation to complete before navigation
           try {
             await Promise.all([
               queryClient.invalidateQueries({
@@ -269,37 +255,21 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
                 queryKey: queryKeys.projects.advanced(user?.id || ''),
               }),
             ]);
-            console.log('[NAVIGATION DEBUG] Cache invalidation completed successfully');
           } catch (error) {
-            console.error('[NAVIGATION DEBUG] Cache invalidation error:', error);
+            console.error('Cache invalidation error:', error);
             // Continue with navigation even if cache invalidation fails
           }
 
-          // Navigate after cache invalidation completes
-          console.log('[NAVIGATION DEBUG] Navigating to project after cache invalidation:', projectId);
-
-          // Manually remove beforeunload listener to prevent navigation confirmation
-          removeBeforeUnloadListener();
-          console.log('[NAVIGATION DEBUG] Removed beforeunload listener');
-
+          // Navigate to project detail after successful save
           const targetUrl = `/projects/${projectId}`;
-          console.log('[NAVIGATION DEBUG] Attempting navigation to:', targetUrl);
           
-          // Use hard navigation in development to avoid HMR conflicts, SPA navigation in production
-          unsafeNavigate(targetUrl, { 
-            replace: true, 
-            forceHardNavInDev: true // This will force window.location.href in development
-          });
+          // Remove beforeunload listener to prevent navigation confirmation
+          removeBeforeUnloadListener();
+          
+          // Use simple navigation - the hook now handles this properly
+          unsafeNavigate(targetUrl, { replace: true });
         } else {
-          console.log(
-            '[NAVIGATION DEBUG] Success condition NOT met. Has error:',
-            !!response?.error,
-            'Has data:',
-            !!response?.data
-          );
           if (response?.error) {
-            // Show error toast
-            console.error('Update failed with error:', response.error);
             toast({
               title: 'Error updating project',
               description:
@@ -312,11 +282,10 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
         // Only show toast for network errors not handled by service
         console.error('Network error updating project:', error);
         toast({
-          title: 'Network Error',
-          description: 'Unable to save changes - please check your connection and try again',
+          title: 'Error updating project',
+          description: error instanceof Error ? error.message : 'Network error',
           variant: 'destructive',
         });
-        // Don't re-throw the error to avoid unhandled promise rejection
       } finally {
         setSubmitting(false);
       }
@@ -324,9 +293,6 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
     [toast, projectId, queryClient, user?.id, removeBeforeUnloadListener, unsafeNavigate]
   );
 
-  const handleCancel = useCallback(async () => {
-    await navigateWithWarning(`/projects/${projectId}`);
-  }, [navigateWithWarning, projectId]);
 
   const handleArchive = useCallback(async () => {
     if (!projectId || !project) return;
@@ -449,7 +415,6 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
     clearNavigationError,
     handleFormChange,
     handleSubmit,
-    handleCancel,
     handleArchive,
     handleDelete,
     refreshLists,

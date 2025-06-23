@@ -35,9 +35,6 @@ const NewProject = () => {
     isDirty: false, // New project creation doesn't need dirty state checking
     message: '',
   });
-  
-  // Also get direct React Router navigate for comparison
-  const directNavigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState('main');
   const [submitting, setSubmitting] = useState(false);
@@ -167,25 +164,8 @@ const NewProject = () => {
         description: 'Project created successfully!',
       });
 
-      console.log('[NewProject] About to navigate to:', `/projects/${newProject.id}`);
-      console.log('[NewProject] unsafeNavigate function:', unsafeNavigate);
-      console.log('[NewProject] directNavigate function:', directNavigate);
-      
-      // Use hard navigation in development to avoid HMR conflicts, SPA navigation in production
-      try {
-        unsafeNavigate(`/projects/${newProject.id}`, { 
-          replace: true,
-          forceHardNavInDev: true // This will force window.location.href in development
-        });
-        console.log('[NewProject] Enhanced navigation call completed');
-      } catch (enhancedError) {
-        console.error('[NewProject] Enhanced navigation failed:', enhancedError);
-        
-        // Fallback to direct React Router navigation with replace
-        console.log('[NewProject] Falling back to direct navigation');
-        directNavigate(`/projects/${newProject.id}`, { replace: true });
-        console.log('[NewProject] Direct navigation call completed');
-      }
+      // Navigate to the new project
+      unsafeNavigate(`/projects/${newProject.id}`, { replace: true });
     } catch (error) {
       console.error('Failed to create project:', error);
       setError('Failed to create project. Please try again.');
