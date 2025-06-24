@@ -50,7 +50,7 @@ async function fetchInProgressProjects(userId: string): Promise<ProjectType[]> {
       artist: project.expand?.artist?.name || undefined,
       status: project.status,
       imageUrl: project.image
-        ? pb.files.getURL({ ...project, collectionName: 'projects' }, project.image)
+        ? pb.files.getURL({ ...project, collectionName: 'projects' }, project.image, { thumb: '300x200f' })
         : undefined,
       updatedAt: project.updated,
       createdAt: project.created,
