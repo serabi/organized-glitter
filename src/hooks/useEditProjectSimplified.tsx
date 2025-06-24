@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, startTransition } from 'react';
 import { ProjectType, ProjectFormValues } from '@/types/project';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigationWithWarning } from '@/hooks/useNavigationWithWarning';
@@ -9,6 +9,9 @@ import { pb } from '@/lib/pocketbase';
 import { useServiceToast } from '@/utils/toast-adapter';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/hooks/queries/queryKeys';
+import { createLogger } from '@/utils/secureLogger';
+
+const logger = createLogger('useEditProjectSimplified');
 
 // Toast adapter utility
 const createToastAdapter =
@@ -242,32 +245,49 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
           setHasSelectedNewImage(false);
           setProject(response.data);
 
-          // Invalidate React Query cache to ensure fresh data on navigation
-          try {
-            await Promise.all([
-              queryClient.invalidateQueries({
-                queryKey: queryKeys.projects.detail(projectId),
-              }),
-              queryClient.invalidateQueries({
-                queryKey: queryKeys.projects.lists(),
-              }),
-              queryClient.invalidateQueries({
-                queryKey: queryKeys.projects.advanced(user?.id || ''),
-              }),
-            ]);
-          } catch (error) {
-            console.error('Cache invalidation error:', error);
-            // Continue with navigation even if cache invalidation fails
-          }
+          // Show immediate user feedback
+          toast({
+            title: 'Project Updated',
+            description: `"${response.data.title}" has been updated successfully.`,
+          });
 
-          // Navigate to project detail after successful save
+          // CRITICAL: Do navigation BEFORE cache invalidation to prevent race condition
+          logger.info('🚀 Performing immediate navigation before cache invalidation');
+          
           const targetUrl = `/projects/${projectId}`;
           
           // Remove beforeunload listener to prevent navigation confirmation
           removeBeforeUnloadListener();
           
-          // Use simple navigation - the hook now handles this properly
-          unsafeNavigate(targetUrl, { replace: true });
+          try {
+            // Use direct window.location for immediate, synchronous redirect
+            // This bypasses React Router entirely and prevents race conditions
+            window.location.href = targetUrl;
+            
+            logger.info('✅ Navigation completed successfully to:', targetUrl);
+          } catch (navigationError) {
+            logger.error('❌ Direct navigation failed, falling back to React Router:', navigationError);
+            
+            // Fallback to React Router if direct navigation fails
+            unsafeNavigate(targetUrl, { replace: true });
+          }
+
+          // Defer cache invalidation to happen after navigation
+          // Use startTransition to mark cache updates as non-urgent
+          startTransition(() => {
+            // Invalidate React Query cache to ensure fresh data
+            queryClient.invalidateQueries({
+              queryKey: queryKeys.projects.detail(projectId),
+            });
+            queryClient.invalidateQueries({
+              queryKey: queryKeys.projects.lists(),
+            });
+            queryClient.invalidateQueries({
+              queryKey: queryKeys.projects.advanced(user?.id || ''),
+            });
+
+            logger.info('Project update cache invalidation completed');
+          });
         } else {
           if (response?.error) {
             toast({
