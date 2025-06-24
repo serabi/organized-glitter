@@ -212,22 +212,91 @@ export const useCreateProjectWithRedirect = () => {
         description: `"${data.title}" has been added to your collection.`,
       });
 
-      // CRITICAL: Do navigation BEFORE cache invalidation to prevent race condition
-      logger.info('🚀 Performing immediate navigation before cache invalidation');
+      // CRITICAL: Verify project exists before navigation to prevent 404 errors
+      logger.info('🔍 Verifying project exists before navigation');
       
-      try {
-        // Use direct window.location for immediate, synchronous redirect
-        // This bypasses React Router entirely and prevents race conditions
-        const targetUrl = `/projects/${data.id}`;
-        window.location.href = targetUrl;
+      const performNavigationWithRetry = async (retryCount = 0): Promise<void> => {
+        const maxRetries = 3;
+        const baseDelay = 500; // Start with 500ms
         
-        logger.info('✅ Navigation completed successfully to:', targetUrl);
-      } catch (navigationError) {
-        logger.error('❌ Direct navigation failed, falling back to React Router:', navigationError);
-        
-        // Fallback to React Router if direct navigation fails
-        navigate(`/projects/${data.id}`, { replace: true });
-      }
+        try {
+          // Verify the project exists by attempting to fetch it
+          logger.debug(`Verification attempt ${retryCount + 1}/${maxRetries + 1} for project ${data.id}`);
+          
+          await pb.collection(Collections.Projects).getOne(data.id, {
+            requestKey: `verify-project-${data.id}-${Date.now()}`,
+          });
+          
+          logger.info('✅ Project verified, proceeding with navigation');
+          
+          // Warm the cache with the project data to ensure smooth loading
+          try {
+            queryClient.setQueryData(
+              queryKeys.projects.detail(data.id),
+              data
+            );
+            logger.debug('🔥 Cache warmed with project data');
+          } catch (cacheError) {
+            logger.warn('⚠️ Cache warming failed, but continuing with navigation:', cacheError);
+          }
+          
+          // Project exists, safe to navigate
+          const targetUrl = `/projects/${data.id}`;
+          
+          try {
+            // Use direct window.location for immediate, synchronous redirect
+            // This bypasses React Router entirely and prevents race conditions
+            window.location.href = targetUrl;
+            logger.info('✅ Navigation completed successfully to:', targetUrl);
+          } catch (navigationError) {
+            logger.error('❌ Direct navigation failed, falling back to React Router:', navigationError);
+            
+            // Fallback to React Router if direct navigation fails
+            navigate(`/projects/${data.id}`, { replace: true });
+          }
+          
+        } catch (verificationError) {
+          logger.warn(`❌ Project verification failed (attempt ${retryCount + 1}):`, verificationError);
+          
+          if (retryCount < maxRetries) {
+            // Calculate exponential backoff delay
+            const delay = baseDelay * Math.pow(2, retryCount);
+            logger.info(`⏳ Retrying in ${delay}ms...`);
+            
+            // Show user feedback for longer waits
+            if (retryCount > 0) {
+              toast({
+                title: 'Loading Project',
+                description: 'Preparing your new project...',
+                duration: delay,
+              });
+            }
+            
+            setTimeout(() => {
+              performNavigationWithRetry(retryCount + 1);
+            }, delay);
+          } else {
+            // Max retries exceeded, provide fallback
+            logger.error('❌ Max retries exceeded, providing fallback navigation');
+            
+            toast({
+              title: 'Project Created Successfully',
+              description: 'Your project has been created. Redirecting to dashboard...',
+              variant: 'default',
+            });
+            
+            // Fallback to dashboard with a success message
+            try {
+              window.location.href = '/dashboard';
+            } catch (fallbackError) {
+              navigate('/dashboard', { replace: true });
+            }
+          }
+        }
+      };
+      
+      // Start the verification and navigation process
+      await performNavigationWithRetry();
 
       // Defer cache invalidation to happen after navigation
       // Use startTransition to mark cache updates as non-urgent
