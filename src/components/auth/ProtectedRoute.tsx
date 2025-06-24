@@ -19,12 +19,22 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   if (import.meta.env.DEV) {
     console.log('[ProtectedRoute] Route protection check:', {
       pathname: location.pathname,
+      browserPathname: window.location.pathname, // Compare with actual browser URL
       isLoading,
       initialCheckComplete,
       hasUser: !!user,
       userId: user?.id,
       timestamp: new Date().toISOString(),
     });
+    
+    // Alert if there's a mismatch between React Router and browser location
+    if (location.pathname !== window.location.pathname) {
+      console.warn('[ProtectedRoute] ⚠️ LOCATION MISMATCH DETECTED!', {
+        routerPath: location.pathname,
+        browserPath: window.location.pathname,
+        timestamp: new Date().toISOString(),
+      });
+    }
   }
 
 

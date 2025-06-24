@@ -7,10 +7,17 @@ import { ReactNode } from 'react';
 // Mock dependencies
 const mockNavigate = vi.fn();
 const mockToast = vi.fn();
+const mockNavigateToProject = vi.fn();
 const originalLocation = window.location;
 
 vi.mock('react-router-dom', () => ({
   useNavigate: () => mockNavigate,
+  useLocation: () => ({
+    pathname: '/projects/project-123/edit',
+    search: '',
+    hash: '',
+    state: null,
+  }),
 }));
 
 vi.mock('../useAuth', () => ({
@@ -24,6 +31,10 @@ vi.mock('@/utils/toast-adapter', () => ({
   useServiceToast: () => ({
     toast: mockToast,
   }),
+}));
+
+vi.mock('../useNavigateToProject', () => ({
+  useNavigateToProject: () => mockNavigateToProject,
 }));
 
 // Mock PocketBase services
@@ -65,6 +76,9 @@ describe('useEditProjectSimplified - Navigation Integration', () => {
       },
     });
     vi.clearAllMocks();
+    
+    // Setup navigation mock to resolve successfully
+    mockNavigateToProject.mockResolvedValue({ success: true });
 
     // Mock window.location
     delete (window as any).location;
@@ -223,7 +237,10 @@ describe('useEditProjectSimplified - Navigation Integration', () => {
       });
 
       expect(projectService.updateProject).toHaveBeenCalledWith('project-123', formData);
-      expect(window.location.href).toBe('/projects/project-123');
+      expect(mockNavigateToProject).toHaveBeenCalledWith('project-123', {
+        projectData: expect.any(Object),
+        replace: true,
+      });
     });
 
     it('should not navigate when save fails', async () => {

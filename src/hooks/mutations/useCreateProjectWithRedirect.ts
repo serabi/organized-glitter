@@ -1,11 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { startTransition } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { pb } from '@/lib/pocketbase';
 import { Collections, ProjectsResponse } from '@/types/pocketbase.types';
 import { queryKeys } from '../queries/queryKeys';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useNavigateToProject } from '@/hooks/useNavigateToProject';
 import { createLogger } from '@/utils/secureLogger';
 import { ClientResponseError } from 'pocketbase';
 import { DashboardStatsService } from '@/services/pocketbase/dashboardStatsService';
@@ -38,7 +38,7 @@ export const useCreateProjectWithRedirect = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const navigateToProject = useNavigateToProject();
 
   return useMutation({
     mutationFn: async (data: CreateProjectData): Promise<ProjectsResponse> => {
@@ -206,97 +206,23 @@ export const useCreateProjectWithRedirect = () => {
     },
 
     onSuccess: async (data) => {
-      // Show immediate user feedback
-      toast({
-        title: 'Project Created',
-        description: `"${data.title}" has been added to your collection.`,
+      logger.info('✅ Project created successfully, initiating navigation');
+
+      // Use our new navigation system for optimistic navigation
+      const navigationResult = await navigateToProject(data.id, {
+        projectData: data,
+        successMessage: `"${data.title}" has been added to your collection.`,
+        replace: true, // Replace current history entry since we're coming from form
+        showLoadingFeedback: true
       });
 
-      // CRITICAL: Verify project exists before navigation to prevent 404 errors
-      logger.info('🔍 Verifying project exists before navigation');
-      
-      const performNavigationWithRetry = async (retryCount = 0): Promise<void> => {
-        const maxRetries = 3;
-        const baseDelay = 500; // Start with 500ms
-        
-        try {
-          // Verify the project exists by attempting to fetch it
-          logger.debug(`Verification attempt ${retryCount + 1}/${maxRetries + 1} for project ${data.id}`);
-          
-          await pb.collection(Collections.Projects).getOne(data.id, {
-            requestKey: `verify-project-${data.id}-${Date.now()}`,
-          });
-          
-          logger.info('✅ Project verified, proceeding with navigation');
-          
-          // Warm the cache with the project data to ensure smooth loading
-          try {
-            queryClient.setQueryData(
-              queryKeys.projects.detail(data.id),
-              data
-            );
-            logger.debug('🔥 Cache warmed with project data');
-          } catch (cacheError) {
-            logger.warn('⚠️ Cache warming failed, but continuing with navigation:', cacheError);
-          }
-          
-          // Project exists, safe to navigate
-          const targetUrl = `/projects/${data.id}`;
-          
-          try {
-            // Use direct window.location for immediate, synchronous redirect
-            // This bypasses React Router entirely and prevents race conditions
-            window.location.href = targetUrl;
-            logger.info('✅ Navigation completed successfully to:', targetUrl);
-          } catch (navigationError) {
-            logger.error('❌ Direct navigation failed, falling back to React Router:', navigationError);
-            
-            // Fallback to React Router if direct navigation fails
-            navigate(`/projects/${data.id}`, { replace: true });
-          }
-          
-        } catch (verificationError) {
-          logger.warn(`❌ Project verification failed (attempt ${retryCount + 1}):`, verificationError);
-          
-          if (retryCount < maxRetries) {
-            // Calculate exponential backoff delay
-            const delay = baseDelay * Math.pow(2, retryCount);
-            logger.info(`⏳ Retrying in ${delay}ms...`);
-            
-            // Show user feedback for longer waits
-            if (retryCount > 0) {
-              toast({
-                title: 'Loading Project',
-                description: 'Preparing your new project...',
-                duration: delay,
-              });
-            }
-            
-            setTimeout(() => {
-              performNavigationWithRetry(retryCount + 1);
-            }, delay);
-          } else {
-            // Max retries exceeded, provide fallback
-            logger.error('❌ Max retries exceeded, providing fallback navigation');
-            
-            toast({
-              title: 'Project Created Successfully',
-              description: 'Your project has been created. Redirecting to dashboard...',
-              variant: 'default',
-            });
-            
-            // Fallback to dashboard with a success message
-            try {
-              window.location.href = '/dashboard';
-            } catch (fallbackError) {
-              navigate('/dashboard', { replace: true });
-            }
-          }
-        }
-      };
-      
-      // Start the verification and navigation process
-      await performNavigationWithRetry();
+      if (!navigationResult.success) {
+        logger.error('❌ Navigation failed:', navigationResult.error);
+        // Navigation hook already handles fallbacks and user feedback
+      }
+
+      // Add delay before cache invalidation to ensure navigation and React Router context is fully settled
+      await new Promise(resolve => setTimeout(resolve, 150));
 
       // Defer cache invalidation to happen after navigation
       // Use startTransition to mark cache updates as non-urgent

@@ -3,6 +3,7 @@ import { ProjectType, ProjectFormValues } from '@/types/project';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigationWithWarning } from '@/hooks/useNavigationWithWarning';
 import { useConfirmationDialog } from '@/hooks/useConfirmationDialog';
+import { useNavigateToProject } from '@/hooks/useNavigateToProject';
 // Using PocketBase services directly
 import { projectService } from '@/services/pocketbase/projectService';
 import { pb } from '@/lib/pocketbase';
@@ -71,6 +72,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
   const { toast } = useServiceToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const navigateToProject = useNavigateToProject();
 
   // State management
   const [project, setProject] = useState<ProjectType | null>(null);
@@ -251,26 +253,15 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
             description: `"${response.data.title}" has been updated successfully.`,
           });
 
-          // CRITICAL: Do navigation BEFORE cache invalidation to prevent race condition
-          logger.info('🚀 Performing immediate navigation before cache invalidation');
-          
-          const targetUrl = `/projects/${projectId}`;
-          
           // Remove beforeunload listener to prevent navigation confirmation
           removeBeforeUnloadListener();
           
-          try {
-            // Use direct window.location for immediate, synchronous redirect
-            // This bypasses React Router entirely and prevents race conditions
-            window.location.href = targetUrl;
-            
-            logger.info('✅ Navigation completed successfully to:', targetUrl);
-          } catch (navigationError) {
-            logger.error('❌ Direct navigation failed, falling back to React Router:', navigationError);
-            
-            // Fallback to React Router if direct navigation fails
-            unsafeNavigate(targetUrl, { replace: true });
-          }
+          // Navigate back to project detail page using React Router
+          logger.info('🚀 Navigating back to project detail page');
+          await navigateToProject(projectId, {
+            projectData: response.data,
+            replace: true // Replace current history entry since we're coming from edit
+          });
 
           // Defer cache invalidation to happen after navigation
           // Use startTransition to mark cache updates as non-urgent

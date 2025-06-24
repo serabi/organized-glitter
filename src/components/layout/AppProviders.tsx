@@ -9,7 +9,6 @@ import { AuthProvider } from '@/contexts/AuthContext/AuthProvider';
 import { MetadataProvider } from '@/contexts/MetadataContext';
 import FeedbackDialogProvider from '@/components/FeedbackDialogProvider';
 import PerformancePrefetcher from '@/components/PerformancePrefetcher';
-import { LocationSyncProvider } from '@/components/routing/LocationSyncProvider';
 
 import { queryClient } from '@/lib/queryClient';
 
@@ -28,7 +27,6 @@ export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
       <BrowserRouter
         future={{
-          v7_startTransition: true,
           v7_relativeSplatPath: true,
         }}
         key="main-router"
@@ -38,11 +36,9 @@ export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
             <MetadataProvider>
               <FeedbackDialogProvider />
               <TooltipProvider>
-                <LocationSyncProvider>
-                  {children}
-                  <Toaster />
-                  <PerformancePrefetcher />
-                </LocationSyncProvider>
+                {children}
+                <Toaster />
+                <PerformancePrefetcher />
               </TooltipProvider>
             </MetadataProvider>
           </AuthProvider>

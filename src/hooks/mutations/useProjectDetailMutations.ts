@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { startTransition } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { pb } from '@/lib/pocketbase';
 import { Collections } from '@/types/pocketbase.types';
 import { ProjectStatus } from '@/types/project';
@@ -297,6 +298,7 @@ export const useArchiveProjectMutation = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   return useMutation({
     mutationFn: async ({ projectId }: { projectId: string }) => {
@@ -315,19 +317,9 @@ export const useArchiveProjectMutation = () => {
 
       logger.info('Project archived successfully:', { projectId });
 
-      // CRITICAL: Do navigation BEFORE cache invalidation to prevent race condition
-      logger.info('🚀 Performing immediate navigation before cache invalidation');
-      
-      try {
-        // Use direct window.location for immediate, synchronous redirect
-        // This bypasses React Router entirely and prevents race conditions
-        window.location.href = '/dashboard';
-        
-        logger.info('✅ Navigation completed successfully to: /dashboard');
-      } catch (navigationError) {
-        logger.error('❌ Direct navigation failed:', navigationError);
-        // Note: No fallback needed since we removed useNavigate
-      }
+      // Navigate using React Router for consistent routing
+      logger.info('🚀 Navigating to dashboard');
+      navigate('/dashboard', { replace: true });
 
       // Defer cache invalidation to happen after navigation
       // Use startTransition to mark cache updates as non-urgent
@@ -420,6 +412,7 @@ export const useDeleteProjectMutation = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   return useMutation({
     mutationFn: async ({ projectId, title }: { projectId: string; title?: string }) => {
@@ -443,19 +436,9 @@ export const useDeleteProjectMutation = () => {
 
       logger.info('Project deleted successfully:', { projectId, title });
 
-      // CRITICAL: Do navigation BEFORE cache invalidation to prevent race condition
-      logger.info('🚀 Performing immediate navigation before cache invalidation');
-      
-      try {
-        // Use direct window.location for immediate, synchronous redirect
-        // This bypasses React Router entirely and prevents race conditions
-        window.location.href = '/dashboard';
-        
-        logger.info('✅ Navigation completed successfully to: /dashboard');
-      } catch (navigationError) {
-        logger.error('❌ Direct navigation failed:', navigationError);
-        // Note: No fallback needed since we removed useNavigate
-      }
+      // Navigate using React Router for consistent routing
+      logger.info('🚀 Navigating to dashboard');
+      navigate('/dashboard', { replace: true });
 
       // Defer cache invalidation to happen after navigation
       // Use startTransition to mark cache updates as non-urgent
