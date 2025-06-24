@@ -125,12 +125,6 @@ describe('NewProject', () => {
     mockNavigateToProject.mockResolvedValue({ success: true });
 
     // Setup default mocks
-    const mockMutateAsync = vi.fn();
-    mockUseCreateProjectWithRedirect.mockReturnValue({
-      mutateAsync: mockMutateAsync,
-      isPending: false,
-    });
-    
     const mockCreateProjectWithRedirectAsync = vi.fn();
     mockUseCreateProjectWithRedirect.mockReturnValue({
       mutateAsync: mockCreateProjectWithRedirectAsync,
