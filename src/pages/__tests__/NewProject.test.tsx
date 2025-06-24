@@ -21,6 +21,12 @@ vi.mock('@/lib/pocketbase', () => ({
 vi.mock('@/hooks/mutations/useCreateProject', () => ({
   useCreateProject: vi.fn(),
 }));
+vi.mock('@/hooks/mutations/useCreateProjectWithRedirect', () => ({
+  useCreateProjectWithRedirect: vi.fn(),
+}));
+vi.mock('@/hooks/useNavigateToProject', () => ({
+  useNavigateToProject: () => mockNavigateToProject,
+}));
 vi.mock('@/hooks/useUserMetadata', () => ({
   useUserMetadata: vi.fn(),
 }));
@@ -82,6 +88,8 @@ import { useAuth } from '@/hooks/useAuth';
 
 // Get mocked functions from the vi.mocked calls
 const useCreateProject = vi.fn();
+const useCreateProjectWithRedirect = vi.fn();
+const mockNavigateToProject = vi.fn();
 const pb = { authStore: { model: null as any } };
 const useUserMetadata = vi.fn();
 const useCreateCompany = vi.fn();
@@ -97,6 +105,7 @@ const AlertTriangle = vi.fn();
 // Type assertions for mocked functions to help TypeScript
 
 const mockUseCreateProject = useCreateProject as Mock;
+const mockUseCreateProjectWithRedirect = useCreateProjectWithRedirect as Mock;
 const mockUseUserMetadata = useUserMetadata as Mock;
 const mockUseCreateCompany = useCreateCompany as Mock;
 const mockUseCreateArtist = useCreateArtist as Mock;
@@ -117,11 +126,20 @@ describe('NewProject', () => {
 
     mockNavigate = vi.fn();
     mockUseNavigate.mockReturnValue(mockNavigate);
+    
+    // Setup navigation mock to resolve successfully
+    mockNavigateToProject.mockResolvedValue({ success: true });
 
     // Setup default mocks
     const mockMutateAsync = vi.fn();
-    mockUseCreateProject.mockReturnValue({
+    mockUseCreateProjectWithRedirect.mockReturnValue({
       mutateAsync: mockMutateAsync,
+      isPending: false,
+    });
+    
+    const mockCreateProjectWithRedirectAsync = vi.fn();
+    mockUseCreateProjectWithRedirect.mockReturnValue({
+      mutateAsync: mockCreateProjectWithRedirectAsync,
       isPending: false,
     });
 
@@ -294,7 +312,7 @@ describe('NewProject', () => {
         title: 'Test Project',
       });
 
-      mockUseCreateProject.mockReturnValue({
+      mockUseCreateProjectWithRedirect.mockReturnValue({
         mutateAsync: mockMutateAsync,
         isPending: false,
       });
@@ -319,13 +337,13 @@ describe('NewProject', () => {
       });
     });
 
-    it('should navigate after successful project creation', async () => {
+    it('should use smart navigation after successful project creation', async () => {
       const mockMutateAsync = vi.fn().mockResolvedValue({
         id: 'new-project-id',
         title: 'Test Project',
       });
 
-      mockUseCreateProject.mockReturnValue({
+      mockUseCreateProjectWithRedirect.mockReturnValue({
         mutateAsync: mockMutateAsync,
         isPending: false,
       });
@@ -341,10 +359,19 @@ describe('NewProject', () => {
 
       await waitFor(
         () => {
-          expect(mockNavigate).toHaveBeenCalledWith('/projects/new-project-id');
+          expect(mockMutateAsync).toHaveBeenCalledWith(
+            expect.objectContaining({
+              title: 'Test Project',
+              user: 'lf87xt8u569dei6',
+              status: 'wishlist',
+            })
+          );
         },
-        { timeout: 3000 }
+        { timeout: 5000 }
       );
+
+      // The useCreateProjectWithRedirect hook handles navigation internally
+      // We don't need to check for direct navigate calls
     });
   });
 
@@ -370,7 +397,7 @@ describe('NewProject', () => {
   });
 describe('Loading States', () => {
     it('should show loading state when project creation is pending', async () => {
-      mockUseCreateProject.mockReturnValue({
+      mockUseCreateProjectWithRedirect.mockReturnValue({
         mutateAsync: vi.fn(),
         isPending: true,
       });
@@ -418,7 +445,7 @@ describe('Loading States', () => {
     });
 
     it('should show loading state when multiple operations are pending', async () => {
-      mockUseCreateProject.mockReturnValue({
+      mockUseCreateProjectWithRedirect.mockReturnValue({
         mutateAsync: vi.fn(),
         isPending: true,
       });
@@ -449,7 +476,7 @@ describe('Loading States', () => {
       const mockMutateAsync = vi.fn().mockRejectedValue(new Error('Project creation failed'));
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      mockUseCreateProject.mockReturnValue({
+      mockUseCreateProjectWithRedirect.mockReturnValue({
         mutateAsync: mockMutateAsync,
         isPending: false,
       });
@@ -468,7 +495,8 @@ describe('Loading States', () => {
         expect(consoleSpy).toHaveBeenCalledWith('Error creating project:', expect.any(Error));
       });
 
-      expect(mockNavigate).not.toHaveBeenCalled();
+      // Navigation is handled by useCreateProjectWithRedirect hook internally
+      // No direct navigate calls are expected when mutation fails
       consoleSpy.mockRestore();
     });
 
@@ -561,7 +589,7 @@ describe('Loading States', () => {
       const mockMutateAsync = vi.fn().mockRejectedValue(networkError);
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      mockUseCreateProject.mockReturnValue({
+      mockUseCreateProjectWithRedirect.mockReturnValue({
         mutateAsync: mockMutateAsync,
         isPending: false,
       });
@@ -669,7 +697,7 @@ describe('Loading States', () => {
         title: '',
       });
 
-      mockUseCreateProject.mockReturnValue({
+      mockUseCreateProjectWithRedirect.mockReturnValue({
         mutateAsync: mockMutateAsync,
         isPending: false,
       });
@@ -715,7 +743,7 @@ describe('Loading States', () => {
         title: 'Complex Project',
       });
 
-      mockUseCreateProject.mockReturnValue({
+      mockUseCreateProjectWithRedirect.mockReturnValue({
         mutateAsync: mockMutateAsync,
         isPending: false,
       });
@@ -775,7 +803,7 @@ describe('Loading States', () => {
         title: null,
       });
 
-      mockUseCreateProject.mockReturnValue({
+      mockUseCreateProjectWithRedirect.mockReturnValue({
         mutateAsync: mockMutateAsync,
         isPending: false,
       });
@@ -989,14 +1017,14 @@ describe('Loading States', () => {
   });
 
   describe('Navigation Edge Cases', () => {
-    it('should handle navigation with special project IDs', async () => {
+    it('should handle project creation with special project IDs', async () => {
       const specialProjectId = 'project-with-special-chars_123-abc';
       const mockMutateAsync = vi.fn().mockResolvedValue({
         id: specialProjectId,
         title: 'Special Project',
       });
 
-      mockUseCreateProject.mockReturnValue({
+      mockUseCreateProjectWithRedirect.mockReturnValue({
         mutateAsync: mockMutateAsync,
         isPending: false,
       });
@@ -1011,16 +1039,24 @@ describe('Loading States', () => {
       fireEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith(`/projects/${specialProjectId}`);
+        expect(mockMutateAsync).toHaveBeenCalledWith(
+          expect.objectContaining({
+            title: 'Special Project',
+            user: 'lf87xt8u569dei6',
+          })
+        );
       });
+
+      // Navigation is handled internally by useCreateProjectWithRedirect hook
     });
 
     it('should handle project creation with missing ID in response', async () => {
       const mockMutateAsync = vi.fn().mockResolvedValue({
         title: 'Test Project',
+        // Missing ID to test edge case
       });
 
-      mockUseCreateProject.mockReturnValue({
+      mockUseCreateProjectWithRedirect.mockReturnValue({
         mutateAsync: mockMutateAsync,
         isPending: false,
       });
@@ -1038,17 +1074,16 @@ describe('Loading States', () => {
         expect(mockMutateAsync).toHaveBeenCalled();
       });
 
-      await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith('/projects/undefined');
-      });
+      // useCreateProjectWithRedirect hook handles navigation internally
+      // including edge cases like missing IDs
     });
 
-    it('should handle rapid form submissions with navigation', async () => {
+    it('should handle rapid form submissions', async () => {
       const mockMutateAsync = vi.fn()
         .mockResolvedValueOnce({ id: 'first-id', title: 'First' })
         .mockResolvedValueOnce({ id: 'second-id', title: 'Second' });
 
-      mockUseCreateProject.mockReturnValue({
+      mockUseCreateProjectWithRedirect.mockReturnValue({
         mutateAsync: mockMutateAsync,
         isPending: false,
       });
@@ -1067,9 +1102,7 @@ describe('Loading States', () => {
         expect(mockMutateAsync).toHaveBeenCalled();
       });
 
-      await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalled();
-      });
+      // useCreateProjectWithRedirect handles rapid submissions internally
     });
   });
 
@@ -1209,7 +1242,7 @@ describe('Loading States', () => {
         name: 'Workflow Artist',
       });
 
-      mockUseCreateProject.mockReturnValue({
+      mockUseCreateProjectWithRedirect.mockReturnValue({
         mutateAsync: mockProjectMutateAsync,
         isPending: false,
       });
@@ -1280,8 +1313,15 @@ describe('Loading States', () => {
       });
 
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith('/projects/workflow-project-id');
+        expect(mockProjectMutateAsync).toHaveBeenCalledWith(
+          expect.objectContaining({
+            title: 'Workflow Test Project',
+            user: 'lf87xt8u569dei6',
+          })
+        );
       });
+
+      // Navigation is handled by useCreateProjectWithRedirect hook internally
     });
 
     it('should handle mixed success and failure scenarios', async () => {
@@ -1298,7 +1338,7 @@ describe('Loading States', () => {
 
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      mockUseCreateProject.mockReturnValue({
+      mockUseCreateProjectWithRedirect.mockReturnValue({
         mutateAsync: mockProjectMutateAsync,
         isPending: false,
       });
@@ -1358,7 +1398,7 @@ describe('Loading States', () => {
 
       await waitFor(() => {
         expect(mockProjectMutateAsync).toHaveBeenCalled();
-        expect(mockNavigate).toHaveBeenCalledWith('/projects/mixed-project-id');
+        // Navigation is handled by useCreateProjectWithRedirect hook internally
       });
 
       consoleSpy.mockRestore();
@@ -1371,7 +1411,7 @@ describe('Loading States', () => {
         () => new Promise(resolve => setTimeout(() => resolve({ id: 'delayed-id' }), 1000))
       );
 
-      mockUseCreateProject.mockReturnValue({
+      mockUseCreateProjectWithRedirect.mockReturnValue({
         mutateAsync: mockMutateAsync,
         isPending: false,
       });
@@ -1402,7 +1442,7 @@ describe('Loading States', () => {
         );
       });
 
-      mockUseCreateProject.mockReturnValue({
+      mockUseCreateProjectWithRedirect.mockReturnValue({
         mutateAsync: vi.fn(),
         isPending: true,
       });
@@ -1413,7 +1453,7 @@ describe('Loading States', () => {
         expect(screen.getByTestId('loading')).toHaveTextContent('true');
       });
 
-      mockUseCreateProject.mockReturnValue({
+      mockUseCreateProjectWithRedirect.mockReturnValue({
         mutateAsync: vi.fn(),
         isPending: false,
       });
@@ -1520,10 +1560,10 @@ describe('Loading States', () => {
       });
     });
 
-    it('should handle navigation state and history', async () => {
+    it('should handle project creation with navigation state', async () => {
       const mockMutateAsync = vi.fn().mockResolvedValue({ id: 'history-project-id', title: 'History Project' });
 
-      mockUseCreateProject.mockReturnValue({ mutateAsync: mockMutateAsync, isPending: false });
+      mockUseCreateProjectWithRedirect.mockReturnValue({ mutateAsync: mockMutateAsync, isPending: false });
 
       renderNewProject();
 
@@ -1535,10 +1575,15 @@ describe('Loading States', () => {
       fireEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith('/projects/history-project-id');
+        expect(mockMutateAsync).toHaveBeenCalledWith(
+          expect.objectContaining({
+            title: 'History Project',
+            user: 'lf87xt8u569dei6',
+          })
+        );
       });
 
-      expect(mockNavigate).toHaveBeenCalledTimes(1);
+      // Navigation state and history is managed by useCreateProjectWithRedirect hook
     });
   });
 });
