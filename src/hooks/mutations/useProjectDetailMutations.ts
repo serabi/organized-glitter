@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { startTransition } from 'react';
 import { pb } from '@/lib/pocketbase';
 import { Collections } from '@/types/pocketbase.types';
 import { ProjectStatus } from '@/types/project';
@@ -295,7 +295,6 @@ export const useDeleteProgressNoteImageMutation = () => {
  */
 export const useArchiveProjectMutation = () => {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -307,12 +306,7 @@ export const useArchiveProjectMutation = () => {
         .update(projectId, { status: PROJECT_STATUS.ARCHIVED });
     },
     onSuccess: async (_, { projectId }) => {
-      // Invalidate all project-related queries and update stats cache
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: queryKeys.projects.all }),
-        invalidateProjectQueries(queryClient, projectId, user?.id),
-      ]);
-
+      // Show immediate user feedback
       toast({
         title: 'Project Archived',
         description: 'Your project has been archived successfully',
@@ -321,10 +315,33 @@ export const useArchiveProjectMutation = () => {
 
       logger.info('Project archived successfully:', { projectId });
 
-      // Navigate to dashboard after a brief delay
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 500);
+      // CRITICAL: Do navigation BEFORE cache invalidation to prevent race condition
+      logger.info('🚀 Performing immediate navigation before cache invalidation');
+      
+      try {
+        // Use direct window.location for immediate, synchronous redirect
+        // This bypasses React Router entirely and prevents race conditions
+        window.location.href = '/dashboard';
+        
+        logger.info('✅ Navigation completed successfully to: /dashboard');
+      } catch (navigationError) {
+        logger.error('❌ Direct navigation failed:', navigationError);
+        // Note: No fallback needed since we removed useNavigate
+      }
+
+      // Defer cache invalidation to happen after navigation
+      // Use startTransition to mark cache updates as non-urgent
+      startTransition(() => {
+        // Invalidate all project-related queries and update stats cache
+        Promise.all([
+          queryClient.invalidateQueries({ queryKey: queryKeys.projects.all }),
+          invalidateProjectQueries(queryClient, projectId, user?.id),
+        ]).catch(error => {
+          logger.error('Failed to invalidate queries after project archive:', error);
+        });
+
+        logger.info('Project archive cache invalidation completed');
+      });
     },
     onError: error => {
       handleMutationError(error, 'archive project', toast);
@@ -401,7 +418,6 @@ const deleteProjectRelatedRecords = async (projectId: string) => {
  */
 export const useDeleteProjectMutation = () => {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -416,13 +432,7 @@ export const useDeleteProjectMutation = () => {
       return await pb.collection(Collections.Projects).delete(projectId);
     },
     onSuccess: async (_, { projectId, title }) => {
-      // Invalidate all project-related queries
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: queryKeys.projects.all }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.progressNotes.all }),
-        invalidateProjectQueries(queryClient, projectId, user?.id),
-      ]);
-
+      // Show immediate user feedback
       toast({
         title: 'Project Deleted',
         description: title
@@ -433,10 +443,34 @@ export const useDeleteProjectMutation = () => {
 
       logger.info('Project deleted successfully:', { projectId, title });
 
-      // Navigate to dashboard after a brief delay
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 500);
+      // CRITICAL: Do navigation BEFORE cache invalidation to prevent race condition
+      logger.info('🚀 Performing immediate navigation before cache invalidation');
+      
+      try {
+        // Use direct window.location for immediate, synchronous redirect
+        // This bypasses React Router entirely and prevents race conditions
+        window.location.href = '/dashboard';
+        
+        logger.info('✅ Navigation completed successfully to: /dashboard');
+      } catch (navigationError) {
+        logger.error('❌ Direct navigation failed:', navigationError);
+        // Note: No fallback needed since we removed useNavigate
+      }
+
+      // Defer cache invalidation to happen after navigation
+      // Use startTransition to mark cache updates as non-urgent
+      startTransition(() => {
+        // Invalidate all project-related queries
+        Promise.all([
+          queryClient.invalidateQueries({ queryKey: queryKeys.projects.all }),
+          queryClient.invalidateQueries({ queryKey: queryKeys.progressNotes.all }),
+          invalidateProjectQueries(queryClient, projectId, user?.id),
+        ]).catch(error => {
+          logger.error('Failed to invalidate queries after project deletion:', error);
+        });
+
+        logger.info('Project deletion cache invalidation completed');
+      });
     },
     onError: error => {
       handleMutationError(error, 'delete project', toast);
