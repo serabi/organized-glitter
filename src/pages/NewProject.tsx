@@ -4,14 +4,13 @@
  * Full-featured form for creating diamond painting projects using EditProject layout
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAuth } from '@/hooks/useAuth';
 import { useMetadata } from '@/contexts/MetadataContext';
-import { useCreateProject } from '@/hooks/mutations/useCreateProject';
+import { useCreateProjectWithRedirect } from '@/hooks/mutations/useCreateProjectWithRedirect';
 import { useCreateCompany } from '@/hooks/mutations/useCreateCompany';
 import { useCreateArtist } from '@/hooks/mutations/useCreateArtist';
-import { useNavigationWithWarning } from '@/hooks/useNavigationWithWarning';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,15 +25,11 @@ import { NewProjectStatsTab } from '@/components/projects/tabs/NewProjectStatsTa
 const NewProject = () => {
   const { user, isLoading: authLoading } = useAuth();
   const { companyNames, artistNames, isLoading } = useMetadata();
-  const createProjectMutation = useCreateProject();
+  const createProjectMutation = useCreateProjectWithRedirect();
   const createCompanyMutation = useCreateCompany();
   const createArtistMutation = useCreateArtist();
   
-  // Use enhanced navigation with state management
-  const { unsafeNavigate, navigationState } = useNavigationWithWarning({
-    isDirty: false, // New project creation doesn't need dirty state checking
-    message: '',
-  });
+  const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState('main');
   const [submitting, setSubmitting] = useState(false);
@@ -72,10 +67,11 @@ const NewProject = () => {
     }
   }, [user?.id, formData.userId]);
 
+
   const clearError = () => setError(null);
   
   const handleCancel = () => {
-    unsafeNavigate('/dashboard');
+    navigate('/dashboard');
   };
 
   const handleFormChange = (data: ProjectFormValues) => {
@@ -159,13 +155,9 @@ const NewProject = () => {
 
       const newProject = await createProjectMutation.mutateAsync(projectData);
 
-      toast({
-        title: 'Success',
-        description: 'Project created successfully!',
-      });
-
-      // Navigate to the new project
-      unsafeNavigate(`/projects/${newProject.id}`, { replace: true });
+      // Success toast and navigation are handled by the mutation hook
+      // No manual navigation needed - the hook handles redirect before cache invalidation
+      
     } catch (error) {
       console.error('Failed to create project:', error);
       setError('Failed to create project. Please try again.');
@@ -229,9 +221,9 @@ const NewProject = () => {
 
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={handleCancel} disabled={submitting || navigationState.isNavigating}>
+            <Button variant="ghost" size="sm" onClick={handleCancel} disabled={submitting}>
               <ArrowLeft className="mr-2 h-4 w-4" />
-              {navigationState.isNavigating ? 'Navigating...' : 'Back'}
+              Back
             </Button>
             <h1 className="text-2xl font-bold">Create New Project</h1>
           </div>
@@ -272,20 +264,16 @@ const NewProject = () => {
                 type="button"
                 variant="outline"
                 onClick={handleCancel}
-                disabled={submitting || navigationState.isNavigating}
+                disabled={submitting}
               >
-                {navigationState.isNavigating ? 'Navigating...' : 'Cancel'}
+                Cancel
               </Button>
               <Button 
                 onClick={() => handleSubmit(formData)} 
-                disabled={submitting || navigationState.isNavigating || !formData.title?.trim()}
+                disabled={submitting || !formData.title?.trim()}
               >
                 <Save className="mr-2 h-4 w-4" />
-                {submitting
-                  ? 'Creating...'
-                  : navigationState.isNavigating
-                    ? 'Creating & Navigating...'
-                    : 'Create Project'}
+                {submitting ? 'Creating...' : 'Create Project'}
               </Button>
             </div>
           </CardContent>

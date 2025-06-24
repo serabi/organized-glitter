@@ -43,11 +43,15 @@ export const RootRoute: React.FC = () => {
   // Check if user is authenticated (either user OR session is sufficient for redirect)
   if (isAuthenticated) {
     if (import.meta.env.DEV) {
-      console.log('[RootRoute] User authenticated, redirecting to overview...', {
+      console.log('[RootRoute] User authenticated, about to redirect to overview...', {
         hasUser: !!user,
         isAuthenticated,
         userId: user?.id,
+        currentUrl: window.location.href,
+        currentPath: window.location.pathname,
+        timestamp: new Date().toISOString(),
       });
+      console.log('[RootRoute] 🔄 NAVIGATION: Rendering <Navigate to="/overview" replace />');
     }
     return <Navigate to="/overview" replace />;
   }

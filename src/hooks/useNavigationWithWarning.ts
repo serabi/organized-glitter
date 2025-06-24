@@ -57,7 +57,7 @@ export const useNavigationWithWarning = ({
   }, [location.pathname, resetNavigationState]);
 
   // Simple navigation with error handling
-  const performNavigation = useCallback(async (to: string, options?: { replace?: boolean }) => {
+  const performNavigation = useCallback((to: string, options?: { replace?: boolean }) => {
     try {
       setNavigationState({ isNavigating: true, error: null });
       isNavigating.current = true;
@@ -88,7 +88,7 @@ export const useNavigationWithWarning = ({
           }
 
           if (confirmed) {
-            await performNavigation(to, options);
+            performNavigation(to, options);
           }
         } catch (error) {
           if (isMounted.current) {
@@ -99,7 +99,7 @@ export const useNavigationWithWarning = ({
           }
         }
       } else {
-        await performNavigation(to, options);
+        performNavigation(to, options);
       }
     },
     [isDirty, message, confirmationDialog, performNavigation]
@@ -139,18 +139,18 @@ export const useNavigationWithWarning = ({
 
   // Simple direct navigation without warnings
   const directNavigate = useCallback(
-    async (to: string, options?: { replace?: boolean }) => {
-      await performNavigation(to, options);
+    (to: string, options?: { replace?: boolean }) => {
+      performNavigation(to, options);
     },
     [performNavigation]
   );
 
   // Force navigation bypasses unsaved changes warning
   const forceNavigate = useCallback(
-    async (to: string, options?: { replace?: boolean }) => {
+    (to: string, options?: { replace?: boolean }) => {
       // Remove beforeunload listener to prevent navigation confirmation
       removeBeforeUnloadListener();
-      await performNavigation(to, options);
+      performNavigation(to, options);
     },
     [performNavigation, removeBeforeUnloadListener]
   );

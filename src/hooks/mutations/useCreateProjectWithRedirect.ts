@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { startTransition } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { pb } from '@/lib/pocketbase';
 import { Collections, ProjectsResponse } from '@/types/pocketbase.types';
 import { queryKeys } from '../queries/queryKeys';
@@ -10,7 +11,7 @@ import { ClientResponseError } from 'pocketbase';
 import { DashboardStatsService } from '@/services/pocketbase/dashboardStatsService';
 import { TagService } from '@/lib/tags';
 
-const logger = createLogger('useCreateProject');
+const logger = createLogger('useCreateProjectWithRedirect');
 
 interface CreateProjectData {
   title: string;
@@ -33,14 +34,15 @@ interface CreateProjectData {
   tagIds?: string[];
 }
 
-export const useCreateProject = () => {
+export const useCreateProjectWithRedirect = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   return useMutation({
     mutationFn: async (data: CreateProjectData): Promise<ProjectsResponse> => {
-      logger.debug('Creating project:', data);
+      logger.debug('Creating project with redirect:', data);
 
       // Resolve company and artist names to IDs if they are provided
       let companyId = null;
@@ -203,14 +205,31 @@ export const useCreateProject = () => {
       }
     },
 
-    onSuccess: async data => {
+    onSuccess: async (data) => {
       // Show immediate user feedback
       toast({
         title: 'Project Created',
         description: `"${data.title}" has been added to your collection.`,
       });
 
-      // Defer cache invalidation to prevent Router reconciliation interruption
+      // CRITICAL: Do navigation BEFORE cache invalidation to prevent race condition
+      logger.info('🚀 Performing immediate navigation before cache invalidation');
+      
+      try {
+        // Use direct window.location for immediate, synchronous redirect
+        // This bypasses React Router entirely and prevents race conditions
+        const targetUrl = `/projects/${data.id}`;
+        window.location.href = targetUrl;
+        
+        logger.info('✅ Navigation completed successfully to:', targetUrl);
+      } catch (navigationError) {
+        logger.error('❌ Direct navigation failed, falling back to React Router:', navigationError);
+        
+        // Fallback to React Router if direct navigation fails
+        navigate(`/projects/${data.id}`, { replace: true });
+      }
+
+      // Defer cache invalidation to happen after navigation
       // Use startTransition to mark cache updates as non-urgent
       startTransition(() => {
         // Invalidate all project lists for this user
@@ -247,7 +266,7 @@ export const useCreateProject = () => {
             });
         }
 
-        logger.info('Project creation successful, cache invalidated');
+        logger.info('Project creation cache invalidation completed');
       });
     },
 

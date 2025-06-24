@@ -61,7 +61,16 @@ const AdvancedEdit = createLazyComponent(() => import('@/pages/AdvancedEdit'), '
 
 // Lazy load project-related pages with enhanced error handling
 const NewProject = createLazyComponent(() => import('@/pages/NewProject'), 'NewProject');
-const ProjectDetail = createLazyComponent(() => import('@/pages/ProjectDetail'), 'ProjectDetail');
+const ProjectDetail = createLazyComponent(() => {
+  console.log('[AppRoutes] 🔄 Loading ProjectDetail component...');
+  return import('@/pages/ProjectDetail').then(module => {
+    console.log('[AppRoutes] ✅ ProjectDetail component loaded successfully');
+    return module;
+  }).catch(error => {
+    console.error('[AppRoutes] ❌ Failed to load ProjectDetail component:', error);
+    throw error;
+  });
+}, 'ProjectDetail');
 const EditProject = createLazyComponent(() => import('@/pages/EditProject'), 'EditProject');
 
 // Lazy load data management pages
@@ -74,6 +83,15 @@ const Import = lazy(() => import('@/pages/Import'));
 const DeleteAccount = lazy(() => import('@/pages/DeleteAccount'));
 const SupportSuccess = lazy(() => import('@/pages/SupportSuccess'));
 
+// Debug wrapper for ProjectDetail route
+const ProjectDetailWrapper: React.FC = () => {
+  console.log('[AppRoutes] 🎯 ProjectDetail route matched! Rendering ProjectDetail component...');
+  console.log('[AppRoutes] Current URL:', window.location.href);
+  console.log('[AppRoutes] Current pathname:', window.location.pathname);
+  
+  return <ProjectDetail />;
+};
+
 
 /**
  * Main application routing configuration
@@ -82,6 +100,10 @@ const SupportSuccess = lazy(() => import('@/pages/SupportSuccess'));
 export const AppRoutes: React.FC = () => {
   // Track pageviews with PostHog
   usePostHogPageTracking();
+
+  if (import.meta.env.DEV) {
+    console.log('[AppRoutes] Rendering routes for pathname:', window.location.pathname);
+  }
 
   return (
     <Routes>
@@ -140,7 +162,7 @@ export const AppRoutes: React.FC = () => {
         element={
           <ProtectedRoute>
             <Suspense fallback={<PageLoading />}>
-              <ProjectDetail />
+              <ProjectDetailWrapper />
             </Suspense>
           </ProtectedRoute>
         }

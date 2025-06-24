@@ -17,8 +17,15 @@ import { ProjectContentErrorBoundary } from '@/components/error/ComponentErrorBo
  * This component uses the project service layer for reliable data fetching.
  */
 const ProjectDetail = () => {
+  console.log('[ProjectDetail] 🎯 ProjectDetail component mounting!');
+  console.log('[ProjectDetail] Current URL:', window.location.href);
+  console.log('[ProjectDetail] Current pathname:', window.location.pathname);
+  
   const { id } = useParams<{ id: string }>();
   const projectId = id || '';
+  
+  console.log('[ProjectDetail] Extracted project ID from params:', projectId);
+  
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   useAuth(); // Keep the auth check for authentication status

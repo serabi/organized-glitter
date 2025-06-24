@@ -9,6 +9,7 @@ import { AuthProvider } from '@/contexts/AuthContext/AuthProvider';
 import { MetadataProvider } from '@/contexts/MetadataContext';
 import FeedbackDialogProvider from '@/components/FeedbackDialogProvider';
 import PerformancePrefetcher from '@/components/PerformancePrefetcher';
+import { LocationSyncProvider } from '@/components/routing/LocationSyncProvider';
 
 import { queryClient } from '@/lib/queryClient';
 
@@ -16,32 +17,37 @@ interface AppProvidersProps {
   children: React.ReactNode;
 }
 
+
+
 /**
  * Centralized provider wrapper for the entire application
- * Handles all context providers and global configurations
+ * Router is isolated from provider re-renders to prevent reconciliation interruption
  */
 export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
   return (
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <MetadataProvider>
-            <FeedbackDialogProvider />
-            <TooltipProvider>
-              <BrowserRouter
-                future={{
-                  v7_startTransition: true,
-                  v7_relativeSplatPath: true,
-                }}
-              >
-                {children}
-                <Toaster />
-                <PerformancePrefetcher />
-              </BrowserRouter>
-            </TooltipProvider>
-          </MetadataProvider>
-        </AuthProvider>
-      </QueryClientProvider>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+        key="main-router"
+      >
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <MetadataProvider>
+              <FeedbackDialogProvider />
+              <TooltipProvider>
+                <LocationSyncProvider>
+                  {children}
+                  <Toaster />
+                  <PerformancePrefetcher />
+                </LocationSyncProvider>
+              </TooltipProvider>
+            </MetadataProvider>
+          </AuthProvider>
+        </QueryClientProvider>
+      </BrowserRouter>
     </ThemeProvider>
   );
 };
