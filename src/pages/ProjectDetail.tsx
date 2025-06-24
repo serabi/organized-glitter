@@ -1,9 +1,10 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import MainLayout from '@/components/layout/MainLayout';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useProjectDetailReactQuery } from '@/hooks/useProjectDetailReactQuery';
+import { useNavigateToProjectEdit } from '@/hooks/useNavigateToProject';
 import { ProjectType } from '@/types/project';
 
 import LoadingState from '@/components/projects/LoadingState';
@@ -17,11 +18,31 @@ import { ProjectContentErrorBoundary } from '@/components/error/ComponentErrorBo
  * This component uses the project service layer for reliable data fetching.
  */
 const ProjectDetail = () => {
+  console.log('[ProjectDetail] 🎯 ProjectDetail component mounting!');
+  console.log('[ProjectDetail] Current URL:', window.location.href);
+  console.log('[ProjectDetail] Current pathname:', window.location.pathname);
+  
   const { id } = useParams<{ id: string }>();
   const projectId = id || '';
+  const location = useLocation();
   const navigate = useNavigate();
+  const navigateToProjectEdit = useNavigateToProjectEdit();
   const isMobile = useIsMobile();
   useAuth(); // Keep the auth check for authentication status
+
+  console.log('[ProjectDetail] Extracted project ID from params:', projectId);
+  
+  // Check for optimistic navigation data in location state
+  const navigationState = location.state as {
+    fromNavigation?: boolean;
+    projectId?: string;
+    projectData?: any;
+    timestamp?: number;
+  } | null;
+  
+  if (navigationState?.fromNavigation) {
+    console.log('[ProjectDetail] 🚀 Optimistic navigation detected:', navigationState);
+  }
 
   // Use our project detail hook with the service layer
   const {
@@ -53,11 +74,11 @@ const ProjectDetail = () => {
     }
   }, [loading, project, projectId, isMobile]);
 
-  const navigateToEdit = () => {
+  const navigateToEdit = async () => {
     // Track navigation to edit page
     // addBreadcrumb removed
 
-    navigate(`/projects/${projectId}/edit`);
+    await navigateToProjectEdit(projectId);
   };
 
   // Show loading state while fetching project data

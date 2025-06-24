@@ -1,14 +1,18 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, startTransition } from 'react';
 import { ProjectType, ProjectFormValues } from '@/types/project';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigationWithWarning } from '@/hooks/useNavigationWithWarning';
 import { useConfirmationDialog } from '@/hooks/useConfirmationDialog';
+import { useNavigateToProject } from '@/hooks/useNavigateToProject';
 // Using PocketBase services directly
 import { projectService } from '@/services/pocketbase/projectService';
 import { pb } from '@/lib/pocketbase';
 import { useServiceToast } from '@/utils/toast-adapter';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/hooks/queries/queryKeys';
+import { createLogger } from '@/utils/secureLogger';
+
+const logger = createLogger('useEditProjectSimplified');
 
 // Toast adapter utility
 const createToastAdapter =
@@ -68,6 +72,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
   const { toast } = useServiceToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const navigateToProject = useNavigateToProject();
 
   // State management
   const [project, setProject] = useState<ProjectType | null>(null);
@@ -138,7 +143,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
         ]);
 
         // Handle project response
-        if (projectResponse.error) {
+        if (projectResponse?.error) {
           toast({
             title: 'Error loading project',
             description:
@@ -150,15 +155,15 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
           return;
         }
 
-        if (projectResponse.data) {
+        if (projectResponse?.data) {
           setProject(projectResponse.data);
         }
 
         // Handle metadata responses
-        if (companiesResponse.items) {
+        if (companiesResponse?.items) {
           setCompanies(companiesResponse.items.map((c: { name: string }) => c.name));
         }
-        if (artistsResponse.items) {
+        if (artistsResponse?.items) {
           setArtists(artistsResponse.items.map((a: { name: string }) => a.name));
         }
       } catch (error) {
@@ -202,8 +207,6 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
 
   const handleSubmit = useCallback(
     async (data: ProjectFormValues) => {
-      console.log('[NAVIGATION DEBUG] handleSubmit called');
-
       if (!projectId) {
         toast({
           title: 'Error',
@@ -229,9 +232,6 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
           tagIds,
         };
 
-        // Update the project and wait for completion - service handles all toasts
-        console.log('[NAVIGATION DEBUG] About to call updateProject');
-
         // Handle any potential promise rejections from updateProject
         const response = await projectService
           .updateProject(projectId, dataToSubmit)
@@ -241,60 +241,46 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
             return { error: error instanceof Error ? error.message : String(error), data: null };
           });
 
-        console.log('[NAVIGATION DEBUG] updateProject completed, response:', response);
-
-        if (!response.error && response.data) {
-          console.log('[NAVIGATION DEBUG] Success condition met, about to navigate');
-
+        if (!response?.error && response?.data) {
           // Reset form state after successful update
           setIsDirty(false);
           setHasSelectedNewImage(false);
           setProject(response.data);
 
-          console.log('[NAVIGATION DEBUG] State updated');
+          // Show immediate user feedback
+          toast({
+            title: 'Project Updated',
+            description: `"${response.data.title}" has been updated successfully.`,
+          });
 
-          // Invalidate React Query cache to ensure fresh data on navigation
-          console.log('[NAVIGATION DEBUG] Invalidating React Query cache for project:', projectId);
+          // Remove beforeunload listener to prevent navigation confirmation
+          removeBeforeUnloadListener();
+          
+          // Navigate back to project detail page using React Router
+          logger.info('🚀 Navigating back to project detail page');
+          await navigateToProject(projectId, {
+            projectData: response.data,
+            replace: true // Replace current history entry since we're coming from edit
+          });
 
-          // Invalidate cache in background and navigate immediately
-          Promise.all([
+          // Defer cache invalidation to happen after navigation
+          // Use startTransition to mark cache updates as non-urgent
+          startTransition(() => {
+            // Invalidate React Query cache to ensure fresh data
             queryClient.invalidateQueries({
               queryKey: queryKeys.projects.detail(projectId),
-            }),
+            });
             queryClient.invalidateQueries({
               queryKey: queryKeys.projects.lists(),
-            }),
+            });
             queryClient.invalidateQueries({
               queryKey: queryKeys.projects.advanced(user?.id || ''),
-            }),
-          ])
-            .then(() => {
-              console.log('[NAVIGATION DEBUG] Cache invalidation completed');
-            })
-            .catch(error => {
-              console.error('[NAVIGATION DEBUG] Cache invalidation error:', error);
             });
 
-          // Navigate immediately without waiting for cache invalidation
-          console.log('[NAVIGATION DEBUG] Navigating immediately to project:', projectId);
-
-          // Manually remove beforeunload listener to prevent navigation confirmation
-          removeBeforeUnloadListener();
-          console.log('[NAVIGATION DEBUG] Removed beforeunload listener');
-
-          const targetUrl = `/projects/${projectId}`;
-          console.log('[NAVIGATION DEBUG] Attempting navigation to:', targetUrl);
-          window.location.href = targetUrl;
+            logger.info('Project update cache invalidation completed');
+          });
         } else {
-          console.log(
-            '[NAVIGATION DEBUG] Success condition NOT met. Has error:',
-            !!response.error,
-            'Has data:',
-            !!response.data
-          );
-          if (response.error) {
-            // Show error toast
-            console.error('Update failed with error:', response.error);
+          if (response?.error) {
             toast({
               title: 'Error updating project',
               description:
@@ -307,21 +293,17 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
         // Only show toast for network errors not handled by service
         console.error('Network error updating project:', error);
         toast({
-          title: 'Network Error',
-          description: 'Unable to save changes - please check your connection and try again',
+          title: 'Error updating project',
+          description: error instanceof Error ? error.message : 'Network error',
           variant: 'destructive',
         });
-        // Don't re-throw the error to avoid unhandled promise rejection
       } finally {
         setSubmitting(false);
       }
     },
-    [toast, projectId, queryClient, user?.id, removeBeforeUnloadListener]
+    [toast, projectId, queryClient, user?.id, removeBeforeUnloadListener, unsafeNavigate]
   );
 
-  const handleCancel = useCallback(async () => {
-    await navigateWithWarning(`/projects/${projectId}`);
-  }, [navigateWithWarning, projectId]);
 
   const handleArchive = useCallback(async () => {
     if (!projectId || !project) return;
@@ -340,7 +322,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
       setSubmitting(true);
       const response = await projectService.updateProjectStatus(projectId, 'archived');
 
-      if (response.error) {
+      if (response?.error) {
         toast({
           title: 'Error archiving project',
           description:
@@ -382,7 +364,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
       setSubmitting(true);
       const response = await projectService.deleteProject(projectId);
 
-      if (response.error) {
+      if (response?.error) {
         toast({
           title: 'Error deleting project',
           description:
@@ -419,10 +401,10 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
         pb.collection('artists').getList(1, 200, { filter: `user = "${user.id}"`, fields: 'name' }),
       ]);
 
-      if (companiesResponse.items) {
+      if (companiesResponse?.items) {
         setCompanies(companiesResponse.items.map((c: { name: string }) => c.name));
       }
-      if (artistsResponse.items) {
+      if (artistsResponse?.items) {
         setArtists(artistsResponse.items.map((a: { name: string }) => a.name));
       }
     } catch (error) {
@@ -444,7 +426,6 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
     clearNavigationError,
     handleFormChange,
     handleSubmit,
-    handleCancel,
     handleArchive,
     handleDelete,
     refreshLists,

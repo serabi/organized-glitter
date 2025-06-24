@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface UseNavigationWithWarningProps {
   isDirty: boolean;
@@ -25,67 +25,84 @@ export const useNavigationWithWarning = ({
   confirmationDialog,
 }: UseNavigationWithWarningProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const isMounted = useRef(true);
   const [navigationState, setNavigationState] = useState<NavigationState>({
     isNavigating: false,
     error: null,
   });
+  
+  // Simplified navigation tracking
+  const isNavigating = useRef<boolean>(false);
+
+  // Reset navigation state
+  const resetNavigationState = useCallback(() => {
+    if (isMounted.current) {
+      setNavigationState({ isNavigating: false, error: null });
+      isNavigating.current = false;
+    }
+  }, []);
 
   useEffect(() => {
     return () => {
       isMounted.current = false;
     };
   }, []);
+
+  // Listen for location changes to reset navigation state
+  useEffect(() => {
+    if (isNavigating.current) {
+      resetNavigationState();
+    }
+  }, [location.pathname, resetNavigationState]);
+
+  // Simple navigation with error handling
+  const performNavigation = useCallback((to: string, options?: { replace?: boolean }) => {
+    try {
+      setNavigationState({ isNavigating: true, error: null });
+      isNavigating.current = true;
+      navigate(to, options);
+    } catch (error) {
+      if (isMounted.current) {
+        setNavigationState({
+          isNavigating: false,
+          error: error instanceof Error ? error.message : 'Navigation failed',
+        });
+        isNavigating.current = false;
+      }
+    }
+  }, [navigate]);
   // Safe navigation function that checks for unsaved changes
   const navigateWithWarning = useCallback(
     async (to: string, options?: { replace?: boolean }) => {
       if (isDirty) {
         let confirmed = false;
 
-        if (confirmationDialog) {
-          // Use ConfirmationDialog for consistent UX
-          confirmed = await confirmationDialog.confirmUnsavedChanges('navigate');
-        } else {
-          // Fallback to window.confirm if no dialog provided
-          confirmed = window.confirm(message);
-        }
-
-        if (confirmed) {
-          setNavigationState({ isNavigating: true, error: null });
-          try {
-            navigate(to, options);
-            // Reset navigation state after successful navigation
-            if (isMounted.current) {
-              setNavigationState({ isNavigating: false, error: null });
-            }
-          } catch (error) {
-            if (isMounted.current) {
-              setNavigationState({
-                isNavigating: false,
-                error: error instanceof Error ? error.message : 'Navigation failed',
-              });
-            }
-          }
-        }
-      } else {
-        setNavigationState({ isNavigating: true, error: null });
         try {
-          navigate(to, options);
-          // Reset navigation state after successful navigation
-          if (isMounted.current) {
-            setNavigationState({ isNavigating: false, error: null });
+          if (confirmationDialog) {
+            // Use ConfirmationDialog for consistent UX
+            confirmed = await confirmationDialog.confirmUnsavedChanges('navigate');
+          } else {
+            // Fallback to window.confirm if no dialog provided
+            confirmed = window.confirm(message);
+          }
+
+          if (confirmed) {
+            performNavigation(to, options);
           }
         } catch (error) {
           if (isMounted.current) {
             setNavigationState({
               isNavigating: false,
-              error: error instanceof Error ? error.message : 'Navigation failed',
+              error: error instanceof Error ? error.message : 'Confirmation failed',
             });
           }
         }
+      } else {
+        performNavigation(to, options);
       }
     },
-    [isDirty, message, navigate, confirmationDialog]
+    [isDirty, message, confirmationDialog, performNavigation]
   );
 
   // Store reference to the beforeunload handler for proper cleanup
@@ -96,7 +113,8 @@ export const useNavigationWithWarning = ({
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (isDirty) {
         e.preventDefault();
-        e.returnValue = message;
+        // Modern browsers ignore the returnValue, but setting it is still required for compatibility
+        e.returnValue = '';
         return message;
       }
     };
@@ -119,86 +137,29 @@ export const useNavigationWithWarning = ({
     }
   }, []);
 
-  // Smart navigation that avoids full page reload when possible
-  const smartNavigate = useCallback(
-    (to: string, options?: { replace?: boolean; forceReload?: boolean }) => {
-      setNavigationState({ isNavigating: true, error: null });
-
-      try {
-        // Destructure to separate standard React Router options from custom ones
-        const { forceReload, ...navigateOptions } = options || {};
-
-        // Always try React Router first with only standard options
-        navigate(to, navigateOptions);
-
-        // Reset navigation state after successful navigation
-        if (isMounted.current) {
-          setNavigationState({ isNavigating: false, error: null });
-        }
-
-        // Only use window.location as fallback if explicitly requested
-        if (forceReload) {
-          setTimeout(() => {
-            window.location.href = to;
-          }, 100); // Small delay to let React Router attempt first
-        }
-      } catch (error) {
-        if (isMounted.current) {
-          setNavigationState({
-            isNavigating: false,
-            error: error instanceof Error ? error.message : 'Navigation failed',
-          });
-        }
-
-        // Fallback to window.location on error
-        window.location.href = to;
-      }
+  // Simple direct navigation without warnings
+  const directNavigate = useCallback(
+    (to: string, options?: { replace?: boolean }) => {
+      performNavigation(to, options);
     },
-    [navigate]
+    [performNavigation]
   );
 
   // Force navigation bypasses unsaved changes warning
   const forceNavigate = useCallback(
-    (to: string, options?: { replace?: boolean; smartNavigation?: boolean }) => {
+    (to: string, options?: { replace?: boolean }) => {
       // Remove beforeunload listener to prevent navigation confirmation
       removeBeforeUnloadListener();
-
-      if (options?.smartNavigation !== false) {
-        // Destructure to separate custom smartNavigation from standard options
-        const { smartNavigation, ...smartNavigateOptions } = options || {};
-
-        // Use smart navigation by default (avoids unnecessary reloads)
-        smartNavigate(to, smartNavigateOptions);
-      } else {
-        // Legacy behavior - immediate window.location redirect
-        window.location.href = to;
-      }
+      performNavigation(to, options);
     },
-    [smartNavigate, removeBeforeUnloadListener]
+    [performNavigation, removeBeforeUnloadListener]
   );
 
   return {
     navigateWithWarning,
     navigate: navigateWithWarning, // Alias for convenience
-    unsafeNavigate: (to: string, options?: { replace?: boolean }) => {
-      setNavigationState({ isNavigating: true, error: null });
-      try {
-        navigate(to, options);
-        // Reset navigation state after successful navigation
-        if (isMounted.current) {
-          setNavigationState({ isNavigating: false, error: null });
-        }
-      } catch (error) {
-        if (isMounted.current) {
-          setNavigationState({
-            isNavigating: false,
-            error: error instanceof Error ? error.message : 'Navigation failed',
-          });
-        }
-      }
-    }, // Original navigate for internal use
+    unsafeNavigate: directNavigate, // Simple direct navigation without warnings
     forceNavigate,
-    smartNavigate,
     navigationState,
     removeBeforeUnloadListener,
     clearNavigationError: () => {

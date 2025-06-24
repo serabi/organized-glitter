@@ -20,62 +20,58 @@ import About from '@/pages/About';
 import Privacy from '@/pages/Privacy';
 import Terms from '@/pages/Terms';
 
+// Enhanced chunk loading with retry logic
+const createLazyComponent = (importFn: () => Promise<{ default: React.ComponentType<unknown> }>, componentName: string) => {
+  return lazy(() =>
+    importFn().catch((error) => {
+      console.error(`Failed to load ${componentName} page chunk:`, error);
+      
+      // Return a more helpful error component with retry functionality
+      return {
+        default: () => (
+          <div className="container mx-auto px-4 py-8 text-center">
+            <h1 className="mb-4 text-2xl font-bold">Failed to load page</h1>
+            <p className="mb-6 text-muted-foreground">
+              There was an error loading the {componentName} page. This may be due to a network issue or a recent deployment.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+            >
+              Retry
+            </button>
+          </div>
+        ),
+      };
+    })
+  );
+};
+
 // Lazy load password and email change pages
 const ChangePassword = lazy(() => import('@/pages/ChangePassword.tsx'));
 const ChangeEmail = lazy(() => import('@/pages/ChangeEmail'));
 const ConfirmEmailChange = lazy(() => import('@/pages/ConfirmEmailChange'));
 
-// Lazy load heavy pages for better initial bundle size
-const Overview = lazy(() =>
-  import('@/pages/Overview').catch(() => {
-    console.error('Failed to load Overview page chunk');
-    return { default: () => <div>Error loading page. Please refresh.</div> };
-  })
-);
-const Dashboard = lazy(() =>
-  import('@/pages/Dashboard').catch(() => {
-    console.error('Failed to load Dashboard page chunk');
-    return { default: () => <div>Error loading page. Please refresh.</div> };
-  })
-);
-const Profile = lazy(() =>
-  import('@/pages/Profile').catch(() => {
-    console.error('Failed to load Profile page chunk');
-    return { default: () => <div>Error loading page. Please refresh.</div> };
-  })
-);
-const AdvancedView = lazy(() =>
-  import('@/pages/AdvancedView').catch(() => {
-    console.error('Failed to load AdvancedView page chunk');
-    return { default: () => <div>Error loading page. Please refresh.</div> };
-  })
-);
-const AdvancedEdit = lazy(() =>
-  import('@/pages/AdvancedEdit').catch(() => {
-    console.error('Failed to load AdvancedEdit page chunk');
-    return { default: () => <div>Error loading page. Please refresh.</div> };
-  })
-);
+// Lazy load heavy pages for better initial bundle size with enhanced error handling
+const Overview = createLazyComponent(() => import('@/pages/Overview'), 'Overview');
+const Dashboard = createLazyComponent(() => import('@/pages/Dashboard'), 'Dashboard');
+const Profile = createLazyComponent(() => import('@/pages/Profile'), 'Profile');
+const AdvancedView = createLazyComponent(() => import('@/pages/AdvancedView'), 'AdvancedView');
+const AdvancedEdit = createLazyComponent(() => import('@/pages/AdvancedEdit'), 'AdvancedEdit');
 
-// Lazy load project-related pages
-const NewProject = lazy(() =>
-  import('@/pages/NewProject').catch(() => {
-    console.error('Failed to load NewProject page chunk');
-    return { default: () => <div>Error loading page. Please refresh.</div> };
-  })
-);
-const ProjectDetail = lazy(() =>
-  import('@/pages/ProjectDetail').catch(() => {
-    console.error('Failed to load ProjectDetail page chunk');
-    return { default: () => <div>Error loading page. Please refresh.</div> };
-  })
-);
-const EditProject = lazy(() =>
-  import('@/pages/EditProject').catch(() => {
-    console.error('Failed to load EditProject page chunk');
-    return { default: () => <div>Error loading page. Please refresh.</div> };
-  })
-);
+// Lazy load project-related pages with enhanced error handling
+const NewProject = createLazyComponent(() => import('@/pages/NewProject'), 'NewProject');
+const ProjectDetail = createLazyComponent(() => {
+  console.log('[AppRoutes] 🔄 Loading ProjectDetail component...');
+  return import('@/pages/ProjectDetail').then(module => {
+    console.log('[AppRoutes] ✅ ProjectDetail component loaded successfully');
+    return module;
+  }).catch(error => {
+    console.error('[AppRoutes] ❌ Failed to load ProjectDetail component:', error);
+    throw error;
+  });
+}, 'ProjectDetail');
+const EditProject = createLazyComponent(() => import('@/pages/EditProject'), 'EditProject');
 
 // Lazy load data management pages
 const CompanyList = lazy(() => import('@/pages/CompanyList'));
@@ -87,6 +83,15 @@ const Import = lazy(() => import('@/pages/Import'));
 const DeleteAccount = lazy(() => import('@/pages/DeleteAccount'));
 const SupportSuccess = lazy(() => import('@/pages/SupportSuccess'));
 
+// Debug wrapper for ProjectDetail route
+const ProjectDetailWrapper: React.FC = () => {
+  console.log('[AppRoutes] 🎯 ProjectDetail route matched! Rendering ProjectDetail component...');
+  console.log('[AppRoutes] Current URL:', window.location.href);
+  console.log('[AppRoutes] Current pathname:', window.location.pathname);
+  
+  return <ProjectDetail />;
+};
+
 
 /**
  * Main application routing configuration
@@ -95,6 +100,10 @@ const SupportSuccess = lazy(() => import('@/pages/SupportSuccess'));
 export const AppRoutes: React.FC = () => {
   // Track pageviews with PostHog
   usePostHogPageTracking();
+
+  if (import.meta.env.DEV) {
+    console.log('[AppRoutes] Rendering routes for pathname:', window.location.pathname);
+  }
 
   return (
     <Routes>
@@ -153,7 +162,7 @@ export const AppRoutes: React.FC = () => {
         element={
           <ProtectedRoute>
             <Suspense fallback={<PageLoading />}>
-              <ProjectDetail />
+              <ProjectDetailWrapper />
             </Suspense>
           </ProtectedRoute>
         }

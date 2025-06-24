@@ -4,11 +4,11 @@
  * Full-featured form for creating diamond painting projects using EditProject layout
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAuth } from '@/hooks/useAuth';
 import { useMetadata } from '@/contexts/MetadataContext';
-import { useCreateProject } from '@/hooks/mutations/useCreateProject';
+import { useCreateProjectWithRedirect } from '@/hooks/mutations/useCreateProjectWithRedirect';
 import { useCreateCompany } from '@/hooks/mutations/useCreateCompany';
 import { useCreateArtist } from '@/hooks/mutations/useCreateArtist';
 import { useNavigate } from 'react-router-dom';
@@ -25,9 +25,10 @@ import { NewProjectStatsTab } from '@/components/projects/tabs/NewProjectStatsTa
 const NewProject = () => {
   const { user, isLoading: authLoading } = useAuth();
   const { companyNames, artistNames, isLoading } = useMetadata();
-  const createProjectMutation = useCreateProject();
+  const createProjectMutation = useCreateProjectWithRedirect();
   const createCompanyMutation = useCreateCompany();
   const createArtistMutation = useCreateArtist();
+  
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState('main');
@@ -65,6 +66,7 @@ const NewProject = () => {
       }));
     }
   }, [user?.id, formData.userId]);
+
 
   const clearError = () => setError(null);
   
@@ -153,12 +155,9 @@ const NewProject = () => {
 
       const newProject = await createProjectMutation.mutateAsync(projectData);
 
-      toast({
-        title: 'Success',
-        description: 'Project created successfully!',
-      });
-
-      navigate(`/projects/${newProject.id}`);
+      // Success toast and navigation are handled by the mutation hook
+      // No manual navigation needed - the hook handles redirect before cache invalidation
+      
     } catch (error) {
       console.error('Failed to create project:', error);
       setError('Failed to create project. Please try again.');
@@ -269,7 +268,10 @@ const NewProject = () => {
               >
                 Cancel
               </Button>
-              <Button onClick={() => handleSubmit(formData)} disabled={submitting || !formData.title?.trim()}>
+              <Button 
+                onClick={() => handleSubmit(formData)} 
+                disabled={submitting || !formData.title?.trim()}
+              >
                 <Save className="mr-2 h-4 w-4" />
                 {submitting ? 'Creating...' : 'Create Project'}
               </Button>

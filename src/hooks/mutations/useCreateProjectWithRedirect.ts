@@ -1,15 +1,17 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { startTransition } from 'react';
 import { pb } from '@/lib/pocketbase';
 import { Collections, ProjectsResponse } from '@/types/pocketbase.types';
 import { queryKeys } from '../queries/queryKeys';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useNavigateToProject } from '@/hooks/useNavigateToProject';
 import { createLogger } from '@/utils/secureLogger';
 import { ClientResponseError } from 'pocketbase';
 import { DashboardStatsService } from '@/services/pocketbase/dashboardStatsService';
 import { TagService } from '@/lib/tags';
 
-const logger = createLogger('useCreateProject');
+const logger = createLogger('useCreateProjectWithRedirect');
 
 interface CreateProjectData {
   title: string;
@@ -32,14 +34,15 @@ interface CreateProjectData {
   tagIds?: string[];
 }
 
-export const useCreateProject = () => {
+export const useCreateProjectWithRedirect = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
+  const navigateToProject = useNavigateToProject();
 
   return useMutation({
     mutationFn: async (data: CreateProjectData): Promise<ProjectsResponse> => {
-      logger.debug('Creating project:', data);
+      logger.debug('Creating project with redirect:', data);
 
       // Resolve company and artist names to IDs if they are provided
       let companyId = null;
@@ -49,7 +52,7 @@ export const useCreateProject = () => {
         try {
           const companyRecord = await pb
             .collection('companies')
-            .getFirstListItem(`name = "${data.company}" && user = "${data.user}"`);
+            .getFirstListItem(pb.filter('name = {:name} && user = {:user}', { name: data.company, user: data.user }));
           companyId = companyRecord?.id || null;
         } catch (error) {
           logger.warn('Company not found:', data.company);
@@ -61,7 +64,7 @@ export const useCreateProject = () => {
         try {
           const artistRecord = await pb
             .collection('artists')
-            .getFirstListItem(`name = "${data.artist}" && user = "${data.user}"`);
+            .getFirstListItem(pb.filter('name = {:name} && user = {:user}', { name: data.artist, user: data.user }));
           artistId = artistRecord?.id || null;
         } catch (error) {
           logger.warn('Artist not found:', data.artist);
@@ -202,46 +205,64 @@ export const useCreateProject = () => {
       }
     },
 
-    onSuccess: async data => {
-      // Invalidate all project lists for this user
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.projects.lists(),
+    onSuccess: async (data) => {
+      logger.info('✅ Project created successfully, initiating navigation');
+
+      // Use our new navigation system for optimistic navigation
+      const navigationResult = await navigateToProject(data.id, {
+        projectData: data,
+        successMessage: `"${data.title}" has been added to your collection.`,
+        replace: true, // Replace current history entry since we're coming from form
+        showLoadingFeedback: true
       });
 
-      // Invalidate the project detail query to ensure fresh data with proper imageUrl
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.projects.detail(data.id),
-      });
-
-      // Invalidate tag stats queries (since new projects affect tag counts)
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.tags.stats(),
-      });
-
-      // Proactively update stats cache when project is created
-      if (user?.id) {
-        try {
-          await DashboardStatsService.updateCacheAfterProjectChange(user.id);
-
-          // Invalidate React Query cache for dashboard stats to ensure immediate UI updates
-          const currentYear = new Date().getFullYear();
-          queryClient.invalidateQueries({
-            queryKey: [...queryKeys.stats.overview(user.id), 'dashboard', currentYear],
-          });
-
-          logger.info('Dashboard stats cache invalidated after project creation');
-        } catch (error) {
-          // Log cache update error but don't propagate to mutation error handler
-          logger.error('Failed to update stats cache after project creation:', error);
-        }
+      if (!navigationResult.success) {
+        logger.error('❌ Navigation failed:', navigationResult.error);
+        // Navigation hook already handles fallbacks and user feedback
       }
 
-      toast({
-        title: 'Project Created',
-        description: `"${data.title}" has been added to your collection.`,
-      });
+      // Add delay before cache invalidation to ensure navigation and React Router context is fully settled
+      await new Promise(resolve => setTimeout(resolve, 150));
 
-      logger.info('Project creation successful, cache invalidated');
+      // Defer cache invalidation to happen after navigation
+      // Use startTransition to mark cache updates as non-urgent
+      startTransition(() => {
+        // Invalidate all project lists for this user
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.projects.lists(),
+        });
+
+        // Invalidate the project detail query to ensure fresh data with proper imageUrl
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.projects.detail(data.id),
+        });
+
+        // Invalidate tag stats queries (since new projects affect tag counts)
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.tags.stats(),
+        });
+
+        // Proactively update stats cache when project is created
+        if (user?.id) {
+          // Use async operation within startTransition for stats update
+          DashboardStatsService.updateCacheAfterProjectChange(user.id)
+            .then(() => {
+              // Invalidate React Query cache for dashboard stats to ensure immediate UI updates
+              const currentYear = new Date().getFullYear();
+              queryClient.invalidateQueries({
+                queryKey: [...queryKeys.stats.overview(user.id), 'dashboard', currentYear],
+              });
+
+              logger.info('Dashboard stats cache invalidated after project creation');
+            })
+            .catch(error => {
+              // Log cache update error but don't propagate to mutation error handler
+              logger.error('Failed to update stats cache after project creation:', error);
+            });
+        }
+
+        logger.info('Project creation cache invalidation completed');
+      });
     },
 
     onError: error => {

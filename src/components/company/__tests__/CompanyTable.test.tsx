@@ -168,7 +168,7 @@ describe('CompanyTable', () => {
 
     return render(
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <BrowserRouter future={{ v7_relativeSplatPath: true }}>
           <CompanyTable companies={companies} loading={false} onCompanyUpdated={mockOnEdit} />
         </BrowserRouter>
       </QueryClientProvider>

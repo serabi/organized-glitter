@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { startTransition } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { pb } from '@/lib/pocketbase';
 import { Collections } from '@/types/pocketbase.types';
@@ -295,9 +296,9 @@ export const useDeleteProgressNoteImageMutation = () => {
  */
 export const useArchiveProjectMutation = () => {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   return useMutation({
     mutationFn: async ({ projectId }: { projectId: string }) => {
@@ -307,12 +308,7 @@ export const useArchiveProjectMutation = () => {
         .update(projectId, { status: PROJECT_STATUS.ARCHIVED });
     },
     onSuccess: async (_, { projectId }) => {
-      // Invalidate all project-related queries and update stats cache
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: queryKeys.projects.all }),
-        invalidateProjectQueries(queryClient, projectId, user?.id),
-      ]);
-
+      // Show immediate user feedback
       toast({
         title: 'Project Archived',
         description: 'Your project has been archived successfully',
@@ -321,10 +317,23 @@ export const useArchiveProjectMutation = () => {
 
       logger.info('Project archived successfully:', { projectId });
 
-      // Navigate to dashboard after a brief delay
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 500);
+      // Navigate using React Router for consistent routing
+      logger.info('🚀 Navigating to dashboard');
+      navigate('/dashboard', { replace: true });
+
+      // Defer cache invalidation to happen after navigation
+      // Use startTransition to mark cache updates as non-urgent
+      startTransition(() => {
+        // Invalidate all project-related queries and update stats cache
+        Promise.all([
+          queryClient.invalidateQueries({ queryKey: queryKeys.projects.all }),
+          invalidateProjectQueries(queryClient, projectId, user?.id),
+        ]).catch(error => {
+          logger.error('Failed to invalidate queries after project archive:', error);
+        });
+
+        logger.info('Project archive cache invalidation completed');
+      });
     },
     onError: error => {
       handleMutationError(error, 'archive project', toast);
@@ -401,9 +410,9 @@ const deleteProjectRelatedRecords = async (projectId: string) => {
  */
 export const useDeleteProjectMutation = () => {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   return useMutation({
     mutationFn: async ({ projectId, title }: { projectId: string; title?: string }) => {
@@ -416,13 +425,7 @@ export const useDeleteProjectMutation = () => {
       return await pb.collection(Collections.Projects).delete(projectId);
     },
     onSuccess: async (_, { projectId, title }) => {
-      // Invalidate all project-related queries
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: queryKeys.projects.all }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.progressNotes.all }),
-        invalidateProjectQueries(queryClient, projectId, user?.id),
-      ]);
-
+      // Show immediate user feedback
       toast({
         title: 'Project Deleted',
         description: title
@@ -433,10 +436,24 @@ export const useDeleteProjectMutation = () => {
 
       logger.info('Project deleted successfully:', { projectId, title });
 
-      // Navigate to dashboard after a brief delay
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 500);
+      // Navigate using React Router for consistent routing
+      logger.info('🚀 Navigating to dashboard');
+      navigate('/dashboard', { replace: true });
+
+      // Defer cache invalidation to happen after navigation
+      // Use startTransition to mark cache updates as non-urgent
+      startTransition(() => {
+        // Invalidate all project-related queries
+        Promise.all([
+          queryClient.invalidateQueries({ queryKey: queryKeys.projects.all }),
+          queryClient.invalidateQueries({ queryKey: queryKeys.progressNotes.all }),
+          invalidateProjectQueries(queryClient, projectId, user?.id),
+        ]).catch(error => {
+          logger.error('Failed to invalidate queries after project deletion:', error);
+        });
+
+        logger.info('Project deletion cache invalidation completed');
+      });
     },
     onError: error => {
       handleMutationError(error, 'delete project', toast);

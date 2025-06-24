@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAuth } from '@/hooks/useAuth';
 import { useEditProjectSimplified } from '@/hooks/useEditProjectSimplified';
@@ -17,6 +17,7 @@ import { ProjectStatsTabSimple } from '@/components/projects/tabs/ProjectStatsTa
 const EditProject = () => {
   const { id } = useParams<{ id: string }>();
   const { user, isLoading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('main');
 
   const {
@@ -28,7 +29,6 @@ const EditProject = () => {
     formData,
     navigationState,
     clearNavigationError,
-    handleCancel,
     handleFormChange,
     handleSubmit,
     handleArchive,
@@ -36,6 +36,15 @@ const EditProject = () => {
     // refreshLists, // Removed as it's unused
     ConfirmationDialog,
   } = useEditProjectSimplified(id);
+
+  // Simple back navigation - use direct React Router navigation
+  const handleCancel = () => {
+    if (id) {
+      navigate(`/projects/${id}`);
+    } else {
+      navigate('/dashboard');
+    }
+  };
 
   if (authLoading || loading) {
     return (
@@ -78,10 +87,10 @@ const EditProject = () => {
               variant="ghost"
               size="sm"
               onClick={handleCancel}
-              disabled={navigationState.isNavigating}
+              disabled={submitting}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              {navigationState.isNavigating ? 'Navigating...' : 'Back'}
+              Back
             </Button>
             <h1 className="text-2xl font-bold">Edit Project</h1>
           </div>
@@ -134,9 +143,9 @@ const EditProject = () => {
                 type="button"
                 variant="outline"
                 onClick={handleCancel}
-                disabled={submitting || navigationState.isNavigating}
+                disabled={submitting}
               >
-                {navigationState.isNavigating ? 'Navigating...' : 'Cancel'}
+                Cancel
               </Button>
               <Button
                 onClick={async () => {
@@ -148,14 +157,10 @@ const EditProject = () => {
                     }
                   }
                 }}
-                disabled={submitting || !formData || navigationState.isNavigating}
+                disabled={submitting || !formData}
               >
                 <Save className="mr-2 h-4 w-4" />
-                {submitting
-                  ? 'Saving...'
-                  : navigationState.isNavigating
-                    ? 'Saving & Navigating...'
-                    : 'Update Project'}
+                {submitting ? 'Saving...' : 'Update Project'}
               </Button>
             </div>
           </CardContent>
