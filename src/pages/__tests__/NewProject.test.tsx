@@ -36,12 +36,8 @@ vi.mock('@/hooks/mutations/useCreateCompany', () => ({
 vi.mock('@/hooks/mutations/useCreateArtist', () => ({
   useCreateArtist: vi.fn(),
 }));
-vi.mock('@/contexts/MetadataContext', () => ({
-  useMetadata: vi.fn(),
-}));
-vi.mock('@/hooks/useAuth', () => ({
-  useAuth: vi.fn(),
-}));
+vi.mock('@/contexts/MetadataContext');
+vi.mock('@/hooks/useAuth');
 vi.mock('@/components/projects/ProjectForm', () => ({
   default: vi.fn(),
 }));
@@ -83,6 +79,7 @@ vi.mock('react-router-dom', async () => {
 // Import everything after mocks
 import NewProject from '../NewProject';
 import { useAuth } from '@/hooks/useAuth';
+import { useMetadata } from '@/contexts/MetadataContext';
 
 // Type-only imports to avoid module resolution issues (Mock already imported above)
 
@@ -94,7 +91,6 @@ const pb = { authStore: { model: null as any } };
 const useUserMetadata = vi.fn();
 const useCreateCompany = vi.fn();
 const useCreateArtist = vi.fn();
-const useMetadata = vi.fn();
 const useNavigate = vi.fn();
 const ProjectForm = vi.fn();
 const MainLayout = vi.fn();
@@ -103,13 +99,11 @@ const Loader2 = vi.fn();
 const AlertTriangle = vi.fn();
 
 // Type assertions for mocked functions to help TypeScript
-
-const mockUseCreateProject = useCreateProject as Mock;
 const mockUseCreateProjectWithRedirect = useCreateProjectWithRedirect as Mock;
 const mockUseUserMetadata = useUserMetadata as Mock;
 const mockUseCreateCompany = useCreateCompany as Mock;
 const mockUseCreateArtist = useCreateArtist as Mock;
-const mockUseMetadata = useMetadata as Mock;
+const mockUseMetadata = vi.mocked(useMetadata);
 const mockUseAuth = vi.mocked(useAuth);
 const mockUseNavigate = useNavigate as Mock;
 const mockProjectForm = ProjectForm as unknown as Mock;

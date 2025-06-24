@@ -52,7 +52,7 @@ export const useCreateProjectWithRedirect = () => {
         try {
           const companyRecord = await pb
             .collection('companies')
-            .getFirstListItem(`name = "${data.company}" && user = "${data.user}"`);
+            .getFirstListItem(pb.filter('name = {:name} && user = {:user}', { name: data.company, user: data.user }));
           companyId = companyRecord?.id || null;
         } catch (error) {
           logger.warn('Company not found:', data.company);
@@ -64,7 +64,7 @@ export const useCreateProjectWithRedirect = () => {
         try {
           const artistRecord = await pb
             .collection('artists')
-            .getFirstListItem(`name = "${data.artist}" && user = "${data.user}"`);
+            .getFirstListItem(pb.filter('name = {:name} && user = {:user}', { name: data.artist, user: data.user }));
           artistId = artistRecord?.id || null;
         } catch (error) {
           logger.warn('Artist not found:', data.artist);
