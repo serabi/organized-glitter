@@ -172,23 +172,59 @@ const fetchProjectDetail = async (projectId: string): Promise<ProjectType> => {
 
 /**
  * React Query hook for fetching project detail data
+ * Now includes authentication state dependencies to prevent race conditions
  */
-export const useProjectDetailQuery = (projectId: string | undefined) => {
+export const useProjectDetailQuery = (
+  projectId: string | undefined,
+  isAuthenticated?: boolean,
+  initialCheckComplete?: boolean
+) => {
+  // Log auth state for debugging
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[useProjectDetailQuery] Auth state:', {
+      projectId,
+      isAuthenticated,
+      initialCheckComplete,
+      enabled: !!projectId && (isAuthenticated ?? true) && (initialCheckComplete ?? true)
+    });
+  }
+
   return useQuery({
     queryKey: queryKeys.projects.detail(projectId!),
     queryFn: () => fetchProjectDetail(projectId!),
-    enabled: !!projectId,
+    enabled: !!projectId && (isAuthenticated ?? true) && (initialCheckComplete ?? true),
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: (failureCount, error) => {
-      // Don't retry on 404 errors, but be more specific about what constitutes a real 404
-      if (error && typeof error === 'object' && 'status' in error && error.status === 404) {
-        // If the error message suggests it's an expand issue, allow retry
-        const errorMessage = 'message' in error ? String(error.message) : '';
-        if (errorMessage.includes('expand') || errorMessage.includes('relation')) {
-          return failureCount < 2; // Allow some retries for expand failures
-        }
-        return false; // True 404 - project doesn't exist
+      // Log retry attempts for debugging
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[useProjectDetailQuery] Retry attempt:', {
+          failureCount,
+          error,
+          errorStatus: error && typeof error === 'object' && 'status' in error ? error.status : 'unknown'
+        });
       }
+
+      // Handle authentication errors - retry up to 2 times
+      if (error && typeof error === 'object' && 'status' in error) {
+        if (error.status === 401 || error.status === 403) {
+          console.log('[useProjectDetailQuery] Auth error detected, retrying...', { failureCount });
+          return failureCount < 2;
+        }
+        
+        // Handle 404 errors more carefully
+        if (error.status === 404) {
+          // If the error message suggests it's an expand issue, allow retry
+          const errorMessage = 'message' in error ? String(error.message) : '';
+          if (errorMessage.includes('expand') || errorMessage.includes('relation')) {
+            console.log('[useProjectDetailQuery] Expand-related 404, retrying...', { failureCount });
+            return failureCount < 2; // Allow some retries for expand failures
+          }
+          console.log('[useProjectDetailQuery] True 404 - project not found, not retrying');
+          return false; // True 404 - project doesn't exist
+        }
+      }
+      
+      // Default retry logic for other errors
       return failureCount < 3;
     },
   });
