@@ -28,14 +28,14 @@ export const queryClient = new QueryClient({
 // Override cache settings for image-related queries
 queryClient.setQueryDefaults(['optimized-image'], {
   staleTime: 30 * 60 * 1000, // 30 minutes for optimized images
-  gcTime: 60 * 60 * 1000,    // 1 hour retention for images
+  gcTime: 60 * 60 * 1000, // 1 hour retention for images
   refetchOnWindowFocus: false, // Images don't change frequently
-  refetchOnReconnect: false,   // Avoid unnecessary image refetches
+  refetchOnReconnect: false, // Avoid unnecessary image refetches
 });
 
 queryClient.setQueryDefaults(['progressive-image'], {
   staleTime: 30 * 60 * 1000, // 30 minutes for progressive images
-  gcTime: 60 * 60 * 1000,    // 1 hour retention for images
+  gcTime: 60 * 60 * 1000, // 1 hour retention for images
   refetchOnWindowFocus: false,
   refetchOnReconnect: false,
 });

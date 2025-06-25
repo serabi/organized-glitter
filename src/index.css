@@ -198,14 +198,14 @@
       min-height: 100vh; /* Fallback for older browsers */
       min-height: 100dvh; /* Dynamic viewport height for mobile */
     }
-    
+
     /* Optimize form inputs for mobile */
-    input[type="text"],
-    input[type="email"],
-    input[type="password"],
-    input[type="number"],
-    input[type="tel"],
-    input[type="url"],
+    input[type='text'],
+    input[type='email'],
+    input[type='password'],
+    input[type='number'],
+    input[type='tel'],
+    input[type='url'],
     textarea,
     select {
       /* Prevent zoom on input focus across mobile browsers */
@@ -213,12 +213,12 @@
       /* Better mobile touch handling */
       touch-action: manipulation;
     }
-    
+
     /* Improve mobile touch targets */
     button,
-    [role="button"],
-    input[type="submit"],
-    input[type="button"] {
+    [role='button'],
+    input[type='submit'],
+    input[type='button'] {
       touch-action: manipulation;
       min-height: 44px; /* iOS and Android recommended minimum */
     }
@@ -239,12 +239,12 @@
   .touch-manipulation {
     touch-action: manipulation;
   }
-  
+
   .mobile-input {
     font-size: 16px; /* Prevent mobile zoom */
     touch-action: manipulation;
   }
-  
+
   .mobile-touch-target {
     min-height: 44px;
     min-width: 44px;
@@ -290,6 +290,114 @@
     @apply before:via-gray-700/20;
   }
 
+  /* Progressive Image Loading Animations */
+  .progressive-fade-in {
+    @apply transition-opacity duration-300 ease-out;
+    opacity: 0;
+  }
+
+  .progressive-fade-in.loaded {
+    opacity: 1;
+  }
+
+  .progressive-crossfade {
+    @apply relative overflow-hidden;
+  }
+
+  .progressive-crossfade .image-layer {
+    @apply absolute inset-0 transition-opacity duration-500 ease-out;
+  }
+
+  .progressive-crossfade .image-layer.placeholder {
+    opacity: 1;
+    z-index: 1;
+  }
+
+  .progressive-crossfade .image-layer.full-quality {
+    opacity: 0;
+    z-index: 2;
+  }
+
+  .progressive-crossfade .image-layer.full-quality.loaded {
+    opacity: 1;
+  }
+
+  .progressive-blur-to-sharp {
+    @apply transition-all duration-700 ease-out;
+    filter: blur(8px);
+    transform: scale(1.02);
+  }
+
+  .progressive-blur-to-sharp.loaded {
+    filter: blur(0px);
+    transform: scale(1);
+  }
+
+  .progressive-placeholder {
+    @apply shimmer animate-pulse bg-muted/50;
+    background-image: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(var(--muted)) 20%,
+      hsl(var(--muted)) 80%,
+      transparent 100%
+    );
+  }
+
+  .progressive-loading-overlay {
+    @apply absolute inset-0 flex items-center justify-center bg-black/10 backdrop-blur-[1px] transition-opacity duration-300;
+    opacity: 1;
+  }
+
+  .progressive-loading-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .progressive-quality-badge {
+    @apply rounded-md bg-white/20 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm;
+    transition: all 0.3s ease-out;
+  }
+
+  .progressive-quality-badge.upgrading {
+    @apply animate-pulse bg-blue-500/30;
+  }
+
+  .progressive-progress-bar {
+    @apply absolute bottom-0 left-0 h-1 bg-blue-500/30 transition-all duration-300;
+    width: 0%;
+  }
+
+  .progressive-progress-bar.loading {
+    @apply animate-pulse;
+    width: 33%;
+  }
+
+  .progressive-progress-bar.medium {
+    width: 66%;
+  }
+
+  .progressive-progress-bar.complete {
+    width: 100%;
+    @apply bg-green-500/40;
+  }
+
+  /* Respect reduced motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    .progressive-fade-in,
+    .progressive-crossfade .image-layer,
+    .progressive-blur-to-sharp,
+    .progressive-loading-overlay {
+      transition: none !important;
+      animation: none !important;
+    }
+
+    .progressive-blur-to-sharp {
+      filter: none !important;
+      transform: none !important;
+    }
+  }
+
   /* Additional styles for better dark mode dropdown visibility */
   .dark [data-radix-select-content],
   .dark [data-radix-dropdown-menu-content] {
@@ -331,15 +439,15 @@
    * Addresses form freezing issues on iOS Safari (Issue #2)
    * https://github.com/serabi/organized-glitter/issues/2
    */
-  
+
   /* Disable animations for users who prefer reduced motion (accessibility + iOS Safari compatibility) */
   @media (prefers-reduced-motion: reduce) {
-    [data-state="open"],
-    [data-state="closed"] {
+    [data-state='open'],
+    [data-state='closed'] {
       animation: none !important;
       transition: none !important;
     }
-    
+
     .animate-in,
     .animate-out,
     .fade-in-0,
@@ -365,18 +473,18 @@
       -webkit-user-select: none;
       user-select: none;
     }
-    
+
     /* Prevent iOS Safari zoom on form focus */
-    input[type="text"],
-    input[type="email"],
-    input[type="url"],
-    input[type="tel"],
+    input[type='text'],
+    input[type='email'],
+    input[type='url'],
+    input[type='tel'],
     textarea,
     select {
       font-size: 16px; /* Fallback for browsers that don't support max() */
       font-size: max(16px, 1rem);
     }
-    
+
     /* Optimize rendering performance for complex dropdowns */
     [data-radix-select-content] {
       -webkit-overflow-scrolling: touch;

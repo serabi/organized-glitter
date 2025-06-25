@@ -5,10 +5,10 @@ const logger = createLogger('ImageService');
 
 // Standardized image size configurations for consistent UI
 export const IMAGE_SIZES = {
-  thumbnail: '150x150',      // Gallery grids, small previews
-  card: '300x200f',          // Project cards, preserves aspect ratio
-  preview: '600x400f',       // Modal previews, detail views
-  large: '800x600f',         // High-quality viewing
+  thumbnail: '150x150', // Gallery grids, small previews
+  card: '300x200f', // Project cards, preserves aspect ratio
+  preview: '600x400f', // Modal previews, detail views
+  large: '800x600f', // High-quality viewing
 } as const;
 
 export type ImageSizeKey = keyof typeof IMAGE_SIZES;
@@ -28,7 +28,7 @@ export interface OptimizedImageResult {
 }
 
 /**
- * ImageService provides optimized image URL generation using PocketBase's 
+ * ImageService provides optimized image URL generation using PocketBase's
  * native thumbnail capabilities. Reduces bandwidth usage by 60-95% while
  * maintaining visual quality at appropriate display sizes.
  */
@@ -48,15 +48,17 @@ export class ImageService {
     options: Omit<ImageOptions, 'thumb'> = {}
   ): string {
     if (!record || !filename) {
-      logger.warn('Missing record or filename for image optimization', { record: !!record, filename });
+      logger.warn('Missing record or filename for image optimization', {
+        record: !!record,
+        filename,
+      });
       return '';
     }
 
     try {
       // Get thumb parameter from size key or use custom string
-      const thumbParam = typeof size === 'string' && size in IMAGE_SIZES 
-        ? IMAGE_SIZES[size as ImageSizeKey]
-        : size;
+      const thumbParam =
+        typeof size === 'string' && size in IMAGE_SIZES ? IMAGE_SIZES[size as ImageSizeKey] : size;
 
       const imageOptions: ImageOptions = {
         ...options,
@@ -64,7 +66,7 @@ export class ImageService {
       };
 
       const url = pb.files.getURL(record, filename, imageOptions);
-      
+
       if (import.meta.env.DEV) {
         logger.debug('Generated optimized image URL', {
           recordId: record.id,
@@ -77,7 +79,12 @@ export class ImageService {
 
       return url;
     } catch (error) {
-      logger.error('Failed to generate optimized image URL', { error, record: record?.id, filename, size });
+      logger.error('Failed to generate optimized image URL', {
+        error,
+        record: record?.id,
+        filename,
+        size,
+      });
       // Fallback to original image if optimization fails
       return this.getFallbackUrl(record, filename, options);
     }
@@ -100,7 +107,11 @@ export class ImageService {
     try {
       return pb.files.getURL(record, filename, options);
     } catch (error) {
-      logger.error('Failed to generate full resolution image URL', { error, record: record?.id, filename });
+      logger.error('Failed to generate full resolution image URL', {
+        error,
+        record: record?.id,
+        filename,
+      });
       return '';
     }
   }
@@ -140,7 +151,7 @@ export class ImageService {
   ): string {
     const contextSizeMap: Record<string, ImageSizeKey> = {
       gallery: 'thumbnail',
-      card: 'card', 
+      card: 'card',
       modal: 'preview',
       detail: 'large',
       avatar: 'thumbnail',
@@ -151,17 +162,75 @@ export class ImageService {
   }
 
   /**
-   * Generate progressive loading URLs (thumbnail -> high quality)
+   * Generate progressive loading URLs with multiple quality steps
    * @param record - PocketBase record containing the image
    * @param filename - Name of the image file
-   * @returns Object with placeholder and full quality URLs
+   * @param strategy - Progressive loading strategy: 'standard' (2-step) or 'enhanced' (3-step)
+   * @returns Object with progressive quality URLs
    */
-  static getProgressiveUrls(record: Record<string, unknown> & { id: string }, filename: string) {
-    return {
-      placeholder: this.getOptimizedUrl(record, filename, 'thumbnail'),
-      fullQuality: this.getOptimizedUrl(record, filename, 'large'),
+  static getProgressiveUrls(
+    record: Record<string, unknown> & { id: string },
+    filename: string,
+    strategy: 'standard' | 'enhanced' = 'standard'
+  ) {
+    const baseUrls = {
+      placeholder: this.getOptimizedUrl(record, filename, 'thumbnail'), // 150x150
+      fullQuality: this.getOptimizedUrl(record, filename, 'large'), // 800x600
       original: this.getFullResolutionUrl(record, filename),
     };
+
+    if (strategy === 'enhanced') {
+      return {
+        ...baseUrls,
+        medium: this.getOptimizedUrl(record, filename, 'card'), // 400x300 - middle step
+      };
+    }
+
+    return baseUrls;
+  }
+
+  /**
+   * Get context-aware progressive URLs optimized for specific display contexts
+   * @param record - PocketBase record containing the image
+   * @param filename - Name of the image file
+   * @param context - Display context for size optimization
+   * @returns Progressive URLs optimized for the context
+   */
+  static getContextualProgressiveUrls(
+    record: Record<string, unknown> & { id: string },
+    filename: string,
+    context: 'gallery' | 'card' | 'modal' | 'detail' | 'avatar' = 'card'
+  ) {
+    // Define context-specific progressive strategies
+    const contextStrategies = {
+      avatar: {
+        placeholder: this.getOptimizedUrl(record, filename, 'thumbnail'), // 150x150
+        fullQuality: this.getOptimizedUrl(record, filename, 'card'), // 400x300 (sufficient for avatars)
+      },
+      gallery: {
+        placeholder: this.getOptimizedUrl(record, filename, 'thumbnail'), // 150x150
+        medium: this.getOptimizedUrl(record, filename, 'card'), // 400x300
+        fullQuality: this.getOptimizedUrl(record, filename, 'preview'), // 600x450
+      },
+      card: {
+        placeholder: this.getOptimizedUrl(record, filename, 'thumbnail'), // 150x150
+        fullQuality: this.getOptimizedUrl(record, filename, 'card'), // 400x300
+      },
+      modal: {
+        placeholder: this.getOptimizedUrl(record, filename, 'thumbnail'), // 150x150
+        medium: this.getOptimizedUrl(record, filename, 'card'), // 400x300
+        fullQuality: this.getOptimizedUrl(record, filename, 'large'), // 800x600
+        original: this.getFullResolutionUrl(record, filename),
+      },
+      detail: {
+        placeholder: this.getOptimizedUrl(record, filename, 'thumbnail'), // 150x150
+        medium: this.getOptimizedUrl(record, filename, 'preview'), // 600x450
+        fullQuality: this.getOptimizedUrl(record, filename, 'large'), // 800x600
+        original: this.getFullResolutionUrl(record, filename),
+      },
+    };
+
+    return contextStrategies[context];
   }
 
   /**
@@ -180,7 +249,11 @@ export class ImageService {
       // Try to get original image as fallback
       return pb.files.getURL(record, filename, options);
     } catch (error) {
-      logger.error('Failed to generate fallback image URL', { error, record: record?.id, filename });
+      logger.error('Failed to generate fallback image URL', {
+        error,
+        record: record?.id,
+        filename,
+      });
       return '';
     }
   }
@@ -193,10 +266,10 @@ export class ImageService {
   private static estimateBandwidthSavings(thumbParam: string): string {
     // Rough estimates based on typical image compression ratios
     const savingsMap: Record<string, string> = {
-      '150x150': '95%',     // Tiny thumbnails
-      '300x200f': '85%',    // Card images  
-      '600x400f': '70%',    // Preview images
-      '800x600f': '60%',    // Large previews
+      '150x150': '95%', // Tiny thumbnails
+      '300x200f': '85%', // Card images
+      '600x400f': '70%', // Preview images
+      '800x600f': '60%', // Large previews
     };
 
     return savingsMap[thumbParam] || '50%';
@@ -219,7 +292,11 @@ export class ImageService {
    * @param thumb - Optional thumbnail parameter (legacy support)
    * @returns Optimized or original image URL
    */
-  static getUrl(record: Record<string, unknown> & { id: string }, filename: string, thumb?: string): string {
+  static getUrl(
+    record: Record<string, unknown> & { id: string },
+    filename: string,
+    thumb?: string
+  ): string {
     if (!record || !filename) return '';
 
     if (thumb) {

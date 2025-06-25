@@ -63,11 +63,7 @@ describe('useOptimizedImage', () => {
       expect(result.current.imageUrl).toBe(mockImageUrl);
     });
 
-    expect(ImageService.getOptimizedUrl).toHaveBeenCalledWith(
-      mockRecord,
-      mockFilename,
-      'card'
-    );
+    expect(ImageService.getOptimizedUrl).toHaveBeenCalledWith(mockRecord, mockFilename, 'card');
   });
 
   it('should use contextual URL when no size specified', async () => {
@@ -85,11 +81,7 @@ describe('useOptimizedImage', () => {
       expect(result.current.imageUrl).toBe(mockImageUrl);
     });
 
-    expect(ImageService.getContextualUrl).toHaveBeenCalledWith(
-      mockRecord,
-      mockFilename,
-      'gallery'
-    );
+    expect(ImageService.getContextualUrl).toHaveBeenCalledWith(mockRecord, mockFilename, 'gallery');
   });
 
   it('should not fetch when disabled', () => {
@@ -111,7 +103,7 @@ describe('useOptimizedImage', () => {
     renderHook(
       () =>
         useOptimizedImage({
-          record: null as any,
+          record: null as unknown as Record<string, unknown> & { id: string },
           filename: mockFilename,
         }),
       { wrapper: createWrapper() }
@@ -216,7 +208,11 @@ describe('useImagePrefetcher', () => {
       { record: { id: 'record2' }, filename: '' },
     ];
 
-    result.current.prefetchImages(invalidImages as any, 'high');
+    result.current.prefetchImages(invalidImages as Array<{
+      record: Record<string, unknown> & { id: string };
+      filename: string;
+      context?: 'gallery' | 'card' | 'modal';
+    }>, 'high');
 
     expect(ImageService.getContextualUrl).not.toHaveBeenCalled();
   });

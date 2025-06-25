@@ -37,7 +37,7 @@ describe('ImageService', () => {
   describe('getOptimizedUrl', () => {
     it('should generate URL with thumbnail parameter for predefined sizes', () => {
       const url = ImageService.getOptimizedUrl(mockRecord, mockFilename, 'card');
-      
+
       expect(url).toBe(
         `https://data.organizedglitter.app/api/files/projects/test-record-id/test-image.jpg?thumb=${IMAGE_SIZES.card}`
       );
@@ -46,14 +46,14 @@ describe('ImageService', () => {
     it('should generate URL with custom thumbnail parameter', () => {
       const customThumb = '400x300f';
       const url = ImageService.getOptimizedUrl(mockRecord, mockFilename, customThumb);
-      
+
       expect(url).toBe(
         `https://data.organizedglitter.app/api/files/projects/test-record-id/test-image.jpg?thumb=${customThumb}`
       );
     });
 
     it('should return empty string for missing record', () => {
-      const url = ImageService.getOptimizedUrl(null as any, mockFilename, 'card');
+      const url = ImageService.getOptimizedUrl(null as unknown as Record<string, unknown> & { id: string }, mockFilename, 'card');
       expect(url).toBe('');
     });
 
@@ -64,7 +64,7 @@ describe('ImageService', () => {
 
     it('should use default card size when no size specified', () => {
       const url = ImageService.getOptimizedUrl(mockRecord, mockFilename);
-      
+
       expect(url).toBe(
         `https://data.organizedglitter.app/api/files/projects/test-record-id/test-image.jpg?thumb=${IMAGE_SIZES.card}`
       );
@@ -74,14 +74,14 @@ describe('ImageService', () => {
   describe('getFullResolutionUrl', () => {
     it('should generate URL without thumbnail parameter', () => {
       const url = ImageService.getFullResolutionUrl(mockRecord, mockFilename);
-      
+
       expect(url).toBe(
         'https://data.organizedglitter.app/api/files/projects/test-record-id/test-image.jpg'
       );
     });
 
     it('should return empty string for missing record', () => {
-      const url = ImageService.getFullResolutionUrl(null as any, mockFilename);
+      const url = ImageService.getFullResolutionUrl(null as unknown as Record<string, unknown> & { id: string }, mockFilename);
       expect(url).toBe('');
     });
   });
@@ -89,7 +89,7 @@ describe('ImageService', () => {
   describe('getContextualUrl', () => {
     it('should return thumbnail size for gallery context', () => {
       const url = ImageService.getContextualUrl(mockRecord, mockFilename, 'gallery');
-      
+
       expect(url).toBe(
         `https://data.organizedglitter.app/api/files/projects/test-record-id/test-image.jpg?thumb=${IMAGE_SIZES.thumbnail}`
       );
@@ -97,7 +97,7 @@ describe('ImageService', () => {
 
     it('should return card size for card context', () => {
       const url = ImageService.getContextualUrl(mockRecord, mockFilename, 'card');
-      
+
       expect(url).toBe(
         `https://data.organizedglitter.app/api/files/projects/test-record-id/test-image.jpg?thumb=${IMAGE_SIZES.card}`
       );
@@ -105,7 +105,7 @@ describe('ImageService', () => {
 
     it('should return preview size for modal context', () => {
       const url = ImageService.getContextualUrl(mockRecord, mockFilename, 'modal');
-      
+
       expect(url).toBe(
         `https://data.organizedglitter.app/api/files/projects/test-record-id/test-image.jpg?thumb=${IMAGE_SIZES.preview}`
       );
@@ -113,15 +113,15 @@ describe('ImageService', () => {
 
     it('should return large size for detail context', () => {
       const url = ImageService.getContextualUrl(mockRecord, mockFilename, 'detail');
-      
+
       expect(url).toBe(
         `https://data.organizedglitter.app/api/files/projects/test-record-id/test-image.jpg?thumb=${IMAGE_SIZES.large}`
       );
     });
 
     it('should default to card size for unknown context', () => {
-      const url = ImageService.getContextualUrl(mockRecord, mockFilename, 'unknown' as any);
-      
+      const url = ImageService.getContextualUrl(mockRecord, mockFilename, 'unknown' as 'gallery' | 'card' | 'modal' | 'detail' | 'avatar');
+
       expect(url).toBe(
         `https://data.organizedglitter.app/api/files/projects/test-record-id/test-image.jpg?thumb=${IMAGE_SIZES.card}`
       );
@@ -131,7 +131,7 @@ describe('ImageService', () => {
   describe('getResponsiveUrls', () => {
     it('should generate multiple URLs for different sizes', () => {
       const urls = ImageService.getResponsiveUrls(mockRecord, mockFilename, ['thumbnail', 'card']);
-      
+
       expect(urls).toHaveLength(2);
       expect(urls[0]).toEqual({
         url: `https://data.organizedglitter.app/api/files/projects/test-record-id/test-image.jpg?thumb=${IMAGE_SIZES.thumbnail}`,
@@ -146,7 +146,7 @@ describe('ImageService', () => {
     });
 
     it('should return empty array for missing record', () => {
-      const urls = ImageService.getResponsiveUrls(null as any, mockFilename);
+      const urls = ImageService.getResponsiveUrls(null as unknown as Record<string, unknown> & { id: string }, mockFilename);
       expect(urls).toEqual([]);
     });
   });
@@ -154,7 +154,7 @@ describe('ImageService', () => {
   describe('getProgressiveUrls', () => {
     it('should generate placeholder, full quality, and original URLs', () => {
       const urls = ImageService.getProgressiveUrls(mockRecord, mockFilename);
-      
+
       expect(urls.placeholder).toBe(
         `https://data.organizedglitter.app/api/files/projects/test-record-id/test-image.jpg?thumb=${IMAGE_SIZES.thumbnail}`
       );
@@ -197,7 +197,7 @@ describe('ImageService', () => {
   describe('getUrl - backward compatibility', () => {
     it('should use provided thumb parameter', () => {
       const url = ImageService.getUrl(mockRecord, mockFilename, '200x200');
-      
+
       expect(url).toBe(
         'https://data.organizedglitter.app/api/files/projects/test-record-id/test-image.jpg?thumb=200x200'
       );
@@ -205,7 +205,7 @@ describe('ImageService', () => {
 
     it('should default to card size when no thumb provided', () => {
       const url = ImageService.getUrl(mockRecord, mockFilename);
-      
+
       expect(url).toBe(
         `https://data.organizedglitter.app/api/files/projects/test-record-id/test-image.jpg?thumb=${IMAGE_SIZES.card}`
       );
