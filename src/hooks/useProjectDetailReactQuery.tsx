@@ -9,15 +9,33 @@ import {
   useArchiveProjectMutation,
   useDeleteProjectMutation,
 } from '@/hooks/mutations/useProjectDetailMutations';
+import { useAuth } from '@/hooks/useAuth';
 import { ProjectStatus } from '@/types/project';
 
 /**
  * React Query-based hook for managing a project's details, status, notes, and progress notes
  * This replaces the original useProjectDetail hook with React Query for better caching and state management
+ * Now includes authentication state to prevent race conditions
  */
 export const useProjectDetailReactQuery = (projectId: string | undefined) => {
-  // Main project detail query
-  const { data: project, isLoading: loading, error, refetch } = useProjectDetailQuery(projectId);
+  // Get authentication state to prevent race conditions
+  const { isAuthenticated, initialCheckComplete } = useAuth();
+  
+  // Log auth state for debugging
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[useProjectDetailReactQuery] Auth state:', {
+      projectId,
+      isAuthenticated,
+      initialCheckComplete
+    });
+  }
+
+  // Main project detail query with auth dependencies
+  const { data: project, isLoading: loading, error, refetch } = useProjectDetailQuery(
+    projectId,
+    isAuthenticated,
+    initialCheckComplete
+  );
 
   // Mutation hooks
   const updateStatusMutation = useUpdateProjectStatusMutation();

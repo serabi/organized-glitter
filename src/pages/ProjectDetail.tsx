@@ -16,9 +16,10 @@ import { ProjectContentErrorBoundary } from '@/components/error/ComponentErrorBo
  * ProjectDetail - Project detail page
  *
  * This component uses the project service layer for reliable data fetching.
+ * Enhanced with better error handling and auth state tracking
  */
 const ProjectDetail = () => {
-  console.log('[ProjectDetail] 🎯 ProjectDetail component mounting!');
+  console.log('[ProjectDetail] ProjectDetail component mounting!');
   console.log('[ProjectDetail] Current URL:', window.location.href);
   console.log('[ProjectDetail] Current pathname:', window.location.pathname);
   
@@ -28,9 +29,10 @@ const ProjectDetail = () => {
   const navigate = useNavigate();
   const navigateToProjectEdit = useNavigateToProjectEdit();
   const isMobile = useIsMobile();
-  useAuth(); // Keep the auth check for authentication status
+  const { isAuthenticated, initialCheckComplete, isLoading: authLoading } = useAuth();
 
   console.log('[ProjectDetail] Extracted project ID from params:', projectId);
+  console.log('[ProjectDetail] Auth state:', { isAuthenticated, initialCheckComplete, authLoading });
   
   // Check for optimistic navigation data in location state
   const navigationState = location.state as {
@@ -41,7 +43,7 @@ const ProjectDetail = () => {
   } | null;
   
   if (navigationState?.fromNavigation) {
-    console.log('[ProjectDetail] 🚀 Optimistic navigation detected:', navigationState);
+    console.log('[ProjectDetail] Optimistic navigation detected:', navigationState);
   }
 
   // Use our project detail hook with the service layer
@@ -49,11 +51,23 @@ const ProjectDetail = () => {
     project,
     loading,
     submitting,
+    error,
     handleUpdateStatus,
     handleUpdateNotes,
     handleArchive,
     handleDelete,
   } = useProjectDetailReactQuery(projectId);
+
+  // Enhanced logging for debugging the 404 issue
+  console.log('[ProjectDetail] Project data state:', {
+    projectId,
+    hasProject: !!project,
+    loading,
+    error: error ? { message: error.message, status: (error as any)?.status } : null,
+    isAuthenticated,
+    initialCheckComplete,
+    authLoading
+  });
 
   // Track project detail page visits
   useEffect(() => {
@@ -81,8 +95,9 @@ const ProjectDetail = () => {
     await navigateToProjectEdit(projectId);
   };
 
-  // Show loading state while fetching project data
-  if (loading) {
+  // Show loading state while fetching project data or during auth check
+  if (loading || authLoading || !initialCheckComplete) {
+    console.log('[ProjectDetail] Showing loading state:', { loading, authLoading, initialCheckComplete });
     return (
       <MainLayout isAuthenticated={true}>
         <LoadingState />
@@ -90,11 +105,22 @@ const ProjectDetail = () => {
     );
   }
 
-  // Show not found state if project doesn't exist
-  if (!project) {
+  // Show not found state if project doesn't exist (but only after auth is confirmed)
+  if (!project && !loading && isAuthenticated && initialCheckComplete) {
+    console.log('[ProjectDetail] Showing ProjectNotFound - confirmed project does not exist');
     return (
       <MainLayout isAuthenticated={true}>
         <ProjectNotFound />
+      </MainLayout>
+    );
+  }
+
+  // If we get here without a project and without proper auth state, show loading
+  if (!project) {
+    console.log('[ProjectDetail] No project data yet, continuing to show loading...');
+    return (
+      <MainLayout isAuthenticated={true}>
+        <LoadingState />
       </MainLayout>
     );
   }

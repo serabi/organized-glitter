@@ -199,7 +199,7 @@ const fetchProjects = async (
       totalDiamonds: projectRecord.total_diamonds || undefined,
       generalNotes: projectRecord.general_notes || '',
       imageUrl: projectRecord.image
-        ? pb.files.getURL({ ...record, collectionName: 'projects' }, projectRecord.image)
+        ? pb.files.getURL({ ...record, collectionName: 'projects' }, projectRecord.image, { thumb: '300x200f' })
         : undefined,
       sourceUrl: projectRecord.source_url || undefined,
       tags: tags,
