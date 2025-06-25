@@ -5,6 +5,7 @@ import { RootRoute } from '@/components/auth/RootRoute';
 import { MetadataProvider } from '@/contexts/MetadataContext';
 import { PageLoading } from '@/components/ui/page-loading';
 import { usePostHogPageTracking } from '@/hooks/usePostHogPageTracking';
+import RouteErrorBoundary from '@/components/error/RouteErrorBoundary';
 
 // Import critical pages directly (auth flow, landing pages)
 import Login from '@/pages/Login';
@@ -136,9 +137,11 @@ export const AppRoutes: React.FC = () => {
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <Suspense fallback={<PageLoading />}>
-              <Dashboard />
-            </Suspense>
+            <RouteErrorBoundary routeName="Dashboard">
+              <Suspense fallback={<PageLoading />}>
+                <Dashboard />
+              </Suspense>
+            </RouteErrorBoundary>
           </ProtectedRoute>
         }
       />
@@ -184,9 +187,11 @@ export const AppRoutes: React.FC = () => {
         path="/profile"
         element={
           <ProtectedRoute>
-            <Suspense fallback={<PageLoading />}>
-              <Profile />
-            </Suspense>
+            <RouteErrorBoundary routeName="Profile">
+              <Suspense fallback={<PageLoading />}>
+                <Profile />
+              </Suspense>
+            </RouteErrorBoundary>
           </ProtectedRoute>
         }
       />

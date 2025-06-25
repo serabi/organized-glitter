@@ -4,7 +4,7 @@ import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import DashboardFilterSection from '@/components/dashboard/DashboardFilterSection';
 import ProjectsSection from '@/components/dashboard/ProjectsSection';
 import { useIsMobile } from '@/hooks/use-mobile';
-import withAuthentication from '@/components/auth/withAuthentication';
+import { useAuth } from '@/hooks/useAuth';
 import { DashboardFiltersProvider } from '@/contexts/DashboardFiltersContext';
 import { useDashboardFiltersContext } from '@/hooks/useDashboardFiltersContext';
 
@@ -42,10 +42,18 @@ const DashboardInternal: React.FC = () => {
   );
 };
 
-const Dashboard = withAuthentication(({ user }) => (
-  <DashboardFiltersProvider user={user}>
-    <DashboardInternal />
-  </DashboardFiltersProvider>
-));
+const Dashboard: React.FC = () => {
+  const { user } = useAuth();
+
+  if (!user) {
+    return null;
+  }
+
+  return (
+    <DashboardFiltersProvider user={user}>
+      <DashboardInternal />
+    </DashboardFiltersProvider>
+  );
+};
 
 export default Dashboard;

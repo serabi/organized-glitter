@@ -2,7 +2,7 @@ import { lazy, Suspense } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useProfileReactQuery } from '@/hooks/useProfileReactQuery';
-import { useAuthRedirect } from '@/hooks/useAuthRedirect';
+import { useAuth } from '@/hooks/useAuth';
 import { useUpdateBetaTesterStatusMutation } from '@/hooks/mutations/useUpdateBetaTesterStatusMutation';
 import { useAvatar } from '@/hooks/useAvatar';
 import ProfileHeader from '@/components/profile/ProfileHeader';
@@ -19,10 +19,10 @@ const ArtistListTab = lazy(() => import('@/components/profile/ArtistListTab'));
 const TagListTab = lazy(() => import('@/components/profile/TagListTab'));
 
 const Profile = () => {
-  // Authentication and redirect handling
-  const { user, isLoading: authLoading } = useAuthRedirect();
+  // Authentication handling
+  const { user, isLoading: authLoading } = useAuth();
   console.log(
-    '[Profile.tsx] User from useAuthRedirect():',
+    '[Profile.tsx] User from useAuth():',
     user ? { id: user.id, email: user.email, username: user.username } : null,
     'AuthLoading:',
     authLoading
@@ -133,7 +133,7 @@ const Profile = () => {
     );
   }
 
-  // Don't render if user is not authenticated (useAuthRedirect will handle redirect)
+  // Don't render if user is not authenticated (ProtectedRoute will handle redirect)
   if (!user) {
     return null;
   }

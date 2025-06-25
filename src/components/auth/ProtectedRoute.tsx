@@ -15,52 +15,62 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { user, isLoading, initialCheckComplete } = useAuth();
   const location = useLocation();
 
-  // Debug logging for route protection decisions
-  if (import.meta.env.DEV) {
-    console.log('[ProtectedRoute] Route protection check:', {
-      pathname: location.pathname,
-      browserPathname: window.location.pathname, // Compare with actual browser URL
-      isLoading,
-      initialCheckComplete,
-      hasUser: !!user,
-      userId: user?.id,
+  // Debug logging for route protection decisions (both dev and prod for debugging)
+  console.log('[ProtectedRoute] Route protection check:', {
+    pathname: location.pathname,
+    browserPathname: window.location.pathname, // Compare with actual browser URL
+    isLoading,
+    initialCheckComplete,
+    hasUser: !!user,
+    userId: user?.id,
+    timestamp: new Date().toISOString(),
+    environment: import.meta.env.MODE,
+  });
+  
+  // Alert if there's a mismatch between React Router and browser location
+  if (location.pathname !== window.location.pathname) {
+    console.warn('[ProtectedRoute] ⚠️ LOCATION MISMATCH DETECTED!', {
+      routerPath: location.pathname,
+      browserPath: window.location.pathname,
       timestamp: new Date().toISOString(),
     });
-    
-    // Alert if there's a mismatch between React Router and browser location
-    if (location.pathname !== window.location.pathname) {
-      console.warn('[ProtectedRoute] ⚠️ LOCATION MISMATCH DETECTED!', {
-        routerPath: location.pathname,
-        browserPath: window.location.pathname,
-        timestamp: new Date().toISOString(),
-      });
-    }
   }
 
 
   // Wait for both loading to complete AND initial check to complete
   if (isLoading || !initialCheckComplete) {
-    if (import.meta.env.DEV) {
-      console.log('[ProtectedRoute] ⏳ Showing loading state for:', location.pathname);
-    }
+    console.log('[ProtectedRoute] ⏳ Showing loading state for:', location.pathname, {
+      isLoading,
+      initialCheckComplete,
+      timestamp: new Date().toISOString(),
+    });
     return (
       <div className="flex min-h-screen items-center justify-center">
         <LoadingSpinner className="h-12 w-12" />
-        <p className="ml-3 text-muted-foreground">Loading...</p>
+        <div className="ml-3">
+          <p className="text-muted-foreground">Loading...</p>
+          {import.meta.env.DEV && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Route: {location.pathname} | Loading: {isLoading.toString()} | InitialCheck: {initialCheckComplete.toString()}
+            </p>
+          )}
+        </div>
       </div>
     );
   }
 
   if (!user) {
-    if (import.meta.env.DEV) {
-      console.log('[ProtectedRoute] 🚪 Redirecting to login from:', location.pathname);
-    }
+    console.log('[ProtectedRoute] 🚪 Redirecting to login from:', location.pathname, {
+      isLoading,
+      initialCheckComplete,
+      timestamp: new Date().toISOString(),
+    });
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (import.meta.env.DEV) {
-    console.log('[ProtectedRoute] ✅ Allowing access to:', location.pathname, 'for user:', user.id);
-  }
+  console.log('[ProtectedRoute] ✅ Allowing access to:', location.pathname, 'for user:', user.id, {
+    timestamp: new Date().toISOString(),
+  });
 
   return <>{children}</>;
 };

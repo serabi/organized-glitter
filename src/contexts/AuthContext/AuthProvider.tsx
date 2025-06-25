@@ -25,13 +25,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsLoading(true);
 
     // Add timeout protection to prevent infinite loading
+    // Extended timeout for production environments with slower networks
+    const timeoutDuration = import.meta.env.PROD ? 30000 : 15000;
     const authTimeout = setTimeout(() => {
-      authLogger.warn('Auth initialization timed out after 15 seconds');
+      authLogger.warn(`Auth initialization timed out after ${timeoutDuration / 1000} seconds`);
+      console.error('[AuthProvider] Auth timeout - this may indicate network issues or slow PocketBase response');
       if (isMounted.current) {
         setIsLoading(false);
         setInitialCheckComplete(true);
       }
-    }, 15000);
+    }, timeoutDuration);
 
     // Initialize PocketBase auth state
     const initializeAuth = () => {
