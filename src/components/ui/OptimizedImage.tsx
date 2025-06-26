@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useOptimizedImage, useProgressiveImage } from '@/hooks/useOptimizedImage';
+import { useOptimizedImage, useProgressiveImage } from '@/hooks/image/useImageOptimization';
 import { ImageService, type ImageSizeKey } from '@/services/ImageService';
 import SafeImage from '@/components/projects/SafeImage';
 import { createLogger } from '@/utils/secureLogger';

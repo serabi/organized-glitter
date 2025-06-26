@@ -1,5 +1,5 @@
 import React from 'react';
-import { useImageLoader } from '@/hooks/useImageLoader';
+import { useImageLoading } from '@/hooks/image/useImageLoading';
 import { useLazyLoad } from '@/hooks/useLazyLoad';
 import { Loader2, RefreshCw, Image as ImageIcon, Palette } from 'lucide-react';
 
@@ -18,13 +18,13 @@ const ImageTableCell: React.FC<ImageTableCellProps> = ({ imageUrl, alt, size = '
     rootMargin: '50px',
   });
 
-  // Only load image when visible
+  // Only load image when visible  
   const {
     imageUrl: processedImageUrl,
     isLoading,
     error,
     retry,
-  } = useImageLoader({
+  } = useImageLoading({
     src: isVisible ? imageUrl : undefined,
   });
 

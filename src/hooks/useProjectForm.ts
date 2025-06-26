@@ -9,7 +9,7 @@ import {
 import { ProjectFormValues, ProjectPersistPayload } from '@/types/project';
 import { Tag } from '@/types/tag';
 import { useToast } from '@/hooks/use-toast';
-import { useImageUpload } from '@/hooks/useImageUpload';
+import { useImageUpload } from '@/hooks/image/useImageUpload';
 import { convertSchemaToFormValues } from '@/utils/projectFormTypeAdapter';
 import { createLogger } from '@/utils/secureLogger';
 

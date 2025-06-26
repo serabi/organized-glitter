@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Upload, Loader2 } from 'lucide-react';
-import { useImageUpload } from '@/hooks/useImageUpload';
+import { useImageUpload } from '@/hooks/image/useImageUpload';
 import { useToast } from '@/hooks/use-toast';
 import { pb } from '@/lib/pocketbase'; // Added import for pb
 import { AVATAR_CONSTANTS } from '@/components/projects/ProgressNoteForm/constants';

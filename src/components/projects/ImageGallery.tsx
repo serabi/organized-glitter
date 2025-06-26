@@ -11,7 +11,7 @@ import { Maximize, Loader2, RefreshCw, Image as ImageIcon } from 'lucide-react';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { ImageErrorBoundary } from '@/components/error/ComponentErrorBoundaries';
 import { isPlaceholderImage } from '@/utils/imageUtils';
-import { useImageLoader } from '@/hooks/useImageLoader';
+import { useImageLoading } from '@/hooks/image/useImageLoading';
 import { VisuallyHidden } from '@/components/ui/visually-hidden';
 import FallbackImage from './FallbackImage';
 
@@ -36,7 +36,7 @@ const ImageGallery = ({
     isLoading,
     error,
     retry,
-  } = useImageLoader({
+  } = useImageLoading({
     src: imageUrl,
   });
 

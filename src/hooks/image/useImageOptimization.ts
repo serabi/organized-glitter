@@ -3,8 +3,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ImageService, type ImageSizeKey } from '@/services/ImageService';
 import { createLogger } from '@/utils/secureLogger';
 
-const logger = createLogger('useOptimizedImage');
+const logger = createLogger('useImageOptimization');
 
+// Optimization hook interfaces
 interface UseOptimizedImageParams {
   record: Record<string, unknown> & { id: string };
   filename: string;
@@ -20,6 +21,42 @@ interface UseOptimizedImageResult {
   refetch: () => void;
 }
 
+interface UseProgressiveImageParams {
+  record: Record<string, unknown> & { id: string };
+  filename: string;
+  enabled?: boolean;
+  context?: 'gallery' | 'card' | 'modal' | 'detail' | 'avatar';
+  strategy?: 'standard' | 'enhanced' | 'contextual';
+}
+
+interface UseProgressiveImageResult {
+  placeholderUrl: string | undefined;
+  mediumQualityUrl: string | undefined;
+  fullQualityUrl: string | undefined;
+  isPlaceholderLoading: boolean;
+  isMediumQualityLoading: boolean;
+  isFullQualityLoading: boolean;
+  loadFullQuality: () => void;
+  loadMediumQuality: () => void;
+  loadNextQuality: () => void;
+  prefetchHighQuality: () => void;
+  prefetchMediumQuality: () => void;
+  originalUrl: string;
+  hasMediumQuality: boolean;
+  hasOriginal: boolean;
+}
+
+interface UseImagePrefetcherResult {
+  prefetchImages: (
+    images: Array<{
+      record: Record<string, unknown> & { id: string };
+      filename: string;
+      context?: 'gallery' | 'card' | 'modal';
+    }>,
+    priority?: 'high' | 'low'
+  ) => void;
+}
+
 /**
  * React Query hook for optimized image loading with caching
  * Extends cache time for images to 30 minutes and adds smart prefetching
@@ -31,9 +68,6 @@ export const useOptimizedImage = ({
   context = 'card',
   enabled = true,
 }: UseOptimizedImageParams): UseOptimizedImageResult => {
-  const queryClient = useQueryClient();
-
-  // Generate query key for image caching
   const queryKey = ['optimized-image', record?.id, filename, size || context];
 
   const query = useQuery({
@@ -62,10 +96,10 @@ export const useOptimizedImage = ({
       return imageUrl;
     },
     enabled: enabled && !!record && !!filename,
-    staleTime: 30 * 60 * 1000, // 30 minutes (increased from 5 minutes)
+    staleTime: 30 * 60 * 1000, // 30 minutes
     gcTime: 60 * 60 * 1000, // 1 hour retention
-    refetchOnWindowFocus: false, // Images don't change frequently
-    refetchOnReconnect: false, // Avoid unnecessary refetches
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
     retry: (failureCount, error) => {
       // Don't retry on invalid parameters
       if (error?.message?.includes('required') || error?.message?.includes('generate')) {
@@ -94,13 +128,7 @@ export const useProgressiveImage = ({
   enabled = true,
   context = 'card',
   strategy = 'standard',
-}: {
-  record: Record<string, unknown> & { id: string };
-  filename: string;
-  enabled?: boolean;
-  context?: 'gallery' | 'card' | 'modal' | 'detail' | 'avatar';
-  strategy?: 'standard' | 'enhanced' | 'contextual';
-}) => {
+}: UseProgressiveImageParams): UseProgressiveImageResult => {
   const queryClient = useQueryClient();
 
   // Get progressive URLs based on strategy
@@ -123,17 +151,6 @@ export const useProgressiveImage = ({
     gcTime: 60 * 60 * 1000,
   });
 
-  // Prefetch high quality version
-  const prefetchHighQuality = () => {
-    if (progressiveUrls.fullQuality) {
-      queryClient.prefetchQuery({
-        queryKey: ['progressive-image', 'full', record?.id, filename],
-        queryFn: () => progressiveUrls.fullQuality,
-        staleTime: 30 * 60 * 1000,
-      });
-    }
-  };
-
   // Load medium quality (if available)
   const mediumQualityQuery = useQuery({
     queryKey: ['progressive-image', 'medium', record?.id, filename],
@@ -152,8 +169,19 @@ export const useProgressiveImage = ({
     gcTime: 60 * 60 * 1000,
   });
 
+  // Prefetch high quality version
+  const prefetchHighQuality = React.useCallback(() => {
+    if (progressiveUrls.fullQuality) {
+      queryClient.prefetchQuery({
+        queryKey: ['progressive-image', 'full', record?.id, filename],
+        queryFn: () => progressiveUrls.fullQuality,
+        staleTime: 30 * 60 * 1000,
+      });
+    }
+  }, [queryClient, progressiveUrls.fullQuality, record?.id, filename]);
+
   // Enhanced prefetch function that handles medium quality
-  const prefetchMediumQuality = () => {
+  const prefetchMediumQuality = React.useCallback(() => {
     const urls = progressiveUrls as Record<string, string>;
     if (urls.medium) {
       queryClient.prefetchQuery({
@@ -162,17 +190,17 @@ export const useProgressiveImage = ({
         staleTime: 30 * 60 * 1000,
       });
     }
-  };
+  }, [queryClient, progressiveUrls, record?.id, filename]);
 
   // Smart loading function that loads appropriate next quality level
-  const loadNextQuality = () => {
+  const loadNextQuality = React.useCallback(() => {
     const urls = progressiveUrls as Record<string, string>;
     if (urls.medium && !mediumQualityQuery.data) {
       mediumQualityQuery.refetch();
     } else {
       fullQualityQuery.refetch();
     }
-  };
+  }, [progressiveUrls, mediumQualityQuery, fullQualityQuery]);
 
   return {
     placeholderUrl: placeholderQuery.data,
@@ -195,45 +223,96 @@ export const useProgressiveImage = ({
 /**
  * Hook for batch prefetching images in galleries
  */
-export const useImagePrefetcher = () => {
+export const useImagePrefetcher = (): UseImagePrefetcherResult => {
   const queryClient = useQueryClient();
 
-  const prefetchImages = (
-    images: Array<{
-      record: Record<string, unknown> & { id: string };
-      filename: string;
-      context?: 'gallery' | 'card' | 'modal';
-    }>,
-    priority: 'high' | 'low' = 'low'
-  ) => {
-    images.forEach(({ record, filename, context = 'gallery' }) => {
-      if (!record || !filename) return;
+  const prefetchImages = React.useCallback(
+    (
+      images: Array<{
+        record: Record<string, unknown> & { id: string };
+        filename: string;
+        context?: 'gallery' | 'card' | 'modal';
+      }>,
+      priority: 'high' | 'low' = 'low'
+    ) => {
+      images.forEach(({ record, filename, context = 'gallery' }) => {
+        if (!record || !filename) return;
 
-      const imageUrl = ImageService.getContextualUrl(record, filename, context);
-      const queryKey = ['optimized-image', record.id, filename, context];
+        const imageUrl = ImageService.getContextualUrl(record, filename, context);
+        const queryKey = ['optimized-image', record.id, filename, context];
 
-      // Use prefetchQuery for low priority, setQueryData for high priority
-      if (priority === 'high') {
-        queryClient.setQueryData(queryKey, imageUrl);
-      } else {
-        queryClient.prefetchQuery({
-          queryKey,
-          queryFn: () => imageUrl,
-          staleTime: 30 * 60 * 1000,
+        // Use prefetchQuery for low priority, setQueryData for high priority
+        if (priority === 'high') {
+          queryClient.setQueryData(queryKey, imageUrl);
+        } else {
+          queryClient.prefetchQuery({
+            queryKey,
+            queryFn: () => imageUrl,
+            staleTime: 30 * 60 * 1000,
+          });
+        }
+
+        logger.debug('Prefetched image', {
+          recordId: record.id,
+          filename,
+          context,
+          priority,
         });
-      }
-
-      logger.debug('Prefetched image', {
-        recordId: record.id,
-        filename,
-        context,
-        priority,
       });
-    });
-  };
+    },
+    [queryClient]
+  );
 
   return { prefetchImages };
 };
 
-// Re-export for convenience
+/**
+ * Comprehensive image optimization hook that combines single and progressive loading
+ */
+export const useImageOptimization = ({
+  record,
+  filename,
+  mode = 'single',
+  ...options
+}: UseOptimizedImageParams & {
+  mode?: 'single' | 'progressive';
+  strategy?: 'standard' | 'enhanced' | 'contextual';
+}) => {
+  const singleImage = useOptimizedImage({
+    record,
+    filename,
+    ...options,
+    enabled: mode === 'single' && (options.enabled ?? true),
+  });
+
+  const progressiveImage = useProgressiveImage({
+    record,
+    filename,
+    context: options.context,
+    strategy: options.strategy as 'standard' | 'enhanced' | 'contextual',
+    enabled: mode === 'progressive' && (options.enabled ?? true),
+  });
+
+  if (mode === 'progressive') {
+    return {
+      imageUrl: progressiveImage.fullQualityUrl || progressiveImage.mediumQualityUrl || progressiveImage.placeholderUrl,
+      isLoading: progressiveImage.isPlaceholderLoading,
+      error: null, // Progressive loading handles errors gracefully
+      refetch: progressiveImage.loadFullQuality,
+      progressiveImage,
+    };
+  }
+
+  return {
+    imageUrl: singleImage.imageUrl,
+    isLoading: singleImage.isLoading,
+    error: singleImage.error,
+    refetch: singleImage.refetch,
+    singleImage,
+  };
+};
+
+// Export ImageService for convenience
 export { ImageService };
+
+export default useImageOptimization;

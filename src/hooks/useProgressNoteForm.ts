@@ -2,7 +2,7 @@
 import { useState, useCallback } from 'react';
 import { format } from 'date-fns';
 import { useProgressNoteFormTracking } from './useProgressNoteFormTracking';
-import { useProgressImageCompression } from './useProgressImageCompression';
+import { useProgressImageCompression } from './image/useImageUpload';
 import { analytics } from '@/services/analytics';
 import {
   ProgressNoteFormProps as UseProgressNoteFormProps,

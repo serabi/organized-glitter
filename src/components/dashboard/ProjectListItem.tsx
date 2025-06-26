@@ -3,7 +3,7 @@ import { ProjectType } from '@/types/project';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useProjectStatus } from '@/hooks/useProjectStatus';
-import { useImageLoader } from '@/hooks/useImageLoader';
+import { useImageLoading } from '@/hooks/image/useImageLoading';
 import { useLazyLoad } from '@/hooks/useLazyLoad';
 import { Loader2, RefreshCw, Image as ImageIcon } from 'lucide-react';
 
@@ -27,7 +27,7 @@ const ProjectListItem: React.FC<ProjectListItemProps> = ({ project, onClick }) =
     isLoading,
     error,
     retry,
-  } = useImageLoader({
+  } = useImageLoading({
     src: isVisible ? project.imageUrl : undefined,
   });
 

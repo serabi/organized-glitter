@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { ProjectType } from '@/types/project';
 import { cn } from '@/lib/utils';
 import { useProjectStatus } from '@/hooks/useProjectStatus';
-import { useConditionalImageLoader } from '@/hooks/useConditionalImageLoader';
+import { useImageLoading } from '@/hooks/image/useImageLoading';
 import { Loader2, RefreshCw, Image as ImageIcon } from 'lucide-react';
 
 interface ProjectCardProps {
@@ -22,8 +22,9 @@ const ProjectCardComponent = ({ project, onClick, skipImageLoading = false }: Pr
     isLoading,
     error,
     retry,
-  } = useConditionalImageLoader({
+  } = useImageLoading({
     src: project.imageUrl,
+    enableLazyLoad: true,
     skipImageLoading,
   });
 

@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label';
 import { InlineTagManager } from '@/components/tags/InlineTagManager';
 import { Tag } from '@/types/tag';
 import { ProjectImageSection } from '@/components/projects/form-sections/ProjectImageSection';
-import { useImageUpload } from '@/hooks/useImageUpload';
+import { useImageUpload } from '@/hooks/image/useImageUpload';
 import ArtistSelect from '@/components/projects/form/ArtistSelect';
 import CompanySelect from '@/components/projects/form/CompanySelect';
 

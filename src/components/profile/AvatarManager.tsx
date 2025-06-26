@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Loader2, UploadCloud, AlertCircle, CheckCircle } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import { useToast } from '@/components/ui/use-toast';
-import { useImageUpload } from '@/hooks/useImageUpload';
+import { useImageUpload } from '@/hooks/image/useImageUpload';
 import { pb } from '@/lib/pocketbase'; // Added import for pb
 import { AvatarConfig, AvatarManagerProps } from '@/types/avatar';
 import ImageCropModal from './ImageCropModal';
