@@ -3,8 +3,31 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import ProjectForm from '../ProjectForm';
 import { ProjectFormValues } from '@/types/project';
 
-// Create a mock that can be updated per test
-const mockFormLogic = {
+// Create a mock for the consolidated useProjectForm hook
+const mockForm = {
+  // Form state and refs
+  formRef: { current: null },
+  isSubmitting: false,
+  currentWatchedData: {
+    title: '',
+    company: '',
+    artist: '',
+    drillShape: '',
+    status: 'wishlist',
+    datePurchased: '',
+    dateReceived: '',
+    dateStarted: '',
+    dateCompleted: '',
+    generalNotes: '',
+    sourceUrl: '',
+    totalDiamonds: null,
+    width: null,
+    height: null,
+    kit_category: 'full',
+    imageUrl: null,
+  },
+  
+  // RHF API
   rhfApi: {
     register: vi.fn(),
     handleSubmit: vi.fn(fn => fn),
@@ -14,47 +37,56 @@ const mockFormLogic = {
     getValues: vi.fn(() => ({})),
     control: {},
   },
-  formRef: { current: null },
   processedSubmitHandler: vi.fn(),
-  currentWatchedData: {
-    title: '',
-    company: '',
-    artist: '',
-  },
-  formCompanies: ['Company A', 'Company B'],
-  formArtists: ['Artist 1', 'Artist 2'],
-  isSubmitting: false,
-  RHFisSubmitting: false,
-  formErrors: {},
   setValue: vi.fn(),
+  formErrors: {},
+  RHFisSubmitting: false,
+  
+  // Tags
   projectTags: [],
   setProjectTags: vi.fn(),
+  
+  // Image handling
+  imagePreview: null,
+  isUploading: false,
+  setIsUploading: vi.fn(),
+  uploadError: null,
+  setUploadError: vi.fn(),
+  selectedFileName: undefined,
   setSelectedFileName: vi.fn(),
   imageUploadUI: {
     selectedFile: null,
     preview: null,
     uploading: false,
     error: null,
+    isCompressing: false,
+    wasRemoved: false,
+    handleImageChange: vi.fn(),
+    handleImageRemove: vi.fn(),
   },
-  hookHandleImageChange: vi.fn(),
-  hookHandleImageRemove: vi.fn(),
-  rhfAddCompany: vi.fn(),
-  rhfAddArtist: vi.fn(),
+  handleImageChange: vi.fn(),
+  handleImageRemove: vi.fn(),
+  
+  // Companies and artists
+  companies: ['Company A', 'Company B'],
+  artists: ['Artist 1', 'Artist 2'],
+  handleAddCompany: vi.fn(),
+  handleAddArtist: vi.fn(),
+  handleCompanyAdded: vi.fn(),
+  handleArtistAdded: vi.fn(),
+  
+  // Generic handlers
+  genericHandleChange: vi.fn(),
+  genericHandleSelectChange: vi.fn(),
+  handleTagsChange: vi.fn(),
+  
+  // Utils
   toast: vi.fn(),
 };
 
-// Mock the custom hooks
-vi.mock('@/hooks/useProjectFormLogic', () => ({
-  useProjectFormLogic: () => mockFormLogic,
-}));
-
-vi.mock('@/hooks/useProjectFormHandlers', () => ({
-  useProjectFormHandlers: () => ({
-    handleCompanyAdded: vi.fn(),
-    handleArtistAdded: vi.fn(),
-    handleImageSelect: vi.fn(),
-    handleImageRemove: vi.fn(),
-  }),
+// Mock the consolidated useProjectForm hook
+vi.mock('@/hooks/useProjectForm', () => ({
+  useProjectForm: () => mockForm,
 }));
 
 // Mock form sections
@@ -107,8 +139,8 @@ describe('ProjectForm', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Reset mock state
-    mockFormLogic.isSubmitting = false;
-    mockFormLogic.RHFisSubmitting = false;
+    mockForm.isSubmitting = false;
+    mockForm.RHFisSubmitting = false;
   });
 
   it('renders all form sections', () => {
@@ -167,7 +199,7 @@ describe('ProjectForm', () => {
 
   it('disables submit button when loading', () => {
     // Set the mock to indicate loading state
-    mockFormLogic.isSubmitting = true;
+    mockForm.isSubmitting = true;
 
     render(<ProjectForm {...defaultProps} isLoading={true} />);
 
