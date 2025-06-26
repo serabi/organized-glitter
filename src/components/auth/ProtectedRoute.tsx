@@ -2,10 +2,13 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { createLogger } from '@/utils/secureLogger';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
+
+const protectedRouteLogger = createLogger('ProtectedRoute');
 
 /**
  * Protected route wrapper that requires authentication
@@ -15,10 +18,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { user, isLoading, initialCheckComplete } = useAuth();
   const location = useLocation();
 
-  // Debug logging for route protection decisions (both dev and prod for debugging)
-  console.log('[ProtectedRoute] Route protection check:', {
+  // Debug logging for route protection decisions (dev only for security)
+  protectedRouteLogger.debug('Route protection check:', {
     pathname: location.pathname,
-    browserPathname: window.location.pathname, // Compare with actual browser URL
+    browserPathname: window.location.pathname,
     isLoading,
     initialCheckComplete,
     hasUser: !!user,
@@ -29,7 +32,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   
   // Alert if there's a mismatch between React Router and browser location
   if (location.pathname !== window.location.pathname) {
-    console.warn('[ProtectedRoute] ⚠️ LOCATION MISMATCH DETECTED!', {
+    protectedRouteLogger.warn('LOCATION MISMATCH DETECTED!', {
       routerPath: location.pathname,
       browserPath: window.location.pathname,
       timestamp: new Date().toISOString(),
@@ -39,7 +42,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   // Wait for both loading to complete AND initial check to complete
   if (isLoading || !initialCheckComplete) {
-    console.log('[ProtectedRoute] ⏳ Showing loading state for:', location.pathname, {
+    protectedRouteLogger.debug('Showing loading state for:', location.pathname, {
       isLoading,
       initialCheckComplete,
       timestamp: new Date().toISOString(),
@@ -60,7 +63,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   if (!user) {
-    console.log('[ProtectedRoute] 🚪 Redirecting to login from:', location.pathname, {
+    protectedRouteLogger.debug('Redirecting to login from:', location.pathname, {
       isLoading,
       initialCheckComplete,
       timestamp: new Date().toISOString(),
@@ -68,7 +71,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  console.log('[ProtectedRoute] ✅ Allowing access to:', location.pathname, 'for user:', user.id, {
+  protectedRouteLogger.debug('Allowing access to:', location.pathname, 'for user:', user.id, {
     timestamp: new Date().toISOString(),
   });
 

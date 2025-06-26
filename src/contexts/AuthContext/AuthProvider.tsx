@@ -29,7 +29,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const timeoutDuration = import.meta.env.PROD ? 30000 : 15000;
     const authTimeout = setTimeout(() => {
       authLogger.warn(`Auth initialization timed out after ${timeoutDuration / 1000} seconds`);
-      console.error('[AuthProvider] Auth timeout - this may indicate network issues or slow PocketBase response');
+      authLogger.error('Auth timeout - this may indicate network issues or slow PocketBase response');
       if (isMounted.current) {
         setIsLoading(false);
         setInitialCheckComplete(true);
@@ -52,7 +52,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (isMounted.current) {
           if (isValid && currentUser) {
             authLogger.debug('Setting initial user state:', currentUser.id);
-            console.log('[AuthProvider] Initial auth check: User IS valid and present.', {
+            authLogger.debug('Initial auth check: User IS valid and present.', {
               id: currentUser.id,
               email: currentUser.email,
               username: currentUser.username,
@@ -70,7 +70,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             });
           } else {
             authLogger.debug('No valid session found');
-            console.log('[AuthProvider] Initial auth check: User IS NOT valid or present.');
+            authLogger.debug('Initial auth check: User IS NOT valid or present.');
             setUser(null);
             setIsAuthenticated(false);
           }
@@ -82,7 +82,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Set up auth store change listener - ALWAYS set this up fresh
         authLogger.debug('Setting up fresh PocketBase authStore onChange listener');
         const removeListener = pb.authStore.onChange((token, record) => {
-          console.log('[AuthProvider] pb.authStore.onChange triggered.', {
+          authLogger.debug('pb.authStore.onChange triggered.', {
             tokenExists: !!token,
             recordExists: !!record,
             recordId: record?.id,
