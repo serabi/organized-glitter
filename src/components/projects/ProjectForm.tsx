@@ -13,8 +13,7 @@ import {
   ProjectNotesSection,
   ProjectImageSection,
 } from './form-sections';
-import { useProjectFormLogic } from '@/hooks/useProjectFormLogic';
-import { useProjectFormHandlers, ProjectFormRef } from '@/hooks/useProjectFormHandlers';
+import { useProjectForm, ProjectFormRef } from '@/hooks/useProjectForm';
 
 interface ProjectFormProps {
   initialData?: Partial<ProjectFormValues>;
@@ -45,8 +44,8 @@ const ProjectForm = forwardRef<ProjectFormRef, ProjectFormProps>(
     },
     forwardedRef
   ) => {
-    // Extract all form logic into custom hooks
-    const formLogic = useProjectFormLogic({
+    // Use the consolidated project form hook
+    const form = useProjectForm({
       initialData,
       onSubmit,
       onChange,
@@ -55,36 +54,19 @@ const ProjectForm = forwardRef<ProjectFormRef, ProjectFormProps>(
       isLoading: externalLoading,
       onCompanyAdded,
       onArtistAdded,
-    });
-
-    // Extract form handlers
-    const handlers = useProjectFormHandlers({
-      setValue: formLogic.setValue,
-      currentWatchedData: formLogic.currentWatchedData,
-      onChange,
-      projectTags: formLogic.projectTags,
-      setProjectTags: formLogic.setProjectTags,
-      setSelectedFileName: formLogic.setSelectedFileName,
-      imageUploadUI: formLogic.imageUploadUI,
-      hookHandleImageChange: formLogic.hookHandleImageChange,
-      hookHandleImageRemove: formLogic.hookHandleImageRemove,
-      rhfAddCompany: formLogic.rhfAddCompany,
-      rhfAddArtist: formLogic.rhfAddArtist,
-      onCompanyAdded,
-      onArtistAdded,
       forwardedRef: forwardedRef as MutableRefObject<ProjectFormRef | null>,
     });
 
     return (
-      <Form {...(formLogic.rhfApi as UseFormReturn<ProjectFormSchemaType, unknown, unknown>)}>
+      <Form {...(form.rhfApi as UseFormReturn<ProjectFormSchemaType, unknown, unknown>)}>
         <form
-          ref={formLogic.formRef}
-          onSubmit={formLogic.processedSubmitHandler}
+          ref={form.formRef}
+          onSubmit={form.processedSubmitHandler}
           className="space-y-6"
         >
-          {formLogic.formErrors && Object.keys(formLogic.formErrors).length > 0 && (
+          {form.formErrors && Object.keys(form.formErrors).length > 0 && (
             <FormValidationError
-              error={Object.values(formLogic.formErrors as Record<string, FieldError>)
+              error={Object.values(form.formErrors as Record<string, FieldError>)
                 .map(err => err?.message)
                 .filter(Boolean)
                 .join(', ')}
@@ -94,45 +76,43 @@ const ProjectForm = forwardRef<ProjectFormRef, ProjectFormProps>(
           {/* Basic Info Section */}
           <div className="space-y-6">
             <BasicInfoSection
-              title={formLogic.currentWatchedData.title ?? ''}
-              company={formLogic.currentWatchedData.company ?? ''}
-              artist={formLogic.currentWatchedData.artist ?? ''}
-              companies={formLogic.formCompanies}
-              artists={formLogic.formArtists}
-              isSubmitting={formLogic.isSubmitting}
-              onTitleChange={e =>
-                formLogic.setValue('title', e.target.value, { shouldValidate: true })
-              }
+              title={form.currentWatchedData.title ?? ''}
+              company={form.currentWatchedData.company ?? ''}
+              artist={form.currentWatchedData.artist ?? ''}
+              companies={form.companies}
+              artists={form.artists}
+              isSubmitting={form.isSubmitting}
+              onTitleChange={form.genericHandleChange}
               onCompanyChange={value =>
-                formLogic.setValue('company', value, { shouldValidate: true })
+                form.setValue('company', value, { shouldValidate: true })
               }
               onArtistChange={value =>
-                formLogic.setValue('artist', value, { shouldValidate: true })
+                form.setValue('artist', value, { shouldValidate: true })
               }
-              onCompanyAdded={handlers.handleCompanyAdded}
-              onArtistAdded={handlers.handleArtistAdded}
+              onCompanyAdded={form.handleCompanyAdded}
+              onArtistAdded={form.handleArtistAdded}
             />
           </div>
 
           {/* Project Specs Section */}
           <div className="space-y-6">
             <ProjectSpecsSection
-              width={String(formLogic.currentWatchedData.width ?? '')}
-              height={String(formLogic.currentWatchedData.height ?? '')}
-              drillShape={formLogic.currentWatchedData.drillShape ?? ''}
-              sourceUrl={formLogic.currentWatchedData.sourceUrl ?? ''}
-              totalDiamonds={formLogic.currentWatchedData.totalDiamonds ?? undefined}
-              kit_category={formLogic.currentWatchedData.kit_category ?? undefined}
-              isSubmitting={formLogic.RHFisSubmitting || formLogic.isSubmitting}
-              onWidthChange={handlers.genericHandleChange}
-              onHeightChange={handlers.genericHandleChange}
-              onDrillShapeChange={value => handlers.genericHandleSelectChange('drillShape', value)}
-              onSourceUrlChange={handlers.genericHandleChange}
+              width={String(form.currentWatchedData.width ?? '')}
+              height={String(form.currentWatchedData.height ?? '')}
+              drillShape={form.currentWatchedData.drillShape ?? ''}
+              sourceUrl={form.currentWatchedData.sourceUrl ?? ''}
+              totalDiamonds={form.currentWatchedData.totalDiamonds ?? undefined}
+              kit_category={form.currentWatchedData.kit_category ?? undefined}
+              isSubmitting={form.isSubmitting}
+              onWidthChange={form.genericHandleChange}
+              onHeightChange={form.genericHandleChange}
+              onDrillShapeChange={value => form.genericHandleSelectChange('drillShape', value)}
+              onSourceUrlChange={form.genericHandleChange}
               onTotalDiamondsChange={value => {
-                formLogic.setValue('totalDiamonds', value, { shouldValidate: true });
+                form.setValue('totalDiamonds', value, { shouldValidate: true });
               }}
               onKitCategoryChange={value => {
-                handlers.genericHandleSelectChange('kit_category', value);
+                form.genericHandleSelectChange('kit_category', value);
               }}
             />
           </div>
@@ -140,42 +120,42 @@ const ProjectForm = forwardRef<ProjectFormRef, ProjectFormProps>(
           {/* Project Status Section */}
           <div className="space-y-6">
             <ProjectStatusSection
-              status={formLogic.currentWatchedData.status ?? 'wishlist'}
+              status={form.currentWatchedData.status ?? 'wishlist'}
               datePurchased={
-                typeof formLogic.currentWatchedData.datePurchased === 'string'
-                  ? formLogic.currentWatchedData.datePurchased
+                typeof form.currentWatchedData.datePurchased === 'string'
+                  ? form.currentWatchedData.datePurchased
                   : ''
               }
               dateReceived={
-                typeof formLogic.currentWatchedData.dateReceived === 'string'
-                  ? formLogic.currentWatchedData.dateReceived
+                typeof form.currentWatchedData.dateReceived === 'string'
+                  ? form.currentWatchedData.dateReceived
                   : ''
               }
               dateStarted={
-                typeof formLogic.currentWatchedData.dateStarted === 'string'
-                  ? formLogic.currentWatchedData.dateStarted
+                typeof form.currentWatchedData.dateStarted === 'string'
+                  ? form.currentWatchedData.dateStarted
                   : ''
               }
               dateCompleted={
-                typeof formLogic.currentWatchedData.dateCompleted === 'string'
-                  ? formLogic.currentWatchedData.dateCompleted
+                typeof form.currentWatchedData.dateCompleted === 'string'
+                  ? form.currentWatchedData.dateCompleted
                   : ''
               }
-              isSubmitting={formLogic.RHFisSubmitting || formLogic.isSubmitting}
-              onStatusChange={value => handlers.genericHandleSelectChange('status', value)}
-              onDateChange={handlers.genericHandleChange}
+              isSubmitting={form.isSubmitting}
+              onStatusChange={value => form.genericHandleSelectChange('status', value)}
+              onDateChange={form.genericHandleChange}
               projectId={initialData.id}
-              projectTags={formLogic.projectTags}
-              onTagsChange={handlers.handleTagsChange}
+              projectTags={form.projectTags}
+              onTagsChange={form.handleTagsChange}
             />
           </div>
 
           {/* Project Notes Section */}
           <div className="space-y-6">
             <ProjectNotesSection
-              notes={formLogic.currentWatchedData.generalNotes ?? ''}
-              isSubmitting={formLogic.RHFisSubmitting || formLogic.isSubmitting}
-              onChange={handlers.genericHandleChange}
+              notes={form.currentWatchedData.generalNotes ?? ''}
+              isSubmitting={form.isSubmitting}
+              onChange={form.genericHandleChange}
             />
           </div>
 
@@ -183,19 +163,19 @@ const ProjectForm = forwardRef<ProjectFormRef, ProjectFormProps>(
           <div className="space-y-6">
             <ProjectImageSection
               imageUrl={
-                formLogic.imageUploadUI.wasRemoved
+                form.imageUploadUI.wasRemoved
                   ? undefined
-                  : formLogic.imagePreview ||
-                    formLogic.imageUploadUI.preview ||
-                    (formLogic.currentWatchedData.imageUrl as string | undefined)
+                  : form.imagePreview ||
+                    form.imageUploadUI.preview ||
+                    (form.currentWatchedData.imageUrl as string | undefined)
               }
               isUploading={
-                formLogic.imageUploadUI.isCompressing || formLogic.imageUploadUI.uploading
+                form.imageUploadUI.isCompressing || form.imageUploadUI.uploading
               }
-              uploadError={formLogic.imageUploadUI.error}
-              selectedFileName={formLogic.selectedFileName}
-              onImageChange={handlers.handleImageChange}
-              onImageRemove={handlers.handleImageRemove}
+              uploadError={form.imageUploadUI.error}
+              selectedFileName={form.selectedFileName}
+              onImageChange={form.handleImageChange}
+              onImageRemove={form.handleImageRemove}
             />
 
             {/* Debug component removed for PocketBase migration */}
@@ -208,13 +188,13 @@ const ProjectForm = forwardRef<ProjectFormRef, ProjectFormProps>(
                 type="button"
                 variant="outline"
                 onClick={onCancel}
-                disabled={formLogic.RHFisSubmitting || formLogic.isSubmitting}
+                disabled={form.isSubmitting}
               >
                 Cancel
               </Button>
             )}
-            <Button type="submit" disabled={formLogic.RHFisSubmitting || formLogic.isSubmitting}>
-              {formLogic.RHFisSubmitting || formLogic.isSubmitting
+            <Button type="submit" disabled={form.isSubmitting}>
+              {form.isSubmitting
                 ? 'Saving...'
                 : isEdit
                   ? 'Update Project'
