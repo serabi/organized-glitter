@@ -324,7 +324,16 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
         const fieldsToExclude = ['id', 'tags', 'tagIds', 'imageFile', '_imageReplacement', 'company', 'artist'];
         
         // Date fields that should allow empty strings (to clear the field in PocketBase)
+        // Note: These are the camelCase form field names that need conversion to snake_case
         const dateFields = ['datePurchased', 'dateReceived', 'dateStarted', 'dateCompleted'];
+        
+        // Map camelCase form fields to snake_case PocketBase fields
+        const fieldNameMap: Record<string, string> = {
+          datePurchased: 'date_purchased',
+          dateReceived: 'date_received', 
+          dateStarted: 'date_started',
+          dateCompleted: 'date_completed',
+        };
         
         Object.entries(dataToSubmit).forEach(([key, value]) => {
           if (!fieldsToExclude.includes(key) && value !== undefined && value !== null) {
@@ -333,11 +342,13 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
             const shouldInclude = dateFields.includes(key) ? true : value !== '';
             
             if (shouldInclude) {
-              formData.append(key, String(value));
+              // Convert camelCase field names to snake_case for PocketBase
+              const fieldName = fieldNameMap[key] || key;
+              formData.append(fieldName, String(value));
               
               // Log date field updates for debugging
               if (dateFields.includes(key)) {
-                logger.debug(`Date field update: ${key} = "${value}"`);
+                logger.debug(`Date field update: ${key} -> ${fieldName} = "${value}"`);
               }
             }
           }
@@ -357,13 +368,15 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
         }
 
         // Log FormData contents for debugging (excluding sensitive data)
+        const actualDateFieldsInFormData = Object.values(fieldNameMap).filter(field => formData.has(field));
         logger.debug('Updating project with FormData:', {
           projectId,
           fieldsCount: Array.from(formData.keys()).length,
-          dateFields: dateFields.filter(field => formData.has(field)).map(field => ({
+          dateFields: actualDateFieldsInFormData.map(field => ({
             field,
             value: formData.get(field)
-          }))
+          })),
+          allFormDataKeys: Array.from(formData.keys())
         });
 
         // Update the project in PocketBase
