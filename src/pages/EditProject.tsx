@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAuth } from '@/hooks/useAuth';
-import { useEditProjectSimplified } from '@/hooks/useEditProjectSimplified';
+import { useEditProject } from '@/hooks/useEditProject';
 import { EditProjectNotFound } from '@/components/projects/EditProjectNotFound';
 import EditProjectSkeleton from '@/components/projects/EditProjectSkeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,7 +16,7 @@ import { ProjectStatsTabSimple } from '@/components/projects/tabs/ProjectStatsTa
 
 const EditProject = () => {
   const { id } = useParams<{ id: string }>();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isAuthenticated, initialCheckComplete, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('main');
 
@@ -30,12 +30,13 @@ const EditProject = () => {
     navigationState,
     clearNavigationError,
     handleFormChange,
+    handleFormDataChange,
     handleSubmit,
     handleArchive,
     handleDelete,
-    // refreshLists, // Removed as it's unused
     ConfirmationDialog,
-  } = useEditProjectSimplified(id);
+    error,
+  } = useEditProject(id);
 
   // Simple back navigation - use direct React Router navigation
   const handleCancel = () => {
@@ -46,7 +47,8 @@ const EditProject = () => {
     }
   };
 
-  if (authLoading || loading) {
+  // Show loading state while fetching project data or during auth check
+  if (loading || authLoading || !initialCheckComplete) {
     return (
       <MainLayout isAuthenticated={!!user}>
         <EditProjectSkeleton />
@@ -54,8 +56,18 @@ const EditProject = () => {
     );
   }
 
-  if (!project) {
+  // Show not found state if project doesn't exist (but only after auth is confirmed)
+  if ((!project || error) && !loading && isAuthenticated && initialCheckComplete) {
     return <EditProjectNotFound />;
+  }
+
+  // If we get here without a project and without proper auth state, show loading
+  if (!project) {
+    return (
+      <MainLayout isAuthenticated={!!user}>
+        <EditProjectSkeleton />
+      </MainLayout>
+    );
   }
 
   return (
@@ -125,7 +137,7 @@ const EditProject = () => {
                   companies={companies}
                   artists={artists}
                   isSubmitting={submitting}
-                  onChange={handleFormChange}
+                  onChange={handleFormDataChange}
                 />
               </TabsContent>
 
@@ -133,7 +145,7 @@ const EditProject = () => {
                 <ProjectStatsTabSimple
                   formData={formData}
                   isSubmitting={submitting}
-                  onChange={handleFormChange}
+                  onChange={handleFormDataChange}
                 />
               </TabsContent>
             </Tabs>
