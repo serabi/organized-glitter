@@ -1,7 +1,10 @@
 import { useCallback, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { ProjectType, ProjectStatus } from '@/types/project';
-import { projectService } from '@/services/pocketbase/projectService';
+import { pb } from '@/lib/pocketbase';
+import { createLogger } from '@/utils/secureLogger';
+
+const logger = createLogger('useProjectStatus');
 
 // Extended toast handlers interface
 interface ExtendedToastHandlers {
@@ -86,10 +89,23 @@ export const useProjectStatus = (project?: ProjectType | null): StatusUtils => {
         return false;
       }
 
-      // Use the PocketBase service directly
-      const result = await projectService.updateProjectStatus(project.id, newStatus, toastHandlers);
+      try {
+        logger.debug(`Updating project ${project.id} status to ${newStatus}`);
 
-      return result.status === 'success';
+        await pb.collection('projects').update(project.id, {
+          status: newStatus,
+        });
+
+        logger.debug(`Project ${project.id} status updated successfully`);
+        toastHandlers.showSuccess?.('Project status updated');
+
+        return true;
+      } catch (error) {
+        const errorMsg = 'Failed to update project status';
+        logger.error(errorMsg, error);
+        toastHandlers.showError?.(errorMsg);
+        return false;
+      }
     },
     [project, toastHandlers]
   );

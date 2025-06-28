@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { pb } from '@/lib/pocketbase';
 import { Project, ProjectFilterStatus, ProjectStatus } from '@/types/project';
@@ -132,9 +133,8 @@ const fetchProjects = async (
     sort: pbSort,
     // Expand relations - PocketBase returns full records, not individual fields
     expand: 'company,artist,project_tags_via_project.tag',
-    // Select only essential fields for dashboard display
-    fields:
-      'id,title,status,user,image,date_purchased,date_started,date_completed,date_received,drill_shape,kit_category,width,height,total_diamonds,general_notes,source_url,updated,created,company,artist',
+    // Select only essential fields for dashboard display (includes all fields used in transformation)
+    fields: 'id,title,status,user,image,width,height,drill_shape,kit_category,date_purchased,date_received,date_started,date_completed,total_diamonds,general_notes,source_url,updated,created,company,artist',
     // Enable request deduplication for performance
     requestKey,
   });
@@ -225,13 +225,14 @@ export const useProjects = ({
   currentPage,
   pageSize,
 }: UseProjectsParams) => {
-  const queryParams: ProjectQueryParams = {
+  // Memoize query parameters to prevent unnecessary re-computations
+  const queryParams: ProjectQueryParams = useMemo(() => ({
     filters,
     sortField,
     sortDirection,
     currentPage,
     pageSize,
-  };
+  }), [filters, sortField, sortDirection, currentPage, pageSize]);
 
   return useQuery({
     queryKey: queryKeys.projects.list(userId || '', queryParams),

@@ -4,6 +4,7 @@ import { Collections, CompaniesRecord } from '@/types/pocketbase.types';
 import { queryKeys } from '../queries/queryKeys';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { requireAuthenticatedUser } from '@/utils/authGuards';
 
 interface CreateCompanyData {
   name: string;
@@ -27,10 +28,8 @@ export function useCreateCompany() {
 
   return useMutation({
     mutationFn: (data: CreateCompanyData) => {
-      if (!user?.id) {
-        throw new Error('User not authenticated');
-      }
-      return createCompany(data, user.id);
+      const userId = requireAuthenticatedUser(user);
+      return createCompany(data, userId);
     },
     onSuccess: newCompany => {
       // Invalidate and refetch companies list

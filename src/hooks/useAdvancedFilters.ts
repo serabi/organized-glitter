@@ -44,8 +44,7 @@ export const useAdvancedFilters = (
   projects: ProjectType[],
   showArchived: boolean = false,
   showDestashed: boolean = false,
-  showMiniKits: boolean = false, // Add showMiniKits here
-  externalFilters?: Partial<AvailableFilters>
+  showMiniKits: boolean = false
 ) => {
   // Default sort configuration
   const [sortConfig, setSortConfig] = useState<SortConfig>({
@@ -64,30 +63,18 @@ export const useAdvancedFilters = (
     hasDates: false, // We'll keep this even though we removed the UI element
   });
 
-  // Extract available filter options from projects
-  const [availableFilters, setAvailableFilters] = useState<AvailableFilters>({
-    companies: [],
-    artists: [],
-    drillShapes: [],
-    tags: [],
-  });
+  // Extract available filter options from projects using useMemo
+  const availableFilters = useMemo<AvailableFilters>(() => {
+    // Extract filter options directly from projects
+    const companies = Array.from(
+      new Set(projects.map(project => project.company).filter(Boolean) as string[])
+    ).sort();
 
-  // Update available filters from projects or external source
-  useEffect(() => {
-    // Use external filters if provided, otherwise extract from projects
-    const companies = externalFilters?.companies?.length
-      ? externalFilters.companies
-      : Array.from(
-          new Set(projects.map(project => project.company).filter(Boolean) as string[])
-        ).sort();
+    const artists = Array.from(
+      new Set(projects.map(project => project.artist).filter(Boolean) as string[])
+    ).sort();
 
-    const artists = externalFilters?.artists?.length
-      ? externalFilters.artists
-      : Array.from(
-          new Set(projects.map(project => project.artist).filter(Boolean) as string[])
-        ).sort();
-
-    // Ensure only 'round' and 'square' drill shapes are shown, regardless of data
+    // Static drill shapes - always 'round' and 'square'
     const drillShapes = ['round', 'square'];
 
     // Extract tags from projects
@@ -100,13 +87,13 @@ export const useAdvancedFilters = (
       )
     ).sort();
 
-    setAvailableFilters({
+    return {
       companies,
       artists,
       drillShapes,
       tags,
-    });
-  }, [projects, externalFilters]);
+    };
+  }, [projects]);
 
   // Apply filters to projects
   const filteredProjects = useMemo(() => {
@@ -251,7 +238,6 @@ export const useAdvancedFilters = (
     filters,
     setFilters,
     availableFilters,
-    setAvailableFilters,
   };
 };
 

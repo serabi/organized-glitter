@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { companyService } from '@/services';
+import { useUpdateCompany } from '@/hooks/mutations/useUpdateCompany';
 import FormField from '@/components/projects/form/FormField';
 
 interface EditCompanyDialogProps {
@@ -28,9 +28,9 @@ const EditCompanyDialog = ({ company, onCompanyUpdated }: EditCompanyDialogProps
   const [companyName, setCompanyName] = useState(company.name);
   const [companyUrl, setCompanyUrl] = useState(company.website_url || '');
   const [urlError, setUrlError] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
+  const updateCompanyMutation = useUpdateCompany();
 
   useEffect(() => {
     // Update state when prop changes
@@ -75,29 +75,17 @@ const EditCompanyDialog = ({ company, onCompanyUpdated }: EditCompanyDialogProps
       return;
     }
 
-    setIsSubmitting(true);
-
     try {
-      const response = await companyService.updateCompany(
-        company.id,
-        companyName,
-        companyUrl || null,
-        { toast }
-      );
-
-      if (response.status === 'success') {
-        setIsDialogOpen(false);
-        onCompanyUpdated();
-      }
-    } catch (error) {
-      console.error('Error updating company:', error);
-      toast({
-        title: 'Error',
-        description: 'Could not update company',
-        variant: 'destructive',
+      await updateCompanyMutation.mutateAsync({
+        id: company.id,
+        name: companyName,
+        website_url: companyUrl || undefined,
       });
-    } finally {
-      setIsSubmitting(false);
+
+      setIsDialogOpen(false);
+      onCompanyUpdated();
+    } catch (error) {
+      // Error handling is done in the mutation hook
     }
   };
 
@@ -129,7 +117,7 @@ const EditCompanyDialog = ({ company, onCompanyUpdated }: EditCompanyDialogProps
                 placeholder="Enter company name"
                 value={companyName}
                 onChange={e => setCompanyName(e.target.value)}
-                disabled={isSubmitting}
+                disabled={updateCompanyMutation.isPending}
                 autoFocus
               />
             </FormField>
@@ -140,15 +128,15 @@ const EditCompanyDialog = ({ company, onCompanyUpdated }: EditCompanyDialogProps
                 placeholder="https://www.example.com"
                 value={companyUrl}
                 onChange={handleUrlChange}
-                disabled={isSubmitting}
+                disabled={updateCompanyMutation.isPending}
                 type="url"
               />
             </FormField>
           </div>
 
           <DialogFooter>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button type="submit" disabled={updateCompanyMutation.isPending}>
+              {updateCompanyMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Update Company
             </Button>
           </DialogFooter>

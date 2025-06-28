@@ -4,15 +4,65 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNavigationWithWarning } from '@/hooks/useNavigationWithWarning';
 import { useConfirmationDialog } from '@/hooks/useConfirmationDialog';
 import { useNavigateToProject } from '@/hooks/useNavigateToProject';
-// Using PocketBase services directly
-import { projectService } from '@/services/pocketbase/projectService';
+// Using PocketBase directly
 import { pb } from '@/lib/pocketbase';
+import { ProjectsResponse, CompaniesResponse, ArtistsResponse } from '@/types/pocketbase.types';
+import { extractDateOnly } from '@/lib/utils';
 import { useServiceToast } from '@/utils/toast-adapter';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/hooks/queries/queryKeys';
 import { createLogger } from '@/utils/secureLogger';
+import { Collections } from '@/types/pocketbase.types';
+import { TagService } from '@/lib/tags';
+import { useDeleteProjectMutation } from '@/hooks/mutations/useProjectDetailMutations';
 
 const logger = createLogger('useEditProjectSimplified');
+
+interface ProjectWithExpand extends ProjectsResponse {
+  expand?: {
+    company?: CompaniesResponse;
+    artist?: ArtistsResponse;
+    user?: ProjectsResponse['user'];
+    project_tags_via_project?: Array<{
+      id: string;
+      tag?: {
+        id: string;
+        name: string;
+      };
+    }>;
+  };
+}
+
+/**
+ * Transform PocketBase record to ProjectType
+ */
+const transformProject = (record: ProjectWithExpand): ProjectType => {
+  return {
+    id: record.id,
+    title: record.title,
+    userId: record.user,
+    company: record.expand?.company?.name || '',
+    artist: record.expand?.artist?.name || '',
+    status: record.status as ProjectType['status'],
+    kit_category: record.kit_category || undefined,
+    drillShape: record.drill_shape || undefined,
+    datePurchased: extractDateOnly(record.date_purchased),
+    dateStarted: extractDateOnly(record.date_started),
+    dateCompleted: extractDateOnly(record.date_completed),
+    dateReceived: extractDateOnly(record.date_received),
+    width: record.width || undefined,
+    height: record.height || undefined,
+    totalDiamonds: record.total_diamonds || undefined,
+    generalNotes: record.general_notes || '',
+    imageUrl: record.image ? pb.files.getURL(record, record.image) : undefined,
+    sourceUrl: record.source_url || undefined,
+    createdAt: record.created || '',
+    updatedAt: record.updated || '',
+    progressNotes: [],
+    progressImages: [],
+    tags: [], // Tags would need to be handled separately if needed
+  };
+};
 
 // Toast adapter utility
 const createToastAdapter =
@@ -73,6 +123,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigateToProject = useNavigateToProject();
+  const deleteProjectMutation = useDeleteProjectMutation();
 
   // State management
   const [project, setProject] = useState<ProjectType | null>(null);
@@ -132,8 +183,11 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
         const userId = user.id;
 
         // Fetch everything in parallel for maximum speed
-        const [projectResponse, companiesResponse, artistsResponse] = await Promise.all([
-          projectService.fetchProject(projectId),
+        const [projectRecord, companiesResponse, artistsResponse] = await Promise.all([
+          pb.collection('projects').getOne(projectId, {
+            expand: 'company,artist,user,project_tags_via_project.tag',
+            requestKey: `fetch-project-${projectId}-${Date.now()}`,
+          }),
           pb
             .collection('companies')
             .getList(1, 200, { filter: `user = "${userId}"`, fields: 'name' }),
@@ -142,22 +196,9 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
             .getList(1, 200, { filter: `user = "${userId}"`, fields: 'name' }),
         ]);
 
-        // Handle project response
-        if (projectResponse?.error) {
-          toast({
-            title: 'Error loading project',
-            description:
-              projectResponse.error instanceof Error
-                ? projectResponse.error.message
-                : projectResponse.error || 'Failed to load project',
-            variant: 'destructive',
-          });
-          return;
-        }
-
-        if (projectResponse?.data) {
-          setProject(projectResponse.data);
-        }
+        // Transform and set project
+        const transformedProject = transformProject(projectRecord as ProjectWithExpand);
+        setProject(transformedProject);
 
         // Handle metadata responses
         if (companiesResponse?.items) {
@@ -232,14 +273,118 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
           tagIds,
         };
 
-        // Handle any potential promise rejections from updateProject
-        const response = await projectService
-          .updateProject(projectId, dataToSubmit)
-          .catch((error: unknown) => {
-            console.error('UpdateProject promise rejected:', error);
-            // Return error response instead of throwing
-            return { error: error instanceof Error ? error.message : String(error), data: null };
-          });
+        // Resolve company and artist names to IDs if provided
+        let companyId = null;
+        let artistId = null;
+
+        if (dataToSubmit.company) {
+          try {
+            const companyRecord = await pb
+              .collection('companies')
+              .getFirstListItem(pb.filter('name = {:name} && user = {:user}', { 
+                name: dataToSubmit.company, 
+                user: user?.id 
+              }));
+            companyId = companyRecord?.id || null;
+          } catch (error) {
+            logger.warn('Company not found:', dataToSubmit.company);
+            toast({
+              title: 'Company Not Found',
+              description: `The company "${dataToSubmit.company}" was not found in your list. The project will be updated without a company association. You can add this company later if needed.`,
+              variant: 'destructive',
+            });
+            companyId = null;
+          }
+        }
+
+        if (dataToSubmit.artist) {
+          try {
+            const artistRecord = await pb
+              .collection('artists')
+              .getFirstListItem(pb.filter('name = {:name} && user = {:user}', { 
+                name: dataToSubmit.artist, 
+                user: user?.id 
+              }));
+            artistId = artistRecord?.id || null;
+          } catch (error) {
+            logger.warn('Artist not found:', dataToSubmit.artist);
+            toast({
+              title: 'Artist Not Found',
+              description: `The artist "${dataToSubmit.artist}" was not found in your list. The project will be updated without an artist association. You can add this artist later if needed.`,
+              variant: 'destructive',
+            });
+            artistId = null;
+          }
+        }
+
+        // Create FormData for the update (handles image uploads)
+        const formData = new FormData();
+
+        // Add all form fields except special ones
+        const fieldsToExclude = ['id', 'tags', 'tagIds', 'imageFile', '_imageReplacement', 'company', 'artist'];
+        
+        Object.entries(dataToSubmit).forEach(([key, value]) => {
+          if (!fieldsToExclude.includes(key) && value !== undefined && value !== null && value !== '') {
+            formData.append(key, String(value));
+          }
+        });
+
+        // Add resolved company and artist IDs
+        if (companyId) {
+          formData.append('company', companyId);
+        }
+        if (artistId) {
+          formData.append('artist', artistId);
+        }
+
+        // Handle image upload if present
+        if (dataToSubmit.imageFile && dataToSubmit.imageFile instanceof File) {
+          formData.append('image', dataToSubmit.imageFile);
+        }
+
+        // Update the project in PocketBase
+        const updatedProject = await pb.collection(Collections.Projects).update(projectId, formData);
+        
+        // Handle tag synchronization
+        const currentTagIds = tagIds;
+        const originalTags = project?.tags || [];
+        const originalTagIds = originalTags.map(tag => tag.id);
+        
+        // Find tags to add and remove
+        const tagsToAdd = currentTagIds.filter(tagId => !originalTagIds.includes(tagId));
+        const tagsToRemove = originalTagIds.filter(tagId => !currentTagIds.includes(tagId));
+        
+        // Add new tags
+        for (const tagId of tagsToAdd) {
+          try {
+            await TagService.addTagToProject(projectId, tagId);
+          } catch (error) {
+            logger.warn('Failed to add tag to project:', { projectId, tagId, error });
+            toast({
+              title: 'Tag Update Warning',
+              description: `Failed to add tag to project. The project was updated but some tags may not be saved properly.`,
+              variant: 'destructive',
+            });
+          }
+        }
+        
+        // Remove old tags
+        for (const tagId of tagsToRemove) {
+          try {
+            await TagService.removeTagFromProject(projectId, tagId);
+          } catch (error) {
+            logger.warn('Failed to remove tag from project:', { projectId, tagId, error });
+            toast({
+              title: 'Tag Update Warning',
+              description: `Failed to remove tag from project. The project was updated but some tags may not be saved properly.`,
+              variant: 'destructive',
+            });
+          }
+        }
+
+        // Transform the response to match expected format
+        const transformedProject = transformProject(updatedProject as ProjectWithExpand);
+        const response = { data: transformedProject, error: null };
 
         if (!response?.error && response?.data) {
           // Reset form state after successful update
@@ -259,7 +404,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
           // Navigate back to project detail page using React Router
           logger.info('🚀 Navigating back to project detail page');
           await navigateToProject(projectId, {
-            projectData: response.data,
+            projectData: response.data as ProjectType,
             replace: true // Replace current history entry since we're coming from edit
           });
 
@@ -301,7 +446,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
         setSubmitting(false);
       }
     },
-    [toast, projectId, queryClient, user?.id, removeBeforeUnloadListener, unsafeNavigate]
+    [toast, projectId, queryClient, user?.id, removeBeforeUnloadListener, project, navigateToProject]
   );
 
 
@@ -320,19 +465,12 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
 
     try {
       setSubmitting(true);
-      const response = await projectService.updateProjectStatus(projectId, 'archived');
-
-      if (response?.error) {
-        toast({
-          title: 'Error archiving project',
-          description:
-            response.error instanceof Error
-              ? response.error.message
-              : response.error || 'An unknown error occurred',
-          variant: 'destructive',
-        });
-        return;
-      }
+      
+      logger.debug(`Updating project ${projectId} status to archived`);
+      await pb.collection('projects').update(projectId, {
+        status: 'archived',
+      });
+      logger.debug(`Project ${projectId} status updated to archived successfully`);
 
       unsafeNavigate('/dashboard');
     } catch (error) {
@@ -362,20 +500,14 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
 
     try {
       setSubmitting(true);
-      const response = await projectService.deleteProject(projectId);
+      
+      // Use React Query mutation for deletion
+      await deleteProjectMutation.mutateAsync({
+        projectId,
+        title: project.title,
+      });
 
-      if (response?.error) {
-        toast({
-          title: 'Error deleting project',
-          description:
-            response.error instanceof Error
-              ? response.error.message
-              : response.error || 'An unknown error occurred',
-          variant: 'destructive',
-        });
-        return;
-      }
-
+      // Navigation and cache invalidation are handled by the mutation
       unsafeNavigate('/dashboard');
     } catch (error) {
       console.error('Error deleting project:', error);
@@ -387,7 +519,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
     } finally {
       setSubmitting(false);
     }
-  }, [projectId, project, isDirty, toast, unsafeNavigate, confirmUnsavedChanges, confirmDelete]);
+  }, [projectId, project, isDirty, toast, unsafeNavigate, confirmUnsavedChanges, confirmDelete, deleteProjectMutation]);
 
   const refreshLists = useCallback(async () => {
     // Simplified refresh - just reload metadata using existing user.id

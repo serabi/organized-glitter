@@ -4,6 +4,7 @@ import { Collections, ArtistsRecord } from '@/types/pocketbase.types';
 import { queryKeys } from '../queries/queryKeys';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { requireAuthenticatedUser } from '@/utils/authGuards';
 
 interface UpdateArtistData {
   id: string;
@@ -44,10 +45,8 @@ export function useUpdateArtist() {
 
   return useMutation({
     mutationFn: (data: UpdateArtistData) => {
-      if (!user?.id) {
-        throw new Error('User not authenticated');
-      }
-      return updateArtist(data, user.id);
+      const userId = requireAuthenticatedUser(user);
+      return updateArtist(data, userId);
     },
     onSuccess: updatedArtist => {
       // Invalidate and refetch artists list

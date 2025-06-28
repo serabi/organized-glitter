@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { projectService } from '@/services/pocketbase/projectService';
+import { pb } from '@/lib/pocketbase';
 import { queryKeys } from '../queries/queryKeys';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -21,11 +21,51 @@ export const useDeleteProject = () => {
 
   return useMutation({
     mutationFn: async (data: DeleteProjectData): Promise<void> => {
-      logger.debug('Deleting project:', data.id);
+      logger.debug('Deleting project with cascade deletion:', data.id);
 
-      await projectService.deleteProject(data.id);
+      // Step 1: Delete all progress notes for this project
+      try {
+        const progressNotes = await pb.collection('progress_notes').getFullList({
+          filter: pb.filter('project = {:projectId}', { projectId: data.id }),
+        });
 
-      logger.info('Project deleted successfully:', data.id);
+        logger.debug(
+          `Found ${progressNotes.length} progress notes to delete for project ${data.id}`
+        );
+
+        for (const note of progressNotes) {
+          await pb.collection('progress_notes').delete(note.id);
+        }
+      } catch (progressNotesError) {
+        logger.warn(
+          `Error deleting progress notes for project ${data.id}:`,
+          progressNotesError
+        );
+        // Continue with deletion attempt - not all projects have progress notes
+      }
+
+      // Step 2: Delete all project-tag associations for this project
+      try {
+        const projectTags = await pb.collection('project_tags').getFullList({
+          filter: pb.filter('project = {:projectId}', { projectId: data.id }),
+        });
+
+        logger.debug(
+          `Found ${projectTags.length} project tags to delete for project ${data.id}`
+        );
+
+        for (const projectTag of projectTags) {
+          await pb.collection('project_tags').delete(projectTag.id);
+        }
+      } catch (projectTagsError) {
+        logger.warn(`Error deleting project tags for project ${data.id}:`, projectTagsError);
+        // Continue with deletion attempt - the project tags might not exist
+      }
+
+      // Step 3: Delete the project itself
+      await pb.collection('projects').delete(data.id);
+
+      logger.info('Project deleted successfully with cascade:', data.id);
     },
 
     onMutate: async variables => {

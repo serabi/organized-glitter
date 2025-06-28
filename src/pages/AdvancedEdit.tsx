@@ -32,7 +32,7 @@ const AdvancedEdit = () => {
   const { companies, artists, tags, companyNames, artistNames } = useMetadata();
   const allCompanies = Array.isArray(companies) ? companies : [];
   const allArtists = Array.isArray(artists) ? artists : [];
-  const allTags = Array.isArray(tags) ? tags : [];
+  const allTags = useMemo(() => (Array.isArray(tags) ? tags : []), [tags]);
 
   // View state
   const [showImages, setShowImages] = useState(false);
@@ -45,17 +45,6 @@ const AdvancedEdit = () => {
   const artistParam = searchParams.get('artist');
   const tagParam = searchParams.get('tag');
 
-  // External filters object for useAdvancedFilters
-  const externalFilters = useMemo(
-    () => ({
-      companies: companyNames,
-      artists: artistNames,
-      drillShapes: ['round', 'square'],
-      tags: allTags.map(tag => tag.name),
-    }),
-    [companyNames, artistNames, allTags]
-  );
-
   // Advanced filtering logic
   const {
     filteredProjects: allFilteredProjects,
@@ -64,7 +53,7 @@ const AdvancedEdit = () => {
     sortConfig,
     setSortConfig,
     availableFilters,
-  } = useAdvancedFilters(projects, showArchived, showDestashed, showMiniKits, externalFilters);
+  } = useAdvancedFilters(projects, showArchived, showDestashed, showMiniKits);
 
   // Custom hooks
   const pagination = useAdvancedEditPagination(allFilteredProjects);
@@ -81,7 +70,8 @@ const AdvancedEdit = () => {
         variant: 'destructive',
       });
     }
-  }, [error, toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [error]); // toast is stable from useToast hook
 
   // Apply URL parameter filters when projects load
   useEffect(() => {
@@ -107,7 +97,8 @@ const AdvancedEdit = () => {
         }));
       }
     }
-  }, [projects.length, companyParam, artistParam, tagParam, setFilters]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projects.length, companyParam, artistParam, tagParam]); // setFilters is stable from useState
 
   if (loading) {
     return (

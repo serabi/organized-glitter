@@ -1,9 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { ProgressNote } from '@/types/project';
-import { progressNotesService } from '@/services';
+import { pb } from '@/lib/pocketbase';
 import { queryKeys } from './queryKeys';
 import { analytics } from '@/services/analytics';
+import { requireValidAuthStore } from '@/utils/authGuards';
 
 interface AddProgressNoteData {
   date: string;
@@ -37,7 +38,27 @@ export function useProgressNotesQuery(projectId: string | null) {
     queryFn: async (): Promise<ProgressNote[]> => {
       if (!projectId) return [];
 
-      return await progressNotesService.fetchProgressNotes(projectId);
+      // Fetch progress notes using direct PocketBase call
+      const filter = pb.filter('project = {:projectId}', { projectId });
+      const notes = await pb.collection('progress_notes').getFullList({
+        filter,
+        sort: '-date,-created', // Sort by date descending, then by created descending
+        expand: 'project',
+        requestKey: `progress-notes-${projectId}`,
+      });
+
+      // Transform PocketBase records to ProgressNote format
+      const progressNotes: ProgressNote[] = notes.map(note => ({
+        id: note.id,
+        projectId: note.project,
+        content: note.content,
+        date: note.date,
+        imageUrl: note.image ? pb.files.getURL(note, note.image) : undefined,
+        createdAt: note.created,
+        updatedAt: note.updated,
+      }));
+
+      return progressNotes;
     },
     enabled: !!projectId,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -58,8 +79,36 @@ export function useAddProgressNoteMutation(projectId: string) {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (noteData: AddProgressNoteData) => {
-      return await progressNotesService.addProgressNote(projectId, noteData);
+    mutationFn: async (noteData: AddProgressNoteData): Promise<ProgressNote> => {
+      // Check authentication
+      requireValidAuthStore();
+
+      // Prepare data for PocketBase
+      const data: Record<string, unknown> = {
+        project: projectId,
+        content: noteData.content,
+        date: noteData.date,
+      };
+
+      // Add image file if provided
+      if (noteData.imageFile) {
+        data.image = noteData.imageFile;
+      }
+
+      const record = await pb.collection('progress_notes').create(data);
+
+      // Transform the created record to ProgressNote format
+      const progressNote: ProgressNote = {
+        id: record.id,
+        projectId: record.project,
+        content: record.content,
+        date: record.date,
+        imageUrl: record.image ? pb.files.getURL(record, record.image) : undefined,
+        createdAt: record.created,
+        updatedAt: record.updated,
+      };
+
+      return progressNote;
     },
     onSuccess: progressNote => {
       // Show success toast
@@ -69,7 +118,12 @@ export function useAddProgressNoteMutation(projectId: string) {
       });
 
       // Track analytics
-      analytics.progressNote.created(projectId, !!progressNote);
+      analytics.progressNote.created(projectId, !!progressNote.imageUrl);
+
+      // Track image upload if present
+      if (progressNote.imageUrl) {
+        analytics.feature.imageUploaded('progress_note', 0); // Size not available from URL
+      }
 
       // Invalidate and refetch progress notes for this project
       queryClient.invalidateQueries({
@@ -100,8 +154,26 @@ export function useUpdateProgressNoteMutation(projectId: string) {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ noteId, newContent }: UpdateProgressNoteData) => {
-      return await progressNotesService.updateProgressNote(noteId, newContent);
+    mutationFn: async ({ noteId, newContent }: UpdateProgressNoteData): Promise<ProgressNote> => {
+      // Check authentication
+      requireValidAuthStore();
+
+      const record = await pb.collection('progress_notes').update(noteId, {
+        content: newContent,
+      });
+
+      // Transform the updated record to ProgressNote format
+      const progressNote: ProgressNote = {
+        id: record.id,
+        projectId: record.project,
+        content: record.content,
+        date: record.date,
+        imageUrl: record.image ? pb.files.getURL(record, record.image) : undefined,
+        createdAt: record.created,
+        updatedAt: record.updated,
+      };
+
+      return progressNote;
     },
     onSuccess: () => {
       // Show success toast
@@ -134,8 +206,11 @@ export function useDeleteProgressNoteMutation(projectId: string) {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ noteId }: DeleteProgressNoteData) => {
-      return await progressNotesService.deleteProgressNote(noteId);
+    mutationFn: async ({ noteId }: DeleteProgressNoteData): Promise<void> => {
+      // Check authentication
+      requireValidAuthStore();
+
+      await pb.collection('progress_notes').delete(noteId);
     },
     onSuccess: () => {
       // Show success toast
@@ -168,8 +243,27 @@ export function useDeleteProgressNoteImageMutation(projectId: string) {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ noteId }: DeleteProgressNoteImageData) => {
-      return await progressNotesService.deleteProgressNoteImage(noteId);
+    mutationFn: async ({ noteId }: DeleteProgressNoteImageData): Promise<ProgressNote> => {
+      // Check authentication
+      requireValidAuthStore();
+
+      // Update the note to remove the image field
+      const record = await pb.collection('progress_notes').update(noteId, {
+        image: null,
+      });
+
+      // Transform the updated record to ProgressNote format
+      const progressNote: ProgressNote = {
+        id: record.id,
+        projectId: record.project,
+        content: record.content,
+        date: record.date,
+        imageUrl: record.image ? pb.files.getURL(record, record.image) : undefined,
+        createdAt: record.created,
+        updatedAt: record.updated,
+      };
+
+      return progressNote;
     },
     onSuccess: () => {
       // Show success toast
@@ -202,8 +296,14 @@ export function useUpdateGeneralNotesMutation(projectId: string) {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ newNotes }: UpdateGeneralNotesData) => {
-      return await progressNotesService.updateGeneralNotes(projectId, newNotes);
+    mutationFn: async ({ newNotes }: UpdateGeneralNotesData): Promise<void> => {
+      // Check authentication
+      requireValidAuthStore();
+
+      // Update the project's general notes field
+      await pb.collection('projects').update(projectId, {
+        general_notes: newNotes,
+      });
     },
     onSuccess: () => {
       // Show success toast

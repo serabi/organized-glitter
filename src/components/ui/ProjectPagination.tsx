@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
   Pagination,
@@ -27,7 +27,7 @@ interface ProjectPaginationProps {
   className?: string;
 }
 
-const ProjectPagination: React.FC<ProjectPaginationProps> = ({
+const ProjectPagination: React.FC<ProjectPaginationProps> = React.memo(({
   currentPage,
   totalPages,
   pageSize,
@@ -37,10 +37,14 @@ const ProjectPagination: React.FC<ProjectPaginationProps> = ({
   className,
 }) => {
   const isMobile = useIsMobile();
-  const startItem = (currentPage - 1) * pageSize + 1;
-  const endItem = Math.min(currentPage * pageSize, totalItems);
+  
+  // Memoize calculations to prevent unnecessary re-computations
+  const { startItem, endItem } = useMemo(() => ({
+    startItem: (currentPage - 1) * pageSize + 1,
+    endItem: Math.min(currentPage * pageSize, totalItems),
+  }), [currentPage, pageSize, totalItems]);
 
-  const renderPageNumbers = () => {
+  const renderPageNumbers = useMemo(() => {
     const pages = [];
     // Reduce visible pages on mobile for better fit
     const maxVisiblePages = isMobile ? 3 : 5;
@@ -104,7 +108,7 @@ const ProjectPagination: React.FC<ProjectPaginationProps> = ({
     }
 
     return pages;
-  };
+  }, [currentPage, totalPages, isMobile, onPageChange]);
 
   if (totalPages <= 1) {
     return (
@@ -160,7 +164,7 @@ const ProjectPagination: React.FC<ProjectPaginationProps> = ({
                 />
               </PaginationItem>
 
-              {renderPageNumbers()}
+              {renderPageNumbers}
 
               <PaginationItem>
                 <PaginationNext
@@ -178,6 +182,8 @@ const ProjectPagination: React.FC<ProjectPaginationProps> = ({
       </div>
     </div>
   );
-};
+});
+
+ProjectPagination.displayName = 'ProjectPagination';
 
 export default ProjectPagination;

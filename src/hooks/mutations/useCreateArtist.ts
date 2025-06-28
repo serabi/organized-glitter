@@ -4,6 +4,10 @@ import { Collections, ArtistsRecord } from '@/types/pocketbase.types';
 import { queryKeys } from '../queries/queryKeys';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { requireAuthenticatedUser } from '@/utils/authGuards';
+import { createLogger } from '@/utils/secureLogger';
+
+const logger = createLogger('useCreateArtist');
 
 interface CreateArtistData {
   name: string;
@@ -25,10 +29,8 @@ export function useCreateArtist() {
 
   return useMutation({
     mutationFn: (data: CreateArtistData) => {
-      if (!user?.id) {
-        throw new Error('User not authenticated');
-      }
-      return createArtist(data, user.id);
+      const userId = requireAuthenticatedUser(user);
+      return createArtist(data, userId);
     },
     onSuccess: newArtist => {
       // Invalidate and refetch artists list
@@ -42,7 +44,7 @@ export function useCreateArtist() {
       });
     },
     onError: (error: unknown) => {
-      console.error('Error creating artist:', error);
+      logger.error('Error creating artist:', error);
 
       // Handle specific error cases
       if (error && typeof error === 'object' && 'status' in error && error.status === 400) {
