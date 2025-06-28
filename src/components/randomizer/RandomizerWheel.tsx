@@ -1,7 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Project } from '@/types/project';
-import { ChevronDown } from 'lucide-react';
 // Custom color palette for the randomizer wheel using Organized Glitter brand colors
 const getWheelColor = (index: number): string => {
   const colors = [
@@ -37,16 +36,27 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
 }) => {
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
+  const [selectedResult, setSelectedResult] = useState<Project | null>(null);
   const wheelRef = useRef<HTMLDivElement>(null);
+  const resultAnnouncementRef = useRef<HTMLDivElement>(null);
 
   const handleSpin = useCallback(() => {
     if (isSpinning || projects.length === 0) return;
 
     logger.debug('Starting wheel spin', { projectCount: projects.length });
     setIsSpinning(true);
+    
+    // Announce spin start to screen readers
+    if (resultAnnouncementRef.current) {
+      resultAnnouncementRef.current.textContent = 
+        `Spinning wheel to select from ${projects.length} projects...`;
+    }
 
+    // Check for reduced motion preference
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    
     // Calculate random rotation (multiple full rotations + random angle)
-    const baseRotation = 1800; // 5 full rotations (360 * 5)
+    const baseRotation = prefersReducedMotion ? 0 : 1800; // No spin if reduced motion
     const randomRotation = Math.random() * 360;
     const totalRotation = rotation + baseRotation + randomRotation;
 
@@ -73,33 +83,77 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
       selectedProjectTitle: selectedProject?.title,
     });
 
-    // Wait for animation to complete
+    // Wait for animation to complete (shorter for reduced motion)
+    const animationDuration = prefersReducedMotion ? 500 : 3000;
     setTimeout(() => {
       setIsSpinning(false);
       if (selectedProject) {
+        setSelectedResult(selectedProject);
         onSpinComplete(selectedProject);
         logger.info('Wheel spin completed', {
           selectedProjectId: selectedProject.id,
           selectedProjectTitle: selectedProject.title,
         });
+        
+        // Announce result to screen readers
+        if (resultAnnouncementRef.current) {
+          resultAnnouncementRef.current.textContent = 
+            `Spin complete! Selected project: ${selectedProject.title}`;
+        }
       }
-    }, 3000); // Match the CSS animation duration
+    }, animationDuration);
 
   }, [isSpinning, projects, rotation, onSpinComplete]);
+
+  // Keyboard navigation handler
+  const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
+    if (isSpinning) return;
+
+    switch (event.key) {
+      case 'Enter':
+      case ' ':
+        event.preventDefault();
+        if (!disabled && projects.length > 0) {
+          handleSpin();
+        }
+        break;
+      case 'Escape':
+        event.preventDefault();
+        if (wheelRef.current) {
+          wheelRef.current.blur();
+        }
+        break;
+      default:
+        break;
+    }
+  }, [isSpinning, disabled, projects.length, handleSpin]);
 
   // Empty wheel state - show beautiful gradient circle
   if (projects.length === 0) {
     return (
       <div className="flex flex-col items-center space-y-6">
+        {/* Screen Reader Instructions */}
+        <div className="sr-only" id="wheel-instructions">
+          Project randomizer wheel. Select some projects from the list below to start spinning.
+        </div>
+        
         {/* Empty Wheel Container */}
-        <div className="relative">
-          {/* Pointer Arrow */}
-          <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-2 z-10">
-            <ChevronDown className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-gray-800 dark:text-white drop-shadow-lg" />
+        <div 
+          className="relative"
+          role="img"
+          aria-label="Empty project randomizer wheel"
+          aria-describedby="wheel-instructions"
+        >
+          {/* Pointer Line */}
+          <div 
+            className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-2 z-10"
+            aria-hidden="true"
+          >
+            <div className="w-0.5 h-8 sm:w-1 sm:h-10 lg:w-1.5 lg:h-12 bg-flamingo-300 shadow-lg"></div>
           </div>
 
           {/* Empty Wheel with Gradient */}
-          <div className="relative w-72 h-72 sm:w-96 sm:h-96 lg:w-112 lg:h-112 rounded-full border-4 border-gray-800 dark:border-white overflow-hidden bg-gradient-to-br from-diamond-400 via-flamingo-400 via-peach-400 to-mauve-400 opacity-60">
+          <div className="relative w-72 h-72 sm:w-96 sm:h-96 lg:w-112 lg:h-112 rounded-full border-4 border-flamingo-300 overflow-hidden bg-gradient-to-br from-diamond-400 via-flamingo-400 via-peach-400 to-mauve-400 opacity-60">
             {/* Center content */}
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center text-white drop-shadow-lg">
@@ -118,14 +172,12 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
           disabled={true}
           size="lg"
           className="px-8 py-3 text-lg font-semibold bg-gradient-to-r from-primary to-mauve-500 hover:from-primary/90 hover:to-mauve-500/90 text-white shadow-lg opacity-50 cursor-not-allowed"
+          aria-label="Spin the wheel (disabled - no projects selected)"
+          aria-describedby="wheel-instructions"
         >
           Spin the Wheel!
         </Button>
 
-        {/* Instructions */}
-        <p className="text-sm text-muted-foreground text-center max-w-md">
-          Select your in-progress projects below, then come back to spin the wheel!
-        </p>
       </div>
     );
   }
@@ -135,25 +187,69 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
   const wheelSize = 448; // Base size for calculations (largest size)
   const radius = wheelSize / 2;
 
+  // Project list for screen readers
+  const projectList = projects.map(p => p.title).join(', ');
+
   return (
     <div className="flex flex-col items-center space-y-6">
+      {/* Screen Reader Content */}
+      <div className="sr-only">
+        <div id="wheel-description">
+          Project randomizer wheel with {projects.length} projects: {projectList}
+        </div>
+        <div id="wheel-instructions">
+          Press Enter or Space to spin the wheel. Use Escape to exit focus.
+        </div>
+        <div 
+          ref={resultAnnouncementRef}
+          aria-live="polite"
+          aria-atomic="true"
+        />
+        
+        {/* Alternative content - project list for screen readers */}
+        <div id="project-alternatives">
+          <h3>Available Projects:</h3>
+          <ul>
+            {projects.map((project, index) => (
+              <li key={project.id}>
+                {index + 1}. {project.title}
+                {(project.company || project.artist) && (
+                  <span> by {[project.company, project.artist].filter(Boolean).join(' • ')}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
       {/* Wheel Container */}
-      <div className="relative">
-        {/* Pointer Arrow */}
-        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-2 z-10">
-          <ChevronDown className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-gray-800 dark:text-white drop-shadow-lg" />
+      <div 
+        className="relative focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-full"
+        role="application"
+        aria-label={`Project randomizer wheel with ${projects.length} projects`}
+        aria-describedby="wheel-description wheel-instructions project-alternatives"
+        tabIndex={0}
+        onKeyDown={handleKeyDown}
+      >
+        {/* Pointer Line */}
+        <div 
+          className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-2 z-10"
+          aria-hidden="true"
+        >
+          <div className="w-0.5 h-8 sm:w-1 sm:h-10 lg:w-1.5 lg:h-12 bg-flamingo-300 shadow-lg"></div>
         </div>
 
         {/* Wheel */}
         <div
           ref={wheelRef}
-          className={`relative w-72 h-72 sm:w-96 sm:h-96 lg:w-112 lg:h-112 rounded-full border-4 border-gray-800 dark:border-white overflow-hidden transition-transform duration-3000 ease-out ${
+          className={`relative w-72 h-72 sm:w-96 sm:h-96 lg:w-112 lg:h-112 rounded-full border-4 border-flamingo-300 overflow-hidden transition-transform duration-3000 ease-out ${
             isSpinning ? 'animate-spin-custom' : ''
           }`}
           style={{
             transform: `rotate(${rotation}deg)`,
             transformOrigin: 'center',
           }}
+          aria-hidden="true"
         >
           {projects.map((project, index) => {
             const startAngle = index * segmentAngle;
@@ -194,12 +290,43 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
                 <path
                   d={pathData}
                   fill={colorHex}
-                  stroke="white"
-                  strokeWidth="2"
+                  stroke="#fda4af"
+                  strokeWidth="3"
                   opacity="0.9"
                 />
                 
-                {/* Project title text */}
+                {/* Pattern overlay for better accessibility */}
+                <path
+                  d={pathData}
+                  fill="none"
+                  stroke="white"
+                  strokeWidth="1"
+                  strokeDasharray={index % 2 === 0 ? "5,5" : "none"}
+                  opacity="0.3"
+                />
+                
+                {/* Project title text with better contrast */}
+                <text
+                  x={textX}
+                  y={textY}
+                  fill="black"
+                  stroke="white"
+                  strokeWidth="2"
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fontSize="12"
+                  fontWeight="700"
+                  className="drop-shadow-lg"
+                  style={{
+                    transform: `rotate(${textAngle}deg)`,
+                    transformOrigin: `${textX}px ${textY}px`,
+                  }}
+                >
+                  {project.title.length > 15 
+                    ? `${project.title.substring(0, 12)}...` 
+                    : project.title
+                  }
+                </text>
                 <text
                   x={textX}
                   y={textY}
@@ -207,8 +334,7 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
                   textAnchor="middle"
                   dominantBaseline="middle"
                   fontSize="12"
-                  fontWeight="600"
-                  className="drop-shadow-lg"
+                  fontWeight="700"
                   style={{
                     transform: `rotate(${textAngle}deg)`,
                     transformOrigin: `${textX}px ${textY}px`,
@@ -231,14 +357,16 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
         disabled={disabled || isSpinning || projects.length === 0}
         size="lg"
         className="px-8 py-3 text-lg font-semibold bg-gradient-to-r from-primary to-mauve-500 hover:from-primary/90 hover:to-mauve-500/90 text-white shadow-lg"
+        aria-label={
+          isSpinning 
+            ? `Spinning wheel to select from ${projects.length} projects` 
+            : `Spin the wheel to randomly select from ${projects.length} projects`
+        }
+        aria-describedby="wheel-description"
       >
         {isSpinning ? 'Spinning...' : 'Spin the Wheel!'}
       </Button>
 
-      {/* Instructions */}
-      <p className="text-sm text-muted-foreground text-center max-w-md">
-        Click the button to spin and randomly select a project to work on today!
-      </p>
 
       {/* Custom CSS for the spin animation */}
       <style>{`
@@ -255,6 +383,17 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
         }
         .duration-3000 {
           transition-duration: 3000ms;
+        }
+        
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+          .animate-spin-custom {
+            animation: none;
+            transition: transform 0.5s ease-out;
+          }
+          .duration-3000 {
+            transition-duration: 500ms;
+          }
         }
       `}</style>
     </div>

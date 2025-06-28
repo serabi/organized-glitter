@@ -71,9 +71,8 @@ const ProjectRandomizer: React.FC = () => {
         {/* Hero Section - Randomizer Wheel */}
         <Card className="mb-8">
           <CardHeader className="text-center">
-            <CardTitle className="text-3xl">Spin the Wheel</CardTitle>
             <CardDescription className="text-lg">
-              Let chance decide which project to work on today
+              Select your in-progress projects below, then come back to spin the wheel!
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center py-8">
@@ -130,14 +129,6 @@ const ProjectRandomizer: React.FC = () => {
               </Alert>
             )}
 
-            {stats.hasProjects && !stats.hasSelection && (
-              <Alert className="mt-8 max-w-lg">
-                <Lightbulb className="h-4 w-4" />
-                <AlertDescription className="text-base">
-                  Select some projects below to get started!
-                </AlertDescription>
-              </Alert>
-            )}
 
             {stats.hasSelection && !stats.canSpin && (
               <Alert className="mt-8 max-w-lg">
