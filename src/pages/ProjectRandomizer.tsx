@@ -1,3 +1,16 @@
+/**
+ * @fileoverview Project Randomizer Page Component
+ *
+ * Main page component for the project randomizer feature. Provides a complete
+ * interface for selecting projects, spinning the wheel, viewing results, and
+ * managing spin history. Features responsive design, accessibility support,
+ * and comprehensive error handling.
+ *
+ * @author Generated with Claude Code
+ * @version 1.0.0
+ * @since 2024-06-28
+ */
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
@@ -14,8 +27,51 @@ import { createLogger } from '@/utils/secureLogger';
 
 const logger = createLogger('ProjectRandomizer');
 
+/**
+ * Project Randomizer page component
+ *
+ * Main page for the randomizer feature that allows users to select from their
+ * in-progress projects and spin a wheel to randomly choose which project to work on.
+ * Includes project selection, spinning wheel, results display, and history tracking.
+ *
+ * @returns {JSX.Element} The complete randomizer page with all functionality
+ *
+ * @features
+ * - Interactive spinning wheel with brand colors and animations
+ * - Project selection interface with batch operations
+ * - Spin result display with navigation to selected project
+ * - Comprehensive statistics dashboard
+ * - Spin history with pagination and timestamps
+ * - Responsive design for all device sizes
+ * - Accessibility support (WCAG 2.1 AA)
+ * - Error handling and loading states
+ * - Empty state guidance for new users
+ *
+ * @layout
+ * 1. **Hero Section**: Large randomizer wheel at the top
+ * 2. **Statistics**: 4-card grid showing key metrics
+ * 3. **Two-Column Layout**:
+ *    - Left: Project selection interface
+ *    - Right: Spin history and management
+ *
+ * @userflow
+ * 1. User sees their in-progress projects in the selection area
+ * 2. User selects 2+ projects they want to include in randomization
+ * 3. User clicks "Spin the Wheel!" to randomly select a project
+ * 4. Result is displayed with link to go work on that project
+ * 5. Spin is automatically saved to history for future reference
+ *
+ * @accessibility
+ * - Keyboard navigation throughout
+ * - Screen reader announcements for spin results
+ * - Semantic HTML structure with proper headings
+ * - Focus management and visual indicators
+ * - Alternative content for complex interactions
+ */
 const ProjectRandomizer: React.FC = () => {
   const { user } = useAuth();
+
+  /** Main randomizer hook providing all state and actions */
   const {
     availableProjects,
     selectedProjects,
@@ -56,11 +112,11 @@ const ProjectRandomizer: React.FC = () => {
 
   return (
     <MainLayout>
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="container mx-auto max-w-7xl px-4 py-8">
         {/* Page Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <Shuffle className="w-8 h-8 text-primary" />
+          <div className="mb-4 flex items-center gap-3">
+            <Shuffle className="h-8 w-8 text-primary" />
             <h1 className="text-3xl font-bold">Project Randomizer</h1>
           </div>
           <p className="text-lg text-muted-foreground">
@@ -87,23 +143,21 @@ const ProjectRandomizer: React.FC = () => {
               <div className="mt-8 w-full max-w-md">
                 <Card className="border-primary bg-primary/5">
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-xl text-center">
-                      Selected Project
-                    </CardTitle>
+                    <CardTitle className="text-center text-xl">Selected Project</CardTitle>
                   </CardHeader>
-                  <CardContent className="text-center space-y-4">
+                  <CardContent className="space-y-4 text-center">
                     <h3 className="text-2xl font-bold">{lastSpinResult.title}</h3>
                     {(lastSpinResult.company || lastSpinResult.artist) && (
-                      <p className="text-muted-foreground text-lg">
+                      <p className="text-lg text-muted-foreground">
                         {[lastSpinResult.company, lastSpinResult.artist]
                           .filter(Boolean)
                           .join(' • ')}
                       </p>
                     )}
-                    <div className="flex gap-3 justify-center">
+                    <div className="flex justify-center gap-3">
                       <Button asChild>
                         <Link to={`/projects/${lastSpinResult.id}`}>
-                          <ExternalLink className="w-4 h-4 mr-2" />
+                          <ExternalLink className="mr-2 h-4 w-4" />
                           View Project
                         </Link>
                       </Button>
@@ -121,14 +175,14 @@ const ProjectRandomizer: React.FC = () => {
               <Alert className="mt-8 max-w-lg">
                 <Lightbulb className="h-4 w-4" />
                 <AlertDescription className="text-base">
-                  You don't have any projects in progress. 
-                  <Link to="/dashboard" className="text-primary hover:underline ml-1 font-medium">
+                  You don't have any projects in progress.
+                  <Link to="/dashboard" className="ml-1 font-medium text-primary hover:underline">
                     Start some projects
-                  </Link> to use the randomizer!
+                  </Link>{' '}
+                  to use the randomizer!
                 </AlertDescription>
               </Alert>
             )}
-
 
             {stats.hasSelection && !stats.canSpin && (
               <Alert className="mt-8 max-w-lg">
@@ -142,7 +196,7 @@ const ProjectRandomizer: React.FC = () => {
         </Card>
 
         {/* Stats Summary */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
           <Card>
             <CardContent className="p-4">
               <div className="text-2xl font-bold">{stats.totalProjects}</div>
@@ -163,16 +217,14 @@ const ProjectRandomizer: React.FC = () => {
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="text-2xl font-bold text-primary">
-                {stats.canSpin ? '✓' : '○'}
-              </div>
+              <div className="text-2xl font-bold text-primary">{stats.canSpin ? '✓' : '○'}</div>
               <p className="text-sm text-muted-foreground">Ready to Spin</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Bottom Section - Project Selection and History */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
           {/* Left Panel - Project Selection */}
           <Card>
             <CardHeader>
@@ -197,14 +249,10 @@ const ProjectRandomizer: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle>Spin History</CardTitle>
-              <CardDescription>
-                Your recent randomizer results
-              </CardDescription>
+              <CardDescription>Your recent randomizer results</CardDescription>
             </CardHeader>
             <CardContent>
-              <SpinHistory
-                userId={user?.id}
-              />
+              <SpinHistory userId={user?.id} />
             </CardContent>
           </Card>
         </div>
