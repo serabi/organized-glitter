@@ -110,6 +110,7 @@ const Import = lazy(() => import('@/pages/Import'));
 // Lazy load utility pages
 const DeleteAccount = lazy(() => import('@/pages/DeleteAccount'));
 const SupportSuccess = lazy(() => import('@/pages/SupportSuccess'));
+const ProjectRandomizer = createLazyComponent(() => import('@/pages/ProjectRandomizer'), 'ProjectRandomizer');
 
 // Debug wrapper for ProjectDetail route
 const ProjectDetailWrapper: React.FC = () => {
@@ -353,6 +354,18 @@ export const AppRoutes: React.FC = () => {
           <ProtectedRoute>
             <Suspense fallback={<PageLoading />}>
               <SupportSuccess />
+            </Suspense>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Randomizer route */}
+      <Route
+        path="/randomizer"
+        element={
+          <ProtectedRoute>
+            <Suspense fallback={<PageLoading />}>
+              <ProjectRandomizer />
             </Suspense>
           </ProtectedRoute>
         }
