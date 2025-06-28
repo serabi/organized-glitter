@@ -21,8 +21,14 @@ interface ProjectWithExpand extends ProjectsResponse {
   expand?: {
     company?: CompaniesResponse;
     artist?: ArtistsResponse;
-    user?: any;
-    project_tags_via_project?: Array<any>;
+    user?: ProjectsResponse['user'];
+    project_tags_via_project?: Array<{
+      id: string;
+      tag?: {
+        id: string;
+        name: string;
+      };
+    }>;
   };
 }
 
@@ -418,7 +424,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
         setSubmitting(false);
       }
     },
-    [toast, projectId, queryClient, user?.id, removeBeforeUnloadListener, unsafeNavigate, user, project, navigateToProject]
+    [toast, projectId, queryClient, user?.id, removeBeforeUnloadListener, project, navigateToProject]
   );
 
 
@@ -473,58 +479,51 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
     try {
       setSubmitting(true);
       
-      logger.debug(`Deleting project ${projectId} with cascade deletion`);
+      logger.debug(`Deleting project ${projectId} with atomic batch deletion`);
 
-      // Step 1: Delete all progress notes for this project
-      try {
-        const progressNotes = await pb.collection('progress_notes').getFullList({
+      // Fetch all related records in parallel for better performance
+      const [progressNotes, projectTags] = await Promise.all([
+        pb.collection('progress_notes').getFullList({
           filter: pb.filter('project = {:projectId}', { projectId }),
-        });
-
-        logger.debug(
-          `Found ${progressNotes.length} progress notes to delete for project ${projectId}`
-        );
-
-        for (const note of progressNotes) {
-          await pb.collection('progress_notes').delete(note.id);
-        }
-      } catch (progressNotesError) {
-        logger.warn(
-          `Error deleting progress notes for project ${projectId}:`,
-          progressNotesError
-        );
-        // Continue with deletion attempt - not all projects have progress notes
-      }
-
-      // Step 2: Delete all project-tag associations for this project
-      try {
-        const projectTags = await pb.collection('project_tags').getFullList({
+          fields: 'id', // Only need IDs for deletion
+        }),
+        pb.collection('project_tags').getFullList({
           filter: pb.filter('project = {:projectId}', { projectId }),
-        });
+          fields: 'id', // Only need IDs for deletion
+        }),
+      ]);
 
-        logger.debug(
-          `Found ${projectTags.length} project tags to delete for project ${projectId}`
-        );
+      logger.debug(
+        `Found ${progressNotes.length} progress notes and ${projectTags.length} project tags to delete for project ${projectId}`
+      );
 
-        for (const projectTag of projectTags) {
-          await pb.collection('project_tags').delete(projectTag.id);
-        }
-      } catch (projectTagsError) {
-        logger.warn(`Error deleting project tags for project ${projectId}:`, projectTagsError);
-        // Continue with deletion attempt - the project tags might not exist
-      }
+      // Create atomic batch operation for all deletions
+      const batch = pb.createBatch();
 
-      // Step 3: Delete the project itself
-      await pb.collection('projects').delete(projectId);
+      // Add progress notes deletion to batch
+      progressNotes.forEach(note => {
+        batch.collection('progress_notes').delete(note.id);
+      });
 
-      logger.debug(`Project ${projectId} deleted successfully with cascade`);
+      // Add project tags deletion to batch
+      projectTags.forEach(projectTag => {
+        batch.collection('project_tags').delete(projectTag.id);
+      });
+
+      // Add project deletion to batch
+      batch.collection('projects').delete(projectId);
+
+      // Execute all deletions atomically
+      await batch.send();
+
+      logger.debug(`Project ${projectId} and all related records deleted successfully in atomic operation`);
 
       unsafeNavigate('/dashboard');
     } catch (error) {
-      console.error('Error deleting project:', error);
+      logger.error('Error during atomic project deletion:', error);
       toast({
         title: 'Error deleting project',
-        description: error instanceof Error ? error.message : 'An unknown error occurred',
+        description: error instanceof Error ? error.message : 'Failed to delete project and related data',
         variant: 'destructive',
       });
     } finally {

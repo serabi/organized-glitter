@@ -35,10 +35,21 @@ vi.mock('@/utils/toast-adapter', () => ({
 
 // Mock PocketBase operations directly
 vi.mock('@/lib/pocketbase', () => {
+  const mockBatchDelete = vi.fn();
+  const mockBatchSend = vi.fn();
+
+  const mockBatch = {
+    collection: vi.fn((collectionName: string) => ({
+      delete: mockBatchDelete,
+    })),
+    send: mockBatchSend,
+  };
+
   return {
     pb: {
       collection: vi.fn(),
       filter: vi.fn((filter, params) => filter),
+      createBatch: vi.fn(() => mockBatch),
       files: {
         getURL: vi.fn((record, filename) => `https://example.com/files/${filename}`),
       },
@@ -61,11 +72,15 @@ import { TagService } from '@/lib/tags';
 
 // Extract mock functions after import
 const mockPbCollection = vi.mocked(pb.collection);
+const mockPbCreateBatch = vi.mocked(pb.createBatch);
 const mockPbUpdate = vi.fn();
 const mockPbGetOne = vi.fn();
 const mockPbGetList = vi.fn();
+const mockPbGetFullList = vi.fn();
 const mockPbGetFirstListItem = vi.fn();
 const mockPbDelete = vi.fn();
+const mockBatchDelete = vi.fn();
+const mockBatchSend = vi.fn();
 const mockAddTagToProject = vi.mocked(TagService.addTagToProject);
 const mockRemoveTagFromProject = vi.mocked(TagService.removeTagFromProject);
 
@@ -134,9 +149,20 @@ describe('useEditProjectSimplified - Navigation', () => {
       update: mockPbUpdate,
       getOne: mockPbGetOne,
       getList: mockPbGetList,
+      getFullList: mockPbGetFullList,
       getFirstListItem: mockPbGetFirstListItem,
       delete: mockPbDelete,
     });
+
+    // Setup batch mock
+    const mockBatch = {
+      collection: vi.fn((collectionName: string) => ({
+        delete: mockBatchDelete,
+      })),
+      send: mockBatchSend,
+    };
+    mockPbCreateBatch.mockReturnValue(mockBatch);
+    mockBatchSend.mockResolvedValue({});
 
     mockAddTagToProject.mockResolvedValue({ data: undefined, error: null });
     mockRemoveTagFromProject.mockResolvedValue({ data: undefined, error: null });
@@ -188,10 +214,10 @@ describe('useEditProjectSimplified - Navigation', () => {
     });
 
     it('should navigate after successful deletion', async () => {
-      // Mock progress notes and project tags deletion
-      mockPbGetList
-        .mockResolvedValueOnce({ items: [] }) // No progress notes
-        .mockResolvedValueOnce({ items: [] }); // No project tags
+      // Mock getFullList for progress notes and project tags
+      mockPbGetFullList
+        .mockResolvedValueOnce([]) // No progress notes
+        .mockResolvedValueOnce([]); // No project tags
 
       const { result } = renderHook(() => useEditProjectSimplified('project-123'), { wrapper });
 
@@ -201,7 +227,9 @@ describe('useEditProjectSimplified - Navigation', () => {
 
       await result.current.handleDelete();
 
-      expect(mockPbDelete).toHaveBeenCalledWith('project-123');
+      // Verify batch operations were used
+      expect(mockPbCreateBatch).toHaveBeenCalled();
+      expect(mockBatchSend).toHaveBeenCalled();
     });
   });
 
@@ -243,7 +271,13 @@ describe('useEditProjectSimplified - Navigation', () => {
     });
 
     it('should handle deletion errors gracefully', async () => {
-      mockPbDelete.mockRejectedValue(new Error('Delete failed'));
+      // Mock getFullList for related records
+      mockPbGetFullList
+        .mockResolvedValueOnce([]) // No progress notes
+        .mockResolvedValueOnce([]); // No project tags
+      
+      // Mock batch send to fail
+      mockBatchSend.mockRejectedValue(new Error('Batch delete failed'));
 
       const { result } = renderHook(() => useEditProjectSimplified('project-123'), { wrapper });
 
@@ -253,7 +287,9 @@ describe('useEditProjectSimplified - Navigation', () => {
 
       await result.current.handleDelete();
 
-      expect(mockPbDelete).toHaveBeenCalled();
+      // Verify batch operations were attempted
+      expect(mockPbCreateBatch).toHaveBeenCalled();
+      expect(mockBatchSend).toHaveBeenCalled();
       // Should not navigate on error
     });
   });
