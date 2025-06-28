@@ -26,10 +26,10 @@ const invalidateProjectQueries = async (
 ) => {
   const invalidations: Promise<void>[] = [];
 
-  // Invalidate specific project detail if projectId provided
+  // Remove specific project detail from cache if projectId provided (for deletions)
   if (projectId) {
     invalidations.push(
-      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(projectId) })
+      queryClient.removeQueries({ queryKey: queryKeys.projects.detail(projectId) })
     );
   }
 
@@ -443,11 +443,18 @@ export const useDeleteProjectMutation = () => {
       // Defer cache invalidation to happen after navigation
       // Use startTransition to mark cache updates as non-urgent
       startTransition(() => {
-        // Invalidate all project-related queries
+        // For deletions, we use removeQueries to prevent 404 refetch attempts
         Promise.all([
-          queryClient.invalidateQueries({ queryKey: queryKeys.projects.all }),
-          queryClient.invalidateQueries({ queryKey: queryKeys.progressNotes.all }),
-          invalidateProjectQueries(queryClient, projectId, user?.id),
+          // Remove the deleted project completely from cache
+          queryClient.removeQueries({ queryKey: queryKeys.projects.detail(projectId) }),
+          // Remove any progress notes for the deleted project
+          queryClient.removeQueries({ queryKey: queryKeys.progressNotes.list(projectId) }),
+          // Safely invalidate project lists (will refetch but won't try to fetch deleted project)
+          queryClient.invalidateQueries({ queryKey: queryKeys.projects.lists() }),
+          // Invalidate tag stats since project counts changed
+          queryClient.invalidateQueries({ queryKey: queryKeys.tags.stats() }),
+          // Update stats cache
+          ...(user?.id ? [DashboardStatsService.updateCacheAfterProjectChange(user.id)] : []),
         ]).catch(error => {
           logger.error('Failed to invalidate queries after project deletion:', error);
         });

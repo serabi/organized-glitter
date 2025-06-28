@@ -14,6 +14,7 @@ import { queryKeys } from '@/hooks/queries/queryKeys';
 import { createLogger } from '@/utils/secureLogger';
 import { Collections } from '@/types/pocketbase.types';
 import { TagService } from '@/lib/tags';
+import { useDeleteProjectMutation } from '@/hooks/mutations/useProjectDetailMutations';
 
 const logger = createLogger('useEditProjectSimplified');
 
@@ -122,6 +123,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigateToProject = useNavigateToProject();
+  const deleteProjectMutation = useDeleteProjectMutation();
 
   // State management
   const [project, setProject] = useState<ProjectType | null>(null);
@@ -489,72 +491,25 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
     try {
       setSubmitting(true);
       
-      logger.debug(`Deleting project ${projectId} with sequential deletion and error recovery`);
+      // Use React Query mutation for deletion
+      await deleteProjectMutation.mutateAsync({
+        projectId,
+        title: project.title,
+      });
 
-      const deletedItems: Array<{type: string, id: string}> = [];
-
-      // Fetch all related records in parallel for better performance
-      const [progressNotes, projectTags] = await Promise.all([
-        pb.collection('progress_notes').getFullList({
-          filter: pb.filter('project = {:projectId}', { projectId }),
-          fields: 'id', // Only need IDs for deletion
-        }),
-        pb.collection('project_tags').getFullList({
-          filter: pb.filter('project = {:projectId}', { projectId }),
-          fields: 'id', // Only need IDs for deletion
-        }),
-      ]);
-
-      logger.debug(
-        `Found ${progressNotes.length} progress notes and ${projectTags.length} project tags to delete for project ${projectId}`
-      );
-
-      try {
-        // Step 1: Delete progress notes sequentially
-        for (const note of progressNotes) {
-          await pb.collection('progress_notes').delete(note.id);
-          deletedItems.push({type: 'progress_notes', id: note.id});
-          logger.debug(`Deleted progress note ${note.id}`);
-        }
-
-        // Step 2: Delete project tags sequentially
-        for (const projectTag of projectTags) {
-          await pb.collection('project_tags').delete(projectTag.id);
-          deletedItems.push({type: 'project_tags', id: projectTag.id});
-          logger.debug(`Deleted project tag ${projectTag.id}`);
-        }
-
-        // Step 3: Delete the project (final step - no rollback needed after this)
-        await pb.collection('projects').delete(projectId);
-        deletedItems.push({type: 'projects', id: projectId});
-
-        logger.debug(`Successfully deleted project ${projectId} and ${deletedItems.length - 1} related records`);
-
-        unsafeNavigate('/dashboard');
-        
-      } catch (deleteError) {
-        logger.error('Error during project deletion, partial deletion occurred:', deleteError);
-        logger.warn(`Deletion failed after removing ${deletedItems.length} items:`, deletedItems);
-        
-        // Don't throw here - handle error gracefully like original service
-        toast({
-          title: 'Error deleting project',
-          description: `Failed to delete project: ${deleteError instanceof Error ? deleteError.message : 'Unknown error'}. ${deletedItems.length} items were deleted before the error occurred.`,
-          variant: 'destructive',
-        });
-        return;
-      }
+      // Navigation and cache invalidation are handled by the mutation
+      unsafeNavigate('/dashboard');
     } catch (error) {
-      logger.error('Error during project deletion:', error);
+      console.error('Error deleting project:', error);
       toast({
         title: 'Error deleting project',
-        description: error instanceof Error ? error.message : 'Failed to delete project and related data',
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
         variant: 'destructive',
       });
     } finally {
       setSubmitting(false);
     }
-  }, [projectId, project, isDirty, toast, unsafeNavigate, confirmUnsavedChanges, confirmDelete]);
+  }, [projectId, project, isDirty, toast, unsafeNavigate, confirmUnsavedChanges, confirmDelete, deleteProjectMutation]);
 
   const refreshLists = useCallback(async () => {
     // Simplified refresh - just reload metadata using existing user.id
