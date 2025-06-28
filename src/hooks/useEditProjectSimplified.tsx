@@ -520,24 +520,19 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
 
         logger.debug(`Successfully deleted project ${projectId} and ${deletedItems.length - 1} related records`);
 
-        // Clean up React Query cache before navigation to prevent 404 errors
-        queryClient.removeQueries({
-          queryKey: queryKeys.projects.detail(projectId),
-        });
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.projects.lists(),
-        });
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.projects.advanced(user?.id || ''),
-        });
-
         unsafeNavigate('/dashboard');
         
       } catch (deleteError) {
         logger.error('Error during project deletion, partial deletion occurred:', deleteError);
         logger.warn(`Deletion failed after removing ${deletedItems.length} items:`, deletedItems);
         
-        throw new Error(`Failed to delete project: ${deleteError instanceof Error ? deleteError.message : 'Unknown error'}. ${deletedItems.length} items were deleted before the error occurred.`);
+        // Don't throw here - handle error gracefully like original service
+        toast({
+          title: 'Error deleting project',
+          description: `Failed to delete project: ${deleteError instanceof Error ? deleteError.message : 'Unknown error'}. ${deletedItems.length} items were deleted before the error occurred.`,
+          variant: 'destructive',
+        });
+        return;
       }
     } catch (error) {
       logger.error('Error during project deletion:', error);
