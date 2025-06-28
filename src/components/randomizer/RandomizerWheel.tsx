@@ -128,10 +128,25 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
   const [rotation, setRotation] = useState(0);
   /** The last selected project result */
   const [selectedResult, setSelectedResult] = useState<Project | null>(null);
+  /** Current window size for responsive calculations */
+  const [windowSize, setWindowSize] = useState({ width: 1024, height: 768 });
   /** Reference to the wheel DOM element for focus management */
   const wheelRef = useRef<HTMLDivElement>(null);
   /** Reference to screen reader announcement area */
   const resultAnnouncementRef = useRef<HTMLDivElement>(null);
+
+  // Update window size for responsive calculations
+  React.useEffect(() => {
+    const updateWindowSize = () => {
+      setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+    };
+
+    if (typeof window !== 'undefined') {
+      updateWindowSize();
+      window.addEventListener('resize', updateWindowSize);
+      return () => window.removeEventListener('resize', updateWindowSize);
+    }
+  }, []);
 
   const handleSpin = useCallback(() => {
     if (isSpinning || projects.length === 0) return;
@@ -246,7 +261,7 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
           </div>
 
           {/* Empty Wheel with Gradient */}
-          <div className="lg:w-112 lg:h-112 relative h-72 w-72 overflow-hidden rounded-full border-4 border-flamingo-300 bg-gradient-to-br from-diamond-400 via-flamingo-400 via-peach-400 to-mauve-400 opacity-60 sm:h-96 sm:w-96">
+          <div className="relative h-72 w-72 overflow-hidden rounded-full border-4 border-flamingo-300 bg-gradient-to-br from-diamond-400 via-flamingo-400 via-peach-400 to-mauve-400 opacity-60 sm:h-120 sm:w-120 lg:h-140 lg:w-140">
             {/* Center content */}
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center text-white drop-shadow-lg">
@@ -275,9 +290,45 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
   }
 
   const segmentAngle = 360 / projects.length;
-  // Responsive wheel sizes: mobile: 280px, tablet: 384px, desktop: 448px
-  const wheelSize = 448; // Base size for calculations (largest size)
+  
+  // Responsive wheel sizes matching CSS classes:
+  // Mobile: h-72 w-72 = 288px, Tablet: sm:h-96 sm:w-96 = 384px, Desktop: lg:h-140 lg:w-140 = 560px
+  const getWheelSize = () => {
+    if (windowSize.width >= 1024) return 560; // lg breakpoint - desktop
+    if (windowSize.width >= 640) return 384;  // sm breakpoint - tablet
+    return 288; // mobile default
+  };
+  
+  const wheelSize = getWheelSize();
   const radius = wheelSize / 2;
+
+  // Calculate responsive text properties based on wheel size and project count
+  const getTextProperties = () => {
+    const projectCount = projects.length;
+    
+    // Base properties by screen size
+    if (windowSize.width >= 1024) {
+      // Desktop: larger wheel (560px)
+      if (projectCount <= 4) return { fontSize: 18, strokeWidth: 3, maxChars: 15 };
+      if (projectCount <= 8) return { fontSize: 16, strokeWidth: 3, maxChars: 12 };
+      if (projectCount <= 15) return { fontSize: 14, strokeWidth: 2, maxChars: 10 };
+      return { fontSize: 12, strokeWidth: 2, maxChars: 8 };
+    } else if (windowSize.width >= 640) {
+      // Tablet: medium wheel (384px)
+      if (projectCount <= 4) return { fontSize: 16, strokeWidth: 2, maxChars: 12 };
+      if (projectCount <= 8) return { fontSize: 14, strokeWidth: 2, maxChars: 10 };
+      if (projectCount <= 15) return { fontSize: 12, strokeWidth: 2, maxChars: 8 };
+      return { fontSize: 10, strokeWidth: 1, maxChars: 6 };
+    } else {
+      // Mobile: small wheel (288px)
+      if (projectCount <= 4) return { fontSize: 14, strokeWidth: 2, maxChars: 10 };
+      if (projectCount <= 8) return { fontSize: 12, strokeWidth: 2, maxChars: 8 };
+      if (projectCount <= 15) return { fontSize: 10, strokeWidth: 1, maxChars: 6 };
+      return { fontSize: 8, strokeWidth: 1, maxChars: 4 };
+    }
+  };
+
+  const textProps = getTextProperties();
 
   // Project list for screen readers
   const projectList = projects.map(p => p.title).join(', ');
@@ -330,7 +381,7 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
         {/* Wheel */}
         <div
           ref={wheelRef}
-          className={`lg:w-112 lg:h-112 duration-3000 relative h-72 w-72 overflow-hidden rounded-full border-4 border-flamingo-300 transition-transform ease-out sm:h-96 sm:w-96 ${
+          className={`lg:h-140 lg:w-140 duration-3000 relative h-72 w-72 overflow-hidden rounded-full border-4 border-flamingo-300 transition-transform ease-out sm:h-96 sm:w-96 ${
             isSpinning ? 'animate-spin-custom' : ''
           }`}
           style={{
@@ -387,42 +438,45 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
                   opacity="0.3"
                 />
 
-                {/* Project title text with better contrast */}
+                {/* Project title text with better contrast - stroke outline layer */}
                 <text
                   x={textX}
                   y={textY}
-                  fill="black"
-                  stroke="white"
-                  strokeWidth="2"
+                  fill="none"
+                  stroke="black"
+                  strokeWidth={textProps.strokeWidth}
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  fontSize="12"
-                  fontWeight="700"
-                  className="drop-shadow-lg"
+                  fontSize={textProps.fontSize}
+                  fontWeight="500"
                   style={{
                     transform: `rotate(${textAngle}deg)`,
                     transformOrigin: `${textX}px ${textY}px`,
                   }}
                 >
-                  {project.title.length > 15
-                    ? `${project.title.substring(0, 12)}...`
+                  {project.title.length > textProps.maxChars
+                    ? `${project.title.substring(0, textProps.maxChars - 3)}...`
                     : project.title}
                 </text>
+                {/* Project title text - white fill layer */}
                 <text
                   x={textX}
                   y={textY}
                   fill="white"
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  fontSize="12"
-                  fontWeight="700"
+                  fontSize={textProps.fontSize}
+                  fontWeight="500"
+                  className="drop-shadow-sm"
                   style={{
                     transform: `rotate(${textAngle}deg)`,
                     transformOrigin: `${textX}px ${textY}px`,
                   }}
                 >
-                  {project.title.length > 15
-                    ? `${project.title.substring(0, 12)}...`
+                  {project.title.length > textProps.maxChars
+                    ? `${project.title.substring(0, textProps.maxChars - 3)}...`
                     : project.title}
                 </text>
               </svg>
