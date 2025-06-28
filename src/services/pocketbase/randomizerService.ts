@@ -51,7 +51,7 @@ export async function createSpin(params: CreateSpinParams): Promise<SpinRecord> 
       userId: params.user,
     });
 
-    return record as SpinRecord;
+    return record as unknown as SpinRecord;
   } catch (error) {
     logger.error('Failed to create spin record', error);
     throw new Error('Failed to save spin to history');
@@ -79,7 +79,7 @@ export async function getSpinHistory(
       recordCount: records.items.length,
     });
 
-    return records.items as SpinRecord[];
+    return records.items as unknown as SpinRecord[];
   } catch (error) {
     logger.error('Failed to fetch spin history', error);
     return []; // Return empty array on error
@@ -135,7 +135,7 @@ export async function getLastSpin(userId: string): Promise<SpinRecord | null> {
       }
     );
 
-    return record as SpinRecord;
+    return record as unknown as SpinRecord;
   } catch (error) {
     // 404 error is expected when no records exist
     if (error && typeof error === 'object' && 'status' in error && (error as { status: number }).status === 404) {
