@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { pb } from '@/lib/pocketbase';
 import { useAuth } from '@/hooks/useAuth';
+import { createLogger } from '@/utils/secureLogger';
+
+const profileLogger = createLogger('useProfile');
 
 // Global cache to prevent duplicate requests across multiple hook instances
 interface UserProfileData {
@@ -37,8 +40,8 @@ interface UseProfileResult {
 
 export const useProfile = (): UseProfileResult => {
   const { user } = useAuth();
-  console.log(
-    '[useProfile] Hook initialized. User from useAuth():',
+  profileLogger.debug(
+    'Hook initialized. User from useAuth():',
     user ? { id: user.id, email: user.email, username: user.username } : null
   );
   const [name, setName] = useState('');
@@ -56,8 +59,8 @@ export const useProfile = (): UseProfileResult => {
 
   // Refresh profile data
   const refreshProfile = useCallback(async () => {
-    console.log(
-      '[useProfile] refreshProfile called. User ID:',
+    profileLogger.debug(
+      'refreshProfile called. User ID:',
       user?.id,
       'Fetching ref:',
       fetchingRef.current
@@ -70,11 +73,11 @@ export const useProfile = (): UseProfileResult => {
       profileData.delete(user.id);
       profileCache.delete(user.id);
 
-      console.log('[useProfile] refreshProfile: Fetching user data for ID:', user.id);
+      profileLogger.debug('refreshProfile: Fetching user data for ID:', user.id);
       const userData = (await pb.collection('users').getOne(user.id, {
         requestKey: `profile-refresh-${user.id}-${Date.now()}`, // Unique key for refresh
       })) as UserProfileData;
-      console.log('[useProfile] refreshProfile: User data from PocketBase:', userData);
+      profileLogger.debug('refreshProfile: User data from PocketBase:', userData);
 
       if (userData) {
         // Update cache with fresh data
@@ -83,18 +86,18 @@ export const useProfile = (): UseProfileResult => {
         setName(userData.username || userData.email || '');
         setEmail(userData.email || '');
         setAvatarUrl(userData.avatar ? pb.files.getURL(userData, userData.avatar) : null);
-        console.log(
-          '[useProfile] refreshProfile: State updated - Name:',
+        profileLogger.debug(
+          'refreshProfile: State updated - Name:',
           userData.username || userData.email || '',
           'Email:',
           userData.email || ''
         );
       }
     } catch (error) {
-      console.error('[useProfile] Error refreshing profile:', error);
+      profileLogger.error('Error refreshing profile:', error);
       // Don't show error for auto-cancellation
       if (!(error && typeof error === 'object' && 'status' in error && error.status === 0)) {
-        console.error('Non-cancellation error refreshing profile:', error);
+        profileLogger.error('Non-cancellation error refreshing profile:', error);
       }
     } finally {
       fetchingRef.current = false;
@@ -103,14 +106,14 @@ export const useProfile = (): UseProfileResult => {
 
   // Fetch profile data with global caching
   useEffect(() => {
-    console.log(
-      '[useProfile] useEffect for fetchProfile triggered. User:',
+    profileLogger.debug(
+      'useEffect for fetchProfile triggered. User:',
       user ? { id: user.id, email: user.email, username: user.username } : null
     );
     if (!user) {
       setProfileLoading(false);
-      console.log(
-        '[useProfile] useEffect: No user, setting profileLoading to false and returning.'
+      profileLogger.debug(
+        'useEffect: No user, setting profileLoading to false and returning.'
       );
       return;
     }
@@ -118,7 +121,7 @@ export const useProfile = (): UseProfileResult => {
     // Check if we already have cached data
     const cachedData = profileData.get(user.id);
     if (cachedData) {
-      console.log('[useProfile] Using cached profile data for user:', user.id);
+      profileLogger.debug('Using cached profile data for user:', user.id);
       setName(cachedData.username || cachedData.email || '');
       setEmail(cachedData.email || '');
       setAvatarUrl(cachedData.avatar ? pb.files.getURL(cachedData, cachedData.avatar) : null);
@@ -129,7 +132,7 @@ export const useProfile = (): UseProfileResult => {
     // Check if there's already a request in progress
     const existingRequest = profileCache.get(user.id);
     if (existingRequest) {
-      console.log('[useProfile] Using existing request for user:', user.id);
+      profileLogger.debug('Using existing request for user:', user.id);
       existingRequest
         .then(userData => {
           if (userData) {
@@ -140,7 +143,7 @@ export const useProfile = (): UseProfileResult => {
           setProfileLoading(false);
         })
         .catch(error => {
-          console.error('[useProfile] Error from existing request:', error);
+          profileLogger.error('Error from existing request:', error);
           setProfileLoading(false);
         });
       return;
@@ -148,20 +151,20 @@ export const useProfile = (): UseProfileResult => {
 
     // Prevent duplicate concurrent requests from this instance
     if (fetchingRef.current) {
-      console.log('[useProfile] useEffect: Already fetching, skipping duplicate request');
+      profileLogger.debug('useEffect: Already fetching, skipping duplicate request');
       return;
     }
 
     const fetchProfile = async () => {
       let isMounted = true;
-      console.log('[useProfile] fetchProfile async function started. User ID:', user?.id);
+      profileLogger.debug('fetchProfile async function started. User ID:', user?.id);
 
       try {
         fetchingRef.current = true;
         setProfileLoading(true);
 
         if (!isMounted) {
-          console.log('[useProfile] fetchProfile: Component unmounted before fetching user data.');
+          profileLogger.debug('fetchProfile: Component unmounted before fetching user data.');
           return;
         }
 
@@ -173,9 +176,9 @@ export const useProfile = (): UseProfileResult => {
         profileCache.set(user.id, userDataPromise);
 
         try {
-          console.log('[useProfile] fetchProfile: Attempting to get user data for ID:', user.id);
+          profileLogger.debug('fetchProfile: Attempting to get user data for ID:', user.id);
           const userData = await userDataPromise;
-          console.log('[useProfile] fetchProfile: User data from PocketBase:', userData);
+          profileLogger.debug('fetchProfile: User data from PocketBase:', userData);
 
           if (userData) {
             // Cache the data
@@ -185,8 +188,8 @@ export const useProfile = (): UseProfileResult => {
               setName(userData.username || userData.email || '');
               setEmail(userData.email || '');
               setAvatarUrl(userData.avatar ? pb.files.getURL(userData, userData.avatar) : null);
-              console.log(
-                '[useProfile] fetchProfile: State updated - Name:',
+              profileLogger.debug(
+                'fetchProfile: State updated - Name:',
                 userData.username || userData.email || '',
                 'Email:',
                 userData.email || ''
@@ -194,16 +197,16 @@ export const useProfile = (): UseProfileResult => {
             }
           }
         } catch (error) {
-          console.error('[useProfile] fetchProfile: Error fetching user data:', error);
+          profileLogger.error('fetchProfile: Error fetching user data:', error);
           profileCache.delete(user.id); // Remove failed request from cache
           if (error && typeof error === 'object' && 'status' in error && error.status === 0) {
-            console.log('[useProfile] fetchProfile: User data request cancelled');
+            profileLogger.debug('fetchProfile: User data request cancelled');
             return;
           }
           throw error;
         }
       } catch (error) {
-        console.error('Error fetching profile data:', error);
+        profileLogger.error('Error fetching profile data:', error);
         // Don't show toast for auto-cancellation
         if (!(error && typeof error === 'object' && 'status' in error && error.status === 0)) {
           toast({
@@ -250,7 +253,7 @@ export const useProfile = (): UseProfileResult => {
       await refreshProfile();
       return { error: null };
     } catch (error) {
-      console.error('Error updating profile:', error);
+      profileLogger.error('Error updating profile:', error);
       return { error: error instanceof Error ? error : new Error('Unknown error') };
     }
   };

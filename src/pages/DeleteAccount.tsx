@@ -9,6 +9,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import MainLayout from '@/components/layout/MainLayout';
 import { AlertTriangle } from 'lucide-react';
+import { createLogger } from '@/utils/secureLogger';
+
+const deleteAccountLogger = createLogger('DeleteAccount');
 
 const DeleteAccount = () => {
   const navigate = useNavigate();
@@ -68,14 +71,14 @@ const DeleteAccount = () => {
     }
 
     setIsLoading(true);
-    console.log('🔐 [SECURE DELETION] Starting account deletion process for user:', user.id);
+    deleteAccountLogger.debug('🔐 [SECURE DELETION] Starting account deletion process for user:', user.id);
 
     try {
       // Manual cascade deletion - delete related records first to avoid foreign key constraints
-      console.log('🗑️ [SECURE DELETION] Starting manual cascade deletion for user:', user.id);
+      deleteAccountLogger.debug('🗑️ [SECURE DELETION] Starting manual cascade deletion for user:', user.id);
 
       // Step 1: Delete project_tags records for user's projects
-      console.log('🏷️ [SECURE DELETION] Deleting project tags...');
+      deleteAccountLogger.debug('🏷️ [SECURE DELETION] Deleting project tags...');
       const userProjects = await pb.collection('projects').getFullList({
         filter: `user = "${user.id}"`,
         fields: 'id',
@@ -93,7 +96,7 @@ const DeleteAccount = () => {
       }
 
       // Step 2: Delete progress notes
-      console.log('📝 [SECURE DELETION] Deleting progress notes...');
+      deleteAccountLogger.debug('📝 [SECURE DELETION] Deleting progress notes...');
       const progressNotes = await pb.collection('progress_notes').getFullList({
         filter: `project.user = "${user.id}"`,
         fields: 'id',
@@ -104,13 +107,13 @@ const DeleteAccount = () => {
       }
 
       // Step 3: Delete projects
-      console.log('📋 [SECURE DELETION] Deleting projects...');
+      deleteAccountLogger.debug('📋 [SECURE DELETION] Deleting projects...');
       for (const project of userProjects) {
         await pb.collection('projects').delete(project.id);
       }
 
       // Step 4: Delete user's tags, companies, and artists
-      console.log('🏢 [SECURE DELETION] Deleting user data...');
+      deleteAccountLogger.debug('🏢 [SECURE DELETION] Deleting user data...');
       const [tags, companies, artists] = await Promise.all([
         pb.collection('tags').getFullList({ filter: `user = "${user.id}"`, fields: 'id' }),
         pb.collection('companies').getFullList({ filter: `user = "${user.id}"`, fields: 'id' }),
@@ -124,13 +127,13 @@ const DeleteAccount = () => {
       ]);
 
       // Step 5: Finally delete the user account
-      console.log('👤 [SECURE DELETION] Deleting user account...');
+      deleteAccountLogger.debug('👤 [SECURE DELETION] Deleting user account...');
       await pb.collection('users').delete(user.id);
 
-      console.log('✅ [SECURE DELETION] User account and all related data deleted successfully');
+      deleteAccountLogger.debug('✅ [SECURE DELETION] User account and all related data deleted successfully');
 
       // Step 6: Sign out user for security (user is already deleted)
-      console.log('🚪 [SECURE DELETION] Signing out user session');
+      deleteAccountLogger.debug('🚪 [SECURE DELETION] Signing out user session');
       await signOut();
 
       // Step 7: Show success message
@@ -139,13 +142,13 @@ const DeleteAccount = () => {
         description: 'Your account and all related data have been permanently removed.',
       });
 
-      console.log('✅ [SECURE DELETION] Process completed successfully');
+      deleteAccountLogger.debug('✅ [SECURE DELETION] Process completed successfully');
 
       // Redirect to home page
       navigate('/');
     } catch (error) {
       // SECURE: Log full details to console for debugging (dev tools only)
-      console.error('❌ [SECURE DELETION] Error in deletion process:', error);
+      deleteAccountLogger.error('❌ [SECURE DELETION] Error in deletion process:', error);
 
       // SECURE: Categorize errors and show safe user messages only
       let userMessage = 'Failed to delete your account. Please try again or contact support.';
@@ -156,22 +159,22 @@ const DeleteAccount = () => {
 
         // Check for specific error patterns without exposing details
         if (errorObj.status === 403) {
-          console.error('❌ [DEBUG] Permission denied - check users collection delete rules');
+          deleteAccountLogger.error('❌ [DEBUG] Permission denied - check users collection delete rules');
           userMessage =
             'You do not have permission to perform this action. Please contact support.';
         } else if (errorObj.status === 404) {
-          console.error('❌ [DEBUG] User record not found');
+          deleteAccountLogger.error('❌ [DEBUG] User record not found');
           userMessage = 'Account not found. It may have already been deleted.';
           shouldSignOut = true;
         } else if (errorObj.status === 400) {
-          console.error('❌ [DEBUG] Bad request - possible validation error');
+          deleteAccountLogger.error('❌ [DEBUG] Bad request - possible validation error');
           userMessage = 'Invalid request. Please try again or contact support.';
         } else if (error instanceof Error && error.message.includes('already been deleted')) {
-          console.error('❌ [DEBUG] User already deleted');
+          deleteAccountLogger.error('❌ [DEBUG] User already deleted');
           userMessage = 'Your account has already been deleted.';
           shouldSignOut = true;
         } else {
-          console.error('❌ [DEBUG] Unknown error during deletion');
+          deleteAccountLogger.error('❌ [DEBUG] Unknown error during deletion');
         }
       }
 

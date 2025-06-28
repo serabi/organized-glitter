@@ -38,7 +38,7 @@ export const loginWithPassword = async (data: LoginData): Promise<AuthResult> =>
     authLogger.debug('Password authentication successful, checking verification status');
 
     // Debug: Check if PocketBase auth store is updated
-    console.log('[AuthService] After authWithPassword - PocketBase state:', {
+    authLogger.debug('After authWithPassword - PocketBase state:', {
       isValid: pb.authStore.isValid,
       hasRecord: !!pb.authStore.record,
       userId: pb.authStore.record?.id,

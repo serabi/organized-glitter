@@ -2,6 +2,10 @@
  * User initialization utilities for application startup
  */
 
+import { createLogger } from '@/utils/secureLogger';
+
+const userInitLogger = createLogger('UserInit');
+
 interface UserData {
   id: string;
   email: string;
@@ -27,18 +31,18 @@ export const initializeUser = (): void => {
 
     // Basic validation
     if (!user.id || !user.email) {
-      console.warn('Invalid user data found in localStorage');
+      userInitLogger.warn('Invalid user data found in localStorage');
       localStorage.removeItem('user');
       return;
     }
 
     // User initialization logic here if needed
     if (import.meta.env.DEV) {
-      console.log('User initialized:', { id: user.id, email: user.email });
+      userInitLogger.debug('User initialized:', { id: user.id, email: user.email });
     }
   } catch (error) {
     if (import.meta.env.DEV) {
-      console.error('Failed to initialize user:', error);
+      userInitLogger.error('Failed to initialize user:', error);
     }
     // Clear corrupted data
     localStorage.removeItem('user');

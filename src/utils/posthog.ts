@@ -1,4 +1,7 @@
 import posthog from 'posthog-js';
+import { createLogger } from '@/utils/secureLogger';
+
+const posthogLogger = createLogger('PostHog');
 
 // PostHog configuration
 const POSTHOG_KEY = import.meta.env.VITE_POSTHOG_KEY;
@@ -11,18 +14,18 @@ let isInitialized = false;
  */
 export function initializePostHog() {
   if (typeof window === 'undefined') {
-    console.log('[PostHog] Skipping initialization - no window object');
+    posthogLogger.debug('Skipping initialization - no window object');
     return;
   }
 
   if (isInitialized) {
-    console.log('[PostHog] Already initialized');
+    posthogLogger.debug('Already initialized');
     return;
   }
 
   if (!POSTHOG_KEY) {
-    console.log('[PostHog] No API key found - skipping initialization');
-    console.log('[PostHog] Environment check:', {
+    posthogLogger.debug('No API key found - skipping initialization');
+    posthogLogger.debug('Environment check:', {
       hasKey: !!POSTHOG_KEY,
       host: POSTHOG_HOST,
       nodeEnv: import.meta.env.NODE_ENV,
@@ -31,7 +34,7 @@ export function initializePostHog() {
   }
 
   try {
-    console.log('[PostHog] Initializing with config:', {
+    posthogLogger.debug('Initializing with config:', {
       api_host: POSTHOG_HOST,
       hasKey: !!POSTHOG_KEY,
       keyPrefix: POSTHOG_KEY.substring(0, 8) + '...',
@@ -41,16 +44,16 @@ export function initializePostHog() {
       api_host: POSTHOG_HOST,
       person_profiles: 'identified_only', // Only create profiles for identified users
       loaded: posthogInstance => {
-        console.log('[PostHog] Successfully loaded and ready');
+        posthogLogger.debug('Successfully loaded and ready');
         // Test that PostHog is working
         try {
           posthogInstance.capture('posthog_initialized', {
             timestamp: new Date().toISOString(),
             environment: import.meta.env.NODE_ENV || 'unknown',
           });
-          console.log('[PostHog] Test event sent successfully');
+          posthogLogger.debug('Test event sent successfully');
         } catch (testError) {
-          console.error('[PostHog] Test event failed:', testError);
+          posthogLogger.error('Test event failed:', testError);
         }
       },
       bootstrap: {
@@ -87,10 +90,10 @@ export function initializePostHog() {
     (window as unknown as Window & { posthog: typeof posthog }).posthog = posthog;
     isInitialized = true;
 
-    console.log('[PostHog] Analytics initialized successfully');
+    posthogLogger.debug('Analytics initialized successfully');
   } catch (error) {
-    console.error('[PostHog] Failed to initialize:', error);
-    console.error('[PostHog] Configuration used:', {
+    posthogLogger.error('Failed to initialize:', error);
+    posthogLogger.error('Configuration used:', {
       api_host: POSTHOG_HOST,
       hasKey: !!POSTHOG_KEY,
     });
@@ -115,7 +118,7 @@ export function identifyUser(userId: string, properties?: Record<string, unknown
 
     // Only log in dev mode to reduce console noise
     if (import.meta.env.DEV) {
-      console.log('[PostHog] User identified:', userId);
+      posthogLogger.debug('User identified:', userId);
     }
   }
 }
@@ -126,7 +129,7 @@ export function identifyUser(userId: string, properties?: Record<string, unknown
 export function trackEvent(eventName: string, properties?: Record<string, unknown>) {
   if (typeof window !== 'undefined' && isInitialized) {
     posthog.capture(eventName, properties);
-    console.log('[PostHog] Event tracked:', eventName, properties);
+    posthogLogger.debug('Event tracked:', eventName, properties);
   }
 }
 
@@ -136,7 +139,7 @@ export function trackEvent(eventName: string, properties?: Record<string, unknow
 export function resetPostHog() {
   if (typeof window !== 'undefined' && isInitialized) {
     posthog.reset();
-    console.log('[PostHog] Analytics reset');
+    posthogLogger.debug('Analytics reset');
   }
 }
 
@@ -153,7 +156,7 @@ export function captureException(error: Error, context?: Record<string, unknown>
       timestamp: new Date().toISOString(),
       ...context,
     });
-    console.log('[PostHog] Exception captured:', error.message);
+    posthogLogger.debug('Exception captured:', error.message);
   }
 }
 

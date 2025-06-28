@@ -34,7 +34,7 @@ if (import.meta.env.DEV) {
   if (typeof window !== 'undefined') {
     (window as Window & { __pb?: TypedPocketBase; pb?: TypedPocketBase }).__pb = pb;
     (window as Window & { __pb?: TypedPocketBase; pb?: TypedPocketBase }).pb = pb;
-    console.log('🛠️  PocketBase client available as window.pb for debugging');
+    pbLogger.debug('🛠️  PocketBase client available as window.pb for debugging');
   }
 }
 
@@ -144,7 +144,7 @@ pb.beforeSend = function (url: string, options: RequestInit & Record<string, unk
       `Rate limiting: waiting ${delay}ms (auth: ${isAuth}, consecutive 429s: ${consecutiveRateLimits})`
     );
     if (import.meta.env.DEV && delay > 5) {
-      console.log(`[PocketBase] Rate limiting delay: ${delay}ms for ${url} (auth: ${isAuth})`);
+      pbLogger.debug(`Rate limiting delay: ${delay}ms for ${url} (auth: ${isAuth})`);
     }
     return new Promise(resolve => {
       setTimeout(() => {
@@ -166,7 +166,7 @@ pb.afterSend = function (response: Response, data: unknown): unknown {
   // Clear request deduplication cache for failed requests
   if (response.status >= 400) {
     // Find and remove failed requests from pending cache
-    for (const [requestKey, promise] of pendingRequests.entries()) {
+    for (const [requestKey] of pendingRequests.entries()) {
       if (requestKey.includes(response.url)) {
         pendingRequests.delete(requestKey);
         pbLogger.debug(`Cleared failed request from cache: ${requestKey}`);
@@ -300,7 +300,7 @@ pb.afterSend = function (response: Response, data: unknown): unknown {
 // Configure auth store options for better security
 pb.authStore.onChange((_token, record) => {
   if (import.meta.env.DEV) {
-    pbLogger.log('Auth state changed:', {
+    pbLogger.debug('Auth state changed:', {
       isValid: pb.authStore.isValid,
       hasRecord: !!record,
       userId: record?.id || null,
@@ -326,7 +326,7 @@ export const getCurrentUserId = (): string | null => {
 // Helper function to logout
 export const logout = (): void => {
   pb.authStore.clear();
-  pbLogger.log('User logged out');
+  pbLogger.debug('User logged out');
 };
 
 // Helper function to get file URL with validation

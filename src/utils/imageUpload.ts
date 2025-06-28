@@ -1,6 +1,9 @@
 import { isAuthenticated, getCurrentUserId } from '@/lib/pocketbase';
 import { isDevelopment } from '@/utils/env';
 import { uploadFile } from '@/utils/storageService';
+import { createLogger } from '@/utils/secureLogger';
+
+const imageUploadLogger = createLogger('ImageUpload');
 import {
   PROJECT_IMAGE_CONSTANTS,
   PROGRESS_NOTE_CONSTANTS,
@@ -145,7 +148,7 @@ export async function uploadImage(
         // Get the current user ID to include in logs
         const userId = getCurrentUserId() || 'unknown';
 
-        console.log(`[imageUpload] Current user ID: ${userId}`);
+        imageUploadLogger.debug(`Current user ID: ${userId}`);
 
         try {
           console.log(`[imageUpload] About to call uploadFile with bucket: ${bucketFolder}`);

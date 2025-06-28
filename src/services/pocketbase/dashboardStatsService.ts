@@ -14,6 +14,9 @@
  */
 
 import { pb } from '@/lib/pocketbase';
+import { createLogger } from '@/utils/secureLogger';
+
+const dashboardLogger = createLogger('DashboardStats');
 import { Collections } from '@/types/pocketbase.types';
 import type {
   YearlyStats,
@@ -96,7 +99,7 @@ export async function getYearlyStats(userId: string, year: number): Promise<Stat
   metrics.totalRequests++;
 
   if (config.enableLogging) {
-    console.log(`[DashboardStats] Getting stats for user ${userId}, year ${year}`);
+    dashboardLogger.debug(`Getting stats for user ${userId}, year ${year}`);
   }
 
   // Step 1: Check for in-flight request (deduplication)

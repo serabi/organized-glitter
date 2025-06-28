@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { pb } from '@/lib/pocketbase';
 import { ServiceResponse, createSuccessResponse, createErrorResponse } from '@/types/shared';
 import { useToast } from '@/hooks/use-toast';
+import { createLogger } from '@/utils/secureLogger';
+
+const metadataLogger = createLogger('UserMetadata');
 
 // Simplified toast handler interface with just the toast method we need
 interface ToastHandler {
@@ -23,7 +26,7 @@ async function fetchCompanyNames(toastHandlers?: ToastHandler): Promise<ServiceR
       return createErrorResponse(new Error('User not authenticated'));
     }
 
-    console.log('fetchCompanyNames: userId:', userId);
+    metadataLogger.debug('fetchCompanyNames: userId:', userId);
 
     const records = await pb.collection('companies').getList(1, 200, {
       filter: `user = "${userId}"`,
@@ -32,14 +35,14 @@ async function fetchCompanyNames(toastHandlers?: ToastHandler): Promise<ServiceR
       requestKey: `companies-${userId}`,
     });
 
-    console.log('fetchCompanyNames: raw response:', records);
+    metadataLogger.debug('fetchCompanyNames: raw response:', records);
 
     const companyNames = records.items.map(company => company.name);
-    console.log('fetchCompanyNames: processed names:', companyNames);
+    metadataLogger.debug('fetchCompanyNames: processed names:', companyNames);
 
     return createSuccessResponse(companyNames);
   } catch (error) {
-    console.error('fetchCompanyNames: error caught:', error);
+    metadataLogger.error('fetchCompanyNames: error caught:', error);
     if (toastHandlers?.toast) {
       toastHandlers.toast({
         title: 'Failed to load companies',
@@ -48,7 +51,7 @@ async function fetchCompanyNames(toastHandlers?: ToastHandler): Promise<ServiceR
       });
     }
 
-    console.error('Error fetching company names:', error);
+    metadataLogger.error('Error fetching company names:', error);
     return createErrorResponse(
       error instanceof Error ? error : new Error('Failed to fetch companies')
     );
@@ -67,7 +70,7 @@ async function fetchArtistNames(toastHandlers?: ToastHandler): Promise<ServiceRe
       return createErrorResponse(new Error('User not authenticated'));
     }
 
-    console.log('fetchArtistNames: userId:', userId);
+    metadataLogger.debug('fetchArtistNames: userId:', userId);
 
     const records = await pb.collection('artists').getList(1, 200, {
       filter: `user = "${userId}"`,
@@ -143,7 +146,7 @@ export const useUserMetadata = () => {
           return;
         }
 
-        console.log('useUserMetadata: User authenticated:', userId);
+        metadataLogger.debug('useUserMetadata: User authenticated:', userId);
 
         // Add a small delay to let other components settle
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -273,7 +276,7 @@ export const useUserMetadata = () => {
         setArtists(artistsResponse.data);
       }
     } catch (error) {
-      console.error('Error refreshing metadata:', error);
+      metadataLogger.error('Error refreshing metadata:', error);
       if (!(error && typeof error === 'object' && 'status' in error && error.status === 0)) {
         toast({
           title: 'Error',

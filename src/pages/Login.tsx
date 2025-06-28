@@ -7,6 +7,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { loginWithPassword, loginWithOAuth2 } from '@/services/auth';
 import { pb } from '@/lib/pocketbase';
+import { createLogger } from '@/utils/secureLogger';
+
+const loginLogger = createLogger('Login');
 
 const Login = () => {
   const [loading, setLoading] = useState(false);
@@ -41,7 +44,7 @@ const Login = () => {
       });
 
       // Debug: Check auth state after successful login
-      console.log('[Login] After successful login - PocketBase auth state:', {
+      loginLogger.debug('After successful login - PocketBase auth state:', {
         isValid: pb.authStore.isValid,
         hasRecord: !!pb.authStore.record,
         userId: pb.authStore.record?.id,
@@ -51,7 +54,7 @@ const Login = () => {
       // PocketBase authStore is already updated when this callback runs
       navigate('/overview', { replace: true });
     } catch (err) {
-      console.error('Login error:', err);
+      loginLogger.error('Login error:', err);
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
@@ -78,7 +81,7 @@ const Login = () => {
       // Navigate immediately after successful OAuth login
       navigate('/overview', { replace: true });
     } catch (err) {
-      console.error('Google login error:', err);
+      loginLogger.error('Google login error:', err);
       setError('Failed to login with Google. Please try again.');
     } finally {
       setLoading(false);
@@ -105,7 +108,7 @@ const Login = () => {
       // Navigate immediately after successful OAuth login
       navigate('/overview', { replace: true });
     } catch (err) {
-      console.error('Discord login error:', err);
+      loginLogger.error('Discord login error:', err);
       setError('Failed to login with Discord. Please try again.');
     } finally {
       setLoading(false);
