@@ -520,6 +520,17 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
 
         logger.debug(`Successfully deleted project ${projectId} and ${deletedItems.length - 1} related records`);
 
+        // Clean up React Query cache before navigation to prevent 404 errors
+        queryClient.removeQueries({
+          queryKey: queryKeys.projects.detail(projectId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.projects.lists(),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.projects.advanced(user?.id || ''),
+        });
+
         unsafeNavigate('/dashboard');
         
       } catch (deleteError) {
