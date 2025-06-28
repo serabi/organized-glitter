@@ -14,6 +14,7 @@ import { pb } from '@/lib/pocketbase';
 vi.mock('@/lib/pocketbase', () => ({
   pb: {
     collection: vi.fn(),
+    filter: vi.fn((query, params) => query.replace(/\{:(\w+)\}/g, (_, key) => `"${params[key]}"`)),
   },
 }));
 
@@ -29,6 +30,7 @@ vi.mock('@/utils/secureLogger', () => ({
 const mockCollection = {
   create: vi.fn(),
   getList: vi.fn(),
+  getFullList: vi.fn(),
   getFirstListItem: vi.fn(),
   delete: vi.fn(),
 };
@@ -241,27 +243,51 @@ describe('randomizerService', () => {
   });
 
   describe('clearSpinHistory', () => {
-    it('deletes all spins for a user', async () => {
-      mockCollection.getList.mockResolvedValue({
-        items: [
-          { id: 'spin1' },
-          { id: 'spin2' },
-          { id: 'spin3' },
-        ],
-      });
+    it('deletes all spins for a user using pagination', async () => {
+      // Mock first page with 3 records
+      mockCollection.getList
+        .mockResolvedValueOnce({
+          items: [{ id: 'spin1' }, { id: 'spin2' }, { id: 'spin3' }],
+        })
+        // Mock second page with no records (end of pagination)
+        .mockResolvedValueOnce({
+          items: [],
+        });
       mockCollection.delete.mockResolvedValue(true);
 
       const result = await clearSpinHistory('user1');
 
-      expect(mockCollection.getList).toHaveBeenCalledWith(1, 500, {
+      expect(mockCollection.getList).toHaveBeenCalledWith(1, 50, {
         filter: 'user = "user1"',
         fields: 'id',
+        sort: 'created',
       });
       expect(mockCollection.delete).toHaveBeenCalledTimes(3);
       expect(mockCollection.delete).toHaveBeenCalledWith('spin1');
       expect(mockCollection.delete).toHaveBeenCalledWith('spin2');
       expect(mockCollection.delete).toHaveBeenCalledWith('spin3');
       expect(result).toBe(3);
+    });
+
+    it('handles multiple pages of records', async () => {
+      // Mock first page with 50 records (full page)
+      const firstPageItems = Array.from({ length: 50 }, (_, i) => ({ id: `spin${i + 1}` }));
+      mockCollection.getList
+        .mockResolvedValueOnce({ items: firstPageItems })
+        // Mock second page with 25 records (partial page, end of data)
+        .mockResolvedValueOnce({
+          items: Array.from({ length: 25 }, (_, i) => ({ id: `spin${i + 51}` })),
+        })
+        // Mock third page with no records
+        .mockResolvedValueOnce({ items: [] });
+      
+      mockCollection.delete.mockResolvedValue(true);
+
+      const result = await clearSpinHistory('user1');
+
+      expect(mockCollection.getList).toHaveBeenCalledTimes(2); // Two pages of data
+      expect(mockCollection.delete).toHaveBeenCalledTimes(75); // 50 + 25 records
+      expect(result).toBe(75);
     });
 
     it('returns 0 when no spins to delete', async () => {
@@ -274,17 +300,15 @@ describe('randomizerService', () => {
     });
 
     it('handles partial deletion failures', async () => {
-      mockCollection.getList.mockResolvedValue({
-        items: [
-          { id: 'spin1' },
-          { id: 'spin2' },
-          { id: 'spin3' },
-        ],
-      });
-      
+      mockCollection.getList
+        .mockResolvedValueOnce({
+          items: [{ id: 'spin1' }, { id: 'spin2' }, { id: 'spin3' }],
+        })
+        .mockResolvedValueOnce({ items: [] });
+
       mockCollection.delete
-        .mockResolvedValueOnce(true)  // spin1 succeeds
-        .mockRejectedValueOnce(new Error('Delete failed'))  // spin2 fails
+        .mockResolvedValueOnce(true) // spin1 succeeds
+        .mockRejectedValueOnce(new Error('Delete failed')) // spin2 fails
         .mockResolvedValueOnce(true); // spin3 succeeds
 
       const result = await clearSpinHistory('user1');
@@ -301,24 +325,24 @@ describe('randomizerService', () => {
   });
 
   describe('cleanupOldSpins', () => {
-    it('deletes spins older than specified days', async () => {
+    it('deletes spins older than specified days using pagination', async () => {
       const mockDate = new Date('2024-01-01T12:00:00Z');
       vi.setSystemTime(mockDate);
 
-      mockCollection.getList.mockResolvedValue({
-        items: [
-          { id: 'old-spin1' },
-          { id: 'old-spin2' },
-        ],
-      });
+      mockCollection.getList
+        .mockResolvedValueOnce({
+          items: [{ id: 'old-spin1' }, { id: 'old-spin2' }],
+        })
+        .mockResolvedValueOnce({ items: [] });
       mockCollection.delete.mockResolvedValue(true);
 
-      const result = await cleanupOldSpins(30);
+      const result = await cleanupOldSpins('user1', 30);
 
       const expectedCutoffDate = '2023-12-02T12:00:00.000Z'; // 30 days before mock date
-      expect(mockCollection.getList).toHaveBeenCalledWith(1, 500, {
-        filter: `spun_at < "${expectedCutoffDate}"`,
+      expect(mockCollection.getList).toHaveBeenCalledWith(1, 50, {
+        filter: `user = "user1" && spun_at < "${expectedCutoffDate}"`,
         fields: 'id',
+        sort: 'spun_at',
       });
       expect(mockCollection.delete).toHaveBeenCalledTimes(2);
       expect(result).toBe(2);
@@ -332,13 +356,40 @@ describe('randomizerService', () => {
 
       mockCollection.getList.mockResolvedValue({ items: [] });
 
-      await cleanupOldSpins();
+      await cleanupOldSpins('user1');
 
       const expectedCutoffDate = '2023-10-03T12:00:00.000Z'; // 90 days before mock date
-      expect(mockCollection.getList).toHaveBeenCalledWith(1, 500, {
-        filter: `spun_at < "${expectedCutoffDate}"`,
+      expect(mockCollection.getList).toHaveBeenCalledWith(1, 50, {
+        filter: `user = "user1" && spun_at < "${expectedCutoffDate}"`,
         fields: 'id',
+        sort: 'spun_at',
       });
+
+      vi.useRealTimers();
+    });
+
+    it('handles multiple pages of old records', async () => {
+      const mockDate = new Date('2024-01-01T12:00:00Z');
+      vi.setSystemTime(mockDate);
+
+      // Mock first page with 50 old records (full page)
+      const firstPageItems = Array.from({ length: 50 }, (_, i) => ({ id: `old-spin${i + 1}` }));
+      mockCollection.getList
+        .mockResolvedValueOnce({ items: firstPageItems })
+        // Mock second page with 10 records (partial page, end of data)
+        .mockResolvedValueOnce({
+          items: Array.from({ length: 10 }, (_, i) => ({ id: `old-spin${i + 51}` })),
+        })
+        // Mock third page with no records
+        .mockResolvedValueOnce({ items: [] });
+      
+      mockCollection.delete.mockResolvedValue(true);
+
+      const result = await cleanupOldSpins('user1', 30);
+
+      expect(mockCollection.getList).toHaveBeenCalledTimes(2); // Two pages of data
+      expect(mockCollection.delete).toHaveBeenCalledTimes(60); // 50 + 10 records
+      expect(result).toBe(60);
 
       vi.useRealTimers();
     });
@@ -346,19 +397,19 @@ describe('randomizerService', () => {
     it('returns 0 when no old spins found', async () => {
       mockCollection.getList.mockResolvedValue({ items: [] });
 
-      const result = await cleanupOldSpins(30);
+      const result = await cleanupOldSpins('user1', 30);
 
       expect(result).toBe(0);
       expect(mockCollection.delete).not.toHaveBeenCalled();
     });
 
     it('handles cleanup errors gracefully', async () => {
-      mockCollection.getList.mockResolvedValue({
-        items: [{ id: 'spin1' }],
-      });
+      mockCollection.getList
+        .mockResolvedValueOnce({ items: [{ id: 'spin1' }] })
+        .mockResolvedValueOnce({ items: [] });
       mockCollection.delete.mockRejectedValue(new Error('Delete failed'));
 
-      const result = await cleanupOldSpins(30);
+      const result = await cleanupOldSpins('user1', 30);
 
       expect(result).toBe(0); // No successful deletions
     });

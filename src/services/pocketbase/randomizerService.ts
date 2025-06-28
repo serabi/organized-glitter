@@ -164,56 +164,92 @@ export async function getSpinHistory(userId: string, limit: number = 10): Promis
 /**
  * Deletes all spin history records for a specific user
  *
- * Removes all randomizer spin records belonging to the specified user.
- * Processes deletions in batches to avoid timeout issues with large datasets.
- * This is typically used when a user wants to clear their spin history.
+ * Removes all randomizer spin records belonging to the specified user using
+ * paginated fetching to avoid memory issues with large datasets. Fetches and
+ * deletes records in batches to maintain optimal memory usage and performance.
  *
  * @param {string} userId - The user ID whose history should be cleared
  *
- * @returns {Promise<void>} Resolves when all records are deleted
+ * @returns {Promise<number>} The total number of records successfully deleted
  *
  * @throws {Error} When database operations fail or user ID is invalid
  *
  * @example
  * ```typescript
  * try {
- *   await clearSpinHistory('user123');
- *   console.log('History cleared successfully');
+ *   const deletedCount = await clearSpinHistory('user123');
+ *   console.log(`Cleared ${deletedCount} history records`);
  * } catch (error) {
  *   console.error('Failed to clear history:', error);
  * }
  * ```
  *
- * @performance Uses batch processing (50 records per batch) to handle large datasets
+ * @performance Uses paginated fetching (50 records per page) to avoid loading all records into memory
+ * @scalability Handles large datasets efficiently without memory constraints
  * @security Validates user ownership through parameterized queries
  */
-export async function clearSpinHistory(userId: string): Promise<void> {
+export async function clearSpinHistory(userId: string): Promise<number> {
   try {
-    logger.debug('Clearing spin history', { userId });
+    logger.debug('Clearing spin history with paginated approach', { userId });
 
-    const records = await pb.collection(RANDOMIZER_COLLECTION).getFullList({
-      filter: pb.filter('user = {:userId}', { userId }),
-      fields: 'id',
-    });
+    let totalDeleted = 0;
+    const pageSize = 50; // Fetch and delete in small batches
+    let hasMoreRecords = true;
 
-    if (records.length === 0) {
-      logger.debug('No spin history to clear', { userId });
-      return;
-    }
+    while (hasMoreRecords) {
+      // Fetch a batch of records
+      const recordsPage = await pb.collection(RANDOMIZER_COLLECTION).getList(1, pageSize, {
+        filter: pb.filter('user = {:userId}', { userId }),
+        fields: 'id',
+        sort: 'created', // Consistent ordering for reliable pagination
+      });
 
-    // Delete records in batches to avoid timeout
-    const batchSize = 50;
-    for (let i = 0; i < records.length; i += batchSize) {
-      const batch = records.slice(i, i + batchSize);
-      await Promise.all(
-        batch.map(record => pb.collection(RANDOMIZER_COLLECTION).delete(record.id))
+      if (recordsPage.items.length === 0) {
+        hasMoreRecords = false;
+        break;
+      }
+
+      logger.debug('Processing batch for deletion', {
+        userId,
+        batchSize: recordsPage.items.length,
+        totalDeletedSoFar: totalDeleted,
+      });
+
+      // Delete all records in this batch
+      const deletionPromises = recordsPage.items.map(record => 
+        pb.collection(RANDOMIZER_COLLECTION).delete(record.id).catch(error => {
+          logger.error('Failed to delete individual record', { recordId: record.id, error });
+          return null; // Return null for failed deletions
+        })
       );
+
+      const deletionResults = await Promise.all(deletionPromises);
+      
+      // Count successful deletions (non-null results)
+      const successfulDeletions = deletionResults.filter(result => result !== null).length;
+      totalDeleted += successfulDeletions;
+
+      // If we got fewer records than the page size, we've reached the end
+      if (recordsPage.items.length < pageSize) {
+        hasMoreRecords = false;
+      }
+
+      // Small delay between batches to avoid overwhelming the database
+      if (hasMoreRecords && recordsPage.items.length > 0) {
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
     }
 
-    logger.info('Spin history cleared', {
-      userId,
-      deletedCount: records.length,
-    });
+    if (totalDeleted === 0) {
+      logger.debug('No spin history to clear', { userId });
+    } else {
+      logger.info('Spin history cleared successfully', {
+        userId,
+        totalDeleted,
+      });
+    }
+
+    return totalDeleted;
   } catch (error) {
     logger.error('Failed to clear spin history', error);
     throw new Error('Failed to clear spin history');
@@ -273,9 +309,9 @@ export async function getLastSpin(userId: string): Promise<SpinRecord | null> {
 /**
  * Automatically cleans up old spin records to maintain database performance
  *
- * Removes spin records older than the specified retention period for a given user.
- * This function is designed for periodic maintenance to prevent the spin history
- * from growing indefinitely. Uses batch deletion for performance with large datasets.
+ * Removes spin records older than the specified retention period for a given user
+ * using paginated fetching to avoid memory issues with large datasets. This function
+ * is designed for periodic maintenance to prevent the spin history from growing indefinitely.
  *
  * @param {string} userId - The user ID whose old records should be cleaned up
  * @param {number} [daysToKeep=90] - Number of days of history to retain (default: 90)
@@ -293,10 +329,11 @@ export async function getLastSpin(userId: string): Promise<SpinRecord | null> {
  * ```
  *
  * @performance
- * - Uses getFullList for efficient bulk retrieval
- * - Processes deletions in batches of 50 to avoid timeouts
- * - Returns 0 on error instead of throwing
+ * - Uses paginated fetching (50 records per page) to avoid loading all records into memory
+ * - Processes deletions in batches to avoid timeouts and database overload
+ * - Returns 0 on error instead of throwing for graceful degradation
  *
+ * @scalability Handles large datasets efficiently without memory constraints
  * @maintenance This function should be called periodically (e.g., daily/weekly)
  * @security Only affects records owned by the specified user
  */
@@ -306,34 +343,73 @@ export async function cleanupOldSpins(userId: string, daysToKeep: number = 90): 
     cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
     const cutoffISO = cutoffDate.toISOString();
 
-    logger.debug('Cleaning up old spins', { userId, daysToKeep, cutoffDate: cutoffISO });
-
-    const oldRecords = await pb.collection(RANDOMIZER_COLLECTION).getFullList({
-      filter: pb.filter('user = {:userId} && spun_at < {:cutoff}', { userId, cutoff: cutoffISO }),
-      fields: 'id',
+    logger.debug('Cleaning up old spins with paginated approach', { 
+      userId, 
+      daysToKeep, 
+      cutoffDate: cutoffISO 
     });
 
-    if (oldRecords.length === 0) {
-      logger.debug('No old spins to cleanup', { userId });
-      return 0;
-    }
+    let totalDeleted = 0;
+    const pageSize = 50; // Fetch and delete in small batches
+    let hasMoreRecords = true;
 
-    // Delete in batches
-    const batchSize = 50;
-    for (let i = 0; i < oldRecords.length; i += batchSize) {
-      const batch = oldRecords.slice(i, i + batchSize);
-      await Promise.all(
-        batch.map(record => pb.collection(RANDOMIZER_COLLECTION).delete(record.id))
+    while (hasMoreRecords) {
+      // Fetch a batch of old records
+      const recordsPage = await pb.collection(RANDOMIZER_COLLECTION).getList(1, pageSize, {
+        filter: pb.filter('user = {:userId} && spun_at < {:cutoff}', { userId, cutoff: cutoffISO }),
+        fields: 'id',
+        sort: 'spun_at', // Oldest first for consistent cleanup order
+      });
+
+      if (recordsPage.items.length === 0) {
+        hasMoreRecords = false;
+        break;
+      }
+
+      logger.debug('Processing old records batch for deletion', {
+        userId,
+        batchSize: recordsPage.items.length,
+        totalDeletedSoFar: totalDeleted,
+        cutoffDate: cutoffISO,
+      });
+
+      // Delete all records in this batch with error handling
+      const deletionPromises = recordsPage.items.map(record => 
+        pb.collection(RANDOMIZER_COLLECTION).delete(record.id).catch(error => {
+          logger.error('Failed to delete old record', { recordId: record.id, error });
+          return null; // Return null for failed deletions
+        })
       );
+
+      const deletionResults = await Promise.all(deletionPromises);
+      
+      // Count successful deletions (non-null results)
+      const successfulDeletions = deletionResults.filter(result => result !== null).length;
+      totalDeleted += successfulDeletions;
+
+      // If we got fewer records than the page size, we've reached the end
+      if (recordsPage.items.length < pageSize) {
+        hasMoreRecords = false;
+      }
+
+      // Small delay between batches to avoid overwhelming the database
+      if (hasMoreRecords && recordsPage.items.length > 0) {
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
     }
 
-    logger.info('Old spins cleaned up', {
-      userId,
-      deletedCount: oldRecords.length,
-      daysToKeep,
-    });
+    if (totalDeleted === 0) {
+      logger.debug('No old spins to cleanup', { userId, daysToKeep });
+    } else {
+      logger.info('Old spins cleaned up successfully', {
+        userId,
+        totalDeleted,
+        daysToKeep,
+        cutoffDate: cutoffISO,
+      });
+    }
 
-    return oldRecords.length;
+    return totalDeleted;
   } catch (error) {
     logger.error('Failed to cleanup old spins', error);
     return 0;
