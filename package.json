@@ -79,7 +79,6 @@
     "test:performance:stats": "npx tsx scripts/performance-test-stats.ts",
     "postinstall": "echo 'Skipping optional dependencies' || true",
     "setup": "rm -rf node_modules package-lock.json && npm install --no-optional",
-    "generate:types": "tsx scripts/generate-types.ts",
     "generate:sitemap": "tsx scripts/generate-sitemap.ts",
     "generate:sitemap:js": "node scripts/generate-sitemap.js",
     "db:check": "bash scripts/quick-db-check.sh",

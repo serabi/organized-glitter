@@ -67,6 +67,7 @@ Core project management with comprehensive metadata.
   - `date_started`
   - `date_completed`
   - `date_received`
+  - **Note**: Frontend forms use camelCase (`datePurchased`) but database expects snake_case (`date_purchased`)
 - Dimension fields (numbers, optional):
   - `width`, `height`
   - `total_diamonds`
@@ -251,10 +252,23 @@ The following collections are managed by PocketBase for authentication and secur
 - Added yearly statistics caching system
 - Implemented comprehensive indexing strategy
 
+### Frontend-Database Field Mapping
+**CRITICAL**: The database uses snake_case field names while the frontend uses camelCase. This mapping is required for proper data submission:
+
+| Frontend (camelCase) | Database (snake_case) |
+|---------------------|----------------------|
+| `datePurchased`     | `date_purchased`     |
+| `dateReceived`      | `date_received`      |
+| `dateStarted`       | `date_started`      |
+| `dateCompleted`     | `date_completed`     |
+
+**Implementation**: See `src/hooks/useEditProjectSimplified.tsx` for the field mapping logic used in project updates.
+
 ### Future Considerations
 - Schema changes should be backward compatible
 - Type generation should be updated after schema modifications
 - Performance monitoring for query optimization
+- Maintain field mapping consistency across all form submissions
 
 ## Development Commands
 

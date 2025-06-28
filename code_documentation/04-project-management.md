@@ -62,4 +62,21 @@ sequenceDiagram
 - `src/hooks/mutations/useProjectDetailMutations.ts` - Project update operations
 - `src/components/projects/ProjectProgressNotes.tsx` - Progress notes interface
 - `src/pages/AdvancedEdit.tsx` - Comprehensive project editing
+- `src/hooks/useEditProjectSimplified.tsx` - Project update form logic with field mapping
 - `src/components/ui/toast.tsx` - Toast notification system
+
+## Technical Notes
+
+### Form Field Mapping
+**CRITICAL**: When updating project data, frontend forms use camelCase field names but PocketBase expects snake_case field names. The `useEditProjectSimplified.tsx` hook handles this mapping:
+
+```typescript
+const fieldNameMap: Record<string, string> = {
+  datePurchased: 'date_purchased',
+  dateReceived: 'date_received', 
+  dateStarted: 'date_started',
+  dateCompleted: 'date_completed',
+};
+```
+
+This mapping is essential for date fields to save properly. Without it, the frontend sends `datePurchased` but PocketBase expects `date_purchased`, causing save failures.
