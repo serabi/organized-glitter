@@ -323,9 +323,23 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
         // Add all form fields except special ones
         const fieldsToExclude = ['id', 'tags', 'tagIds', 'imageFile', '_imageReplacement', 'company', 'artist'];
         
+        // Date fields that should allow empty strings (to clear the field in PocketBase)
+        const dateFields = ['datePurchased', 'dateReceived', 'dateStarted', 'dateCompleted'];
+        
         Object.entries(dataToSubmit).forEach(([key, value]) => {
-          if (!fieldsToExclude.includes(key) && value !== undefined && value !== null && value !== '') {
-            formData.append(key, String(value));
+          if (!fieldsToExclude.includes(key) && value !== undefined && value !== null) {
+            // For date fields, allow empty strings (required to clear DateFields in PocketBase)
+            // For other fields, skip empty strings to avoid overwriting with empty values
+            const shouldInclude = dateFields.includes(key) ? true : value !== '';
+            
+            if (shouldInclude) {
+              formData.append(key, String(value));
+              
+              // Log date field updates for debugging
+              if (dateFields.includes(key)) {
+                logger.debug(`Date field update: ${key} = "${value}"`);
+              }
+            }
           }
         });
 
@@ -341,6 +355,16 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
         if (dataToSubmit.imageFile && dataToSubmit.imageFile instanceof File) {
           formData.append('image', dataToSubmit.imageFile);
         }
+
+        // Log FormData contents for debugging (excluding sensitive data)
+        logger.debug('Updating project with FormData:', {
+          projectId,
+          fieldsCount: Array.from(formData.keys()).length,
+          dateFields: dateFields.filter(field => formData.has(field)).map(field => ({
+            field,
+            value: formData.get(field)
+          }))
+        });
 
         // Update the project in PocketBase
         const updatedProject = await pb.collection(Collections.Projects).update(projectId, formData);
@@ -404,7 +428,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
           // Navigate back to project detail page using React Router
           logger.info('🚀 Navigating back to project detail page');
           await navigateToProject(projectId, {
-            projectData: response.data as ProjectType,
+            projectData: response.data,
             replace: true // Replace current history entry since we're coming from edit
           });
 
