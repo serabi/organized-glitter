@@ -66,10 +66,10 @@ const prepareFormInitialData = (project: ProjectType): ProjectFormValues => {
  * @returns Complete editing state and handlers
  */
 export const useEditProject = (projectId: string | undefined) => {
-  // Authentication state with proper dependencies
+  // Authentication state
   const { user, isAuthenticated, initialCheckComplete, isLoading: authLoading } = useAuth();
   
-  // Data fetching with authentication dependencies - this prevents race conditions
+  // Data fetching 
   const { 
     data: project, 
     isLoading: projectLoading, 
