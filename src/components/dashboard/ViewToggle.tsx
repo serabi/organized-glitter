@@ -1,3 +1,4 @@
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Grid, List } from 'lucide-react';
 
@@ -8,7 +9,7 @@ interface ViewToggleProps {
   onViewChange: (view: ViewType) => void;
 }
 
-const ViewToggle = ({ activeView, onViewChange }: ViewToggleProps) => {
+const ViewToggle = React.memo<ViewToggleProps>(({ activeView, onViewChange }) => {
   return (
     <div className="flex rounded-md shadow-sm">
       <Button
@@ -29,6 +30,8 @@ const ViewToggle = ({ activeView, onViewChange }: ViewToggleProps) => {
       </Button>
     </div>
   );
-};
+});
+
+ViewToggle.displayName = 'ViewToggle';
 
 export default ViewToggle;
