@@ -1,5 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { pb } from '@/lib/pocketbase';
+import { createLogger } from '@/utils/secureLogger';
+
+const projectDetailLogger = createLogger('useProjectDetailQuery');
 import {
   Collections,
   ProjectsResponse,
@@ -181,7 +184,7 @@ export const useProjectDetailQuery = (
 ) => {
   // Log auth state for debugging
   if (process.env.NODE_ENV === 'development') {
-    console.log('[useProjectDetailQuery] Auth state:', {
+    projectDetailLogger.debug('Auth state:', {
       projectId,
       isAuthenticated,
       initialCheckComplete,

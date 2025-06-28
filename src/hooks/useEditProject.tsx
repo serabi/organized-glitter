@@ -23,7 +23,7 @@ import { useConfirmationDialog } from '@/hooks/useConfirmationDialog';
 import { useNavigateToProject } from '@/hooks/useNavigateToProject';
 import { useProjectDetailQuery } from '@/hooks/queries/useProjectDetailQuery';
 import { useArchiveProjectMutation, useDeleteProjectMutation } from '@/hooks/mutations/useProjectDetailMutations';
-import { useUpdateProject } from '@/hooks/mutations/useUpdateProject';
+import { useProjectUpdateUnified } from '@/hooks/mutations/useProjectUpdateUnified';
 import { useMetadata } from '@/contexts/MetadataContext';
 import { extractDateOnly } from '@/lib/utils';
 import { useServiceToast } from '@/utils/toast-adapter';
@@ -78,7 +78,7 @@ export const useEditProject = (projectId: string | undefined) => {
   } = useProjectDetailQuery(projectId, isAuthenticated, initialCheckComplete);
 
   // Mutations for project operations
-  const updateProjectMutation = useUpdateProject();
+  const updateProjectMutation = useProjectUpdateUnified();
   const deleteProjectMutation = useDeleteProjectMutation();
   const archiveProjectMutation = useArchiveProjectMutation();
 
@@ -139,7 +139,7 @@ export const useEditProject = (projectId: string | undefined) => {
     logger.debug('Form data updated', { data });
   }, []);
 
-  // Submit handler with proper error handling
+  // Submit handler with unified mutation
   const handleSubmit = useCallback(async (data: ProjectFormValues) => {
     if (!project || !data) {
       logger.error('Missing project or form data for submit');
@@ -150,47 +150,20 @@ export const useEditProject = (projectId: string | undefined) => {
       setSubmitting(true);
       logger.debug('Starting project update', { projectId: project.id });
 
-      // Convert camelCase to snake_case for PocketBase
-      const updateData = {
-        id: project.id,
-        title: data.title,
-        company: data.company,
-        artist: data.artist,
-        status: data.status,
-        kit_category: data.kit_category,
-        drill_shape: data.drillShape,
-        date_purchased: data.datePurchased || null,
-        date_started: data.dateStarted || null,
-        date_completed: data.dateCompleted || null,
-        date_received: data.dateReceived || null,
-        width: data.width ? parseInt(data.width, 10) : null,
-        height: data.height ? parseInt(data.height, 10) : null,
-        total_diamonds: typeof data.totalDiamonds === 'string' ? parseInt(data.totalDiamonds, 10) : data.totalDiamonds || null,
-        general_notes: data.generalNotes,
-        source_url: data.sourceUrl,
-      };
-
-      await updateProjectMutation.mutateAsync(updateData);
-
-      toast({
-        title: 'Success',
-        description: 'Project updated successfully',
-      });
+      // Use unified mutation with proper typing
+      const formWithFile = { ...data, id: project.id };
+      await updateProjectMutation.mutateAsync(formWithFile);
 
       // Navigate back to project detail
       navigateToProject(project.id);
       
     } catch (error) {
       logger.error('Error updating project', { error, projectId: project.id });
-      toast({
-        title: 'Error',
-        description: 'Failed to update project',
-        variant: 'destructive',
-      });
+      // Error handling is already done in the mutation
     } finally {
       setSubmitting(false);
     }
-  }, [project, updateProjectMutation, toast, navigateToProject]);
+  }, [project, updateProjectMutation, navigateToProject]);
 
   // Archive handler
   const handleArchive = useCallback(async () => {

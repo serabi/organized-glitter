@@ -15,6 +15,7 @@ import { InlineTagManager } from '@/components/tags/InlineTagManager';
 import { Tag } from '@/types/tag';
 import { ProjectImageSection } from '@/components/projects/form-sections/ProjectImageSection';
 import { useImageUpload } from '@/hooks/useImageUpload';
+import { useProjectUpdateUnified } from '@/hooks/mutations/useProjectUpdateUnified';
 import ArtistSelect from '@/components/projects/form/ArtistSelect';
 import CompanySelect from '@/components/projects/form/CompanySelect';
 
@@ -36,6 +37,7 @@ interface ProjectMainTabSimpleProps {
   artists: string[];
   isSubmitting: boolean;
   onChange: (data: ProjectFormValues) => void;
+  onSave?: (data: ProjectFormValues) => void;
 }
 
 export const ProjectMainTabSimple = ({
@@ -45,18 +47,27 @@ export const ProjectMainTabSimple = ({
   artists,
   isSubmitting,
   onChange,
+  onSave,
 }: ProjectMainTabSimpleProps) => {
   const [projectTags, setProjectTags] = useState<Tag[]>(formData?.tags || project.tags || []);
 
   // Initialize image upload hook with proper parameters
   const imageUploadHook = useImageUpload('project-images', 'project-image');
+  
+  // Initialize unified project update mutation
+  const updateProjectMutation = useProjectUpdateUnified();
 
-  // Handle image change events
+  // Handle image change events with unified save
   const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = await imageUploadHook.handleImageChange(event);
     if (file && formData) {
       const updatedData = { ...formData, imageFile: file };
       onChange(updatedData);
+      
+      // Auto-save when image is selected and onSave is provided
+      if (onSave) {
+        onSave(updatedData);
+      }
     }
   };
 
