@@ -93,8 +93,6 @@ const Navbar = memo(({ isAuthenticated = false }: NavbarProps) => {
 
       // addBreadcrumb removed
     } catch (error) {
-      const { createLogger } = await import('@/utils/secureLogger');
-      const logger = createLogger('Navbar');
       logger.error('Logout error:', error);
       toast({
         title: 'Logout Failed',
