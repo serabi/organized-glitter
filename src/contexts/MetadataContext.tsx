@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
 import { useCompanies } from '@/hooks/queries/useCompanies';
 import { useArtists } from '@/hooks/queries/useArtists';
 import { useTags } from '@/hooks/queries/useTags';
@@ -50,39 +50,109 @@ export function MetadataProvider({ children }: MetadataProviderProps) {
   const artistsQuery = useArtists();
   const tagsQuery = useTags();
 
-  const value: MetadataContextType = {
-    companies: Array.isArray(companiesQuery.data) ? companiesQuery.data : [],
-    artists: Array.isArray(artistsQuery.data) ? artistsQuery.data : [],
-    tags: Array.isArray(tagsQuery.data) ? tagsQuery.data : [],
-    companyNames: Array.isArray(companiesQuery.data)
-      ? companiesQuery.data.map(company => company.name).filter(Boolean)
-      : [],
-    artistNames: Array.isArray(artistsQuery.data)
-      ? artistsQuery.data.map(artist => artist.name).filter(Boolean)
-      : [],
-    isLoading: {
+  // Memoize arrays to prevent recreation on every render
+  const companies = useMemo(
+    () => (Array.isArray(companiesQuery.data) ? companiesQuery.data : []),
+    [companiesQuery.data]
+  );
+  
+  const artists = useMemo(
+    () => (Array.isArray(artistsQuery.data) ? artistsQuery.data : []),
+    [artistsQuery.data]
+  );
+  
+  const tags = useMemo(
+    () => (Array.isArray(tagsQuery.data) ? tagsQuery.data : []),
+    [tagsQuery.data]
+  );
+
+  // Memoize derived arrays to prevent infinite loops
+  const companyNames = useMemo(
+    () => companies.map(company => company.name).filter(Boolean),
+    [companies]
+  );
+  
+  const artistNames = useMemo(
+    () => artists.map(artist => artist.name).filter(Boolean),
+    [artists]
+  );
+
+  // Memoize loading and error objects to prevent recreation
+  const isLoading = useMemo(
+    () => ({
       companies: companiesQuery.isLoading,
       artists: artistsQuery.isLoading,
       tags: tagsQuery.isLoading,
-    },
-    error: {
+    }),
+    [companiesQuery.isLoading, artistsQuery.isLoading, tagsQuery.isLoading]
+  );
+
+  const error = useMemo(
+    () => ({
       companies: companiesQuery.error,
       artists: artistsQuery.error,
       tags: tagsQuery.error,
-    },
-    refresh: async () => {
+    }),
+    [companiesQuery.error, artistsQuery.error, tagsQuery.error]
+  );
+
+  // Memoize callback functions to prevent recreation
+  const refresh = useMemo(
+    () => async () => {
       await Promise.all([companiesQuery.refetch(), artistsQuery.refetch(), tagsQuery.refetch()]);
     },
-    refreshCompanies: async () => {
+    [companiesQuery.refetch, artistsQuery.refetch, tagsQuery.refetch]
+  );
+
+  const refreshCompanies = useMemo(
+    () => async () => {
       await companiesQuery.refetch();
     },
-    refreshArtists: async () => {
+    [companiesQuery.refetch]
+  );
+
+  const refreshArtists = useMemo(
+    () => async () => {
       await artistsQuery.refetch();
     },
-    refreshTags: async () => {
+    [artistsQuery.refetch]
+  );
+
+  const refreshTags = useMemo(
+    () => async () => {
       await tagsQuery.refetch();
     },
-  };
+    [tagsQuery.refetch]
+  );
+
+  const value: MetadataContextType = useMemo(
+    () => ({
+      companies,
+      artists,
+      tags,
+      companyNames,
+      artistNames,
+      isLoading,
+      error,
+      refresh,
+      refreshCompanies,
+      refreshArtists,
+      refreshTags,
+    }),
+    [
+      companies,
+      artists,
+      tags,
+      companyNames,
+      artistNames,
+      isLoading,
+      error,
+      refresh,
+      refreshCompanies,
+      refreshArtists,
+      refreshTags,
+    ]
+  );
 
   return <MetadataContext.Provider value={value}>{children}</MetadataContext.Provider>;
 }
