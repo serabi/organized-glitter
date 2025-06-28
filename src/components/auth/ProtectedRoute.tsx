@@ -41,10 +41,12 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
 
   // Wait for both loading to complete AND initial check to complete
-  if (isLoading || !initialCheckComplete) {
+  // Also handle the case where user might be null during authentication
+  if (isLoading || !initialCheckComplete || (user === null && initialCheckComplete && !isLoading)) {
     protectedRouteLogger.debug('Showing loading state for:', location.pathname, {
       isLoading,
       initialCheckComplete,
+      hasUser: !!user,
       timestamp: new Date().toISOString(),
     });
     return (
@@ -54,7 +56,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
           <p className="text-muted-foreground">Loading...</p>
           {import.meta.env.DEV && (
             <p className="text-xs text-muted-foreground mt-1">
-              Route: {location.pathname} | Loading: {isLoading.toString()} | InitialCheck: {initialCheckComplete.toString()}
+              Route: {location.pathname} | Loading: {isLoading.toString()} | InitialCheck: {initialCheckComplete.toString()} | HasUser: {(!!user).toString()}
             </p>
           )}
         </div>
