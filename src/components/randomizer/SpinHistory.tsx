@@ -1,25 +1,74 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { SpinRecord } from '@/services/pocketbase/randomizerService';
-import { ExternalLink, History, Trash2 } from 'lucide-react';
+import { ExternalLink, History, Trash2, ChevronDown } from 'lucide-react';
+import { useSpinHistory } from '@/hooks/queries/useSpinHistory';
 import { createLogger } from '@/utils/secureLogger';
 
 const logger = createLogger('SpinHistory');
 
 interface SpinHistoryProps {
-  history: SpinRecord[];
-  isLoading?: boolean;
+  userId: string | undefined;
   onClearHistory?: () => void;
 }
 
 export const SpinHistory: React.FC<SpinHistoryProps> = ({
-  history,
-  isLoading = false,
+  userId,
   onClearHistory,
 }) => {
+  const [showAll, setShowAll] = useState(false);
+  
+  // Fetch initial 8 records
+  const {
+    data: recentHistory = [],
+    isLoading: isLoadingRecent,
+  } = useSpinHistory({
+    userId,
+    limit: 8,
+    enabled: true,
+  });
+
+  // Prefetch all records in the background, but only show when requested
+  const {
+    data: fullHistory = [],
+    isLoading: isLoadingAll,
+    refetch: fetchFullHistory,
+  } = useSpinHistory({
+    userId,
+    limit: 50, // Reasonable limit for full history
+    enabled: true, // Always fetch in background for instant "Show More"
+  });
+
+  // Always use fullHistory when showAll is true, otherwise use recentHistory
+  const history = showAll ? fullHistory : recentHistory;
+  const isLoading = showAll ? isLoadingAll : isLoadingRecent;
+  const hasMoreHistory = !showAll && recentHistory.length >= 8;
+
+  // Debug logging to understand the data issue
+  React.useEffect(() => {
+    if (history.length > 0) {
+      logger.debug('Spin history data check', {
+        showAll,
+        historyLength: history.length,
+        recentHistoryLength: recentHistory.length,
+        fullHistoryLength: fullHistory.length,
+        firstFewRecords: history.slice(0, 5).map(spin => ({
+          id: spin.id,
+          project_title: spin.project_title,
+          spun_at: spin.spun_at
+        }))
+      });
+    }
+  }, [history, showAll, recentHistory.length, fullHistory.length]);
+
+  const handleShowMore = () => {
+    logger.debug('Show more history clicked');
+    setShowAll(true);
+    // Data should already be prefetched, so this will be instant
+  };
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
@@ -148,10 +197,29 @@ export const SpinHistory: React.FC<SpinHistoryProps> = ({
         </ScrollArea>
       )}
 
+      {/* Show More Button */}
+      {hasMoreHistory && (
+        <div className="text-center pt-3 border-t">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleShowMore}
+            disabled={isLoadingAll && !fullHistory.length}
+            className="text-sm"
+          >
+            <ChevronDown className="w-4 h-4 mr-1" />
+            {isLoadingAll && !fullHistory.length ? 'Loading...' : 'Show More History'}
+          </Button>
+        </div>
+      )}
+
       {/* Footer note */}
       {history.length > 0 && (
-        <p className="text-xs text-muted-foreground text-center">
-          Showing last {Math.min(history.length, 10)} spins
+        <p className="text-xs text-muted-foreground text-center mt-2">
+          {showAll 
+            ? `Showing all ${history.length} spins`
+            : `Showing last ${Math.min(history.length, 8)} spins`
+          }
         </p>
       )}
     </div>

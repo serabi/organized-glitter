@@ -7,12 +7,13 @@ const logger = createLogger('useSpinHistory');
 export interface UseSpinHistoryParams {
   userId: string | undefined;
   limit?: number;
+  enabled?: boolean;
 }
 
 /**
- * Hook to fetch spin history for a user
+ * Hook to fetch spin history for a user with pagination support
  */
-export const useSpinHistory = ({ userId, limit = 10 }: UseSpinHistoryParams) => {
+export const useSpinHistory = ({ userId, limit = 8, enabled = true }: UseSpinHistoryParams) => {
   return useQuery({
     queryKey: ['randomizer', 'history', userId, { limit }],
     queryFn: async (): Promise<SpinRecord[]> => {
@@ -31,7 +32,7 @@ export const useSpinHistory = ({ userId, limit = 10 }: UseSpinHistoryParams) => 
       
       return history;
     },
-    enabled: !!userId,
+    enabled: enabled && !!userId,
     staleTime: 30 * 1000, // 30 seconds - relatively fresh since it's user activity
     gcTime: 5 * 60 * 1000, // 5 minutes garbage collection
     refetchOnWindowFocus: false, // Don't refetch when window gains focus

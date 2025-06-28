@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { Project } from '@/types/project';
 import { useProjects } from '@/hooks/queries/useProjects';
-import { useSpinHistory } from '@/hooks/queries/useSpinHistory';
+// Removed useSpinHistory import - now handled directly in SpinHistory component
 import { useCreateSpin } from '@/hooks/mutations/useCreateSpin';
 import { useAuth } from '@/hooks/useAuth';
 import { createLogger } from '@/utils/secureLogger';
@@ -27,15 +27,7 @@ export const useRandomizer = () => {
     pageSize: 100, // Get all in-progress projects
   });
 
-  // Fetch spin history
-  const {
-    data: spinHistory = [],
-    isLoading: isLoadingHistory,
-    error: historyError,
-  } = useSpinHistory({
-    userId: user?.id,
-    limit: 10,
-  });
+  // Spin history is now handled directly in the SpinHistory component
 
   // Create spin mutation
   const createSpinMutation = useCreateSpin();
@@ -117,35 +109,32 @@ export const useRandomizer = () => {
     const totalProjects = availableProjects.length;
     const selectedCount = selectedProjectIds.size;
     const canSpin = selectedCount >= 2; // Need at least 2 projects for randomization
-    const recentSpins = spinHistory.length;
 
     return {
       totalProjects,
       selectedCount,
       canSpin,
-      recentSpins,
+      recentSpins: 0, // This will be handled in SpinHistory component
       hasProjects: totalProjects > 0,
       hasSelection: selectedCount > 0,
     };
-  }, [availableProjects.length, selectedProjectIds.size, spinHistory.length]);
+  }, [availableProjects.length, selectedProjectIds.size]);
 
   // Loading and error states
-  const isLoading = isLoadingProjects || isLoadingHistory;
-  const error = projectsError || historyError;
+  const isLoading = isLoadingProjects;
+  const error = projectsError;
 
   return {
     // Data
     availableProjects,
     selectedProjects,
     selectedProjectIds,
-    spinHistory,
     lastSpinResult,
     stats,
 
     // Loading states
     isLoading,
     isLoadingProjects,
-    isLoadingHistory,
     isCreatingSpin: createSpinMutation.isPending,
 
     // Error states

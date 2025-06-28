@@ -8,22 +8,22 @@ import { RandomizerWheel } from '@/components/randomizer/RandomizerWheel';
 import { ProjectSelector } from '@/components/randomizer/ProjectSelector';
 import { SpinHistory } from '@/components/randomizer/SpinHistory';
 import { useRandomizer } from '@/hooks/useRandomizer';
+import { useAuth } from '@/hooks/useAuth';
 import { Shuffle, ExternalLink, Lightbulb } from 'lucide-react';
 import { createLogger } from '@/utils/secureLogger';
 
 const logger = createLogger('ProjectRandomizer');
 
 const ProjectRandomizer: React.FC = () => {
+  const { user } = useAuth();
   const {
     availableProjects,
     selectedProjects,
     selectedProjectIds,
-    spinHistory,
     lastSpinResult,
     stats,
     isLoading,
     isLoadingProjects,
-    isLoadingHistory,
     isCreatingSpin,
     error,
     toggleProject,
@@ -37,9 +37,8 @@ const ProjectRandomizer: React.FC = () => {
     logger.debug('ProjectRandomizer mounted', {
       availableProjectsCount: availableProjects.length,
       selectedProjectsCount: selectedProjectIds.size,
-      historyCount: spinHistory.length,
     });
-  }, [availableProjects.length, selectedProjectIds.size, spinHistory.length]);
+  }, [availableProjects.length, selectedProjectIds.size]);
 
   if (error) {
     return (
@@ -90,7 +89,7 @@ const ProjectRandomizer: React.FC = () => {
                 <Card className="border-primary bg-primary/5">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-xl text-center">
-                      🎉 Selected Project
+                      Selected Project
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="text-center space-y-4">
@@ -213,8 +212,7 @@ const ProjectRandomizer: React.FC = () => {
             </CardHeader>
             <CardContent>
               <SpinHistory
-                history={spinHistory}
-                isLoading={isLoadingHistory}
+                userId={user?.id}
               />
             </CardContent>
           </Card>

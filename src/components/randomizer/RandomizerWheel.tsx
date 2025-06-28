@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Project } from '@/types/project';
+import { ChevronDown } from 'lucide-react';
 // Custom color palette for the randomizer wheel using Organized Glitter brand colors
 const getWheelColor = (index: number): string => {
   const colors = [
@@ -53,13 +54,19 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
 
     // Calculate which project was selected
     const segmentAngle = 360 / projects.length;
-    const normalizedAngle = (360 - (totalRotation % 360)) % 360;
-    const selectedIndex = Math.floor(normalizedAngle / segmentAngle);
+    // The wheel rotates clockwise, and the arrow points down (at 270 degrees from 0)
+    // We need to find which segment the arrow (fixed at top) points to after rotation
+    const finalRotation = totalRotation % 360;
+    // Since the wheel rotates and the arrow is fixed, we need to find where 
+    // the original 0-degree position ended up, then add 270 for the arrow
+    const arrowPointsAt = (270 - finalRotation + 360) % 360;
+    const selectedIndex = Math.floor(arrowPointsAt / segmentAngle);
     const selectedProject = projects[selectedIndex];
 
     logger.debug('Wheel spin calculation', {
       totalRotation,
-      normalizedAngle,
+      finalRotation,
+      arrowPointsAt,
       segmentAngle,
       selectedIndex,
       selectedProjectId: selectedProject?.id,
@@ -86,13 +93,13 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
       <div className="flex flex-col items-center space-y-6">
         {/* Empty Wheel Container */}
         <div className="relative">
-          {/* Pointer */}
-          <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1 z-10">
-            <div className="w-0 h-0 border-l-4 border-r-4 border-b-8 border-l-transparent border-r-transparent border-b-gray-800 dark:border-b-white"></div>
+          {/* Pointer Arrow */}
+          <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-2 z-10">
+            <ChevronDown className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-gray-800 dark:text-white drop-shadow-lg" />
           </div>
 
           {/* Empty Wheel with Gradient */}
-          <div className="relative w-80 h-80 rounded-full border-4 border-gray-800 dark:border-white overflow-hidden bg-gradient-to-br from-diamond-400 via-flamingo-400 via-peach-400 to-mauve-400 opacity-60">
+          <div className="relative w-72 h-72 sm:w-96 sm:h-96 lg:w-112 lg:h-112 rounded-full border-4 border-gray-800 dark:border-white overflow-hidden bg-gradient-to-br from-diamond-400 via-flamingo-400 via-peach-400 to-mauve-400 opacity-60">
             {/* Center content */}
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center text-white drop-shadow-lg">
@@ -124,22 +131,23 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
   }
 
   const segmentAngle = 360 / projects.length;
-  const wheelSize = 320; // Size in pixels
+  // Responsive wheel sizes: mobile: 280px, tablet: 384px, desktop: 448px
+  const wheelSize = 448; // Base size for calculations (largest size)
   const radius = wheelSize / 2;
 
   return (
     <div className="flex flex-col items-center space-y-6">
       {/* Wheel Container */}
       <div className="relative">
-        {/* Pointer */}
-        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1 z-10">
-          <div className="w-0 h-0 border-l-4 border-r-4 border-b-8 border-l-transparent border-r-transparent border-b-gray-800 dark:border-b-white"></div>
+        {/* Pointer Arrow */}
+        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-2 z-10">
+          <ChevronDown className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-gray-800 dark:text-white drop-shadow-lg" />
         </div>
 
         {/* Wheel */}
         <div
           ref={wheelRef}
-          className={`relative w-80 h-80 rounded-full border-4 border-gray-800 dark:border-white overflow-hidden transition-transform duration-3000 ease-out ${
+          className={`relative w-72 h-72 sm:w-96 sm:h-96 lg:w-112 lg:h-112 rounded-full border-4 border-gray-800 dark:border-white overflow-hidden transition-transform duration-3000 ease-out ${
             isSpinning ? 'animate-spin-custom' : ''
           }`}
           style={{
