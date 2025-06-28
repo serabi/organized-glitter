@@ -4,6 +4,7 @@ import { Collections, TagsRecord } from '@/types/pocketbase.types';
 import { queryKeys } from '../queries/queryKeys';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { requireAuthenticatedUser } from '@/utils/authGuards';
 
 interface CreateTagData {
   name: string;
@@ -33,10 +34,8 @@ export function useCreateTag() {
 
   return useMutation({
     mutationFn: (data: CreateTagData) => {
-      if (!user?.id) {
-        throw new Error('User not authenticated');
-      }
-      return createTag(data, user.id);
+      const userId = requireAuthenticatedUser(user);
+      return createTag(data, userId);
     },
     onSuccess: newTag => {
       // Invalidate and refetch tags list

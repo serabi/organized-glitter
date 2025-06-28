@@ -4,6 +4,7 @@ import { Collections, CompaniesRecord } from '@/types/pocketbase.types';
 import { queryKeys } from '../queries/queryKeys';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { requireAuthenticatedUser } from '@/utils/authGuards';
 
 interface UpdateCompanyData {
   id: string;
@@ -46,10 +47,8 @@ export function useUpdateCompany() {
 
   return useMutation({
     mutationFn: (data: UpdateCompanyData) => {
-      if (!user?.id) {
-        throw new Error('User not authenticated');
-      }
-      return updateCompany(data, user.id);
+      const userId = requireAuthenticatedUser(user);
+      return updateCompany(data, userId);
     },
     onSuccess: updatedCompany => {
       // Invalidate and refetch companies list

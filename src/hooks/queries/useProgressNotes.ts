@@ -4,6 +4,7 @@ import { ProgressNote } from '@/types/project';
 import { pb } from '@/lib/pocketbase';
 import { queryKeys } from './queryKeys';
 import { analytics } from '@/services/analytics';
+import { requireValidAuthStore } from '@/utils/authGuards';
 
 interface AddProgressNoteData {
   date: string;
@@ -80,9 +81,7 @@ export function useAddProgressNoteMutation(projectId: string) {
   return useMutation({
     mutationFn: async (noteData: AddProgressNoteData): Promise<ProgressNote> => {
       // Check authentication
-      if (!pb.authStore.isValid) {
-        throw new Error('Authentication required');
-      }
+      requireValidAuthStore();
 
       // Prepare data for PocketBase
       const data: Record<string, unknown> = {
@@ -157,9 +156,7 @@ export function useUpdateProgressNoteMutation(projectId: string) {
   return useMutation({
     mutationFn: async ({ noteId, newContent }: UpdateProgressNoteData): Promise<ProgressNote> => {
       // Check authentication
-      if (!pb.authStore.isValid) {
-        throw new Error('Authentication required');
-      }
+      requireValidAuthStore();
 
       const record = await pb.collection('progress_notes').update(noteId, {
         content: newContent,
@@ -211,9 +208,7 @@ export function useDeleteProgressNoteMutation(projectId: string) {
   return useMutation({
     mutationFn: async ({ noteId }: DeleteProgressNoteData): Promise<void> => {
       // Check authentication
-      if (!pb.authStore.isValid) {
-        throw new Error('Authentication required');
-      }
+      requireValidAuthStore();
 
       await pb.collection('progress_notes').delete(noteId);
     },
@@ -250,9 +245,7 @@ export function useDeleteProgressNoteImageMutation(projectId: string) {
   return useMutation({
     mutationFn: async ({ noteId }: DeleteProgressNoteImageData): Promise<ProgressNote> => {
       // Check authentication
-      if (!pb.authStore.isValid) {
-        throw new Error('Authentication required');
-      }
+      requireValidAuthStore();
 
       // Update the note to remove the image field
       const record = await pb.collection('progress_notes').update(noteId, {
@@ -305,9 +298,7 @@ export function useUpdateGeneralNotesMutation(projectId: string) {
   return useMutation({
     mutationFn: async ({ newNotes }: UpdateGeneralNotesData): Promise<void> => {
       // Check authentication
-      if (!pb.authStore.isValid) {
-        throw new Error('Authentication required');
-      }
+      requireValidAuthStore();
 
       // Update the project's general notes field
       await pb.collection('projects').update(projectId, {

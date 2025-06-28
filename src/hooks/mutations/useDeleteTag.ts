@@ -4,6 +4,7 @@ import { queryKeys } from '../queries/queryKeys';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { isServiceResponseError } from '@/types/shared';
+import { requireAuthenticatedUser } from '@/utils/authGuards';
 
 interface DeleteTagData {
   id: string;
@@ -27,9 +28,7 @@ export function useDeleteTag() {
 
   return useMutation({
     mutationFn: (data: DeleteTagData) => {
-      if (!user?.id) {
-        throw new Error('User not authenticated');
-      }
+      requireAuthenticatedUser(user);
       return deleteTag(data);
     },
     onSuccess: (_, variables) => {

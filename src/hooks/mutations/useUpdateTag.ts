@@ -5,6 +5,7 @@ import { queryKeys } from '../queries/queryKeys';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { isServiceResponseError } from '@/types/shared';
+import { requireAuthenticatedUser } from '@/utils/authGuards';
 
 interface UpdateTagData {
   id: string;
@@ -28,9 +29,7 @@ export function useUpdateTag() {
 
   return useMutation({
     mutationFn: (data: UpdateTagData) => {
-      if (!user?.id) {
-        throw new Error('User not authenticated');
-      }
+      requireAuthenticatedUser(user);
       return updateTag(data);
     },
     onSuccess: (_, variables) => {
