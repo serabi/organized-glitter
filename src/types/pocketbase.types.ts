@@ -18,6 +18,7 @@ export enum Collections {
 	ProjectTags = "project_tags",
 	Projects = "projects",
 	Tags = "tags",
+	UserYearlyStats = "user_yearly_stats",
 	Users = "users",
 }
 
@@ -125,7 +126,7 @@ export type CompaniesRecord = {
 }
 
 export type ProgressNotesRecord = {
-	content: HTMLString
+	content?: HTMLString
 	created?: IsoDateString
 	date: IsoDateString
 	id: string
@@ -194,6 +195,28 @@ export type TagsRecord = {
 	user: RecordIdString
 }
 
+export enum UserYearlyStatsStatsTypeOptions {
+	"yearly" = "yearly",
+}
+export type UserYearlyStatsRecord<Tstatus_breakdown = unknown> = {
+	cache_version?: string
+	calculation_duration_ms?: number
+	completed_count?: number
+	created?: IsoDateString
+	estimated_drills?: number
+	id: string
+	in_progress_count?: number
+	last_calculated: IsoDateString
+	projects_included?: number
+	started_count?: number
+	stats_type: UserYearlyStatsStatsTypeOptions
+	status_breakdown?: null | Tstatus_breakdown
+	total_diamonds?: number
+	updated?: IsoDateString
+	user: RecordIdString
+	year: number
+}
+
 export type UsersRecord = {
 	avatar?: string
 	beta_tester?: boolean
@@ -221,6 +244,7 @@ export type ProgressNotesResponse<Texpand = unknown> = Required<ProgressNotesRec
 export type ProjectTagsResponse<Texpand = unknown> = Required<ProjectTagsRecord> & BaseSystemFields<Texpand>
 export type ProjectsResponse<Texpand = unknown> = Required<ProjectsRecord> & BaseSystemFields<Texpand>
 export type TagsResponse<Texpand = unknown> = Required<TagsRecord> & BaseSystemFields<Texpand>
+export type UserYearlyStatsResponse<Tstatus_breakdown = unknown, Texpand = unknown> = Required<UserYearlyStatsRecord<Tstatus_breakdown>> & BaseSystemFields<Texpand>
 export type UsersResponse<Texpand = unknown> = Required<UsersRecord> & AuthSystemFields<Texpand>
 
 // Types containing all Records and Responses, useful for creating typing helper functions
@@ -238,6 +262,7 @@ export type CollectionRecords = {
 	project_tags: ProjectTagsRecord
 	projects: ProjectsRecord
 	tags: TagsRecord
+	user_yearly_stats: UserYearlyStatsRecord
 	users: UsersRecord
 }
 
@@ -254,6 +279,7 @@ export type CollectionResponses = {
 	project_tags: ProjectTagsResponse
 	projects: ProjectsResponse
 	tags: TagsResponse
+	user_yearly_stats: UserYearlyStatsResponse
 	users: UsersResponse
 }
 
@@ -273,5 +299,6 @@ export type TypedPocketBase = PocketBase & {
 	collection(idOrName: 'project_tags'): RecordService<ProjectTagsResponse>
 	collection(idOrName: 'projects'): RecordService<ProjectsResponse>
 	collection(idOrName: 'tags'): RecordService<TagsResponse>
+	collection(idOrName: 'user_yearly_stats'): RecordService<UserYearlyStatsResponse>
 	collection(idOrName: 'users'): RecordService<UsersResponse>
 }
