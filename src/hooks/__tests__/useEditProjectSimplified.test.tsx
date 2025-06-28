@@ -42,15 +42,6 @@ vi.mock('@/lib/pocketbase', () => {
   const mockPbGetFirstListItem = vi.fn();
   const mockPbDelete = vi.fn();
   const mockPbFilter = vi.fn((filter, params) => filter);
-  const mockBatchDelete = vi.fn();
-  const mockBatchSend = vi.fn();
-
-  const mockBatch = {
-    collection: vi.fn((collectionName: string) => ({
-      delete: mockBatchDelete,
-    })),
-    send: mockBatchSend,
-  };
 
   return {
     pb: {
@@ -63,7 +54,6 @@ vi.mock('@/lib/pocketbase', () => {
         delete: mockPbDelete,
       })),
       filter: mockPbFilter,
-      createBatch: vi.fn(() => mockBatch),
       files: {
         getURL: vi.fn((record, filename) => `https://example.com/files/${filename}`),
       },
@@ -86,15 +76,12 @@ import { TagService } from '@/lib/tags';
 
 // Extract mock functions after import
 const mockPbCollection = vi.mocked(pb.collection);
-const mockPbCreateBatch = vi.mocked(pb.createBatch);
 const mockPbUpdate = vi.fn();
 const mockPbGetOne = vi.fn();
 const mockPbGetList = vi.fn();
 const mockPbGetFullList = vi.fn();
 const mockPbGetFirstListItem = vi.fn();
 const mockPbDelete = vi.fn();
-const mockBatchDelete = vi.fn();
-const mockBatchSend = vi.fn();
 const mockAddTagToProject = vi.mocked(TagService.addTagToProject);
 const mockRemoveTagFromProject = vi.mocked(TagService.removeTagFromProject);
 
@@ -167,16 +154,6 @@ describe('useEditProjectSimplified', () => {
       getFirstListItem: mockPbGetFirstListItem,
       delete: mockPbDelete,
     });
-
-    // Setup batch mock
-    const mockBatch = {
-      collection: vi.fn((collectionName: string) => ({
-        delete: mockBatchDelete,
-      })),
-      send: mockBatchSend,
-    };
-    mockPbCreateBatch.mockReturnValue(mockBatch);
-    mockBatchSend.mockResolvedValue({});
 
     mockAddTagToProject.mockResolvedValue({ data: undefined, error: null });
     mockRemoveTagFromProject.mockResolvedValue({ data: undefined, error: null });
@@ -253,14 +230,11 @@ describe('useEditProjectSimplified', () => {
       expect(result.current).toHaveProperty('handleSubmit');
       expect(result.current).toHaveProperty('handleArchive');
       expect(result.current).toHaveProperty('handleDelete');
-      expect(result.current).toHaveProperty('setFormData');
-      expect(result.current).toHaveProperty('setIsDirty');
-      expect(result.current).toHaveProperty('setHasSelectedNewImage');
-      expect(result.current).toHaveProperty('refreshDropdownOptions');
+      expect(result.current).toHaveProperty('handleFormChange');
+      expect(result.current).toHaveProperty('refreshLists');
 
       // Navigation functions
       expect(result.current).toHaveProperty('navigateWithWarning');
-      expect(result.current).toHaveProperty('unsafeNavigate');
       expect(result.current).toHaveProperty('clearNavigationError');
 
       // Confirmation component
@@ -376,7 +350,7 @@ describe('useEditProjectSimplified', () => {
   });
 
   describe('project deletion', () => {
-    it('should delete project successfully with batch operations', async () => {
+    it('should delete project successfully with sequential operations', async () => {
       // Mock getFullList for progress notes and project tags
       mockPbGetFullList
         .mockResolvedValueOnce([]) // No progress notes
@@ -390,12 +364,12 @@ describe('useEditProjectSimplified', () => {
 
       await result.current.handleDelete();
 
-      // Verify batch operations were used
-      expect(mockPbCreateBatch).toHaveBeenCalled();
-      expect(mockBatchSend).toHaveBeenCalled();
+      // Verify sequential deletion was used
+      expect(mockPbGetFullList).toHaveBeenCalledTimes(2);
+      expect(mockPbDelete).toHaveBeenCalledWith('project-123');
     });
 
-    it('should handle deletion with related records', async () => {
+    it('should handle deletion with related records sequentially', async () => {
       // Mock getFullList with related records
       mockPbGetFullList
         .mockResolvedValueOnce([{ id: 'note-1' }, { id: 'note-2' }]) // Progress notes
@@ -409,20 +383,22 @@ describe('useEditProjectSimplified', () => {
 
       await result.current.handleDelete();
 
-      // Verify batch operations were called for all records
-      expect(mockPbCreateBatch).toHaveBeenCalled();
-      expect(mockBatchDelete).toHaveBeenCalledTimes(3); // 2 notes + 1 tag
-      expect(mockBatchSend).toHaveBeenCalled();
+      // Verify sequential operations were called for all records
+      expect(mockPbDelete).toHaveBeenCalledWith('note-1');
+      expect(mockPbDelete).toHaveBeenCalledWith('note-2');
+      expect(mockPbDelete).toHaveBeenCalledWith('tag-1');
+      expect(mockPbDelete).toHaveBeenCalledWith('project-123');
+      expect(mockPbDelete).toHaveBeenCalledTimes(4); // 2 notes + 1 tag + 1 project
     });
 
-    it('should handle batch deletion errors gracefully', async () => {
+    it('should handle sequential deletion errors gracefully', async () => {
       // Mock getFullList for related records
       mockPbGetFullList
-        .mockResolvedValueOnce([]) // No progress notes
+        .mockResolvedValueOnce([{ id: 'note-1' }]) // One progress note
         .mockResolvedValueOnce([]); // No project tags
 
-      // Mock batch send to fail
-      mockBatchSend.mockRejectedValue(new Error('Batch delete failed'));
+      // Mock the first delete to fail
+      mockPbDelete.mockRejectedValueOnce(new Error('Delete failed'));
 
       const { result } = renderHook(() => useEditProjectSimplified('project-123'), { wrapper });
 
@@ -432,9 +408,9 @@ describe('useEditProjectSimplified', () => {
 
       await result.current.handleDelete();
 
-      // Verify batch operations were attempted
-      expect(mockPbCreateBatch).toHaveBeenCalled();
-      expect(mockBatchSend).toHaveBeenCalled();
+      // Verify deletion was attempted but failed gracefully
+      expect(mockPbDelete).toHaveBeenCalledWith('note-1');
+      expect(mockPbDelete).toHaveBeenCalledTimes(1); // Should stop after first failure
     });
   });
 

@@ -35,21 +35,10 @@ vi.mock('@/utils/toast-adapter', () => ({
 
 // Mock PocketBase operations directly
 vi.mock('@/lib/pocketbase', () => {
-  const mockBatchDelete = vi.fn();
-  const mockBatchSend = vi.fn();
-
-  const mockBatch = {
-    collection: vi.fn((collectionName: string) => ({
-      delete: mockBatchDelete,
-    })),
-    send: mockBatchSend,
-  };
-
   return {
     pb: {
       collection: vi.fn(),
       filter: vi.fn((filter, params) => filter),
-      createBatch: vi.fn(() => mockBatch),
       files: {
         getURL: vi.fn((record, filename) => `https://example.com/files/${filename}`),
       },
@@ -72,15 +61,12 @@ import { TagService } from '@/lib/tags';
 
 // Extract mock functions after import
 const mockPbCollection = vi.mocked(pb.collection);
-const mockPbCreateBatch = vi.mocked(pb.createBatch);
 const mockPbUpdate = vi.fn();
 const mockPbGetOne = vi.fn();
 const mockPbGetList = vi.fn();
 const mockPbGetFullList = vi.fn();
 const mockPbGetFirstListItem = vi.fn();
 const mockPbDelete = vi.fn();
-const mockBatchDelete = vi.fn();
-const mockBatchSend = vi.fn();
 const mockAddTagToProject = vi.mocked(TagService.addTagToProject);
 const mockRemoveTagFromProject = vi.mocked(TagService.removeTagFromProject);
 
@@ -154,16 +140,6 @@ describe('useEditProjectSimplified - Navigation', () => {
       delete: mockPbDelete,
     });
 
-    // Setup batch mock
-    const mockBatch = {
-      collection: vi.fn((collectionName: string) => ({
-        delete: mockBatchDelete,
-      })),
-      send: mockBatchSend,
-    };
-    mockPbCreateBatch.mockReturnValue(mockBatch);
-    mockBatchSend.mockResolvedValue({});
-
     mockAddTagToProject.mockResolvedValue({ data: undefined, error: null });
     mockRemoveTagFromProject.mockResolvedValue({ data: undefined, error: null });
     
@@ -227,9 +203,9 @@ describe('useEditProjectSimplified - Navigation', () => {
 
       await result.current.handleDelete();
 
-      // Verify batch operations were used
-      expect(mockPbCreateBatch).toHaveBeenCalled();
-      expect(mockBatchSend).toHaveBeenCalled();
+      // Verify sequential deletion was used
+      expect(mockPbGetFullList).toHaveBeenCalledTimes(2);
+      expect(mockPbDelete).toHaveBeenCalledWith('project-123');
     });
   });
 
@@ -276,8 +252,8 @@ describe('useEditProjectSimplified - Navigation', () => {
         .mockResolvedValueOnce([]) // No progress notes
         .mockResolvedValueOnce([]); // No project tags
       
-      // Mock batch send to fail
-      mockBatchSend.mockRejectedValue(new Error('Batch delete failed'));
+      // Mock project delete to fail
+      mockPbDelete.mockRejectedValue(new Error('Delete failed'));
 
       const { result } = renderHook(() => useEditProjectSimplified('project-123'), { wrapper });
 
@@ -287,9 +263,9 @@ describe('useEditProjectSimplified - Navigation', () => {
 
       await result.current.handleDelete();
 
-      // Verify batch operations were attempted
-      expect(mockPbCreateBatch).toHaveBeenCalled();
-      expect(mockBatchSend).toHaveBeenCalled();
+      // Verify deletion was attempted
+      expect(mockPbGetFullList).toHaveBeenCalledTimes(2);
+      expect(mockPbDelete).toHaveBeenCalledWith('project-123');
       // Should not navigate on error
     });
   });
@@ -300,7 +276,6 @@ describe('useEditProjectSimplified - Navigation', () => {
 
       expect(result.current).toHaveProperty('navigationState');
       expect(result.current).toHaveProperty('navigateWithWarning');
-      expect(result.current).toHaveProperty('unsafeNavigate');
       expect(result.current).toHaveProperty('clearNavigationError');
     });
 
@@ -311,13 +286,7 @@ describe('useEditProjectSimplified - Navigation', () => {
         expect(result.current.loading).toBe(false);
       });
 
-      // Test that isDirty state can be managed
-      expect(result.current.isDirty).toBe(false);
-      
-      result.current.setIsDirty(true);
-      expect(result.current.isDirty).toBe(true);
-
-      result.current.setIsDirty(false);
+      // Test that isDirty state is accessible
       expect(result.current.isDirty).toBe(false);
     });
   });

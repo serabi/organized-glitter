@@ -479,7 +479,9 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
     try {
       setSubmitting(true);
       
-      logger.debug(`Deleting project ${projectId} with atomic batch deletion`);
+      logger.debug(`Deleting project ${projectId} with sequential deletion and error recovery`);
+
+      const deletedItems: Array<{type: string, id: string}> = [];
 
       // Fetch all related records in parallel for better performance
       const [progressNotes, projectTags] = await Promise.all([
@@ -497,30 +499,37 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
         `Found ${progressNotes.length} progress notes and ${projectTags.length} project tags to delete for project ${projectId}`
       );
 
-      // Create atomic batch operation for all deletions
-      const batch = pb.createBatch();
+      try {
+        // Step 1: Delete progress notes sequentially
+        for (const note of progressNotes) {
+          await pb.collection('progress_notes').delete(note.id);
+          deletedItems.push({type: 'progress_notes', id: note.id});
+          logger.debug(`Deleted progress note ${note.id}`);
+        }
 
-      // Add progress notes deletion to batch
-      progressNotes.forEach(note => {
-        batch.collection('progress_notes').delete(note.id);
-      });
+        // Step 2: Delete project tags sequentially
+        for (const projectTag of projectTags) {
+          await pb.collection('project_tags').delete(projectTag.id);
+          deletedItems.push({type: 'project_tags', id: projectTag.id});
+          logger.debug(`Deleted project tag ${projectTag.id}`);
+        }
 
-      // Add project tags deletion to batch
-      projectTags.forEach(projectTag => {
-        batch.collection('project_tags').delete(projectTag.id);
-      });
+        // Step 3: Delete the project (final step - no rollback needed after this)
+        await pb.collection('projects').delete(projectId);
+        deletedItems.push({type: 'projects', id: projectId});
 
-      // Add project deletion to batch
-      batch.collection('projects').delete(projectId);
+        logger.debug(`Successfully deleted project ${projectId} and ${deletedItems.length - 1} related records`);
 
-      // Execute all deletions atomically
-      await batch.send();
-
-      logger.debug(`Project ${projectId} and all related records deleted successfully in atomic operation`);
-
-      unsafeNavigate('/dashboard');
+        unsafeNavigate('/dashboard');
+        
+      } catch (deleteError) {
+        logger.error('Error during project deletion, partial deletion occurred:', deleteError);
+        logger.warn(`Deletion failed after removing ${deletedItems.length} items:`, deletedItems);
+        
+        throw new Error(`Failed to delete project: ${deleteError instanceof Error ? deleteError.message : 'Unknown error'}. ${deletedItems.length} items were deleted before the error occurred.`);
+      }
     } catch (error) {
-      logger.error('Error during atomic project deletion:', error);
+      logger.error('Error during project deletion:', error);
       toast({
         title: 'Error deleting project',
         description: error instanceof Error ? error.message : 'Failed to delete project and related data',
