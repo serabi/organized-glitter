@@ -69,6 +69,88 @@ const ProjectRandomizer: React.FC = () => {
           </p>
         </div>
 
+        {/* Hero Section - Randomizer Wheel */}
+        <Card className="mb-8">
+          <CardHeader className="text-center">
+            <CardTitle className="text-3xl">Spin the Wheel</CardTitle>
+            <CardDescription className="text-lg">
+              Let chance decide which project to work on today
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center py-8">
+            <RandomizerWheel
+              projects={selectedProjects}
+              onSpinComplete={handleSpinComplete}
+              disabled={!stats.canSpin || isCreatingSpin}
+            />
+
+            {/* Spin Result */}
+            {lastSpinResult && (
+              <div className="mt-8 w-full max-w-md">
+                <Card className="border-primary bg-primary/5">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-xl text-center">
+                      🎉 Selected Project
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-center space-y-4">
+                    <h3 className="text-2xl font-bold">{lastSpinResult.title}</h3>
+                    {(lastSpinResult.company || lastSpinResult.artist) && (
+                      <p className="text-muted-foreground text-lg">
+                        {[lastSpinResult.company, lastSpinResult.artist]
+                          .filter(Boolean)
+                          .join(' • ')}
+                      </p>
+                    )}
+                    <div className="flex gap-3 justify-center">
+                      <Button asChild>
+                        <Link to={`/projects/${lastSpinResult.id}`}>
+                          <ExternalLink className="w-4 h-4 mr-2" />
+                          View Project
+                        </Link>
+                      </Button>
+                      <Button variant="outline" onClick={clearLastResult}>
+                        Clear Result
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Helper Messages */}
+            {!stats.hasProjects && !isLoadingProjects && (
+              <Alert className="mt-8 max-w-lg">
+                <Lightbulb className="h-4 w-4" />
+                <AlertDescription className="text-base">
+                  You don't have any projects in progress. 
+                  <Link to="/dashboard" className="text-primary hover:underline ml-1 font-medium">
+                    Start some projects
+                  </Link> to use the randomizer!
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {stats.hasProjects && !stats.hasSelection && (
+              <Alert className="mt-8 max-w-lg">
+                <Lightbulb className="h-4 w-4" />
+                <AlertDescription className="text-base">
+                  Select some projects below to get started!
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {stats.hasSelection && !stats.canSpin && (
+              <Alert className="mt-8 max-w-lg">
+                <Lightbulb className="h-4 w-4" />
+                <AlertDescription className="text-base">
+                  Select at least 2 projects to make the randomizer interesting!
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Stats Summary */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <Card>
@@ -99,139 +181,43 @@ const ProjectRandomizer: React.FC = () => {
           </Card>
         </div>
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Bottom Section - Project Selection and History */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Panel - Project Selection */}
-          <div className="lg:col-span-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Choose Your Projects</CardTitle>
-                <CardDescription>
-                  Select which in-progress projects to include in the randomizer
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ProjectSelector
-                  projects={availableProjects}
-                  selectedProjects={selectedProjectIds}
-                  onProjectToggle={toggleProject}
-                  onSelectAll={selectAllProjects}
-                  onSelectNone={selectNoProjects}
-                  isLoading={isLoadingProjects}
-                />
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Center Panel - Randomizer Wheel */}
-          <div className="lg:col-span-5">
-            <Card>
-              <CardHeader>
-                <CardTitle>Spin the Wheel</CardTitle>
-                <CardDescription>
-                  Click to randomly select a project to work on
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col items-center">
-                <RandomizerWheel
-                  projects={selectedProjects}
-                  onSpinComplete={handleSpinComplete}
-                  disabled={!stats.canSpin || isCreatingSpin}
-                />
-
-                {/* Spin Result */}
-                {lastSpinResult && (
-                  <div className="mt-6 w-full max-w-md">
-                    <Card className="border-primary bg-primary/5">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-lg text-center">
-                          🎉 Selected Project
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="text-center space-y-3">
-                        <h3 className="text-xl font-bold">{lastSpinResult.title}</h3>
-                        {(lastSpinResult.company || lastSpinResult.artist) && (
-                          <p className="text-muted-foreground">
-                            {[lastSpinResult.company, lastSpinResult.artist]
-                              .filter(Boolean)
-                              .join(' • ')}
-                          </p>
-                        )}
-                        <div className="flex gap-2 justify-center">
-                          <Button asChild size="sm">
-                            <Link to={`/projects/${lastSpinResult.id}`}>
-                              <ExternalLink className="w-4 h-4 mr-1" />
-                              View Project
-                            </Link>
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={clearLastResult}>
-                            Clear
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                )}
-
-                {/* Helper Messages */}
-                {!stats.hasProjects && !isLoadingProjects && (
-                  <Alert className="mt-6 max-w-md">
-                    <Lightbulb className="h-4 w-4" />
-                    <AlertDescription>
-                      You don't have any projects in progress. 
-                      <Link to="/dashboard" className="text-primary hover:underline ml-1">
-                        Start some projects
-                      </Link> to use the randomizer!
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {stats.hasProjects && !stats.hasSelection && (
-                  <Alert className="mt-6 max-w-md">
-                    <Lightbulb className="h-4 w-4" />
-                    <AlertDescription>
-                      Select some projects from the left panel to get started!
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {stats.hasSelection && !stats.canSpin && (
-                  <Alert className="mt-6 max-w-md">
-                    <Lightbulb className="h-4 w-4" />
-                    <AlertDescription>
-                      Select at least 2 projects to make the randomizer interesting!
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Choose Your Projects</CardTitle>
+              <CardDescription>
+                Select which in-progress projects to include in the randomizer
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ProjectSelector
+                projects={availableProjects}
+                selectedProjects={selectedProjectIds}
+                onProjectToggle={toggleProject}
+                onSelectAll={selectAllProjects}
+                onSelectNone={selectNoProjects}
+                isLoading={isLoadingProjects}
+              />
+            </CardContent>
+          </Card>
 
           {/* Right Panel - Spin History */}
-          <div className="lg:col-span-3">
-            <Card>
-              <CardHeader>
-                <CardTitle>Spin History</CardTitle>
-                <CardDescription>
-                  Your recent randomizer results
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <SpinHistory
-                  history={spinHistory}
-                  isLoading={isLoadingHistory}
-                />
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-
-        {/* Footer Tips */}
-        <div className="mt-8 text-center text-sm text-muted-foreground">
-          <p>
-            💡 Tip: Use the randomizer when you have multiple projects calling your attention 
-            and need help deciding which one to focus on today!
-          </p>
+          <Card>
+            <CardHeader>
+              <CardTitle>Spin History</CardTitle>
+              <CardDescription>
+                Your recent randomizer results
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SpinHistory
+                history={spinHistory}
+                isLoading={isLoadingHistory}
+              />
+            </CardContent>
+          </Card>
         </div>
       </div>
     </MainLayout>

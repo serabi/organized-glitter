@@ -80,13 +80,45 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
 
   }, [isSpinning, projects, rotation, onSpinComplete]);
 
+  // Empty wheel state - show beautiful gradient circle
   if (projects.length === 0) {
     return (
-      <div className="flex items-center justify-center h-80 border-2 border-dashed border-gray-300 rounded-lg">
-        <div className="text-center text-gray-500">
-          <p className="text-lg font-medium">No projects selected</p>
-          <p className="text-sm">Select some projects to start spinning!</p>
+      <div className="flex flex-col items-center space-y-6">
+        {/* Empty Wheel Container */}
+        <div className="relative">
+          {/* Pointer */}
+          <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1 z-10">
+            <div className="w-0 h-0 border-l-4 border-r-4 border-b-8 border-l-transparent border-r-transparent border-b-gray-800 dark:border-b-white"></div>
+          </div>
+
+          {/* Empty Wheel with Gradient */}
+          <div className="relative w-80 h-80 rounded-full border-4 border-gray-800 dark:border-white overflow-hidden bg-gradient-to-br from-diamond-400 via-flamingo-400 via-peach-400 to-mauve-400 opacity-60">
+            {/* Center content */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center text-white drop-shadow-lg">
+                <p className="text-lg font-semibold">Select projects below</p>
+                <p className="text-sm opacity-90">to get started!</p>
+              </div>
+            </div>
+            
+            {/* Subtle pulse animation */}
+            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-diamond-300 via-flamingo-300 via-peach-300 to-mauve-300 opacity-30 animate-pulse"></div>
+          </div>
         </div>
+
+        {/* Disabled Spin Button */}
+        <Button
+          disabled={true}
+          size="lg"
+          className="px-8 py-3 text-lg font-semibold bg-gradient-to-r from-primary to-mauve-500 hover:from-primary/90 hover:to-mauve-500/90 text-white shadow-lg opacity-50 cursor-not-allowed"
+        >
+          Spin the Wheel!
+        </Button>
+
+        {/* Instructions */}
+        <p className="text-sm text-muted-foreground text-center max-w-md">
+          Select your in-progress projects below, then come back to spin the wheel!
+        </p>
       </div>
     );
   }
