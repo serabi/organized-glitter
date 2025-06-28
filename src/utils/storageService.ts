@@ -4,7 +4,7 @@ import {
   deleteFileFromPocketBase,
 } from './pocketbaseStorage';
 import { createLogger } from '@/utils/secureLogger';
-import { PocketBaseRecord } from '@/services/pocketbase/baseService';
+import { PocketBaseRecord } from '@/types/pocketbase-common';
 
 const logger = createLogger('StorageService');
 
