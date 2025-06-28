@@ -348,6 +348,11 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
             await TagService.addTagToProject(projectId, tagId);
           } catch (error) {
             logger.warn('Failed to add tag to project:', { projectId, tagId, error });
+            toast({
+              title: 'Tag Update Warning',
+              description: `Failed to add tag to project. The project was updated but some tags may not be saved properly.`,
+              variant: 'destructive',
+            });
           }
         }
         
@@ -357,6 +362,11 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
             await TagService.removeTagFromProject(projectId, tagId);
           } catch (error) {
             logger.warn('Failed to remove tag from project:', { projectId, tagId, error });
+            toast({
+              title: 'Tag Update Warning',
+              description: `Failed to remove tag from project. The project was updated but some tags may not be saved properly.`,
+              variant: 'destructive',
+            });
           }
         }
 
@@ -382,7 +392,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
           // Navigate back to project detail page using React Router
           logger.info('🚀 Navigating back to project detail page');
           await navigateToProject(projectId, {
-            projectData: response.data,
+            projectData: response.data as ProjectType,
             replace: true // Replace current history entry since we're coming from edit
           });
 
