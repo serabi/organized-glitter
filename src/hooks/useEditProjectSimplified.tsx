@@ -12,6 +12,8 @@ import { useServiceToast } from '@/utils/toast-adapter';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/hooks/queries/queryKeys';
 import { createLogger } from '@/utils/secureLogger';
+import { Collections } from '@/types/pocketbase.types';
+import { TagService } from '@/lib/tags';
 
 const logger = createLogger('useEditProjectSimplified');
 
@@ -263,14 +265,98 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
           tagIds,
         };
 
-        // Handle any potential promise rejections from updateProject
-        const response = await projectService
-          .updateProject(projectId, dataToSubmit)
-          .catch((error: unknown) => {
-            console.error('UpdateProject promise rejected:', error);
-            // Return error response instead of throwing
-            return { error: error instanceof Error ? error.message : String(error), data: null };
-          });
+        // Resolve company and artist names to IDs if provided
+        let companyId = null;
+        let artistId = null;
+
+        if (dataToSubmit.company) {
+          try {
+            const companyRecord = await pb
+              .collection('companies')
+              .getFirstListItem(pb.filter('name = {:name} && user = {:user}', { 
+                name: dataToSubmit.company, 
+                user: user?.id 
+              }));
+            companyId = companyRecord?.id || null;
+          } catch (error) {
+            logger.warn('Company not found:', dataToSubmit.company);
+            companyId = null;
+          }
+        }
+
+        if (dataToSubmit.artist) {
+          try {
+            const artistRecord = await pb
+              .collection('artists')
+              .getFirstListItem(pb.filter('name = {:name} && user = {:user}', { 
+                name: dataToSubmit.artist, 
+                user: user?.id 
+              }));
+            artistId = artistRecord?.id || null;
+          } catch (error) {
+            logger.warn('Artist not found:', dataToSubmit.artist);
+            artistId = null;
+          }
+        }
+
+        // Create FormData for the update (handles image uploads)
+        const formData = new FormData();
+
+        // Add all form fields except special ones
+        const fieldsToExclude = ['id', 'tags', 'tagIds', 'imageFile', '_imageReplacement', 'company', 'artist'];
+        
+        Object.entries(dataToSubmit).forEach(([key, value]) => {
+          if (!fieldsToExclude.includes(key) && value !== undefined && value !== null && value !== '') {
+            formData.append(key, String(value));
+          }
+        });
+
+        // Add resolved company and artist IDs
+        if (companyId) {
+          formData.append('company', companyId);
+        }
+        if (artistId) {
+          formData.append('artist', artistId);
+        }
+
+        // Handle image upload if present
+        if (dataToSubmit.imageFile && dataToSubmit.imageFile instanceof File) {
+          formData.append('image', dataToSubmit.imageFile);
+        }
+
+        // Update the project in PocketBase
+        const updatedProject = await pb.collection(Collections.Projects).update(projectId, formData);
+        
+        // Handle tag synchronization
+        const currentTagIds = tagIds;
+        const originalTags = project?.tags || [];
+        const originalTagIds = originalTags.map(tag => tag.id);
+        
+        // Find tags to add and remove
+        const tagsToAdd = currentTagIds.filter(tagId => !originalTagIds.includes(tagId));
+        const tagsToRemove = originalTagIds.filter(tagId => !currentTagIds.includes(tagId));
+        
+        // Add new tags
+        for (const tagId of tagsToAdd) {
+          try {
+            await TagService.addTagToProject(projectId, tagId);
+          } catch (error) {
+            logger.warn('Failed to add tag to project:', { projectId, tagId, error });
+          }
+        }
+        
+        // Remove old tags
+        for (const tagId of tagsToRemove) {
+          try {
+            await TagService.removeTagFromProject(projectId, tagId);
+          } catch (error) {
+            logger.warn('Failed to remove tag from project:', { projectId, tagId, error });
+          }
+        }
+
+        // Transform the response to match expected format
+        const transformedProject = transformProject(updatedProject as ProjectWithExpand);
+        const response = { data: transformedProject, error: null };
 
         if (!response?.error && response?.data) {
           // Reset form state after successful update
@@ -332,7 +418,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
         setSubmitting(false);
       }
     },
-    [toast, projectId, queryClient, user?.id, removeBeforeUnloadListener, unsafeNavigate]
+    [toast, projectId, queryClient, user?.id, removeBeforeUnloadListener, unsafeNavigate, user, project, navigateToProject]
   );
 
 

@@ -38,29 +38,30 @@ vi.mock('../useConfirmationDialog', () => ({
   }),
 }));
 
-// Mock PocketBase services
-// TODO: Update tests to mock PocketBase directly instead of projectService
-vi.mock('@/services/pocketbase/projectService', () => ({
-  projectService: {
-    fetchProject: vi.fn(),
-    updateProject: vi.fn(),
-    updateProjectStatus: vi.fn(),
-    deleteProject: vi.fn(),
-  },
-}));
+// Mock PocketBase operations directly
 
 vi.mock('@/lib/pocketbase', () => ({
   pb: {
-    collection: vi.fn(() => ({
-      getList: vi.fn().mockResolvedValue({ items: [] }),
-    })),
+    collection: vi.fn(),
+    filter: vi.fn((filter, params) => filter),
+    files: {
+      getURL: vi.fn((record, filename) => `https://example.com/${filename}`),
+    },
+  },
+}));
+
+// Mock TagService
+vi.mock('@/lib/tags', () => ({
+  TagService: {
+    addTagToProject: vi.fn().mockResolvedValue({ data: undefined, error: null }),
+    removeTagFromProject: vi.fn().mockResolvedValue({ data: undefined, error: null }),
   },
 }));
 
 // Import the mocked modules
 import { useAuth } from '../useAuth';
-import { projectService } from '@/services/pocketbase/projectService';
 import { pb } from '@/lib/pocketbase';
+import { TagService } from '@/lib/tags';
 
 describe('useEditProjectSimplified', () => {
   let queryClient: QueryClient;
