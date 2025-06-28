@@ -1,6 +1,5 @@
 import { pb } from '@/lib/pocketbase';
 import { createLogger } from '@/utils/secureLogger';
-import { queuedPbRequest } from '@/utils/rateLimit';
 
 // PocketBase error interface
 export interface PocketBaseError {
@@ -89,23 +88,6 @@ export class BasePocketBaseService {
   }
 
   /**
-   * Build filter string for PocketBase queries
-   */
-  protected buildFilter(conditions: Record<string, unknown>): string {
-    const filters: string[] = [];
-
-    Object.entries(conditions)
-      .filter(([_, value]) => value !== undefined && value !== null)
-      .forEach(([key, value]) => {
-        // Escape quotes in string values
-        const escapedValue = typeof value === 'string' ? value.replace(/"/g, '\\"') : value;
-        filters.push(`${key} = "${escapedValue}"`);
-      });
-
-    return filters.join(' && ');
-  }
-
-  /**
    * Standardized response format for success
    */
   protected createSuccessResponse<T>(data: T) {
@@ -125,27 +107,5 @@ export class BasePocketBaseService {
       error: new Error(error),
       status: 'error' as const,
     };
-  }
-
-  /**
-   * Legacy method for backward compatibility
-   */
-  protected createResponse<T>(data: T | null, error?: string) {
-    if (error) {
-      return this.createErrorResponse(error);
-    }
-    if (data === null) {
-      throw new Error(
-        'Cannot create success response with null data. Use createErrorResponse instead.'
-      );
-    }
-    return this.createSuccessResponse(data);
-  }
-
-  /**
-   * Rate-limited PocketBase operation wrapper
-   */
-  protected async rateLimitedOperation<T>(operation: () => Promise<T>): Promise<T> {
-    return queuedPbRequest(operation);
   }
 }

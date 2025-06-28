@@ -4,15 +4,56 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNavigationWithWarning } from '@/hooks/useNavigationWithWarning';
 import { useConfirmationDialog } from '@/hooks/useConfirmationDialog';
 import { useNavigateToProject } from '@/hooks/useNavigateToProject';
-// Using PocketBase services directly
-import { projectService } from '@/services/pocketbase/projectService';
+// Using PocketBase directly
 import { pb } from '@/lib/pocketbase';
+import { ProjectsResponse, CompaniesResponse, ArtistsResponse } from '@/types/pocketbase.types';
+import { extractDateOnly } from '@/lib/utils';
 import { useServiceToast } from '@/utils/toast-adapter';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/hooks/queries/queryKeys';
 import { createLogger } from '@/utils/secureLogger';
 
 const logger = createLogger('useEditProjectSimplified');
+
+interface ProjectWithExpand extends ProjectsResponse {
+  expand?: {
+    company?: CompaniesResponse;
+    artist?: ArtistsResponse;
+    user?: any;
+    project_tags_via_project?: Array<any>;
+  };
+}
+
+/**
+ * Transform PocketBase record to ProjectType
+ */
+const transformProject = (record: ProjectWithExpand): ProjectType => {
+  return {
+    id: record.id,
+    title: record.title,
+    userId: record.user,
+    company: record.expand?.company?.name || '',
+    artist: record.expand?.artist?.name || '',
+    status: record.status as ProjectType['status'],
+    kit_category: record.kit_category || undefined,
+    drillShape: record.drill_shape || undefined,
+    datePurchased: extractDateOnly(record.date_purchased),
+    dateStarted: extractDateOnly(record.date_started),
+    dateCompleted: extractDateOnly(record.date_completed),
+    dateReceived: extractDateOnly(record.date_received),
+    width: record.width || undefined,
+    height: record.height || undefined,
+    totalDiamonds: record.total_diamonds || undefined,
+    generalNotes: record.general_notes || '',
+    imageUrl: record.image ? pb.files.getURL(record, record.image) : undefined,
+    sourceUrl: record.source_url || undefined,
+    createdAt: record.created || '',
+    updatedAt: record.updated || '',
+    progressNotes: [],
+    progressImages: [],
+    tags: [], // Tags would need to be handled separately if needed
+  };
+};
 
 // Toast adapter utility
 const createToastAdapter =
@@ -132,8 +173,11 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
         const userId = user.id;
 
         // Fetch everything in parallel for maximum speed
-        const [projectResponse, companiesResponse, artistsResponse] = await Promise.all([
-          projectService.fetchProject(projectId),
+        const [projectRecord, companiesResponse, artistsResponse] = await Promise.all([
+          pb.collection('projects').getOne(projectId, {
+            expand: 'company,artist,user,project_tags_via_project.tag',
+            requestKey: `fetch-project-${projectId}-${Date.now()}`,
+          }),
           pb
             .collection('companies')
             .getList(1, 200, { filter: `user = "${userId}"`, fields: 'name' }),
@@ -142,22 +186,9 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
             .getList(1, 200, { filter: `user = "${userId}"`, fields: 'name' }),
         ]);
 
-        // Handle project response
-        if (projectResponse?.error) {
-          toast({
-            title: 'Error loading project',
-            description:
-              projectResponse.error instanceof Error
-                ? projectResponse.error.message
-                : projectResponse.error || 'Failed to load project',
-            variant: 'destructive',
-          });
-          return;
-        }
-
-        if (projectResponse?.data) {
-          setProject(projectResponse.data);
-        }
+        // Transform and set project
+        const transformedProject = transformProject(projectRecord as ProjectWithExpand);
+        setProject(transformedProject);
 
         // Handle metadata responses
         if (companiesResponse?.items) {
@@ -320,19 +351,12 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
 
     try {
       setSubmitting(true);
-      const response = await projectService.updateProjectStatus(projectId, 'archived');
-
-      if (response?.error) {
-        toast({
-          title: 'Error archiving project',
-          description:
-            response.error instanceof Error
-              ? response.error.message
-              : response.error || 'An unknown error occurred',
-          variant: 'destructive',
-        });
-        return;
-      }
+      
+      logger.debug(`Updating project ${projectId} status to archived`);
+      await pb.collection('projects').update(projectId, {
+        status: 'archived',
+      });
+      logger.debug(`Project ${projectId} status updated to archived successfully`);
 
       unsafeNavigate('/dashboard');
     } catch (error) {
@@ -362,19 +386,52 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
 
     try {
       setSubmitting(true);
-      const response = await projectService.deleteProject(projectId);
+      
+      logger.debug(`Deleting project ${projectId} with cascade deletion`);
 
-      if (response?.error) {
-        toast({
-          title: 'Error deleting project',
-          description:
-            response.error instanceof Error
-              ? response.error.message
-              : response.error || 'An unknown error occurred',
-          variant: 'destructive',
+      // Step 1: Delete all progress notes for this project
+      try {
+        const progressNotes = await pb.collection('progress_notes').getFullList({
+          filter: pb.filter('project = {:projectId}', { projectId }),
         });
-        return;
+
+        logger.debug(
+          `Found ${progressNotes.length} progress notes to delete for project ${projectId}`
+        );
+
+        for (const note of progressNotes) {
+          await pb.collection('progress_notes').delete(note.id);
+        }
+      } catch (progressNotesError) {
+        logger.warn(
+          `Error deleting progress notes for project ${projectId}:`,
+          progressNotesError
+        );
+        // Continue with deletion attempt - not all projects have progress notes
       }
+
+      // Step 2: Delete all project-tag associations for this project
+      try {
+        const projectTags = await pb.collection('project_tags').getFullList({
+          filter: pb.filter('project = {:projectId}', { projectId }),
+        });
+
+        logger.debug(
+          `Found ${projectTags.length} project tags to delete for project ${projectId}`
+        );
+
+        for (const projectTag of projectTags) {
+          await pb.collection('project_tags').delete(projectTag.id);
+        }
+      } catch (projectTagsError) {
+        logger.warn(`Error deleting project tags for project ${projectId}:`, projectTagsError);
+        // Continue with deletion attempt - the project tags might not exist
+      }
+
+      // Step 3: Delete the project itself
+      await pb.collection('projects').delete(projectId);
+
+      logger.debug(`Project ${projectId} deleted successfully with cascade`);
 
       unsafeNavigate('/dashboard');
     } catch (error) {

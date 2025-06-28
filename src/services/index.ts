@@ -1,7 +1,8 @@
 // PocketBase services
 import { progressNotesService } from '@/services/pocketbase/progressNotesService';
 import { companyService } from '@/services/pocketbase/companyService';
-import { projectService } from '@/services/pocketbase/projectService';
+// TODO: projectService removed - replaced with direct PocketBase calls
+// import { projectService } from '@/services/pocketbase/projectService';
 
 // Auth service
 import * as authService from '@/services/auth';
@@ -14,13 +15,14 @@ export interface ServiceResponse<T = unknown> {
 }
 
 // Export services
-export { progressNotesService, companyService, projectService, authService };
+export { progressNotesService, companyService, authService };
+// TODO: projectService removed - replaced with direct PocketBase calls
 
 // Service registry for easy access to all services
 const services = {
   progressNotes: progressNotesService,
   company: companyService,
-  project: projectService,
+  // TODO: project service removed - replaced with direct PocketBase calls
   auth: authService,
 };
 

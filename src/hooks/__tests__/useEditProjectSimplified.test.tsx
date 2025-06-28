@@ -39,6 +39,7 @@ vi.mock('../useConfirmationDialog', () => ({
 }));
 
 // Mock PocketBase services
+// TODO: Update tests to mock PocketBase directly instead of projectService
 vi.mock('@/services/pocketbase/projectService', () => ({
   projectService: {
     fetchProject: vi.fn(),
