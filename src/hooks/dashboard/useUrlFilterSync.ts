@@ -69,16 +69,7 @@ const useUrlFilterSync = ({
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log(
-      '[useUrlFilterSync] useEffect triggered. isMetadataLoading:',
-      isMetadataLoading,
-      'isLoadingProjects:',
-      isLoadingProjects,
-      'allTagsContext:',
-      allTagsContext?.length || 0
-    );
     if (isMetadataLoading || isLoadingProjects) {
-      console.log('[useUrlFilterSync] Skipping URL sync due to loading state');
       return;
     }
 
@@ -86,9 +77,6 @@ const useUrlFilterSync = ({
     const urlParams = new URLSearchParams(window.location.search);
     const hasTagParam = urlParams.has('tag') || urlParams.has('tags');
     if (hasTagParam && (!allTagsContext || allTagsContext.length === 0)) {
-      console.log(
-        '[useUrlFilterSync] Tag parameter found but no tags loaded yet, waiting for tags...'
-      );
       return;
     }
 
@@ -99,12 +87,8 @@ const useUrlFilterSync = ({
     // Check if we have tag parameters but no tags loaded yet - wait for tags to load
     const tagParam = getParam('tag');
     if (tagParam && (!allTagsContext || allTagsContext.length === 0)) {
-      console.log('[useUrlFilterSync] Tag parameter found but no tags loaded yet, waiting...');
       return;
     }
-
-    console.log('[useUrlFilterSync] Current URL:', window.location.href);
-    console.log('[useUrlFilterSync] URL search params:', window.location.search);
 
     const artistParam = getParam('artist');
     const companyParam = getParam('company');
@@ -163,7 +147,6 @@ const useUrlFilterSync = ({
     }
 
     if (tagsParam) {
-      console.log('[useUrlFilterSync] Processing tags parameter:', tagsParam);
       const tagIdsToSet = tagsParam
         .split(',')
         .map(t => t.trim())
@@ -171,38 +154,13 @@ const useUrlFilterSync = ({
       setSelectedTags(tagIdsToSet);
     } else if (tagParam && allTagsContext) {
       // Handle singular tag parameter (tag name from TagTable links)
-      console.log(
-        '[useUrlFilterSync] Processing tag parameter:',
-        tagParam,
-        'with context:',
-        allTagsContext?.length
-      );
       // tagParam is already decoded by URLSearchParams.get()
-      console.log('[useUrlFilterSync] Tag name:', tagParam);
       const matchingTag = allTagsContext.find(
         tag => tag.name.toLowerCase() === tagParam.toLowerCase()
       );
-      console.log('[useUrlFilterSync] Found matching tag:', matchingTag);
       if (matchingTag) {
-        console.log('[useUrlFilterSync] Setting selected tags to:', [matchingTag.id]);
         setSelectedTags([matchingTag.id]);
-      } else {
-        console.warn(
-          '[useUrlFilterSync] Tag not found:',
-          tagParam,
-          'Available tags:',
-          allTagsContext.map(t => t.name)
-        );
       }
-    } else {
-      console.log(
-        '[useUrlFilterSync] No tag parameters found. tagsParam:',
-        tagsParam,
-        'tagParam:',
-        tagParam,
-        'allTagsContext:',
-        !!allTagsContext
-      );
     }
 
     if (includeMiniKitsParam) {
