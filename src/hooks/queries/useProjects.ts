@@ -133,8 +133,8 @@ const fetchProjects = async (
     sort: pbSort,
     // Expand relations - PocketBase returns full records, not individual fields
     expand: 'company,artist,project_tags_via_project.tag',
-    // Select only essential fields for dashboard display (reduced from 20+ to core fields)
-    fields: 'id,title,status,user,image,width,height,drill_shape,updated,created,company,artist',
+    // Select only essential fields for dashboard display (includes all fields used in transformation)
+    fields: 'id,title,status,user,image,width,height,drill_shape,kit_category,date_purchased,date_received,date_started,date_completed,total_diamonds,general_notes,source_url,updated,created,company,artist',
     // Enable request deduplication for performance
     requestKey,
   });

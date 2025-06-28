@@ -43,7 +43,7 @@ export function useProgressNotesQuery(projectId: string | null) {
         filter,
         sort: '-date,-created', // Sort by date descending, then by created descending
         expand: 'project',
-        requestKey: `progress-notes-${projectId}-${Date.now()}`,
+        requestKey: `progress-notes-${projectId}`,
       });
 
       // Transform PocketBase records to ProgressNote format

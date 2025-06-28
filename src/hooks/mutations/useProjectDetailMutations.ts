@@ -22,15 +22,25 @@ const invalidateProjectQueries = async (
   queryClient: ReturnType<typeof useQueryClient>,
   projectId?: string,
   userId?: string,
-  updateStatsCache?: () => Promise<void>
+  updateStatsCache?: () => Promise<void>,
+  isDeletion?: boolean
 ) => {
   const invalidations: Promise<void>[] = [];
 
-  // Remove specific project detail from cache if projectId provided (for deletions)
+  // Handle project-specific cache based on operation type
   if (projectId) {
-    invalidations.push(
-      queryClient.removeQueries({ queryKey: queryKeys.projects.detail(projectId) })
-    );
+    if (isDeletion) {
+      // For deletions, remove the project and related data completely from cache to prevent 404 refetch attempts
+      invalidations.push(
+        queryClient.removeQueries({ queryKey: queryKeys.projects.detail(projectId) }),
+        queryClient.removeQueries({ queryKey: queryKeys.progressNotes.list(projectId) })
+      );
+    } else {
+      // For non-deletion operations, invalidate to trigger refetch with fresh data
+      invalidations.push(
+        queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(projectId) })
+      );
+    }
   }
 
   // Invalidate all project lists
@@ -102,7 +112,7 @@ export const useUpdateProjectStatusMutation = () => {
     },
     onSuccess: async (_, { projectId, status }) => {
       // Invalidate project queries and update stats cache
-      await invalidateProjectQueries(queryClient, projectId, user?.id);
+      await invalidateProjectQueries(queryClient, projectId, user?.id, undefined, false);
 
       toast({
         title: 'Success',
@@ -327,7 +337,7 @@ export const useArchiveProjectMutation = () => {
         // Invalidate all project-related queries and update stats cache
         Promise.all([
           queryClient.invalidateQueries({ queryKey: queryKeys.projects.all }),
-          invalidateProjectQueries(queryClient, projectId, user?.id),
+          invalidateProjectQueries(queryClient, projectId, user?.id, undefined, false),
         ]).catch(error => {
           logger.error('Failed to invalidate queries after project archive:', error);
         });

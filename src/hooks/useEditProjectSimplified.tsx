@@ -288,6 +288,11 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
             companyId = companyRecord?.id || null;
           } catch (error) {
             logger.warn('Company not found:', dataToSubmit.company);
+            toast({
+              title: 'Company Not Found',
+              description: `The company "${dataToSubmit.company}" was not found in your list. The project will be updated without a company association. You can add this company later if needed.`,
+              variant: 'destructive',
+            });
             companyId = null;
           }
         }
@@ -303,6 +308,11 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
             artistId = artistRecord?.id || null;
           } catch (error) {
             logger.warn('Artist not found:', dataToSubmit.artist);
+            toast({
+              title: 'Artist Not Found',
+              description: `The artist "${dataToSubmit.artist}" was not found in your list. The project will be updated without an artist association. You can add this artist later if needed.`,
+              variant: 'destructive',
+            });
             artistId = null;
           }
         }
