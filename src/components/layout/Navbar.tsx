@@ -5,6 +5,7 @@ import { Menu, Home, LayoutDashboard, Settings, LogOut, MessageSquare } from 'lu
 import { useAuth } from '@/hooks/useAuth';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useToast } from '@/hooks/use-toast';
+import { createLogger } from '@/utils/secureLogger';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +20,8 @@ interface NavbarProps {
   isAuthenticated?: boolean;
 }
 
+const logger = createLogger('Navbar');
+
 const Navbar = memo(({ isAuthenticated = false }: NavbarProps) => {
   // Get auth state from context
   const { user, signOut: authSignOut, isLoading } = useAuth();
@@ -26,6 +29,26 @@ const Navbar = memo(({ isAuthenticated = false }: NavbarProps) => {
   const { toast } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Handle navigation clicks with logging
+  const handleNavClick = useCallback((targetPath: string, linkName: string) => {
+    logger.info(`🔗 Navigation link clicked: ${linkName}`, {
+      from: location.pathname,
+      to: targetPath,
+      linkName,
+      currentUser: user?.id,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Special logging for Settings -> Dashboard pattern
+    if (location.pathname === '/profile' && targetPath === '/dashboard') {
+      logger.info('🎯 SETTINGS -> DASHBOARD navigation detected via navbar click', {
+        from: location.pathname,
+        to: targetPath,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }, [location.pathname, user?.id]);
 
   const handleFeedback = useCallback(() => {
     showUserReportDialog({
@@ -70,7 +93,9 @@ const Navbar = memo(({ isAuthenticated = false }: NavbarProps) => {
 
       // addBreadcrumb removed
     } catch (error) {
-      console.error('Logout error:', error); // Keep general error logging
+      const { createLogger } = await import('@/utils/secureLogger');
+      const logger = createLogger('Navbar');
+      logger.error('Logout error:', error);
       toast({
         title: 'Logout Failed',
         description: 'An unexpected error occurred. Please try again.',
@@ -120,6 +145,7 @@ const Navbar = memo(({ isAuthenticated = false }: NavbarProps) => {
                       to="/overview"
                       className="flex items-center"
                       aria-current={location.pathname === '/overview' ? 'page' : undefined}
+                      onClick={() => handleNavClick('/overview', 'Overview')}
                     >
                       <Home className="mr-2 h-4 w-4" />
                       Overview
@@ -130,6 +156,7 @@ const Navbar = memo(({ isAuthenticated = false }: NavbarProps) => {
                       to="/dashboard"
                       className="flex items-center"
                       aria-current={location.pathname === '/dashboard' ? 'page' : undefined}
+                      onClick={() => handleNavClick('/dashboard', 'Dashboard')}
                     >
                       <LayoutDashboard className="mr-2 h-4 w-4" />
                       Dashboard
@@ -140,6 +167,7 @@ const Navbar = memo(({ isAuthenticated = false }: NavbarProps) => {
                       to="/profile"
                       className="flex items-center"
                       aria-current={location.pathname === '/profile' ? 'page' : undefined}
+                      onClick={() => handleNavClick('/profile', 'Settings')}
                     >
                       <Settings className="mr-2 h-4 w-4" />
                       Settings

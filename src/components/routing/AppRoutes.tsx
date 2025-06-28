@@ -5,7 +5,11 @@ import { RootRoute } from '@/components/auth/RootRoute';
 import { MetadataProvider } from '@/contexts/MetadataContext';
 import { PageLoading } from '@/components/ui/page-loading';
 import { usePostHogPageTracking } from '@/hooks/usePostHogPageTracking';
+import { useNavigationMonitoring } from '@/hooks/useNavigationMonitoring';
+import { createLogger } from '@/utils/secureLogger';
 import RouteErrorBoundary from '@/components/error/RouteErrorBoundary';
+
+const logger = createLogger('AppRoutes');
 
 // Import critical pages directly (auth flow, landing pages)
 import Login from '@/pages/Login';
@@ -21,30 +25,53 @@ import About from '@/pages/About';
 import Privacy from '@/pages/Privacy';
 import Terms from '@/pages/Terms';
 
-// Enhanced chunk loading with retry logic
+// Enhanced chunk loading with retry logic and comprehensive debugging
 const createLazyComponent = (importFn: () => Promise<{ default: React.ComponentType<unknown> }>, componentName: string) => {
   return lazy(() =>
-    importFn().catch((error) => {
-      console.error(`Failed to load ${componentName} page chunk:`, error);
-      
-      // Return a more helpful error component with retry functionality
-      return {
-        default: () => (
-          <div className="container mx-auto px-4 py-8 text-center">
-            <h1 className="mb-4 text-2xl font-bold">Failed to load page</h1>
-            <p className="mb-6 text-muted-foreground">
-              There was an error loading the {componentName} page. This may be due to a network issue or a recent deployment.
-            </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
-            >
-              Retry
-            </button>
-          </div>
-        ),
-      };
-    })
+    importFn()
+      .then((module) => {
+        logger.debug(`Successfully loaded ${componentName} chunk`, {
+          componentName,
+          timestamp: new Date().toISOString(),
+          currentPath: window.location.pathname,
+        });
+        return module;
+      })
+      .catch((error) => {
+        logger.error(`Failed to load ${componentName} page chunk:`, {
+          componentName,
+          error: error.message,
+          stack: error.stack,
+          currentPath: window.location.pathname,
+          userAgent: navigator.userAgent.substring(0, 100),
+          timestamp: new Date().toISOString(),
+          networkOnline: navigator.onLine,
+        });
+        
+        // Return a more helpful error component with retry functionality
+        return {
+          default: () => (
+            <div className="container mx-auto px-4 py-8 text-center">
+              <h1 className="mb-4 text-2xl font-bold">Failed to load page</h1>
+              <p className="mb-6 text-muted-foreground">
+                There was an error loading the {componentName} page. This may be due to a network issue or a recent deployment.
+              </p>
+              <button
+                onClick={() => {
+                  logger.info(`User triggered manual reload for ${componentName}`, {
+                    componentName,
+                    timestamp: new Date().toISOString(),
+                  });
+                  window.location.reload();
+                }}
+                className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+              >
+                Retry
+              </button>
+            </div>
+          ),
+        };
+      })
   );
 };
 
@@ -63,12 +90,12 @@ const AdvancedEdit = createLazyComponent(() => import('@/pages/AdvancedEdit'), '
 // Lazy load project-related pages with enhanced error handling
 const NewProject = createLazyComponent(() => import('@/pages/NewProject'), 'NewProject');
 const ProjectDetail = createLazyComponent(() => {
-  console.log('[AppRoutes] 🔄 Loading ProjectDetail component...');
+  logger.debug('🔄 Loading ProjectDetail component...');
   return import('@/pages/ProjectDetail').then(module => {
-    console.log('[AppRoutes] ✅ ProjectDetail component loaded successfully');
+    logger.debug('✅ ProjectDetail component loaded successfully');
     return module;
   }).catch(error => {
-    console.error('[AppRoutes] ❌ Failed to load ProjectDetail component:', error);
+    logger.error('❌ Failed to load ProjectDetail component:', error);
     throw error;
   });
 }, 'ProjectDetail');
@@ -86,9 +113,11 @@ const SupportSuccess = lazy(() => import('@/pages/SupportSuccess'));
 
 // Debug wrapper for ProjectDetail route
 const ProjectDetailWrapper: React.FC = () => {
-  console.log('[AppRoutes] 🎯 ProjectDetail route matched! Rendering ProjectDetail component...');
-  console.log('[AppRoutes] Current URL:', window.location.href);
-  console.log('[AppRoutes] Current pathname:', window.location.pathname);
+  logger.info('🎯 ProjectDetail route matched! Rendering ProjectDetail component...', {
+    currentUrl: window.location.href,
+    currentPathname: window.location.pathname,
+    timestamp: new Date().toISOString(),
+  });
   
   return <ProjectDetail />;
 };
@@ -101,10 +130,17 @@ const ProjectDetailWrapper: React.FC = () => {
 export const AppRoutes: React.FC = () => {
   // Track pageviews with PostHog
   usePostHogPageTracking();
+  
+  // Monitor navigation for debugging routing issues
+  useNavigationMonitoring();
 
-  if (import.meta.env.DEV) {
-    console.log('[AppRoutes] Rendering routes for pathname:', window.location.pathname);
-  }
+  logger.debug('Rendering routes for pathname:', {
+    pathname: window.location.pathname,
+    search: window.location.search,
+    hash: window.location.hash,
+    href: window.location.href,
+    timestamp: new Date().toISOString(),
+  });
 
   return (
     <Routes>
