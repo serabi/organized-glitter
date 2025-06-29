@@ -23,6 +23,9 @@ import { TAG_COLOR_PALETTE } from '@/utils/tagColors';
 import { Collections, ProjectTagsResponse, TagsResponse } from '@/types/pocketbase.types';
 import { withAuthentication } from '@/lib/tagAuth';
 import { createFilter } from '@/utils/filterBuilder';
+import { createLogger } from '@/utils/secureLogger';
+
+const logger = createLogger('TagService');
 
 /**
  * Extract hex colors from the centralized color palette for random tag assignment
@@ -62,6 +65,7 @@ const transformPbTagToTag = (pbTag: TagsResponse): Tag => ({
 export class TagService {
   /**
    * Get all user's tags with optional filtering
+   */
   static async getUserTags(options: TagFilterOptions = {}): Promise<ServiceResponse<Tag[]>> {
     return withAuthentication(async (userId: string) => {
       try {
@@ -132,7 +136,7 @@ export class TagService {
             return createErrorResponse(new Error(`A tag named "${trimmedName}" already exists`));
           }
         } catch (error) {
-          console.error('[TagService.createTag] Error checking for existing tag:', error);
+          logger.error('Error checking for existing tag:', error);
           return createErrorResponse(new Error('Failed to check for existing tags'));
         }
 
@@ -150,14 +154,14 @@ export class TagService {
         });
 
         if (!newTag) {
-          console.error('[TagService.createTag] No tag data returned after creation');
+          logger.error('No tag data returned after creation');
           return createErrorResponse(new Error('Failed to retrieve tag data after creation'));
         }
 
         const tag = transformPbTagToTag(newTag);
         return createSuccessResponse(tag);
       } catch (error) {
-        console.error('[TagService.createTag] Unexpected error:', error);
+        logger.error('Unexpected error during tag creation:', error);
 
         // Check if it's a duplicate error
         if (error instanceof Error && error.message.includes('duplicate')) {
@@ -175,7 +179,7 @@ export class TagService {
    * Get tags for specific project with security validation
    */
   static async getProjectTags(projectId: string): Promise<ServiceResponse<Tag[]>> {
-    console.log(`[TagService.getProjectTags] Attempting to fetch tags for projectId: ${projectId}`);
+    logger.debug('Attempting to fetch tags for project:', { projectId });
     return withAuthentication(async (userId: string) => {
       try {
         // Verify the current user has access to this project
@@ -188,7 +192,7 @@ export class TagService {
             return createErrorResponse(new Error('Unauthorized access to project'));
           }
         } catch (error) {
-          console.error('[TagService.getProjectTags] Error verifying project access:', error);
+          logger.error('Error verifying project access:', error);
           return createErrorResponse(new Error('Project not found or access denied'));
         }
 
@@ -213,12 +217,10 @@ export class TagService {
           }
         });
 
-        console.log(
-          `[TagService.getProjectTags] Successfully fetched ${tags.length} tags for project ${projectId}`
-        );
+        logger.debug('Successfully fetched tags for project:', { projectId, tagCount: tags.length });
         return createSuccessResponse(tags);
       } catch (error) {
-        console.error('[TagService.getProjectTags] Error:', error);
+        logger.error('Error fetching project tags:', error);
         return createErrorResponse(error as Error);
       }
     });
@@ -265,7 +267,7 @@ export class TagService {
               return createErrorResponse(new Error(`A tag named "${trimmedName}" already exists`));
             }
           } catch (error) {
-            console.error('[TagService.updateTag] Error checking for existing tag:', error);
+            logger.error('Error checking for existing tag during update:', error);
             return createErrorResponse(new Error('Failed to check for existing tags'));
           }
 
@@ -282,7 +284,7 @@ export class TagService {
         const tag = transformPbTagToTag(updatedTag);
         return createSuccessResponse(tag);
       } catch (error) {
-        console.error('[TagService.updateTag] Error:', error);
+        logger.error('Error updating tag:', error);
 
         // Check if it's a duplicate error
         if (error instanceof Error && error.message.includes('duplicate')) {
@@ -328,7 +330,7 @@ export class TagService {
 
         return createSuccessResponse(undefined);
       } catch (error) {
-        console.error('[TagService.deleteTag] Error:', error);
+        logger.error('Error deleting tag:', error);
         return createErrorResponse(error as Error);
       }
     });
@@ -369,7 +371,7 @@ export class TagService {
 
         return createSuccessResponse(undefined);
       } catch (error) {
-        console.error('[TagService.addTagToProject] Error:', error);
+        logger.error('Error adding tag to project:', error);
         return createErrorResponse(error as Error);
       }
     });
@@ -409,7 +411,7 @@ export class TagService {
 
         return createSuccessResponse(undefined);
       } catch (error) {
-        console.error('[TagService.removeTagFromProject] Error:', error);
+        logger.error('Error removing tag from project:', error);
         return createErrorResponse(error as Error);
       }
     });
@@ -442,7 +444,7 @@ export class TagService {
 
         return createSuccessResponse({ projectCount: projectTags.totalItems });
       } catch (error) {
-        console.error('[TagService.getTagStats] Error:', error);
+        logger.error('Error getting tag stats:', error);
         return createErrorResponse(error as Error);
       }
     });
@@ -452,15 +454,12 @@ export class TagService {
    * Get bulk tag statistics using reverse expansion for performance
    */
   static async getBulkTagStats(tagIds: string[]): Promise<ServiceResponse<Record<string, number>>> {
-    console.log(
-      '[TagService.getBulkTagStats] Starting with reverse expansion approach for tagIds:',
-      tagIds
-    );
+    logger.debug('Starting bulk tag stats with reverse expansion:', { tagIds });
 
     return withAuthentication(async (userId: string) => {
       try {
         if (tagIds.length === 0) {
-          console.log('[TagService.getBulkTagStats] No tag IDs provided, returning empty results');
+          logger.debug('No tag IDs provided, returning empty results');
           return createSuccessResponse({});
         }
 
@@ -472,9 +471,7 @@ export class TagService {
 
         // Use reverse expansion from projects to get tag usage counts
         // This avoids the API rules issue with project_tags collection
-        console.log(
-          '[TagService.getBulkTagStats] Using reverse expansion from projects collection...'
-        );
+        logger.debug('Using reverse expansion from projects collection');
 
         interface ProjectWithTagsExpansion {
           id: string;
@@ -495,11 +492,7 @@ export class TagService {
             requestKey: `bulk-tag-stats-expansion-${userId}`,
           });
 
-        console.log(
-          '[TagService.getBulkTagStats] Found',
-          projects.length,
-          'projects with tag relationships'
-        );
+        logger.debug('Found projects with tag relationships:', { projectCount: projects.length });
 
         // Count tag usage across all projects
         projects.forEach(project => {
@@ -512,13 +505,10 @@ export class TagService {
           }
         });
 
-        console.log('[TagService.getBulkTagStats] Final counts using reverse expansion:', counts);
+        logger.debug('Final counts using reverse expansion:', { counts });
         return createSuccessResponse(counts);
       } catch (error) {
-        console.error(
-          '[TagService.getBulkTagStats] Reverse expansion failed, falling back to individual queries:',
-          error
-        );
+        logger.warn('Reverse expansion failed, falling back to individual queries:', error);
 
         // Fallback to individual queries if reverse expansion fails
         try {
@@ -532,35 +522,18 @@ export class TagService {
               const result = await this.getTagStats(tagId);
               if (result.status === 'success') {
                 counts[tagId] = result.data.projectCount;
-                console.log(
-                  '[TagService.getBulkTagStats] Fallback: Tag',
-                  tagId,
-                  'has',
-                  counts[tagId],
-                  'projects'
-                );
+                logger.debug('Fallback: Tag stats retrieved:', { tagId, projectCount: counts[tagId] });
               }
             } catch (individualError) {
-              console.warn(
-                '[TagService.getBulkTagStats] Error counting projects for tag',
-                tagId,
-                ':',
-                individualError
-              );
+              logger.warn('Error counting projects for tag:', { tagId, error: individualError });
               // Keep count at 0 for this tag
             }
           }
 
-          console.log(
-            '[TagService.getBulkTagStats] Fallback individual queries completed:',
-            counts
-          );
+          logger.debug('Fallback individual queries completed:', { counts });
           return createSuccessResponse(counts);
         } catch (fallbackError) {
-          console.error(
-            '[TagService.getBulkTagStats] Both reverse expansion and fallback failed:',
-            fallbackError
-          );
+          logger.error('Both reverse expansion and fallback failed:', fallbackError);
           return createErrorResponse(fallbackError as Error);
         }
       }
