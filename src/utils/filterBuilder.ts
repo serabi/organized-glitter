@@ -320,7 +320,50 @@ export function createFilter(): FilterBuilder {
 }
 
 /**
- * Build user-scoped filter with common project filters
+ * Build comprehensive user-scoped filter for project queries
+ * 
+ * Creates a complete filter expression for project searches with user isolation
+ * and optional filtering criteria. This is the most commonly used convenience
+ * function for dashboard and project list queries.
+ * 
+ * Security Features:
+ * - Automatic user scope isolation (users only see their own projects)
+ * - Secure parameter injection for all filter criteria
+ * - SQL injection prevention through parameterized queries
+ * 
+ * @function
+ * @param {string | undefined} userId - User ID for data isolation (required for security)
+ * @param {object} [options={}] - Optional filtering criteria
+ * @param {string} [options.status] - Project status filter ('completed', 'progress', etc.)
+ * @param {string} [options.company] - Company ID filter
+ * @param {string} [options.artist] - Artist ID filter  
+ * @param {string} [options.drillShape] - Drill shape filter ('round', 'square')
+ * @param {string} [options.yearFinished] - Year completed filter (YYYY format)
+ * @param {boolean} [options.includeMiniKits] - Whether to include mini kit projects
+ * @param {string} [options.searchTerm] - Text search across title and notes
+ * @param {string[]} [options.selectedTags] - Array of tag IDs to filter by
+ * @returns {string} Complete filter expression for PocketBase queries
+ * 
+ * @example
+ * ```typescript
+ * // Basic user filter
+ * const filter = buildUserProjectFilter('user123');
+ * // Result: "user = {:userId}"
+ * 
+ * // Complex filter with multiple criteria
+ * const filter = buildUserProjectFilter('user123', {
+ *   status: 'completed',
+ *   yearFinished: '2024',
+ *   searchTerm: 'landscape',
+ *   includeMiniKits: false
+ * });
+ * // Result: "user = {:userId} && status = {:status} && date_completed >= {:startDate} && ..."
+ * 
+ * // Use with PocketBase
+ * const projects = await pb.collection('projects').getList(1, 20, {
+ *   filter: buildUserProjectFilter(userId, { status: 'completed' })
+ * });
+ * ```
  */
 export function buildUserProjectFilter(
   userId: string | undefined,
@@ -379,7 +422,32 @@ export function buildUserProjectFilter(
 }
 
 /**
- * Build user and year stats filter (common in dashboard stats)
+ * Build user and year stats filter for dashboard statistics
+ * 
+ * Creates a secure filter expression for querying user yearly statistics
+ * from the dashboard stats cache. Used by dashboard stats service for
+ * efficient cache lookups and invalidation.
+ * 
+ * @function
+ * @param {string} userId - User ID for data isolation
+ * @param {number} year - Target year for statistics (e.g., 2024)
+ * @param {string} [statsType='yearly'] - Type of statistics ('yearly', 'monthly', etc.)
+ * @returns {string} Filter expression for user yearly stats queries
+ * 
+ * @example
+ * ```typescript
+ * // Get 2024 yearly stats filter
+ * const filter = buildUserYearStatsFilter('user123', 2024);
+ * // Result: "user = {:userId} && year = {:year} && stats_type = {:stats_type}"
+ * 
+ * // Use with PocketBase for cache lookup
+ * const cachedStats = await pb.collection('user_yearly_stats').getFirstListItem(
+ *   buildUserYearStatsFilter(userId, 2024)
+ * );
+ * 
+ * // Custom stats type
+ * const monthlyFilter = buildUserYearStatsFilter('user123', 2024, 'monthly');
+ * ```
  */
 export function buildUserYearStatsFilter(
   userId: string,
@@ -394,14 +462,73 @@ export function buildUserYearStatsFilter(
 }
 
 /**
- * Build project relation filter (for progress notes, tags, etc.)
+ * Build project relation filter for child records
+ * 
+ * Creates a secure filter expression for querying records related to a specific project.
+ * Commonly used for progress notes, tags, images, and other project-associated data.
+ * Uses secure parameterized queries to prevent SQL injection.
+ * 
+ * @function
+ * @param {string} projectId - Unique identifier of the target project
+ * @returns {string} Filter expression for project-related records
+ * 
+ * @example
+ * ```typescript
+ * // Get all progress notes for a project
+ * const filter = buildProjectRelationFilter('proj_abc123');
+ * const notes = await pb.collection('progress_notes').getList(1, 50, {
+ *   filter // Result: "project = {:project}"
+ * });
+ * 
+ * // Get project tags
+ * const tagFilter = buildProjectRelationFilter('proj_abc123');
+ * const projectTags = await pb.collection('project_tags').getList(1, 100, {
+ *   filter: tagFilter
+ * });
+ * ```
  */
 export function buildProjectRelationFilter(projectId: string): string {
   return createFilter().equals('project', projectId).build();
 }
 
 /**
- * Build find-by-name filter with user scope
+ * Build find-by-name filter with user scope and optional exclusion
+ * 
+ * Creates a secure filter for finding records by name within a user's scope,
+ * with optional exclusion of a specific record ID. Commonly used for duplicate
+ * validation when creating or updating named entities like companies, artists, or tags.
+ * 
+ * Security Features:
+ * - User-scoped queries ensure data isolation
+ * - Secure parameter injection prevents SQL injection
+ * - Case-sensitive exact name matching
+ * 
+ * @function
+ * @param {string} userId - User ID for data isolation
+ * @param {string} name - Exact name to search for
+ * @param {string} [excludeId] - Optional record ID to exclude from results (useful for updates)
+ * @returns {string} Filter expression for name-based queries with user scope
+ * 
+ * @example
+ * ```typescript
+ * // Check for duplicate company name during creation
+ * const filter = buildFindByNameFilter('user123', 'Acme Corp');
+ * const duplicates = await pb.collection('companies').getList(1, 1, { filter });
+ * // Result: "user = {:userId} && name = {:name}"
+ * 
+ * // Check for duplicate during update (exclude current record)
+ * const updateFilter = buildFindByNameFilter('user123', 'Updated Name', 'comp_456');
+ * const conflicts = await pb.collection('companies').getList(1, 1, { 
+ *   filter: updateFilter 
+ * });
+ * // Result: "user = {:userId} && name = {:name} && id != {:id}"
+ * 
+ * // Validate unique artist name
+ * const artistFilter = buildFindByNameFilter('user123', 'Van Gogh');
+ * const existingArtists = await pb.collection('artists').getList(1, 1, {
+ *   filter: artistFilter
+ * });
+ * ```
  */
 export function buildFindByNameFilter(
   userId: string,
@@ -420,7 +547,46 @@ export function buildFindByNameFilter(
 }
 
 /**
- * Build date cleanup filter (for old records)
+ * Build date cleanup filter for removing old records
+ * 
+ * Creates a secure filter for identifying old records that need cleanup or archival.
+ * Combines user scope isolation with date-based filtering to safely identify
+ * records older than a specified cutoff date. Commonly used for data maintenance,
+ * cache cleanup, and automated archival processes.
+ * 
+ * Security Features:
+ * - User-scoped queries ensure data isolation
+ * - Secure parameter injection prevents SQL injection
+ * - Date validation through parameterized queries
+ * 
+ * @function
+ * @param {string} userId - User ID for data isolation
+ * @param {string} dateField - Name of the date field to filter on (e.g., 'created', 'updated', 'date_completed')
+ * @param {string} cutoffDate - ISO date string for the cutoff threshold (records before this date will match)
+ * @returns {string} Filter expression for date-based cleanup queries
+ * 
+ * @example
+ * ```typescript
+ * // Clean up old cache entries (older than 7 days)
+ * const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+ * const filter = buildDateCleanupFilter('user123', 'created', sevenDaysAgo);
+ * const oldCache = await pb.collection('user_cache').getList(1, 100, { filter });
+ * // Result: "user = {:userId} && created < {:created}"
+ * 
+ * // Archive completed projects older than 1 year
+ * const lastYear = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
+ * const archiveFilter = buildDateCleanupFilter('user123', 'date_completed', lastYear);
+ * const oldProjects = await pb.collection('projects').getList(1, 50, {
+ *   filter: archiveFilter
+ * });
+ * 
+ * // Clean up old error logs
+ * const thirtyDaysAgo = '2024-05-30T00:00:00.000Z';
+ * const logFilter = buildDateCleanupFilter('user123', 'timestamp', thirtyDaysAgo);
+ * const oldLogs = await pb.collection('error_logs').getList(1, 200, {
+ *   filter: logFilter
+ * });
+ * ```
  */
 export function buildDateCleanupFilter(
   userId: string,

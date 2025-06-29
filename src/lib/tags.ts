@@ -1,3 +1,21 @@
+/**
+ * @fileoverview Tag Service for PocketBase Integration
+ * 
+ * Comprehensive service layer for managing tags and project-tag relationships.
+ * Uses secure FilterBuilder utility for all PocketBase queries to prevent SQL injection.
+ * Features user-scoped data access, tag creation, project association, and bulk operations.
+ * 
+ * Security Features:
+ * - All queries use secure parameterized filtering
+ * - User-scoped data access ensures isolation
+ * - Authentication validation for all operations
+ * - SQL injection prevention through FilterBuilder utility
+ * 
+ * @author Generated with Claude Code
+ * @version 1.0.0
+ * @since 2024-06-29
+ */
+
 import { pb } from '@/lib/pocketbase';
 import { Tag, TagFormValues, TagFilterOptions } from '@/types/tag';
 import { ServiceResponse, createSuccessResponse, createErrorResponse } from '@/types/shared';
@@ -6,10 +24,22 @@ import { Collections, ProjectTagsResponse, TagsResponse } from '@/types/pocketba
 import { withAuthentication } from '@/lib/tagAuth';
 import { createFilter } from '@/utils/filterBuilder';
 
-// Extract hex colors from the centralized color palette
+/**
+ * Extract hex colors from the centralized color palette for random tag assignment
+ */
 const TAG_COLORS = TAG_COLOR_PALETTE.map(color => color.hex);
 
-// Transform PocketBase tag to frontend format
+/**
+ * Transform PocketBase tag record to frontend Tag format
+ * 
+ * Converts a PocketBase TagsResponse record to the standardized Tag interface
+ * used throughout the frontend application. Normalizes field names and ensures
+ * consistent data structure for UI components.
+ * 
+ * @function
+ * @param {TagsResponse} pbTag - Raw tag record from PocketBase
+ * @returns {Tag} Normalized tag object for frontend use
+ */
 const transformPbTagToTag = (pbTag: TagsResponse): Tag => ({
   id: pbTag.id,
   userId: pbTag.user,
@@ -20,8 +50,18 @@ const transformPbTagToTag = (pbTag: TagsResponse): Tag => ({
   updatedAt: pbTag.updated,
 });
 
+/**
+ * TagService - Comprehensive tag management for PocketBase
+ * 
+ * Provides secure, user-scoped tag operations including CRUD operations,
+ * project associations, and bulk statistics. All methods use authenticated
+ * requests and secure parameter injection to prevent security vulnerabilities.
+ * 
+ * @class TagService
+ */
 export class TagService {
-  // Get all user's tags
+  /**
+   * Get all user's tags with optional filtering
   static async getUserTags(options: TagFilterOptions = {}): Promise<ServiceResponse<Tag[]>> {
     return withAuthentication(async (userId: string) => {
       try {
@@ -45,7 +85,26 @@ export class TagService {
     });
   }
 
-  // Generate slug from tag name
+  /**
+   * Generate URL-safe slug from tag name
+   * 
+   * Creates a URL-safe slug from a tag name by converting to lowercase,
+   * replacing non-alphanumeric characters with hyphens, and removing
+   * leading/trailing hyphens. Used for SEO-friendly URLs and consistent
+   * tag identification.
+   * 
+   * @private
+   * @static
+   * @function
+   * @param {string} tagName - Original tag name to convert
+   * @returns {string} URL-safe slug representation
+   * 
+   * @example
+   * ```typescript
+   * TagService.generateSlug('My Awesome Tag!'); // Returns: 'my-awesome-tag'
+   * TagService.generateSlug('  Special & Characters  '); // Returns: 'special-characters'
+   * ```
+   */
   private static generateSlug(tagName: string): string {
     return tagName
       .toString()
@@ -55,7 +114,8 @@ export class TagService {
       .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
   }
 
-  // Create new tag
+  /**
+   * Create new tag with secure validation
   static async createTag(tagData: TagFormValues): Promise<ServiceResponse<Tag>> {
     return withAuthentication(async (userId: string) => {
       try {
@@ -110,7 +170,8 @@ export class TagService {
     });
   }
 
-  // Get tags for specific project
+  /**
+   * Get tags for specific project with security validation
   static async getProjectTags(projectId: string): Promise<ServiceResponse<Tag[]>> {
     console.log(`[TagService.getProjectTags] Attempting to fetch tags for projectId: ${projectId}`);
     return withAuthentication(async (userId: string) => {
@@ -161,7 +222,8 @@ export class TagService {
     });
   }
 
-  // Update tag
+  /**
+   * Update tag with secure validation and duplicate checking
   static async updateTag(
     tagId: string,
     updates: Partial<TagFormValues>
@@ -230,7 +292,8 @@ export class TagService {
     });
   }
 
-  // Delete tag
+  /**
+   * Delete tag and all associated project relationships
   static async deleteTag(tagId: string): Promise<ServiceResponse<void>> {
     return withAuthentication(async (userId: string) => {
       try {
@@ -267,7 +330,8 @@ export class TagService {
     });
   }
 
-  // Add tag to project
+  /**
+   * Add tag to project with security validation
   static async addTagToProject(projectId: string, tagId: string): Promise<ServiceResponse<void>> {
     return withAuthentication(async (userId: string) => {
       try {
@@ -306,7 +370,8 @@ export class TagService {
     });
   }
 
-  // Remove tag from project
+  /**
+   * Remove tag from project with security validation
   static async removeTagFromProject(
     projectId: string,
     tagId: string
@@ -344,7 +409,8 @@ export class TagService {
     });
   }
 
-  // Get tag statistics (project count)
+  /**
+   * Get tag statistics including project count
   static async getTagStats(tagId: string): Promise<ServiceResponse<{ projectCount: number }>> {
     return withAuthentication(async (userId: string) => {
       try {
@@ -375,7 +441,8 @@ export class TagService {
     });
   }
 
-  // Get bulk tag statistics (project counts) - Uses reverse expansion approach
+  /**
+   * Get bulk tag statistics using reverse expansion for performance
   static async getBulkTagStats(tagIds: string[]): Promise<ServiceResponse<Record<string, number>>> {
     console.log(
       '[TagService.getBulkTagStats] Starting with reverse expansion approach for tagIds:',
