@@ -1,8 +1,15 @@
 /**
- * @fileoverview PocketBase Filter Builder Utility
+ * @fileoverview PocketBase Filter Builder Utility - SECURITY CRITICAL
  * 
  * Centralized, type-safe utility for building secure PocketBase filter expressions.
  * Uses pb.filter() for secure parameter injection to prevent SQL injection attacks.
+ * 
+ * 🔒 SECURITY FEATURES:
+ * - Field name whitelist validation to prevent SQL injection through field interpolation
+ * - Secure parameter injection using pb.filter() for all user-provided values
+ * - Comprehensive logging of security violations for monitoring
+ * - Development-time error throwing for immediate debugging of security issues
+ * - Automatic rejection of operations with invalid field names
  * 
  * Key Features:
  * - Type-safe filter building with TypeScript
@@ -10,13 +17,165 @@
  * - Common filter patterns for user isolation, date ranges, search terms
  * - Chainable API for complex filter combinations
  * - Reduces code duplication by 60-80% across the codebase
+ * - Field name validation against comprehensive whitelist
+ * 
+ * ⚠️  SECURITY WARNINGS:
+ * - NEVER modify COLLECTION_FIELDS without security review
+ * - NEVER bypass field validation in any methods
+ * - NEVER interpolate user input directly into filter strings
+ * - ALWAYS use pb.filter() for parameterized queries
+ * - ALWAYS validate field names before using them in filters
  * 
  * @author Generated with Claude Code
- * @version 1.0.0
+ * @version 2.0.0 - Security Hardened
  * @since 2024-06-29
+ * @security-review Required for any modifications to field validation
  */
 
 import { pb } from '@/lib/pocketbase';
+import { createLogger } from '@/utils/secureLogger';
+
+const logger = createLogger('FilterBuilder');
+
+/**
+ * Comprehensive field whitelist for all PocketBase collections
+ * This prevents SQL injection through field name interpolation
+ * 
+ * CRITICAL SECURITY: Only fields listed here can be used in filter operations.
+ * Never modify this whitelist without security review.
+ */
+const COLLECTION_FIELDS = {
+  // Core system fields present in all collections
+  system: new Set([
+    'id', 'created', 'updated', 'collectionId', 'collectionName'
+  ]),
+  
+  // Projects collection fields
+  projects: new Set([
+    'id', 'created', 'updated', 'collectionId', 'collectionName',
+    'user', 'title', 'status', 'kit_category', 'drill_shape',
+    'artist', 'company', 'date_purchased', 'date_received', 
+    'date_started', 'date_completed', 'width', 'height',
+    'total_diamonds', 'source_url', 'general_notes', 'image'
+  ]),
+  
+  // Progress notes collection fields
+  progress_notes: new Set([
+    'id', 'created', 'updated', 'collectionId', 'collectionName',
+    'project', 'date', 'content', 'image'
+  ]),
+  
+  // Tags collection fields
+  tags: new Set([
+    'id', 'created', 'updated', 'collectionId', 'collectionName',
+    'user', 'name', 'slug', 'color'
+  ]),
+  
+  // Project tags relation fields
+  project_tags: new Set([
+    'id', 'created', 'updated', 'collectionId', 'collectionName',
+    'project', 'tag'
+  ]),
+  
+  // Artists collection fields
+  artists: new Set([
+    'id', 'created', 'updated', 'collectionId', 'collectionName',
+    'user', 'name'
+  ]),
+  
+  // Companies collection fields
+  companies: new Set([
+    'id', 'created', 'updated', 'collectionId', 'collectionName',
+    'user', 'name', 'website_url'
+  ]),
+  
+  // User yearly stats fields
+  user_yearly_stats: new Set([
+    'id', 'created', 'updated', 'collectionId', 'collectionName',
+    'user', 'year', 'stats_type', 'completed_count', 'in_progress_count',
+    'started_count', 'total_diamonds', 'estimated_drills', 'projects_included',
+    'status_breakdown', 'last_calculated', 'calculation_duration_ms', 'cache_version'
+  ]),
+  
+  // Randomizer spins fields
+  randomizer_spins: new Set([
+    'id', 'created', 'updated', 'collectionId', 'collectionName',
+    'user', 'project', 'project_title', 'selected_projects', 'spun_at'
+  ]),
+  
+  // Users collection fields (limited for security)
+  users: new Set([
+    'id', 'created', 'updated', 'collectionId', 'collectionName',
+    'username', 'email', 'emailVisibility', 'verified', 'avatar', 'beta_tester'
+  ]),
+  
+  // Account deletions fields
+  account_deletions: new Set([
+    'id', 'created', 'updated', 'collectionId', 'collectionName',
+    'user_id', 'user_email', 'signup_method', 'notes'
+  ]),
+  
+  // Commonly used relation fields and view expansions
+  relations: new Set([
+    'project_tags_via_project.tag', // Used in tag filtering
+    'tags_via_project_tags.name',   // Used in tag name queries
+    'artist.name',                  // Used in artist expansion
+    'company.name'                  // Used in company expansion
+  ])
+} as const;
+
+/**
+ * Validates a field name against the collection whitelist
+ * 
+ * CRITICAL SECURITY FUNCTION: Prevents SQL injection through field name validation.
+ * Only whitelisted fields are allowed in filter operations.
+ * 
+ * @param field - The field name to validate
+ * @param context - Optional context for better error messages (collection name, operation)
+ * @returns true if field is valid, false otherwise
+ * @throws Error for invalid fields in development mode for debugging
+ */
+function validateFieldName(field: string, context?: string): boolean {
+  if (!field || typeof field !== 'string') {
+    logger.error('Invalid field name: field must be a non-empty string', { field, context });
+    return false;
+  }
+
+  // Check if field is in any of our whitelisted sets
+  const isValidField = (
+    COLLECTION_FIELDS.system.has(field) ||
+    COLLECTION_FIELDS.projects.has(field) ||
+    COLLECTION_FIELDS.progress_notes.has(field) ||
+    COLLECTION_FIELDS.tags.has(field) ||
+    COLLECTION_FIELDS.project_tags.has(field) ||
+    COLLECTION_FIELDS.artists.has(field) ||
+    COLLECTION_FIELDS.companies.has(field) ||
+    COLLECTION_FIELDS.user_yearly_stats.has(field) ||
+    COLLECTION_FIELDS.randomizer_spins.has(field) ||
+    COLLECTION_FIELDS.users.has(field) ||
+    COLLECTION_FIELDS.account_deletions.has(field) ||
+    COLLECTION_FIELDS.relations.has(field)
+  );
+
+  if (!isValidField) {
+    const errorMsg = `Security violation: Invalid field name "${field}" not in whitelist`;
+    logger.error(errorMsg, { 
+      field, 
+      context,
+      availableFields: Object.keys(COLLECTION_FIELDS),
+      timestamp: new Date().toISOString()
+    });
+    
+    // In development, throw error for immediate debugging
+    if (import.meta.env.DEV) {
+      throw new Error(`${errorMsg}. Context: ${context || 'unknown'}`);
+    }
+    
+    return false;
+  }
+
+  return true;
+}
 
 /**
  * Common filter parameters interface for type safety
@@ -115,9 +274,16 @@ export class FilterBuilder {
   }
 
   /**
-   * Add date range filter with flexible options
+   * Add date range filter with flexible options and field validation
+   * 
+   * SECURITY: Field name is validated against whitelist to prevent SQL injection
    */
   dateRange(field: string, options: DateRangeOptions): FilterBuilder {
+    if (!validateFieldName(field, 'dateRange')) {
+      logger.error('Rejected dateRange operation with invalid field name', { field, options });
+      return this; // Skip invalid field operations
+    }
+
     if (options.year) {
       const timeFormat = options.includeTime ? ' 00:00:00' : '';
       const endTimeFormat = options.includeTime ? ' 23:59:59' : '';
@@ -147,21 +313,43 @@ export class FilterBuilder {
   }
 
   /**
-   * Add search filter across multiple fields
+   * Add search filter across multiple fields with field validation
+   * 
+   * SECURITY: All field names are validated against whitelist to prevent SQL injection
    */
   search(options: SearchOptions): FilterBuilder {
-    if (options.term && options.term.trim()) {
-      const searchConditions = options.fields.map((field, index) => 
-        `${field} ~ {:term${index}}`
-      ).join(' || ');
-      
-      const params: FilterParams = {};
-      options.fields.forEach((_, index) => {
-        params[`term${index}`] = options.term.trim();
-      });
-      
-      this.filters.push(pb.filter(`(${searchConditions})`, params));
+    if (!options.term || !options.term.trim()) {
+      return this;
     }
+
+    // Validate all field names before using them
+    const validFields = options.fields.filter(field => {
+      const isValid = validateFieldName(field, 'search');
+      if (!isValid) {
+        logger.error('Rejected search operation with invalid field name', { field, searchTerm: options.term });
+      }
+      return isValid;
+    });
+
+    // If no valid fields remain, skip the search operation
+    if (validFields.length === 0) {
+      logger.error('Search operation skipped: no valid fields provided', { 
+        originalFields: options.fields, 
+        searchTerm: options.term 
+      });
+      return this;
+    }
+
+    const searchConditions = validFields.map((field, index) => 
+      `${field} ~ {:term${index}}`
+    ).join(' || ');
+    
+    const params: FilterParams = {};
+    validFields.forEach((_, index) => {
+      params[`term${index}`] = options.term.trim();
+    });
+    
+    this.filters.push(pb.filter(`(${searchConditions})`, params));
     return this;
   }
 
@@ -179,25 +367,44 @@ export class FilterBuilder {
   }
 
   /**
-   * Add equality filter for any field
+   * Add equality filter for any field with field validation
+   * 
+   * SECURITY: Field name is validated against whitelist to prevent SQL injection
    */
   equals(field: string, value: string | number | boolean): FilterBuilder {
+    if (!validateFieldName(field, 'equals')) {
+      logger.error('Rejected equals operation with invalid field name', { field, value });
+      return this; // Skip invalid field operations
+    }
     this.filters.push(pb.filter(`${field} = {:${field}}`, { [field]: value }));
     return this;
   }
 
   /**
-   * Add not equals filter for any field
+   * Add not equals filter for any field with field validation
+   * 
+   * SECURITY: Field name is validated against whitelist to prevent SQL injection
    */
   notEquals(field: string, value: string | number | boolean): FilterBuilder {
+    if (!validateFieldName(field, 'notEquals')) {
+      logger.error('Rejected notEquals operation with invalid field name', { field, value });
+      return this; // Skip invalid field operations
+    }
     this.filters.push(pb.filter(`${field} != {:${field}}`, { [field]: value }));
     return this;
   }
 
   /**
-   * Add "in" filter for array values
+   * Add "in" filter for array values with field validation
+   * 
+   * SECURITY: Field name is validated against whitelist to prevent SQL injection
    */
   in(field: string, values: (string | number)[]): FilterBuilder {
+    if (!validateFieldName(field, 'in')) {
+      logger.error('Rejected in operation with invalid field name', { field, values });
+      return this; // Skip invalid field operations
+    }
+
     if (values && values.length > 0) {
       const params: FilterParams = {};
       const placeholders = values.map((_, index) => {
@@ -212,9 +419,16 @@ export class FilterBuilder {
   }
 
   /**
-   * Add "like" filter for partial text matching
+   * Add "like" filter for partial text matching with field validation
+   * 
+   * SECURITY: Field name is validated against whitelist to prevent SQL injection
    */
   like(field: string, value: string): FilterBuilder {
+    if (!validateFieldName(field, 'like')) {
+      logger.error('Rejected like operation with invalid field name', { field, value });
+      return this; // Skip invalid field operations
+    }
+
     if (value && value.trim()) {
       this.filters.push(pb.filter(`${field} ~ {:${field}}`, { [field]: value.trim() }));
     }
@@ -222,41 +436,71 @@ export class FilterBuilder {
   }
 
   /**
-   * Add greater than filter
+   * Add greater than filter with field validation
+   * 
+   * SECURITY: Field name is validated against whitelist to prevent SQL injection
    */
   greaterThan(field: string, value: string | number): FilterBuilder {
+    if (!validateFieldName(field, 'greaterThan')) {
+      logger.error('Rejected greaterThan operation with invalid field name', { field, value });
+      return this; // Skip invalid field operations
+    }
     this.filters.push(pb.filter(`${field} > {:${field}}`, { [field]: value }));
     return this;
   }
 
   /**
-   * Add less than filter
+   * Add less than filter with field validation
+   * 
+   * SECURITY: Field name is validated against whitelist to prevent SQL injection
    */
   lessThan(field: string, value: string | number): FilterBuilder {
+    if (!validateFieldName(field, 'lessThan')) {
+      logger.error('Rejected lessThan operation with invalid field name', { field, value });
+      return this; // Skip invalid field operations
+    }
     this.filters.push(pb.filter(`${field} < {:${field}}`, { [field]: value }));
     return this;
   }
 
   /**
-   * Add null check filter
+   * Add null check filter with field validation
+   * 
+   * SECURITY: Field name is validated against whitelist to prevent SQL injection
    */
   isNull(field: string): FilterBuilder {
+    if (!validateFieldName(field, 'isNull')) {
+      logger.error('Rejected isNull operation with invalid field name', { field });
+      return this; // Skip invalid field operations
+    }
     this.filters.push(`${field} = null`);
     return this;
   }
 
   /**
-   * Add not null check filter
+   * Add not null check filter with field validation
+   * 
+   * SECURITY: Field name is validated against whitelist to prevent SQL injection
    */
   isNotNull(field: string): FilterBuilder {
+    if (!validateFieldName(field, 'isNotNull')) {
+      logger.error('Rejected isNotNull operation with invalid field name', { field });
+      return this; // Skip invalid field operations
+    }
     this.filters.push(`${field} != null`);
     return this;
   }
 
   /**
-   * Add exclude filter (commonly used for categories)
+   * Add exclude filter (commonly used for categories) with field validation
+   * 
+   * SECURITY: Field name is validated against whitelist to prevent SQL injection
    */
   exclude(field: string, value: string | number): FilterBuilder {
+    if (!validateFieldName(field, 'exclude')) {
+      logger.error('Rejected exclude operation with invalid field name', { field, value });
+      return this; // Skip invalid field operations
+    }
     this.filters.push(pb.filter(`${field} != {:${field}}`, { [field]: value }));
     return this;
   }
