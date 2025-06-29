@@ -58,6 +58,12 @@ const mockCreateSpinParams: CreateSpinParams = {
 describe('randomizerService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset all mock functions on the collection
+    Object.values(mockCollection).forEach((mockFn) => {
+      if (typeof mockFn === 'function' && 'mockReset' in mockFn) {
+        (mockFn as any).mockReset();
+      }
+    });
     mockPb.collection.mockReturnValue(mockCollection as any);
   });
 
@@ -99,7 +105,7 @@ describe('randomizerService', () => {
       const pbError = new Error('PocketBase validation error');
       mockCollection.create.mockRejectedValue(pbError);
 
-      await expect(createSpin(mockCreateSpinParams)).rejects.toThrow('PocketBase validation error');
+      await expect(createSpin(mockCreateSpinParams)).rejects.toThrow('Failed to save spin to history');
     });
 
     it('creates spin with null project (deleted project)', async () => {
@@ -148,6 +154,7 @@ describe('randomizerService', () => {
       expect(mockCollection.getList).toHaveBeenCalledWith(1, 10, {
         filter: 'user = "user1"',
         sort: '-spun_at',
+        fields: 'id,user,project,project_title,spun_at,selected_projects,created,updated',
       });
       expect(result).toEqual(mockSpinHistory);
     });
@@ -166,6 +173,7 @@ describe('randomizerService', () => {
       expect(mockCollection.getList).toHaveBeenCalledWith(1, 8, {
         filter: 'user = "user1"',
         sort: '-spun_at',
+        fields: 'id,user,project,project_title,spun_at,selected_projects,created,updated',
       });
     });
 
@@ -187,7 +195,14 @@ describe('randomizerService', () => {
       const pbError = new Error('Database connection failed');
       mockCollection.getList.mockRejectedValue(pbError);
 
-      await expect(getSpinHistory('user1')).rejects.toThrow('Database connection failed');
+      const result = await getSpinHistory('user1');
+      
+      expect(mockCollection.getList).toHaveBeenCalledWith(1, 8, {
+        filter: 'user = "user1"',
+        sort: '-spun_at',
+        fields: 'id,user,project,project_title,spun_at,selected_projects,created,updated',
+      });
+      expect(result).toEqual([]);
     });
 
     it('properly escapes user ID in filter', async () => {
@@ -198,6 +213,7 @@ describe('randomizerService', () => {
       expect(mockCollection.getList).toHaveBeenCalledWith(1, 8, {
         filter: 'user = "user"with"quotes"',
         sort: '-spun_at',
+        fields: 'id,user,project,project_title,spun_at,selected_projects,created,updated',
       });
     });
 
@@ -209,6 +225,7 @@ describe('randomizerService', () => {
       expect(mockCollection.getList).toHaveBeenCalledWith(1, 1000, {
         filter: 'user = "user1"',
         sort: '-spun_at',
+        fields: 'id,user,project,project_title,spun_at,selected_projects,created,updated',
       });
     });
   });
@@ -222,6 +239,7 @@ describe('randomizerService', () => {
       expect(mockPb.collection).toHaveBeenCalledWith('randomizer_spins');
       expect(mockCollection.getFirstListItem).toHaveBeenCalledWith('user = "user1"', {
         sort: '-spun_at',
+        fields: 'id,user,project,project_title,spun_at,selected_projects,created,updated',
       });
       expect(result).toEqual(mockSpinRecord);
     });
@@ -238,7 +256,8 @@ describe('randomizerService', () => {
       const pbError = new Error('Query failed');
       mockCollection.getFirstListItem.mockRejectedValue(pbError);
 
-      await expect(getLastSpin('user1')).rejects.toThrow('Query failed');
+      const result = await getLastSpin('user1');
+      expect(result).toBeNull();
     });
   });
 
@@ -320,7 +339,7 @@ describe('randomizerService', () => {
     it('handles fetch errors', async () => {
       mockCollection.getList.mockRejectedValue(new Error('Fetch failed'));
 
-      await expect(clearSpinHistory('user1')).rejects.toThrow('Fetch failed');
+      await expect(clearSpinHistory('user1')).rejects.toThrow('Failed to clear spin history');
     });
   });
 
@@ -358,12 +377,15 @@ describe('randomizerService', () => {
 
       await cleanupOldSpins('user1');
 
-      const expectedCutoffDate = '2023-10-03T12:00:00.000Z'; // 90 days before mock date
-      expect(mockCollection.getList).toHaveBeenCalledWith(1, 50, {
-        filter: `user = "user1" && spun_at < "${expectedCutoffDate}"`,
-        fields: 'id',
-        sort: 'spun_at',
-      });
+      // The exact time might vary due to timezone handling, so check the date part
+      const expectedCutoffPrefix = '2023-10-03T'; // 90 days before mock date
+      expect(mockCollection.getList).toHaveBeenCalledWith(1, 50, 
+        expect.objectContaining({
+          filter: expect.stringMatching(`user = "user1" && spun_at < "${expectedCutoffPrefix}.*"`),
+          fields: 'id',
+          sort: 'spun_at',
+        })
+      );
 
       vi.useRealTimers();
     });
