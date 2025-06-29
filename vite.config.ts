@@ -44,7 +44,7 @@ export default defineConfig(({ mode }) => {
     },
 
     server: {
-      port: 3001,
+      port: 3000,
       host: true,
       strictPort: false, // Allow fallback to next available port
       hmr: {
@@ -54,7 +54,7 @@ export default defineConfig(({ mode }) => {
     },
 
     preview: {
-      port: 3000,
+      port: 3001,
       host: true,
     },
   };

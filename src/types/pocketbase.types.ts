@@ -17,6 +17,7 @@ export enum Collections {
 	ProgressNotes = "progress_notes",
 	ProjectTags = "project_tags",
 	Projects = "projects",
+	RandomizerSpins = "randomizer_spins",
 	Tags = "tags",
 	UserYearlyStats = "user_yearly_stats",
 	Users = "users",
@@ -185,6 +186,17 @@ export type ProjectsRecord = {
 	width?: number
 }
 
+export type RandomizerSpinsRecord<Tselected_projects = unknown> = {
+	created?: IsoDateString
+	id: string
+	project: RecordIdString
+	project_title: string
+	selected_projects: null | Tselected_projects
+	spun_at: IsoDateString
+	updated?: IsoDateString
+	user: RecordIdString
+}
+
 export type TagsRecord = {
 	color: string
 	created?: IsoDateString
@@ -243,6 +255,7 @@ export type CompaniesResponse<Texpand = unknown> = Required<CompaniesRecord> & B
 export type ProgressNotesResponse<Texpand = unknown> = Required<ProgressNotesRecord> & BaseSystemFields<Texpand>
 export type ProjectTagsResponse<Texpand = unknown> = Required<ProjectTagsRecord> & BaseSystemFields<Texpand>
 export type ProjectsResponse<Texpand = unknown> = Required<ProjectsRecord> & BaseSystemFields<Texpand>
+export type RandomizerSpinsResponse<Tselected_projects = unknown, Texpand = unknown> = Required<RandomizerSpinsRecord<Tselected_projects>> & BaseSystemFields<Texpand>
 export type TagsResponse<Texpand = unknown> = Required<TagsRecord> & BaseSystemFields<Texpand>
 export type UserYearlyStatsResponse<Tstatus_breakdown = unknown, Texpand = unknown> = Required<UserYearlyStatsRecord<Tstatus_breakdown>> & BaseSystemFields<Texpand>
 export type UsersResponse<Texpand = unknown> = Required<UsersRecord> & AuthSystemFields<Texpand>
@@ -261,6 +274,7 @@ export type CollectionRecords = {
 	progress_notes: ProgressNotesRecord
 	project_tags: ProjectTagsRecord
 	projects: ProjectsRecord
+	randomizer_spins: RandomizerSpinsRecord
 	tags: TagsRecord
 	user_yearly_stats: UserYearlyStatsRecord
 	users: UsersRecord
@@ -278,6 +292,7 @@ export type CollectionResponses = {
 	progress_notes: ProgressNotesResponse
 	project_tags: ProjectTagsResponse
 	projects: ProjectsResponse
+	randomizer_spins: RandomizerSpinsResponse
 	tags: TagsResponse
 	user_yearly_stats: UserYearlyStatsResponse
 	users: UsersResponse
@@ -298,6 +313,7 @@ export type TypedPocketBase = PocketBase & {
 	collection(idOrName: 'progress_notes'): RecordService<ProgressNotesResponse>
 	collection(idOrName: 'project_tags'): RecordService<ProjectTagsResponse>
 	collection(idOrName: 'projects'): RecordService<ProjectsResponse>
+	collection(idOrName: 'randomizer_spins'): RecordService<RandomizerSpinsResponse>
 	collection(idOrName: 'tags'): RecordService<TagsResponse>
 	collection(idOrName: 'user_yearly_stats'): RecordService<UserYearlyStatsResponse>
 	collection(idOrName: 'users'): RecordService<UsersResponse>
