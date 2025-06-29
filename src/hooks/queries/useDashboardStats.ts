@@ -29,7 +29,19 @@ export const useDashboardStats = (year?: number) => {
 
   const query = useQuery({
     queryKey: [...queryKeys.stats.overview(userId || 'anonymous'), 'dashboard', targetYear],
-    queryFn: () => DashboardStatsService.getYearlyStats(userId!, targetYear),
+    queryFn: async () => {
+      try {
+        return await DashboardStatsService.getYearlyStats(userId!, targetYear);
+      } catch (error) {
+        // Handle 404 errors gracefully - they're expected for new users/years
+        // Instead of treating as error, return undefined so UI can handle gracefully
+        if (error && typeof error === 'object' && 'status' in error && 
+            (error as { status: number }).status === 404) {
+          return undefined;
+        }
+        throw error;
+      }
+    },
     enabled: !!userId,
     // Optimized cache settings for dashboard use
     staleTime: 5 * 60 * 1000, // 5 minutes - data doesn't change frequently
@@ -43,6 +55,11 @@ export const useDashboardStats = (year?: number) => {
     retry: (failureCount, error) => {
       // Don't retry on validation errors
       if (error && error instanceof Error && error.name === 'StatsServiceError') {
+        return false;
+      }
+      // Don't retry on 404 errors (cache misses are expected for new users/years)
+      if (error && typeof error === 'object' && 'status' in error && 
+          (error as { status: number }).status === 404) {
         return false;
       }
       return failureCount < 2;
