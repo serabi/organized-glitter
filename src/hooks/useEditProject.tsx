@@ -1,16 +1,16 @@
 /**
  * @fileoverview React Query-based project editing hook with proper authentication dependencies
- * 
+ *
  * This hook provides complete project editing functionality using React Query patterns:
  * - Proper authentication state dependencies to prevent race conditions
  * - Consistent data fetching with useProjectDetailQuery
- * - Form state management with dirty tracking  
+ * - Form state management with dirty tracking
  * - Field name mapping (camelCase ↔ snake_case)
  * - File upload handling
  * - Tag synchronization
  * - Navigation protection
  * - CRUD operations with confirmations
- * 
+ *
  * @author Organized Glitter Team
  * @since 2.0.0 - Migrated to React Query patterns to fix 404 authentication race conditions
  */
@@ -22,7 +22,10 @@ import { useNavigationWithWarning } from '@/hooks/useNavigationWithWarning';
 import { useConfirmationDialog } from '@/hooks/useConfirmationDialog';
 import { useNavigateToProject } from '@/hooks/useNavigateToProject';
 import { useProjectDetailQuery } from '@/hooks/queries/useProjectDetailQuery';
-import { useArchiveProjectMutation, useDeleteProjectMutation } from '@/hooks/mutations/useProjectDetailMutations';
+import {
+  useArchiveProjectMutation,
+  useDeleteProjectMutation,
+} from '@/hooks/mutations/useProjectDetailMutations';
 import { useProjectUpdateUnified } from '@/hooks/mutations/useProjectUpdateUnified';
 import { useMetadata } from '@/contexts/MetadataContext';
 import { extractDateOnly } from '@/lib/utils';
@@ -33,7 +36,7 @@ const logger = createLogger('useEditProject');
 
 /**
  * Prepare initial form data from project
- * 
+ *
  * @param project - Project data from useProjectDetailQuery
  * @returns Form data prepared for editing
  */
@@ -61,20 +64,20 @@ const prepareFormInitialData = (project: ProjectType): ProjectFormValues => {
 
 /**
  * Enhanced project editing hook using React Query patterns
- * 
+ *
  * @param projectId - ID of the project to edit
  * @returns Complete editing state and handlers
  */
 export const useEditProject = (projectId: string | undefined) => {
   // Authentication state
   const { user, isAuthenticated, initialCheckComplete, isLoading: authLoading } = useAuth();
-  
-  // Data fetching 
-  const { 
-    data: project, 
-    isLoading: projectLoading, 
+
+  // Data fetching
+  const {
+    data: project,
+    isLoading: projectLoading,
     error: projectError,
-    refetch: refetchProject 
+    refetch: refetchProject,
   } = useProjectDetailQuery(projectId, isAuthenticated, initialCheckComplete);
 
   // Mutations for project operations
@@ -90,11 +93,15 @@ export const useEditProject = (projectId: string | undefined) => {
   const [submitting, setSubmitting] = useState(false);
 
   // Navigation state with proper isDirty check
-  const isDirty = Boolean(formData && project && JSON.stringify(formData) !== JSON.stringify(prepareFormInitialData(project)));
+  const isDirty = Boolean(
+    formData &&
+      project &&
+      JSON.stringify(formData) !== JSON.stringify(prepareFormInitialData(project))
+  );
   const { ConfirmationDialog: NavigationDialog, confirmUnsavedChanges } = useConfirmationDialog();
   const { navigationState, clearNavigationError } = useNavigationWithWarning({
     isDirty,
-    confirmationDialog: { confirmUnsavedChanges }
+    confirmationDialog: { confirmUnsavedChanges },
   });
   const navigateToProject = useNavigateToProject();
   const { toast } = useServiceToast();
@@ -140,30 +147,32 @@ export const useEditProject = (projectId: string | undefined) => {
   }, []);
 
   // Submit handler with unified mutation
-  const handleSubmit = useCallback(async (data: ProjectFormValues) => {
-    if (!project || !data) {
-      logger.error('Missing project or form data for submit');
-      return;
-    }
+  const handleSubmit = useCallback(
+    async (data: ProjectFormValues) => {
+      if (!project || !data) {
+        logger.error('Missing project or form data for submit');
+        return;
+      }
 
-    try {
-      setSubmitting(true);
-      logger.debug('Starting project update', { projectId: project.id });
+      try {
+        setSubmitting(true);
+        logger.debug('Starting project update', { projectId: project.id });
 
-      // Use unified mutation with proper typing
-      const formWithFile = { ...data, id: project.id };
-      await updateProjectMutation.mutateAsync(formWithFile);
+        // Use unified mutation with proper typing
+        const formWithFile = { ...data, id: project.id };
+        await updateProjectMutation.mutateAsync(formWithFile);
 
-      // Navigate back to project detail
-      navigateToProject(project.id);
-      
-    } catch (error) {
-      logger.error('Error updating project', { error, projectId: project.id });
-      // Error handling is already done in the mutation
-    } finally {
-      setSubmitting(false);
-    }
-  }, [project, updateProjectMutation, navigateToProject]);
+        // Navigate back to project detail
+        navigateToProject(project.id);
+      } catch (error) {
+        logger.error('Error updating project', { error, projectId: project.id });
+        // Error handling is already done in the mutation
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [project, updateProjectMutation, navigateToProject]
+  );
 
   // Archive handler
   const handleArchive = useCallback(async () => {
@@ -229,10 +238,10 @@ export const useEditProject = (projectId: string | undefined) => {
     companies: companiesList,
     artists: artistsList,
     formData,
-    
+
     // State
     navigationState,
-    
+
     // Handlers
     handleFormChange,
     handleFormDataChange,
@@ -241,10 +250,10 @@ export const useEditProject = (projectId: string | undefined) => {
     handleDelete,
     clearNavigationError,
     refetchProject,
-    
+
     // Components
     ConfirmationDialog,
-    
+
     // Error state
     error: projectError,
   };

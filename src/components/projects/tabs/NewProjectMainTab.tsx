@@ -21,7 +21,7 @@ import CompanySelect from '@/components/projects/form/CompanySelect';
 // Type-safe status options that match ProjectStatus type
 const STATUS_OPTIONS: Record<ProjectStatus, string> = {
   wishlist: 'Wishlist',
-  purchased: 'Purchased', 
+  purchased: 'Purchased',
   stash: 'In Stash',
   progress: 'In Progress',
   completed: 'Completed',
@@ -99,7 +99,7 @@ export const NewProjectMainTab = ({
                 <Input
                   id="title"
                   value={formData.title || ''}
-                  onChange={(e) => handleInputChange('title', e.target.value)}
+                  onChange={e => handleInputChange('title', e.target.value)}
                   placeholder="Enter project title"
                   disabled={isSubmitting}
                   style={{ fontSize: '16px' }} // Prevent iOS zoom
@@ -110,7 +110,7 @@ export const NewProjectMainTab = ({
               <CompanySelect
                 companies={companies}
                 value={formData.company || ''}
-                onChange={(value) => handleInputChange('company', value)}
+                onChange={value => handleInputChange('company', value)}
                 disabled={isSubmitting}
                 onCompanyAdded={async () => {}} // Will be handled in parent
               />
@@ -121,7 +121,7 @@ export const NewProjectMainTab = ({
                 <Label htmlFor="status">Status</Label>
                 <Select
                   value={formData.status || 'wishlist'}
-                  onValueChange={(value) => handleInputChange('status', value as ProjectStatus)}
+                  onValueChange={value => handleInputChange('status', value as ProjectStatus)}
                   disabled={isSubmitting}
                 >
                   <SelectTrigger>
@@ -140,7 +140,7 @@ export const NewProjectMainTab = ({
               <ArtistSelect
                 artists={artists}
                 value={formData.artist || ''}
-                onChange={(value) => handleInputChange('artist', value)}
+                onChange={value => handleInputChange('artist', value)}
                 disabled={isSubmitting}
                 onArtistAdded={async () => {}} // Will be handled in parent
               />
@@ -158,7 +158,7 @@ export const NewProjectMainTab = ({
               <Label htmlFor="kit_category">Type of Kit</Label>
               <Select
                 value={formData.kit_category || 'full'}
-                onValueChange={(value) => handleInputChange('kit_category', value)}
+                onValueChange={value => handleInputChange('kit_category', value)}
                 disabled={isSubmitting}
               >
                 <SelectTrigger id="kit_category">
@@ -178,10 +178,10 @@ export const NewProjectMainTab = ({
           <CardContent className="pt-6">
             <div className="space-y-2">
               <Label>Tags</Label>
-              <InlineTagManager 
+              <InlineTagManager
                 initialTags={projectTags}
                 onTagsChange={handleTagsChange}
-                className={isSubmitting ? 'opacity-50 pointer-events-none' : ''}
+                className={isSubmitting ? 'pointer-events-none opacity-50' : ''}
               />
             </div>
           </CardContent>
@@ -196,7 +196,7 @@ export const NewProjectMainTab = ({
               <Label htmlFor="drillShape">Drill Shape</Label>
               <Select
                 value={formData.drillShape || ''}
-                onValueChange={(value) => handleInputChange('drillShape', value || null)}
+                onValueChange={value => handleInputChange('drillShape', value || null)}
                 disabled={isSubmitting}
               >
                 <SelectTrigger>
@@ -215,7 +215,7 @@ export const NewProjectMainTab = ({
                 id="sourceUrl"
                 type="url"
                 value={formData.sourceUrl || ''}
-                onChange={(e) => handleInputChange('sourceUrl', e.target.value)}
+                onChange={e => handleInputChange('sourceUrl', e.target.value)}
                 placeholder="https://example.com/pattern"
                 disabled={isSubmitting}
               />
@@ -232,7 +232,7 @@ export const NewProjectMainTab = ({
             <Textarea
               id="generalNotes"
               value={formData.generalNotes || ''}
-              onChange={(e) => handleInputChange('generalNotes', e.target.value)}
+              onChange={e => handleInputChange('generalNotes', e.target.value)}
               placeholder="Add any notes about this project..."
               className="min-h-[100px]"
               disabled={isSubmitting}

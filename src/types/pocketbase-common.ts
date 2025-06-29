@@ -1,6 +1,6 @@
 /**
  * Common TypeScript interfaces for PocketBase operations
- * 
+ *
  * This file contains shared type definitions used across PocketBase services
  * and utilities, following TypeScript best practices for type organization.
  */

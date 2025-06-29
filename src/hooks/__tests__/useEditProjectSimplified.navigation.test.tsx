@@ -84,13 +84,13 @@ describe('useEditProjectSimplified - Navigation', () => {
         mutations: { retry: false },
       },
     });
-    
+
     // Set default mock return values
     vi.mocked(useAuth).mockReturnValue({
       user: { id: 'user-123' },
       isLoading: false,
     });
-    
+
     // Setup mock functions
     mockPbUpdate.mockResolvedValue({
       id: 'project-123',
@@ -142,7 +142,7 @@ describe('useEditProjectSimplified - Navigation', () => {
 
     mockAddTagToProject.mockResolvedValue({ data: undefined, error: null });
     mockRemoveTagFromProject.mockResolvedValue({ data: undefined, error: null });
-    
+
     vi.clearAllMocks();
   });
 
@@ -169,10 +169,7 @@ describe('useEditProjectSimplified - Navigation', () => {
 
       await result.current.handleSubmit(formData);
 
-      expect(mockPbUpdate).toHaveBeenCalledWith(
-        'project-123',
-        expect.any(FormData)
-      );
+      expect(mockPbUpdate).toHaveBeenCalledWith('project-123', expect.any(FormData));
     });
 
     it('should navigate after successful archiving', async () => {
@@ -251,7 +248,7 @@ describe('useEditProjectSimplified - Navigation', () => {
       mockPbGetFullList
         .mockResolvedValueOnce([]) // No progress notes
         .mockResolvedValueOnce([]); // No project tags
-      
+
       // Mock project delete to fail
       mockPbDelete.mockRejectedValue(new Error('Delete failed'));
 

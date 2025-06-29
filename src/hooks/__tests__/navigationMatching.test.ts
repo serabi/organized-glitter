@@ -7,10 +7,10 @@
 const isValidProjectRouteTransition = (target: string, current: string): boolean => {
   const isProjectRoute = target.startsWith('/projects/') && current.startsWith('/projects/');
   if (!isProjectRoute) return false;
-  
+
   const targetParts = target.split('/');
   const currentParts = current.split('/');
-  
+
   // Check if it's a valid project route transition (same project ID)
   return targetParts[2] === currentParts[2] && current === target;
 };
@@ -20,7 +20,7 @@ const isValidDynamicRouteMatch = (target: string, current: string): boolean => {
   if (target.startsWith('/projects/') || current.startsWith('/projects/')) {
     return false;
   }
-  
+
   // Only match if current contains the parent path of target
   const targetParentPath = target.split('/').slice(0, -1).join('/');
   return targetParentPath.length > 0 && current.includes(targetParentPath);
@@ -30,11 +30,11 @@ const checkNavigationMatch = (target: string, current: string): boolean => {
   // Exact match is always valid
   const exactMatch = current === target;
   if (exactMatch) return true;
-  
+
   // Check for valid project route transitions
   const projectMatch = isValidProjectRouteTransition(target, current);
   if (projectMatch) return true;
-  
+
   // Check for valid dynamic route matches
   const dynamicMatch = isValidDynamicRouteMatch(target, current);
   return dynamicMatch;
@@ -100,15 +100,15 @@ describe('Navigation Matching Logic', () => {
     it('should handle complex navigation scenarios', () => {
       // Exact matches
       expect(checkNavigationMatch('/dashboard', '/dashboard')).toBe(true);
-      
+
       // Project routes - should only match exact same routes
       expect(checkNavigationMatch('/projects/123', '/projects/123')).toBe(true);
       expect(checkNavigationMatch('/projects/123', '/projects/456')).toBe(false);
-      
+
       // Dynamic routes (non-project)
       expect(checkNavigationMatch('/users/123/profile', '/users/123')).toBe(true);
       expect(checkNavigationMatch('/admin/settings', '/admin')).toBe(true);
-      
+
       // Mixed scenarios
       expect(checkNavigationMatch('/projects/123', '/dashboard')).toBe(false);
       expect(checkNavigationMatch('/dashboard', '/projects/123')).toBe(false);

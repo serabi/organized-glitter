@@ -16,8 +16,6 @@ interface AppProvidersProps {
   children: React.ReactNode;
 }
 
-
-
 /**
  * Centralized provider wrapper for the entire application
  * Router is isolated from provider re-renders to prevent reconciliation interruption

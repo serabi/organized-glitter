@@ -112,9 +112,7 @@ export const useProfile = (): UseProfileResult => {
     );
     if (!user) {
       setProfileLoading(false);
-      profileLogger.debug(
-        'useEffect: No user, setting profileLoading to false and returning.'
-      );
+      profileLogger.debug('useEffect: No user, setting profileLoading to false and returning.');
       return;
     }
 

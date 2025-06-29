@@ -310,7 +310,7 @@ describe('useNavigationWithWarning', () => {
       expect(window.confirm).not.toHaveBeenCalled();
     });
   });
-describe('edge cases and boundary conditions', () => {
+  describe('edge cases and boundary conditions', () => {
     it('should handle empty string path navigation', async () => {
       const { result } = renderHook(() =>
         useNavigationWithWarning({
@@ -333,7 +333,7 @@ describe('edge cases and boundary conditions', () => {
       );
 
       const specialPath = '/test-path?query=value&param=123#anchor';
-      
+
       await act(async () => {
         await result.current.navigateWithWarning(specialPath);
       });
@@ -349,7 +349,7 @@ describe('edge cases and boundary conditions', () => {
       );
 
       const longPath = '/' + 'a'.repeat(1000);
-      
+
       await act(async () => {
         await result.current.navigateWithWarning(longPath);
       });
@@ -375,11 +375,13 @@ describe('edge cases and boundary conditions', () => {
   describe('dynamic isDirty state changes', () => {
     it('should handle isDirty state changes between renders', async () => {
       let isDirty = false;
-      const { result, rerender } = renderHook(({ isDirty }) =>
-        useNavigationWithWarning({
-          isDirty,
-        }), {
-          initialProps: { isDirty }
+      const { result, rerender } = renderHook(
+        ({ isDirty }) =>
+          useNavigationWithWarning({
+            isDirty,
+          }),
+        {
+          initialProps: { isDirty },
         }
       );
 
@@ -408,11 +410,13 @@ describe('edge cases and boundary conditions', () => {
 
     it('should handle rapid isDirty state toggles', async () => {
       let isDirty = false;
-      const { result, rerender } = renderHook(({ isDirty }) =>
-        useNavigationWithWarning({
-          isDirty,
-        }), {
-          initialProps: { isDirty }
+      const { result, rerender } = renderHook(
+        ({ isDirty }) =>
+          useNavigationWithWarning({
+            isDirty,
+          }),
+        {
+          initialProps: { isDirty },
         }
       );
 
@@ -444,7 +448,7 @@ describe('edge cases and boundary conditions', () => {
       const complexOptions = {
         replace: true,
         state: { from: 'test', data: { key: 'value' } },
-        preventScrollReset: true
+        preventScrollReset: true,
       };
 
       await act(async () => {
@@ -525,7 +529,7 @@ describe('edge cases and boundary conditions', () => {
       const promises = [
         result.current.navigateWithWarning('/path-1'),
         result.current.navigateWithWarning('/path-2'),
-        result.current.navigateWithWarning('/path-3')
+        result.current.navigateWithWarning('/path-3'),
       ];
 
       await act(async () => {
@@ -541,7 +545,7 @@ describe('edge cases and boundary conditions', () => {
 
     it('should handle navigation during existing navigation', async () => {
       let resolveNavigation: () => void;
-      const navigationPromise = new Promise<void>((resolve) => {
+      const navigationPromise = new Promise<void>(resolve => {
         resolveNavigation = resolve;
       });
 
@@ -567,7 +571,7 @@ describe('edge cases and boundary conditions', () => {
 
       // Resolve the navigation
       resolveNavigation!();
-      
+
       await firstNavigation;
       await secondNavigation;
 
@@ -665,8 +669,8 @@ describe('edge cases and boundary conditions', () => {
         value: {
           set href(value: string) {
             throw new Error('Location assignment failed');
-          }
-        }
+          },
+        },
       });
 
       const { result } = renderHook(() =>
@@ -759,7 +763,7 @@ describe('edge cases and boundary conditions', () => {
       );
 
       unmount();
-      
+
       // Second unmount should not cause errors
       expect(() => unmount()).not.toThrow();
     });
@@ -768,11 +772,13 @@ describe('edge cases and boundary conditions', () => {
   describe('integration scenarios', () => {
     it('should handle rapid state changes and navigation attempts', async () => {
       let isDirty = false;
-      const { result, rerender } = renderHook(({ isDirty }) =>
-        useNavigationWithWarning({
-          isDirty,
-        }), {
-          initialProps: { isDirty }
+      const { result, rerender } = renderHook(
+        ({ isDirty }) =>
+          useNavigationWithWarning({
+            isDirty,
+          }),
+        {
+          initialProps: { isDirty },
         }
       );
 
@@ -780,7 +786,7 @@ describe('edge cases and boundary conditions', () => {
       for (let i = 0; i < 10; i++) {
         isDirty = !isDirty;
         rerender({ isDirty });
-        
+
         if (isDirty) {
           (window.confirm as vi.MockedFunction<typeof window.confirm>).mockReturnValue(i % 2 === 0);
         }

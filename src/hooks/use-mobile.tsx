@@ -22,11 +22,11 @@ export function useMobileDevice() {
   React.useEffect(() => {
     const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
     const mqlTouch = window.matchMedia('(hover: none) and (pointer: coarse)');
-    
+
     const onChange = () => {
       const screenSizeMobile = window.innerWidth < MOBILE_BREAKPOINT;
       const touchDevice = checkTouchDevice();
-      
+
       setDeviceInfo({
         isMobile: screenSizeMobile,
         isTouchDevice: touchDevice,
@@ -37,7 +37,7 @@ export function useMobileDevice() {
     mql.addEventListener('change', onChange);
     mqlTouch.addEventListener('change', onChange);
     onChange(); // Initial check
-    
+
     return () => {
       mql.removeEventListener('change', onChange);
       mqlTouch.removeEventListener('change', onChange);

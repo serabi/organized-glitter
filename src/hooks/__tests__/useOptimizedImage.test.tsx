@@ -208,11 +208,14 @@ describe('useImagePrefetcher', () => {
       { record: { id: 'record2' }, filename: '' },
     ];
 
-    result.current.prefetchImages(invalidImages as Array<{
-      record: Record<string, unknown> & { id: string };
-      filename: string;
-      context?: 'gallery' | 'card' | 'modal';
-    }>, 'high');
+    result.current.prefetchImages(
+      invalidImages as Array<{
+        record: Record<string, unknown> & { id: string };
+        filename: string;
+        context?: 'gallery' | 'card' | 'modal';
+      }>,
+      'high'
+    );
 
     expect(ImageService.getContextualUrl).not.toHaveBeenCalled();
   });

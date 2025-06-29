@@ -29,23 +29,23 @@ interface NavigationResult {
 
 /**
  * Universal hook for navigating to project pages with proper React Router integration.
- * 
+ *
  * This hook replaces window.location.href usage and provides:
  * - Optimistic navigation with React Router
  * - Cache pre-warming for smooth loading
  * - Retry logic for network issues
  * - Proper error handling and fallbacks
  * - Loading state management
- * 
+ *
  * Usage:
  * ```ts
  * const navigateToProject = useNavigateToProject();
- * 
+ *
  * // Basic navigation
  * await navigateToProject('project-id');
- * 
+ *
  * // Navigation with pre-warmed cache
- * await navigateToProject('project-id', { 
+ * await navigateToProject('project-id', {
  *   projectData: newProjectData,
  *   successMessage: 'Project created successfully!'
  * });
@@ -56,145 +56,148 @@ export const useNavigateToProject = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const navigateToProject = useCallback(async (
-    projectId: string,
-    options: NavigateToProjectOptions = {}
-  ): Promise<NavigationResult> => {
-    const {
-      replace = false,
-      projectData,
-      maxRetries = 2,
-      successMessage,
-      showLoadingFeedback = true
-    } = options;
+  const navigateToProject = useCallback(
+    async (
+      projectId: string,
+      options: NavigateToProjectOptions = {}
+    ): Promise<NavigationResult> => {
+      const {
+        replace = false,
+        projectData,
+        maxRetries = 2,
+        successMessage,
+        showLoadingFeedback = true,
+      } = options;
 
-    logger.info(`🎯 Starting navigation to project ${projectId}`);
+      logger.info(`🎯 Starting navigation to project ${projectId}`);
 
-    try {
-      // Step 1: Pre-warm cache if project data is provided
-      if (projectData) {
-        logger.debug('🔥 Pre-warming cache with project data');
-        queryClient.setQueryData(
-          queryKeys.projects.detail(projectId),
-          projectData
-        );
-      }
-
-      // Step 2: Optimistic navigation using React Router location state
-      const targetPath = `/projects/${projectId}`;
-      const navigationState = {
-        fromNavigation: true,
-        projectId,
-        timestamp: Date.now(),
-        // Include project data in state for immediate rendering
-        projectData: projectData || null
-      };
-
-      logger.debug(`🚀 Initiating React Router navigation to: ${targetPath}`);
-      
-      // Navigate using React Router
-      navigate(targetPath, {
-        replace,
-        state: navigationState
-      });
-      
-      // Wait for navigation to complete and context to propagate
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Verify that navigation actually happened
-      if (import.meta.env.DEV) {
-        const currentBrowserPath = window.location.pathname;
-        if (currentBrowserPath === targetPath) {
-          logger.info('✅ Browser URL updated correctly to:', currentBrowserPath);
-        } else {
-          logger.warn('⚠️ Browser URL mismatch:', {
-            expected: targetPath,
-            actual: currentBrowserPath,
-            timestamp: Date.now()
-          });
+      try {
+        // Step 1: Pre-warm cache if project data is provided
+        if (projectData) {
+          logger.debug('🔥 Pre-warming cache with project data');
+          queryClient.setQueryData(queryKeys.projects.detail(projectId), projectData);
         }
-      }
 
-      // Additional wait for React Router context to fully synchronize
-      // This prevents race conditions with cache invalidation operations
-      await new Promise(resolve => setTimeout(resolve, 50));
+        // Step 2: Optimistic navigation using React Router location state
+        const targetPath = `/projects/${projectId}`;
+        const navigationState = {
+          fromNavigation: true,
+          projectId,
+          timestamp: Date.now(),
+          // Include project data in state for immediate rendering
+          projectData: projectData || null,
+        };
 
-      // Step 3: Background verification (non-blocking)
-      // This runs after navigation to ensure data consistency
-      const performBackgroundVerification = async (attempt = 1): Promise<void> => {
-        try {
-          logger.debug(`🔍 Background verification attempt ${attempt}/${maxRetries + 1}`);
-          
-          await pb.collection(Collections.Projects).getOne(projectId, {
-            requestKey: `bg-verify-${projectId}-${Date.now()}`,
-          });
-          
-          logger.info('✅ Background verification successful');
-          
-          // Show success message if provided
-          if (successMessage && showLoadingFeedback) {
-            toast({
-              title: 'Success',
-              description: successMessage,
+        logger.debug(`🚀 Initiating React Router navigation to: ${targetPath}`);
+
+        // Navigate using React Router
+        navigate(targetPath, {
+          replace,
+          state: navigationState,
+        });
+
+        // Wait for navigation to complete and context to propagate
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // Verify that navigation actually happened
+        if (import.meta.env.DEV) {
+          const currentBrowserPath = window.location.pathname;
+          if (currentBrowserPath === targetPath) {
+            logger.info('✅ Browser URL updated correctly to:', currentBrowserPath);
+          } else {
+            logger.warn('⚠️ Browser URL mismatch:', {
+              expected: targetPath,
+              actual: currentBrowserPath,
+              timestamp: Date.now(),
             });
           }
-        } catch (verificationError) {
-          logger.warn(`❌ Background verification failed (attempt ${attempt}):`, verificationError);
-          
-          if (attempt <= maxRetries) {
-            // Retry with exponential backoff, but don't block navigation
-            const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
-            setTimeout(() => performBackgroundVerification(attempt + 1), delay);
-          } else {
-            logger.error('❌ Background verification exceeded max retries');
-            
-            // Only show error if we're still on the project page
-            if (window.location.pathname === targetPath) {
+        }
+
+        // Additional wait for React Router context to fully synchronize
+        // This prevents race conditions with cache invalidation operations
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        // Step 3: Background verification (non-blocking)
+        // This runs after navigation to ensure data consistency
+        const performBackgroundVerification = async (attempt = 1): Promise<void> => {
+          try {
+            logger.debug(`🔍 Background verification attempt ${attempt}/${maxRetries + 1}`);
+
+            await pb.collection(Collections.Projects).getOne(projectId, {
+              requestKey: `bg-verify-${projectId}-${Date.now()}`,
+            });
+
+            logger.info('✅ Background verification successful');
+
+            // Show success message if provided
+            if (successMessage && showLoadingFeedback) {
               toast({
-                title: 'Loading Issue',
-                description: 'There may be an issue loading the latest project data. Please refresh if needed.',
-                variant: 'default',
+                title: 'Success',
+                description: successMessage,
               });
             }
+          } catch (verificationError) {
+            logger.warn(
+              `❌ Background verification failed (attempt ${attempt}):`,
+              verificationError
+            );
+
+            if (attempt <= maxRetries) {
+              // Retry with exponential backoff, but don't block navigation
+              const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+              setTimeout(() => performBackgroundVerification(attempt + 1), delay);
+            } else {
+              logger.error('❌ Background verification exceeded max retries');
+
+              // Only show error if we're still on the project page
+              if (window.location.pathname === targetPath) {
+                toast({
+                  title: 'Loading Issue',
+                  description:
+                    'There may be an issue loading the latest project data. Please refresh if needed.',
+                  variant: 'default',
+                });
+              }
+            }
           }
+        };
+
+        // Start background verification (non-blocking)
+        performBackgroundVerification();
+
+        logger.info('✅ Navigation initiated successfully');
+        return { success: true };
+      } catch (navigationError) {
+        logger.error('❌ Navigation failed:', navigationError);
+
+        // Fallback navigation strategies
+        try {
+          logger.info('🔄 Attempting fallback navigation to dashboard');
+
+          navigate('/dashboard', { replace: true });
+
+          toast({
+            title: 'Navigation Issue',
+            description: 'Redirected to dashboard. Please try accessing the project from there.',
+            variant: 'default',
+          });
+
+          return { success: false, error: 'Navigation failed, redirected to dashboard' };
+        } catch (fallbackError) {
+          logger.error('❌ Fallback navigation also failed:', fallbackError);
+
+          toast({
+            title: 'Navigation Error',
+            description: 'Unable to navigate. Please refresh the page.',
+            variant: 'destructive',
+          });
+
+          return { success: false, error: 'All navigation attempts failed' };
         }
-      };
-
-      // Start background verification (non-blocking)
-      performBackgroundVerification();
-
-      logger.info('✅ Navigation initiated successfully');
-      return { success: true };
-
-    } catch (navigationError) {
-      logger.error('❌ Navigation failed:', navigationError);
-
-      // Fallback navigation strategies
-      try {
-        logger.info('🔄 Attempting fallback navigation to dashboard');
-        
-        navigate('/dashboard', { replace: true });
-        
-        toast({
-          title: 'Navigation Issue',
-          description: 'Redirected to dashboard. Please try accessing the project from there.',
-          variant: 'default',
-        });
-
-        return { success: false, error: 'Navigation failed, redirected to dashboard' };
-      } catch (fallbackError) {
-        logger.error('❌ Fallback navigation also failed:', fallbackError);
-        
-        toast({
-          title: 'Navigation Error',
-          description: 'Unable to navigate. Please refresh the page.',
-          variant: 'destructive',
-        });
-
-        return { success: false, error: 'All navigation attempts failed' };
       }
-    }
-  }, [navigate, queryClient, toast]);
+    },
+    [navigate, queryClient, toast]
+  );
 
   return navigateToProject;
 };
@@ -207,39 +210,42 @@ export const useNavigateToProjectEdit = () => {
   const { toast } = useToast();
   const logger = createLogger('useNavigateToProjectEdit');
 
-  const navigateToProjectEdit = useCallback(async (
-    projectId: string,
-    options: Omit<NavigateToProjectOptions, 'projectData'> = {}
-  ): Promise<NavigationResult> => {
-    const { replace = false } = options;
+  const navigateToProjectEdit = useCallback(
+    async (
+      projectId: string,
+      options: Omit<NavigateToProjectOptions, 'projectData'> = {}
+    ): Promise<NavigationResult> => {
+      const { replace = false } = options;
 
-    try {
-      logger.info(`🎯 Navigating to edit project ${projectId}`);
-      
-      const targetPath = `/projects/${projectId}/edit`;
-      navigate(targetPath, {
-        replace,
-        state: {
-          fromNavigation: true,
-          projectId,
-          timestamp: Date.now()
-        }
-      });
+      try {
+        logger.info(`🎯 Navigating to edit project ${projectId}`);
 
-      logger.info('✅ Edit navigation successful');
-      return { success: true };
-    } catch (error) {
-      logger.error('❌ Edit navigation failed:', error);
-      
-      toast({
-        title: 'Navigation Error',
-        description: 'Unable to navigate to edit page.',
-        variant: 'destructive',
-      });
+        const targetPath = `/projects/${projectId}/edit`;
+        navigate(targetPath, {
+          replace,
+          state: {
+            fromNavigation: true,
+            projectId,
+            timestamp: Date.now(),
+          },
+        });
 
-      return { success: false, error: 'Edit navigation failed' };
-    }
-  }, [navigate, toast]);
+        logger.info('✅ Edit navigation successful');
+        return { success: true };
+      } catch (error) {
+        logger.error('❌ Edit navigation failed:', error);
+
+        toast({
+          title: 'Navigation Error',
+          description: 'Unable to navigate to edit page.',
+          variant: 'destructive',
+        });
+
+        return { success: false, error: 'Edit navigation failed' };
+      }
+    },
+    [navigate, toast]
+  );
 
   return navigateToProjectEdit;
 };

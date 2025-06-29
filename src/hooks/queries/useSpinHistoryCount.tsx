@@ -61,9 +61,9 @@ export interface UseSpinHistoryCountParams {
  * // In a component
  * function SpinCounter({ userId }: { userId: string }) {
  *   const { data: count = 0, isLoading } = useSpinHistoryCount({ userId });
- *   
+ *
  *   if (isLoading) return <div>Loading...</div>;
- *   
+ *
  *   return <div>{count} Total Spins</div>;
  * }
  * ```

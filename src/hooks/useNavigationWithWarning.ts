@@ -31,7 +31,7 @@ export const useNavigationWithWarning = ({
     isNavigating: false,
     error: null,
   });
-  
+
   // Simplified navigation tracking
   const isNavigating = useRef<boolean>(false);
 
@@ -57,21 +57,24 @@ export const useNavigationWithWarning = ({
   }, [location.pathname, resetNavigationState]);
 
   // Simple navigation with error handling
-  const performNavigation = useCallback((to: string, options?: { replace?: boolean }) => {
-    try {
-      setNavigationState({ isNavigating: true, error: null });
-      isNavigating.current = true;
-      navigate(to, options);
-    } catch (error) {
-      if (isMounted.current) {
-        setNavigationState({
-          isNavigating: false,
-          error: error instanceof Error ? error.message : 'Navigation failed',
-        });
-        isNavigating.current = false;
+  const performNavigation = useCallback(
+    (to: string, options?: { replace?: boolean }) => {
+      try {
+        setNavigationState({ isNavigating: true, error: null });
+        isNavigating.current = true;
+        navigate(to, options);
+      } catch (error) {
+        if (isMounted.current) {
+          setNavigationState({
+            isNavigating: false,
+            error: error instanceof Error ? error.message : 'Navigation failed',
+          });
+          isNavigating.current = false;
+        }
       }
-    }
-  }, [navigate]);
+    },
+    [navigate]
+  );
   // Safe navigation function that checks for unsaved changes
   const navigateWithWarning = useCallback(
     async (to: string, options?: { replace?: boolean }) => {

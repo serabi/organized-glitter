@@ -77,15 +77,17 @@ export const useNavigationMonitoring = () => {
         timestamp: new Date().toISOString(),
       });
     }
-
   }, [location, navigationType, user, isAuthenticated, isLoading]);
 
   // Monitor performance issues
   useEffect(() => {
-    const navigationStart = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+    const navigationStart = performance.getEntriesByType(
+      'navigation'
+    )[0] as PerformanceNavigationTiming;
     if (navigationStart) {
       const loadTime = navigationStart.loadEventEnd - navigationStart.loadEventStart;
-      if (loadTime > 3000) { // > 3 seconds
+      if (loadTime > 3000) {
+        // > 3 seconds
         logger.warn('🐌 Slow navigation detected', {
           loadTime: `${loadTime}ms`,
           pathname: location.pathname,

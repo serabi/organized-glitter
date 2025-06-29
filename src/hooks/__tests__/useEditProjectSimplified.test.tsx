@@ -99,13 +99,13 @@ describe('useEditProjectSimplified', () => {
         mutations: { retry: false },
       },
     });
-    
+
     // Set default mock return values
     vi.mocked(useAuth).mockReturnValue({
       user: { id: 'user-123' },
       isLoading: false,
     });
-    
+
     // Setup mock functions for collection operations
     mockPbUpdate.mockResolvedValue({
       id: 'project-123',
@@ -157,7 +157,7 @@ describe('useEditProjectSimplified', () => {
 
     mockAddTagToProject.mockResolvedValue({ data: undefined, error: null });
     mockRemoveTagFromProject.mockResolvedValue({ data: undefined, error: null });
-    
+
     vi.clearAllMocks();
   });
 
@@ -248,14 +248,21 @@ describe('useEditProjectSimplified', () => {
         expect(result.current.loading).toBe(false);
       });
 
-      expect(mockPbGetOne).toHaveBeenCalledWith('project-123', expect.objectContaining({
-        expand: 'company,artist,user,project_tags_via_project.tag',
-      }));
-      
-      expect(mockPbGetList).toHaveBeenCalledWith(1, 200, expect.objectContaining({
-        filter: 'user = "user-123"',
-        fields: 'name',
-      }));
+      expect(mockPbGetOne).toHaveBeenCalledWith(
+        'project-123',
+        expect.objectContaining({
+          expand: 'company,artist,user,project_tags_via_project.tag',
+        })
+      );
+
+      expect(mockPbGetList).toHaveBeenCalledWith(
+        1,
+        200,
+        expect.objectContaining({
+          filter: 'user = "user-123"',
+          fields: 'name',
+        })
+      );
 
       expect(result.current.project).toBeTruthy();
       expect(result.current.companies).toEqual(['Test Company']);
@@ -306,10 +313,7 @@ describe('useEditProjectSimplified', () => {
 
       await result.current.handleSubmit(formData);
 
-      expect(mockPbUpdate).toHaveBeenCalledWith(
-        'project-123',
-        expect.any(FormData)
-      );
+      expect(mockPbUpdate).toHaveBeenCalledWith('project-123', expect.any(FormData));
     });
 
     it('should handle update error', async () => {

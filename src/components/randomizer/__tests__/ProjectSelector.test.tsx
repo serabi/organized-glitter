@@ -113,7 +113,7 @@ describe('ProjectSelector', () => {
   describe('Selection State', () => {
     it('shows checked state for selected projects', () => {
       const selectedProjects = new Set(['1', '3']);
-      
+
       render(
         <ProjectSelector
           projects={mockProjects}
@@ -132,7 +132,7 @@ describe('ProjectSelector', () => {
 
     it('displays selection count correctly', () => {
       const selectedProjects = new Set(['1', '2']);
-      
+
       render(
         <ProjectSelector
           projects={mockProjects}
@@ -162,7 +162,7 @@ describe('ProjectSelector', () => {
 
     it('shows "all selected" when all projects are selected', () => {
       const selectedProjects = new Set(['1', '2', '3']);
-      
+
       render(
         <ProjectSelector
           projects={mockProjects}
@@ -331,7 +331,7 @@ describe('ProjectSelector', () => {
 
     it('shows fallback when no image is available', () => {
       const projectsWithoutImages = mockProjects.map(p => ({ ...p, image: undefined }));
-      
+
       render(
         <ProjectSelector
           projects={projectsWithoutImages}
@@ -351,7 +351,7 @@ describe('ProjectSelector', () => {
   describe('Button States', () => {
     it('changes Select All to Select None when all projects are selected', () => {
       const selectedProjects = new Set(['1', '2', '3']);
-      
+
       render(
         <ProjectSelector
           projects={mockProjects}
@@ -368,7 +368,7 @@ describe('ProjectSelector', () => {
 
     it('shows both buttons when partially selected', () => {
       const selectedProjects = new Set(['1']);
-      
+
       render(
         <ProjectSelector
           projects={mockProjects}
@@ -413,11 +413,11 @@ describe('ProjectSelector', () => {
       );
 
       const firstCheckbox = screen.getAllByRole('checkbox')[0];
-      
+
       // Tab to checkbox and press space to select
       firstCheckbox.focus();
       fireEvent.keyDown(firstCheckbox, { key: ' ', code: 'Space' });
-      
+
       expect(mockOnProjectToggle).toHaveBeenCalledWith('1');
     });
   });

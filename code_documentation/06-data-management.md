@@ -16,48 +16,48 @@ sequenceDiagram
 
     User->>Import: Navigate to /import
     Import-->>User: Show CSV import interface
-    
+
     alt User downloads template
         User->>Import: Click "Download Template"
         Import->>CSVUtils: Generate CSV template
         CSVUtils-->>User: Download template file
-        
+
     else User uploads CSV
         User->>Import: Select CSV file
         Import->>CSVUtils: Parse CSV file
         CSVUtils->>ValidationSchema: Validate CSV structure and data
-        
+
         alt CSV validation fails
             ValidationSchema-->>CSVUtils: Return validation errors
             CSVUtils-->>Import: Show error details
             Import-->>User: Display validation errors with line numbers
-            
+
         else CSV validation passes
             ValidationSchema-->>CSVUtils: CSV data valid
             CSVUtils-->>Import: Return parsed project data
             Import-->>User: Show preview of projects to import
-            
+
             User->>Import: Confirm import
             Import->>BulkMutations: Start bulk import process
-            
+
             loop For each project in CSV
                 BulkMutations->>MetadataService: Create/find company
                 MetadataService->>PocketBase: Insert or find company
                 PocketBase-->>MetadataService: Return company ID
-                
-                BulkMutations->>MetadataService: Create/find artist  
+
+                BulkMutations->>MetadataService: Create/find artist
                 MetadataService->>PocketBase: Insert or find artist
                 PocketBase-->>MetadataService: Return artist ID
-                
+
                 BulkMutations->>ProjectService: Create project
                 ProjectService->>PocketBase: Insert project record
                 PocketBase-->>ProjectService: Return created project
                 ProjectService-->>BulkMutations: Project created
             end
-            
+
             BulkMutations-->>Import: All projects imported successfully
             Import-->>User: Show import success summary
-            
+
             User->>Import: Click "View Projects"
             Import->>Dashboard: Navigate to /dashboard
             Dashboard-->>User: Show updated project list

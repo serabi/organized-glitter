@@ -20,22 +20,23 @@ import { ProjectStatus } from '@/types/project';
 export const useProjectDetailReactQuery = (projectId: string | undefined) => {
   // Get authentication state to prevent race conditions
   const { isAuthenticated, initialCheckComplete } = useAuth();
-  
+
   // Log auth state for debugging
   if (process.env.NODE_ENV === 'development') {
     console.log('[useProjectDetailReactQuery] Auth state:', {
       projectId,
       isAuthenticated,
-      initialCheckComplete
+      initialCheckComplete,
     });
   }
 
   // Main project detail query with auth dependencies
-  const { data: project, isLoading: loading, error, refetch } = useProjectDetailQuery(
-    projectId,
-    isAuthenticated,
-    initialCheckComplete
-  );
+  const {
+    data: project,
+    isLoading: loading,
+    error,
+    refetch,
+  } = useProjectDetailQuery(projectId, isAuthenticated, initialCheckComplete);
 
   // Mutation hooks
   const updateStatusMutation = useUpdateProjectStatusMutation();

@@ -52,7 +52,9 @@ export const useCreateProjectWithRedirect = () => {
         try {
           const companyRecord = await pb
             .collection('companies')
-            .getFirstListItem(pb.filter('name = {:name} && user = {:user}', { name: data.company, user: data.user }));
+            .getFirstListItem(
+              pb.filter('name = {:name} && user = {:user}', { name: data.company, user: data.user })
+            );
           companyId = companyRecord?.id || null;
         } catch (error) {
           logger.warn('Company not found:', data.company);
@@ -64,7 +66,9 @@ export const useCreateProjectWithRedirect = () => {
         try {
           const artistRecord = await pb
             .collection('artists')
-            .getFirstListItem(pb.filter('name = {:name} && user = {:user}', { name: data.artist, user: data.user }));
+            .getFirstListItem(
+              pb.filter('name = {:name} && user = {:user}', { name: data.artist, user: data.user })
+            );
           artistId = artistRecord?.id || null;
         } catch (error) {
           logger.warn('Artist not found:', data.artist);
@@ -205,7 +209,7 @@ export const useCreateProjectWithRedirect = () => {
       }
     },
 
-    onSuccess: async (data) => {
+    onSuccess: async data => {
       logger.info('✅ Project created successfully, initiating navigation');
 
       // Use our new navigation system for optimistic navigation
@@ -213,7 +217,7 @@ export const useCreateProjectWithRedirect = () => {
         projectData: data,
         successMessage: `"${data.title}" has been added to your collection.`,
         replace: true, // Replace current history entry since we're coming from form
-        showLoadingFeedback: true
+        showLoadingFeedback: true,
       });
 
       if (!navigationResult.success) {

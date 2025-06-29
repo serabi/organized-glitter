@@ -59,7 +59,7 @@ describe('randomizerService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Reset all mock functions on the collection
-    Object.values(mockCollection).forEach((mockFn) => {
+    Object.values(mockCollection).forEach(mockFn => {
       if (typeof mockFn === 'function' && 'mockReset' in mockFn) {
         (mockFn as any).mockReset();
       }
@@ -105,7 +105,9 @@ describe('randomizerService', () => {
       const pbError = new Error('PocketBase validation error');
       mockCollection.create.mockRejectedValue(pbError);
 
-      await expect(createSpin(mockCreateSpinParams)).rejects.toThrow('Failed to save spin to history');
+      await expect(createSpin(mockCreateSpinParams)).rejects.toThrow(
+        'Failed to save spin to history'
+      );
     });
 
     it('creates spin with null project (deleted project)', async () => {
@@ -196,7 +198,7 @@ describe('randomizerService', () => {
       mockCollection.getList.mockRejectedValue(pbError);
 
       const result = await getSpinHistory('user1');
-      
+
       expect(mockCollection.getList).toHaveBeenCalledWith(1, 8, {
         filter: 'user = "user1"',
         sort: '-spun_at',
@@ -299,7 +301,7 @@ describe('randomizerService', () => {
         })
         // Mock third page with no records
         .mockResolvedValueOnce({ items: [] });
-      
+
       mockCollection.delete.mockResolvedValue(true);
 
       const result = await clearSpinHistory('user1');
@@ -379,7 +381,9 @@ describe('randomizerService', () => {
 
       // The exact time might vary due to timezone handling, so check the date part
       const expectedCutoffPrefix = '2023-10-03T'; // 90 days before mock date
-      expect(mockCollection.getList).toHaveBeenCalledWith(1, 50, 
+      expect(mockCollection.getList).toHaveBeenCalledWith(
+        1,
+        50,
         expect.objectContaining({
           filter: expect.stringMatching(`user = "user1" && spun_at < "${expectedCutoffPrefix}.*"`),
           fields: 'id',
@@ -404,7 +408,7 @@ describe('randomizerService', () => {
         })
         // Mock third page with no records
         .mockResolvedValueOnce({ items: [] });
-      
+
       mockCollection.delete.mockResolvedValue(true);
 
       const result = await cleanupOldSpins('user1', 30);

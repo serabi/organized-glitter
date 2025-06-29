@@ -25,7 +25,7 @@ export const initializeChunkLoadingRetry = (): void => {
   // Fallback for edge cases where vite:preloadError doesn't fire
   window.addEventListener('unhandledrejection', event => {
     const error = event.reason;
-    
+
     if (
       error instanceof Error &&
       (error.message.includes('Loading chunk') ||
@@ -40,4 +40,3 @@ export const initializeChunkLoadingRetry = (): void => {
 
   console.log('🛠️ Chunk loading error handler initialized');
 };
-

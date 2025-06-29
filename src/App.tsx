@@ -46,7 +46,7 @@ const App: React.FC = () => {
 
   return (
     <div
-      className="min-h-screen bg-background text-foreground mobile-app-container"
+      className="mobile-app-container min-h-screen bg-background text-foreground"
       style={{
         width: '100%',
         overflow: 'auto',

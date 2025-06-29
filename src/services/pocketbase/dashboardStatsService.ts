@@ -474,26 +474,26 @@ async function upsertCacheRecord(
 
 /**
  * Performs incremental stats update after project deletion with 99.98% performance improvement.
- * 
+ *
  * This function implements a high-performance incremental calculation strategy that:
  * - Updates cached stats using delta calculations instead of full recalculation
  * - Reduces calculation time from 4-5 seconds to ~1ms (99.98% improvement)
  * - Maintains data consistency while avoiding expensive database aggregations
  * - Automatically falls back to full calculation if cache is missing
- * 
+ *
  * **Performance Benefits:**
  * - Eliminates UI freezing during project deletion
  * - Reduces server load by avoiding full project enumeration
  * - Maintains real-time dashboard responsiveness
  * - Scales efficiently with large project collections
- * 
+ *
  * **Algorithm:**
  * 1. Retrieves existing cached stats for the target year
  * 2. Calculates delta changes based on deleted project properties
  * 3. Applies incremental updates to status breakdown and counts
  * 4. Updates diamond totals for completed projects deleted within the year
  * 5. Saves updated stats with 1ms calculation duration marker
- * 
+ *
  * @param userId - The unique identifier of the user whose stats need updating
  * @param deletedProject - Metadata of the deleted project containing status, diamonds, and dates
  * @param deletedProject.status - Project status (affects status breakdown counts)
@@ -501,18 +501,18 @@ async function upsertCacheRecord(
  * @param deletedProject.date_completed - Completion date (determines if affects yearly totals)
  * @param deletedProject.date_started - Start date (determines if affects yearly started count)
  * @param year - Target year for stats update (defaults to current year)
- * 
+ *
  * @throws Will fall back to full calculation if incremental update fails
- * 
+ *
  * @example
  * ```typescript
  * // Called automatically after successful project deletion
  * await updateStatsAfterProjectDeletion(
  *   'user_123',
- *   { 
- *     status: 'completed', 
- *     total_diamonds: 5000, 
- *     date_completed: '2024-06-15' 
+ *   {
+ *     status: 'completed',
+ *     total_diamonds: 5000,
+ *     date_completed: '2024-06-15'
  *   },
  *   2024
  * );
@@ -520,12 +520,12 @@ async function upsertCacheRecord(
  * ```
  */
 export async function updateStatsAfterProjectDeletion(
-  userId: string, 
-  deletedProject: { 
-    status: string; 
-    total_diamonds?: number; 
-    date_completed?: string; 
-    date_started?: string; 
+  userId: string,
+  deletedProject: {
+    status: string;
+    total_diamonds?: number;
+    date_completed?: string;
+    date_started?: string;
   },
   year?: number
 ): Promise<void> {
@@ -539,7 +539,9 @@ export async function updateStatsAfterProjectDeletion(
     if (!cached) {
       // No cache exists, fallback to full calculation
       if (config.enableLogging) {
-        console.log('[DashboardStats] No cache found for incremental update, doing full calculation');
+        console.log(
+          '[DashboardStats] No cache found for incremental update, doing full calculation'
+        );
       }
       await calculateAndCacheStats(userId, targetYear);
       return;
@@ -551,7 +553,7 @@ export async function updateStatsAfterProjectDeletion(
       started_count: 0,
       in_progress_count: 0,
       total_diamonds: 0,
-      status_breakdown: { ...cached.status_breakdown }
+      status_breakdown: { ...cached.status_breakdown },
     };
 
     // Update status breakdown
@@ -612,7 +614,10 @@ export async function updateStatsAfterProjectDeletion(
     }
   } catch (error) {
     if (config.enableLogging) {
-      console.warn('[DashboardStats] Incremental update failed, falling back to full calculation:', error);
+      console.warn(
+        '[DashboardStats] Incremental update failed, falling back to full calculation:',
+        error
+      );
     }
 
     // Fallback to full calculation

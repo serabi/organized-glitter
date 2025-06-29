@@ -39,28 +39,31 @@ export const useProjectFormLogic = ({
 
   // Mobile-friendly debounced onChange handler
   const debouncedOnChangeRef = useRef<NodeJS.Timeout>();
-  const mobileOnChange = useCallback((data: ProjectFormSchemaType) => {
-    if (!onChange) return;
-    
-    // Clear previous timeout
-    if (debouncedOnChangeRef.current) {
-      clearTimeout(debouncedOnChangeRef.current);
-    }
-    
-    // Use longer debounce on mobile to prevent freezing during rapid input
-    const debounceTime = window.innerWidth < 1024 ? 500 : 200;
-    
-    debouncedOnChangeRef.current = setTimeout(() => {
-      const convertedData = convertSchemaToFormValues(data);
-      const uniqueTagIds = Array.from(new Set(projectTags.map(tag => tag.id)));
-      const payload: ProjectPersistPayload = {
-        ...convertedData,
-        tags: projectTags,
-        tagIds: uniqueTagIds,
-      };
-      onChange(payload);
-    }, debounceTime);
-  }, [onChange, projectTags]);
+  const mobileOnChange = useCallback(
+    (data: ProjectFormSchemaType) => {
+      if (!onChange) return;
+
+      // Clear previous timeout
+      if (debouncedOnChangeRef.current) {
+        clearTimeout(debouncedOnChangeRef.current);
+      }
+
+      // Use longer debounce on mobile to prevent freezing during rapid input
+      const debounceTime = window.innerWidth < 1024 ? 500 : 200;
+
+      debouncedOnChangeRef.current = setTimeout(() => {
+        const convertedData = convertSchemaToFormValues(data);
+        const uniqueTagIds = Array.from(new Set(projectTags.map(tag => tag.id)));
+        const payload: ProjectPersistPayload = {
+          ...convertedData,
+          tags: projectTags,
+          tagIds: uniqueTagIds,
+        };
+        onChange(payload);
+      }, debounceTime);
+    },
+    [onChange, projectTags]
+  );
 
   // Update projectTags when initialData.tags changes
   useEffect(() => {

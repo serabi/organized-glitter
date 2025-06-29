@@ -55,12 +55,12 @@ export function MetadataProvider({ children }: MetadataProviderProps) {
     () => (Array.isArray(companiesQuery.data) ? companiesQuery.data : []),
     [companiesQuery.data]
   );
-  
+
   const artists = useMemo(
     () => (Array.isArray(artistsQuery.data) ? artistsQuery.data : []),
     [artistsQuery.data]
   );
-  
+
   const tags = useMemo(
     () => (Array.isArray(tagsQuery.data) ? tagsQuery.data : []),
     [tagsQuery.data]
@@ -71,11 +71,8 @@ export function MetadataProvider({ children }: MetadataProviderProps) {
     () => companies.map(company => company.name).filter(Boolean),
     [companies]
   );
-  
-  const artistNames = useMemo(
-    () => artists.map(artist => artist.name).filter(Boolean),
-    [artists]
-  );
+
+  const artistNames = useMemo(() => artists.map(artist => artist.name).filter(Boolean), [artists]);
 
   // Memoize loading and error objects to prevent recreation
   const isLoading = useMemo(

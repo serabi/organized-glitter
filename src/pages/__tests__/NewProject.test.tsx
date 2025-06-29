@@ -120,7 +120,7 @@ describe('NewProject', () => {
 
     mockNavigate = vi.fn();
     mockUseNavigate.mockReturnValue(mockNavigate);
-    
+
     // Setup navigation mock to resolve successfully
     mockNavigateToProject.mockResolvedValue({ success: true });
 
@@ -383,7 +383,7 @@ describe('NewProject', () => {
       });
     });
   });
-describe('Loading States', () => {
+  describe('Loading States', () => {
     it('should show loading state when project creation is pending', async () => {
       mockUseCreateProjectWithRedirect.mockReturnValue({
         mutateAsync: vi.fn(),
@@ -489,7 +489,9 @@ describe('Loading States', () => {
     });
 
     it('should handle company creation error gracefully', async () => {
-      const mockCompanyMutateAsync = vi.fn().mockRejectedValue(new Error('Company creation failed'));
+      const mockCompanyMutateAsync = vi
+        .fn()
+        .mockRejectedValue(new Error('Company creation failed'));
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       mockUseCreateCompany.mockReturnValue({
@@ -500,10 +502,7 @@ describe('Loading States', () => {
       // Mock ProjectForm to trigger company addition
       mockProjectForm.mockImplementation(({ onCompanyAdded }) => (
         <div data-testid="project-form">
-          <button
-            data-testid="add-company"
-            onClick={() => onCompanyAdded('New Company')}
-          >
+          <button data-testid="add-company" onClick={() => onCompanyAdded('New Company')}>
             Add Company
           </button>
         </div>
@@ -541,10 +540,7 @@ describe('Loading States', () => {
       // Mock ProjectForm to trigger artist addition
       mockProjectForm.mockImplementation(({ onArtistAdded }) => (
         <div data-testid="project-form">
-          <button
-            data-testid="add-artist"
-            onClick={() => onArtistAdded('New Artist')}
-          >
+          <button data-testid="add-artist" onClick={() => onArtistAdded('New Artist')}>
             Add Artist
           </button>
         </div>
@@ -573,7 +569,7 @@ describe('Loading States', () => {
     it('should handle network errors', async () => {
       const networkError = new Error('Network request failed');
       networkError.name = 'NetworkError';
-      
+
       const mockMutateAsync = vi.fn().mockRejectedValue(networkError);
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -659,7 +655,7 @@ describe('Loading States', () => {
 
     it('should fallback to useAuth user when pocketbase authStore is null', async () => {
       const authUserId = 'auth-user-id';
-      
+
       vi.mocked(pb).authStore.model = null;
 
       mockUseAuth.mockReturnValue({
@@ -944,7 +940,12 @@ describe('Loading States', () => {
     });
 
     it('should handle metadata with special characters', async () => {
-      const specialCompanies = ['Company & Co.', 'Company "Quotes"', "Company's Name", 'Company <Tags>'];
+      const specialCompanies = [
+        'Company & Co.',
+        'Company "Quotes"',
+        "Company's Name",
+        'Company <Tags>',
+      ];
       const specialArtists = ['Artist & Co.', 'Artist "Quotes"', "Artist's Name", 'Artist <Tags>'];
 
       mockUseUserMetadata.mockReturnValue({
@@ -1067,7 +1068,8 @@ describe('Loading States', () => {
     });
 
     it('should handle rapid form submissions', async () => {
-      const mockMutateAsync = vi.fn()
+      const mockMutateAsync = vi
+        .fn()
         .mockResolvedValueOnce({ id: 'first-id', title: 'First' })
         .mockResolvedValueOnce({ id: 'second-id', title: 'Second' });
 
@@ -1395,9 +1397,11 @@ describe('Loading States', () => {
 
   describe('Performance and Edge Cases', () => {
     it('should handle component unmounting during async operations', async () => {
-      const mockMutateAsync = vi.fn().mockImplementation(
-        () => new Promise(resolve => setTimeout(() => resolve({ id: 'delayed-id' }), 1000))
-      );
+      const mockMutateAsync = vi
+        .fn()
+        .mockImplementation(
+          () => new Promise(resolve => setTimeout(() => resolve({ id: 'delayed-id' }), 1000))
+        );
 
       mockUseCreateProjectWithRedirect.mockReturnValue({
         mutateAsync: mockMutateAsync,
@@ -1419,8 +1423,8 @@ describe('Loading States', () => {
 
     it('should handle multiple rapid state changes', async () => {
       let renderCount = 0;
-      
-      mockProjectForm.mockImplementation((props) => {
+
+      mockProjectForm.mockImplementation(props => {
         renderCount++;
         return (
           <div data-testid="project-form">
@@ -1447,7 +1451,13 @@ describe('Loading States', () => {
       });
 
       rerender(
-        <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })}>
+        <QueryClientProvider
+          client={
+            new QueryClient({
+              defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+            })
+          }
+        >
           <MemoryRouter>
             <NewProject />
           </MemoryRouter>
@@ -1464,7 +1474,7 @@ describe('Loading States', () => {
     it('should maintain referential stability of callback functions', async () => {
       const callbackRefs: Record<string, any> = {};
 
-      mockProjectForm.mockImplementation((props) => {
+      mockProjectForm.mockImplementation(props => {
         if (!callbackRefs.onSubmit) {
           callbackRefs.onSubmit = props.onSubmit;
           callbackRefs.onCompanyAdded = props.onCompanyAdded;
@@ -1512,7 +1522,9 @@ describe('Loading States', () => {
     });
 
     it('should handle query client provider errors gracefully', async () => {
-      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+      const queryClient = new QueryClient({
+        defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      });
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       render(
@@ -1533,7 +1545,9 @@ describe('Loading States', () => {
 
   describe('Router Integration', () => {
     it('should handle different initial routes', async () => {
-      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+      const queryClient = new QueryClient({
+        defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      });
 
       render(
         <QueryClientProvider client={queryClient}>
@@ -1549,9 +1563,14 @@ describe('Loading States', () => {
     });
 
     it('should handle project creation with navigation state', async () => {
-      const mockMutateAsync = vi.fn().mockResolvedValue({ id: 'history-project-id', title: 'History Project' });
+      const mockMutateAsync = vi
+        .fn()
+        .mockResolvedValue({ id: 'history-project-id', title: 'History Project' });
 
-      mockUseCreateProjectWithRedirect.mockReturnValue({ mutateAsync: mockMutateAsync, isPending: false });
+      mockUseCreateProjectWithRedirect.mockReturnValue({
+        mutateAsync: mockMutateAsync,
+        isPending: false,
+      });
 
       renderNewProject();
 

@@ -126,19 +126,14 @@ async function paginatedBatchDelete(
   collectionName: string,
   options: PaginatedDeletionOptions
 ): Promise<number> {
-  const {
-    filter,
-    sort = 'created',
-    pageSize = 50,
-    batchDelayMs = 10
-  } = options;
+  const { filter, sort = 'created', pageSize = 50, batchDelayMs = 10 } = options;
 
   logger.debug('Starting paginated batch deletion', {
     collectionName,
     filter,
     sort,
     pageSize,
-    batchDelayMs
+    batchDelayMs,
   });
 
   let totalDeleted = 0;
@@ -161,23 +156,26 @@ async function paginatedBatchDelete(
       logger.debug('Processing deletion batch', {
         collectionName,
         batchSize: recordsPage.items.length,
-        totalDeletedSoFar: totalDeleted
+        totalDeletedSoFar: totalDeleted,
       });
 
       // Delete all records in this batch concurrently with error handling
-      const deletionPromises = recordsPage.items.map(record => 
-        pb.collection(collectionName).delete(record.id).catch(error => {
-          logger.error('Failed to delete individual record', { 
-            collectionName,
-            recordId: record.id, 
-            error 
-          });
-          return null; // Return null for failed deletions
-        })
+      const deletionPromises = recordsPage.items.map(record =>
+        pb
+          .collection(collectionName)
+          .delete(record.id)
+          .catch(error => {
+            logger.error('Failed to delete individual record', {
+              collectionName,
+              recordId: record.id,
+              error,
+            });
+            return null; // Return null for failed deletions
+          })
       );
 
       const deletionResults = await Promise.all(deletionPromises);
-      
+
       // Count successful deletions (non-null results)
       const successfulDeletions = deletionResults.filter(result => result !== null).length;
       totalDeleted += successfulDeletions;
@@ -191,12 +189,11 @@ async function paginatedBatchDelete(
       if (hasMoreRecords && recordsPage.items.length > 0) {
         await new Promise(resolve => setTimeout(resolve, batchDelayMs));
       }
-
     } catch (error) {
-      logger.error('Failed to fetch records batch during deletion', { 
-        collectionName, 
+      logger.error('Failed to fetch records batch during deletion', {
+        collectionName,
         filter,
-        error 
+        error,
       });
       throw error; // Re-throw fetch errors as they indicate fundamental issues
     }
@@ -205,7 +202,7 @@ async function paginatedBatchDelete(
   logger.debug('Paginated batch deletion completed', {
     collectionName,
     totalDeleted,
-    filter
+    filter,
   });
 
   return totalDeleted;
@@ -388,7 +385,7 @@ export async function clearSpinHistory(userId: string): Promise<number> {
 
     const totalDeleted = await paginatedBatchDelete(RANDOMIZER_COLLECTION, {
       filter: pb.filter('user = {:userId}', { userId }),
-      sort: 'created' // Consistent ordering for reliable pagination
+      sort: 'created', // Consistent ordering for reliable pagination
     });
 
     if (totalDeleted === 0) {
@@ -494,15 +491,15 @@ export async function cleanupOldSpins(userId: string, daysToKeep: number = 90): 
     cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
     const cutoffISO = cutoffDate.toISOString();
 
-    logger.debug('Cleaning up old spins using paginated deletion', { 
-      userId, 
-      daysToKeep, 
-      cutoffDate: cutoffISO 
+    logger.debug('Cleaning up old spins using paginated deletion', {
+      userId,
+      daysToKeep,
+      cutoffDate: cutoffISO,
     });
 
     const totalDeleted = await paginatedBatchDelete(RANDOMIZER_COLLECTION, {
       filter: pb.filter('user = {:userId} && spun_at < {:cutoff}', { userId, cutoff: cutoffISO }),
-      sort: 'spun_at' // Oldest first for consistent cleanup order
+      sort: 'spun_at', // Oldest first for consistent cleanup order
     });
 
     if (totalDeleted === 0) {

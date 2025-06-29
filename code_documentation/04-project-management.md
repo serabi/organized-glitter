@@ -17,9 +17,9 @@ sequenceDiagram
     ProjectQuery->>PocketBase: Query project with expanded relations
     PocketBase-->>ProjectQuery: Return project with company/artist data
     ProjectQuery-->>ProjectDetail: Display project information
-    
+
     ProjectDetail-->>User: Show project details with action buttons
-    
+
     alt User updates project status
         User->>ProjectDetail: Change status dropdown
         ProjectDetail->>ProjectMutations: Update project status
@@ -27,24 +27,24 @@ sequenceDiagram
         PocketBase-->>ProjectMutations: Return updated project
         ProjectMutations-->>ProjectDetail: Optimistic update success
         ProjectDetail-->>User: Show updated status
-        
+
     else User adds project notes
         User->>ProjectDetail: Enter notes in textarea
         ProjectDetail->>ProjectMutations: Update project notes
         ProjectMutations->>PocketBase: PATCH project record
         PocketBase-->>ProjectMutations: Return updated project
         ProjectMutations-->>ProjectDetail: Update success
-        
+
     else User views progress notes
         User->>ProjectDetail: Click progress notes section
         ProjectDetail->>ProgressNotes: Load progress notes component
         ProgressNotes-->>User: Show progress timeline and add note form
-        
+
     else User edits project details
         User->>ProjectDetail: Click "Edit Project"
         ProjectDetail->>AdvancedEdit: Navigate to /projects/{id}/edit
         AdvancedEdit-->>User: Show comprehensive edit form
-        
+
     else User archives project
         User->>ProjectDetail: Click archive button
         ProjectDetail->>ProjectMutations: Archive project
@@ -68,12 +68,13 @@ sequenceDiagram
 ## Technical Notes
 
 ### Form Field Mapping
+
 **CRITICAL**: When updating project data, frontend forms use camelCase field names but PocketBase expects snake_case field names. The `useEditProjectSimplified.tsx` hook handles this mapping:
 
 ```typescript
 const fieldNameMap: Record<string, string> = {
   datePurchased: 'date_purchased',
-  dateReceived: 'date_received', 
+  dateReceived: 'date_received',
   dateStarted: 'date_started',
   dateCompleted: 'date_completed',
 };

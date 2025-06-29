@@ -53,7 +53,11 @@ describe('ImageService', () => {
     });
 
     it('should return empty string for missing record', () => {
-      const url = ImageService.getOptimizedUrl(null as unknown as Record<string, unknown> & { id: string }, mockFilename, 'card');
+      const url = ImageService.getOptimizedUrl(
+        null as unknown as Record<string, unknown> & { id: string },
+        mockFilename,
+        'card'
+      );
       expect(url).toBe('');
     });
 
@@ -81,7 +85,10 @@ describe('ImageService', () => {
     });
 
     it('should return empty string for missing record', () => {
-      const url = ImageService.getFullResolutionUrl(null as unknown as Record<string, unknown> & { id: string }, mockFilename);
+      const url = ImageService.getFullResolutionUrl(
+        null as unknown as Record<string, unknown> & { id: string },
+        mockFilename
+      );
       expect(url).toBe('');
     });
   });
@@ -120,7 +127,11 @@ describe('ImageService', () => {
     });
 
     it('should default to card size for unknown context', () => {
-      const url = ImageService.getContextualUrl(mockRecord, mockFilename, 'unknown' as 'gallery' | 'card' | 'modal' | 'detail' | 'avatar');
+      const url = ImageService.getContextualUrl(
+        mockRecord,
+        mockFilename,
+        'unknown' as 'gallery' | 'card' | 'modal' | 'detail' | 'avatar'
+      );
 
       expect(url).toBe(
         `https://data.organizedglitter.app/api/files/projects/test-record-id/test-image.jpg?thumb=${IMAGE_SIZES.card}`
@@ -146,7 +157,10 @@ describe('ImageService', () => {
     });
 
     it('should return empty array for missing record', () => {
-      const urls = ImageService.getResponsiveUrls(null as unknown as Record<string, unknown> & { id: string }, mockFilename);
+      const urls = ImageService.getResponsiveUrls(
+        null as unknown as Record<string, unknown> & { id: string },
+        mockFilename
+      );
       expect(urls).toEqual([]);
     });
   });

@@ -1,7 +1,15 @@
 import { useState, useCallback, memo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Menu, Home, LayoutDashboard, Settings, LogOut, MessageSquare, Shuffle } from 'lucide-react';
+import {
+  Menu,
+  Home,
+  LayoutDashboard,
+  Settings,
+  LogOut,
+  MessageSquare,
+  Shuffle,
+} from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useToast } from '@/hooks/use-toast';
@@ -31,24 +39,27 @@ const Navbar = memo(({ isAuthenticated = false }: NavbarProps) => {
   const navigate = useNavigate();
 
   // Handle navigation clicks with logging
-  const handleNavClick = useCallback((targetPath: string, linkName: string) => {
-    logger.info(`🔗 Navigation link clicked: ${linkName}`, {
-      from: location.pathname,
-      to: targetPath,
-      linkName,
-      currentUser: user?.id,
-      timestamp: new Date().toISOString(),
-    });
-
-    // Special logging for Settings -> Dashboard pattern
-    if (location.pathname === '/profile' && targetPath === '/dashboard') {
-      logger.info('🎯 SETTINGS -> DASHBOARD navigation detected via navbar click', {
+  const handleNavClick = useCallback(
+    (targetPath: string, linkName: string) => {
+      logger.info(`🔗 Navigation link clicked: ${linkName}`, {
         from: location.pathname,
         to: targetPath,
+        linkName,
+        currentUser: user?.id,
         timestamp: new Date().toISOString(),
       });
-    }
-  }, [location.pathname, user?.id]);
+
+      // Special logging for Settings -> Dashboard pattern
+      if (location.pathname === '/profile' && targetPath === '/dashboard') {
+        logger.info('🎯 SETTINGS -> DASHBOARD navigation detected via navbar click', {
+          from: location.pathname,
+          to: targetPath,
+          timestamp: new Date().toISOString(),
+        });
+      }
+    },
+    [location.pathname, user?.id]
+  );
 
   const handleFeedback = useCallback(() => {
     showUserReportDialog({

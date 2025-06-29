@@ -7,7 +7,7 @@ interface LocationSyncProviderProps {
 
 /**
  * LocationSyncProvider provides a lightweight location monitoring system.
- * 
+ *
  * Since we've eliminated window.location.href usage throughout the app,
  * this component now serves as a safety net for any remaining edge cases
  * and provides helpful debugging information in development.

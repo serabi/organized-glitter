@@ -134,7 +134,8 @@ const fetchProjects = async (
     // Expand relations - PocketBase returns full records, not individual fields
     expand: 'company,artist,project_tags_via_project.tag',
     // Select only essential fields for dashboard display (includes all fields used in transformation)
-    fields: 'id,title,status,user,image,width,height,drill_shape,kit_category,date_purchased,date_received,date_started,date_completed,total_diamonds,general_notes,source_url,updated,created,company,artist',
+    fields:
+      'id,title,status,user,image,width,height,drill_shape,kit_category,date_purchased,date_received,date_started,date_completed,total_diamonds,general_notes,source_url,updated,created,company,artist',
     // Enable request deduplication for performance
     requestKey,
   });
@@ -199,7 +200,9 @@ const fetchProjects = async (
       totalDiamonds: projectRecord.total_diamonds || undefined,
       generalNotes: projectRecord.general_notes || '',
       imageUrl: projectRecord.image
-        ? pb.files.getURL({ ...record, collectionName: 'projects' }, projectRecord.image, { thumb: '300x200f' })
+        ? pb.files.getURL({ ...record, collectionName: 'projects' }, projectRecord.image, {
+            thumb: '300x200f',
+          })
         : undefined,
       sourceUrl: projectRecord.source_url || undefined,
       tags: tags,
@@ -226,13 +229,16 @@ export const useProjects = ({
   pageSize,
 }: UseProjectsParams) => {
   // Memoize query parameters to prevent unnecessary re-computations
-  const queryParams: ProjectQueryParams = useMemo(() => ({
-    filters,
-    sortField,
-    sortDirection,
-    currentPage,
-    pageSize,
-  }), [filters, sortField, sortDirection, currentPage, pageSize]);
+  const queryParams: ProjectQueryParams = useMemo(
+    () => ({
+      filters,
+      sortField,
+      sortDirection,
+      currentPage,
+      pageSize,
+    }),
+    [filters, sortField, sortDirection, currentPage, pageSize]
+  );
 
   return useQuery({
     queryKey: queryKeys.projects.list(userId || '', queryParams),

@@ -58,12 +58,7 @@ describe('RandomizerWheel', () => {
 
   describe('Empty State', () => {
     it('renders empty state when no projects provided', () => {
-      render(
-        <RandomizerWheel
-          projects={[]}
-          onSpinComplete={mockOnSpinComplete}
-        />
-      );
+      render(<RandomizerWheel projects={[]} onSpinComplete={mockOnSpinComplete} />);
 
       expect(screen.getByText('Select projects below')).toBeInTheDocument();
       expect(screen.getByText('to get started!')).toBeInTheDocument();
@@ -71,24 +66,14 @@ describe('RandomizerWheel', () => {
     });
 
     it('shows gradient background in empty state', () => {
-      render(
-        <RandomizerWheel
-          projects={[]}
-          onSpinComplete={mockOnSpinComplete}
-        />
-      );
+      render(<RandomizerWheel projects={[]} onSpinComplete={mockOnSpinComplete} />);
 
       const wheelContainer = screen.getByText('Select projects below').closest('div');
       expect(wheelContainer?.parentElement).toHaveClass('bg-gradient-to-br');
     });
 
     it('displays arrow pointer in empty state', () => {
-      render(
-        <RandomizerWheel
-          projects={[]}
-          onSpinComplete={mockOnSpinComplete}
-        />
-      );
+      render(<RandomizerWheel projects={[]} onSpinComplete={mockOnSpinComplete} />);
 
       // Check for ChevronDown icon (it will be rendered as an SVG)
       const arrow = document.querySelector('svg');
@@ -98,12 +83,7 @@ describe('RandomizerWheel', () => {
 
   describe('Wheel with Projects', () => {
     it('renders wheel with project segments', () => {
-      render(
-        <RandomizerWheel
-          projects={mockProjects}
-          onSpinComplete={mockOnSpinComplete}
-        />
-      );
+      render(<RandomizerWheel projects={mockProjects} onSpinComplete={mockOnSpinComplete} />);
 
       expect(screen.getByText('Test Project 1')).toBeInTheDocument();
       expect(screen.getByText('Test Project 2')).toBeInTheDocument();
@@ -111,36 +91,23 @@ describe('RandomizerWheel', () => {
     });
 
     it('truncates long project titles', () => {
-      render(
-        <RandomizerWheel
-          projects={mockProjects}
-          onSpinComplete={mockOnSpinComplete}
-        />
-      );
+      render(<RandomizerWheel projects={mockProjects} onSpinComplete={mockOnSpinComplete} />);
 
       expect(screen.getByText('Very Long Project...')).toBeInTheDocument();
-      expect(screen.queryByText('Very Long Project Title That Should Be Truncated')).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('Very Long Project Title That Should Be Truncated')
+      ).not.toBeInTheDocument();
     });
 
     it('enables spin button when projects are provided', () => {
-      render(
-        <RandomizerWheel
-          projects={mockProjects}
-          onSpinComplete={mockOnSpinComplete}
-        />
-      );
+      render(<RandomizerWheel projects={mockProjects} onSpinComplete={mockOnSpinComplete} />);
 
       const spinButton = screen.getByRole('button', { name: /spin the wheel/i });
       expect(spinButton).not.toBeDisabled();
     });
 
     it('displays correct number of segments', () => {
-      render(
-        <RandomizerWheel
-          projects={mockProjects}
-          onSpinComplete={mockOnSpinComplete}
-        />
-      );
+      render(<RandomizerWheel projects={mockProjects} onSpinComplete={mockOnSpinComplete} />);
 
       // Each project should have an SVG path
       const svgElements = document.querySelectorAll('svg');
@@ -158,12 +125,7 @@ describe('RandomizerWheel', () => {
     });
 
     it('starts spinning when button is clicked', async () => {
-      render(
-        <RandomizerWheel
-          projects={mockProjects}
-          onSpinComplete={mockOnSpinComplete}
-        />
-      );
+      render(<RandomizerWheel projects={mockProjects} onSpinComplete={mockOnSpinComplete} />);
 
       const spinButton = screen.getByRole('button', { name: /spin the wheel/i });
       fireEvent.click(spinButton);
@@ -173,12 +135,7 @@ describe('RandomizerWheel', () => {
     });
 
     it('calls onSpinComplete after spinning animation', async () => {
-      render(
-        <RandomizerWheel
-          projects={mockProjects}
-          onSpinComplete={mockOnSpinComplete}
-        />
-      );
+      render(<RandomizerWheel projects={mockProjects} onSpinComplete={mockOnSpinComplete} />);
 
       const spinButton = screen.getByRole('button', { name: /spin the wheel/i });
       fireEvent.click(spinButton);
@@ -190,22 +147,19 @@ describe('RandomizerWheel', () => {
         expect(mockOnSpinComplete).toHaveBeenCalledTimes(1);
       });
 
-      expect(mockOnSpinComplete).toHaveBeenCalledWith(expect.objectContaining({
-        id: expect.any(String),
-        title: expect.any(String),
-      }));
+      expect(mockOnSpinComplete).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: expect.any(String),
+          title: expect.any(String),
+        })
+      );
     });
 
     it('prevents multiple spins while spinning', () => {
-      render(
-        <RandomizerWheel
-          projects={mockProjects}
-          onSpinComplete={mockOnSpinComplete}
-        />
-      );
+      render(<RandomizerWheel projects={mockProjects} onSpinComplete={mockOnSpinComplete} />);
 
       const spinButton = screen.getByRole('button', { name: /spin the wheel/i });
-      
+
       fireEvent.click(spinButton);
       fireEvent.click(spinButton); // Second click should be ignored
 
@@ -216,12 +170,7 @@ describe('RandomizerWheel', () => {
     });
 
     it('resets spin button text after animation completes', async () => {
-      render(
-        <RandomizerWheel
-          projects={mockProjects}
-          onSpinComplete={mockOnSpinComplete}
-        />
-      );
+      render(<RandomizerWheel projects={mockProjects} onSpinComplete={mockOnSpinComplete} />);
 
       const spinButton = screen.getByRole('button', { name: /spin the wheel/i });
       fireEvent.click(spinButton);
@@ -241,12 +190,7 @@ describe('RandomizerWheel', () => {
       // Mock Math.random to return 0.5 for predictable results
       vi.spyOn(Math, 'random').mockReturnValue(0.5);
 
-      render(
-        <RandomizerWheel
-          projects={mockProjects}
-          onSpinComplete={mockOnSpinComplete}
-        />
-      );
+      render(<RandomizerWheel projects={mockProjects} onSpinComplete={mockOnSpinComplete} />);
 
       const spinButton = screen.getByRole('button', { name: /spin the wheel/i });
       fireEvent.click(spinButton);
@@ -263,14 +207,11 @@ describe('RandomizerWheel', () => {
 
     it('selects different projects with different random values', () => {
       const calls: any[] = [];
-      
+
       // First spin
       vi.spyOn(Math, 'random').mockReturnValue(0.1);
       const { rerender } = render(
-        <RandomizerWheel
-          projects={mockProjects}
-          onSpinComplete={(project) => calls.push(project)}
-        />
+        <RandomizerWheel projects={mockProjects} onSpinComplete={project => calls.push(project)} />
       );
 
       fireEvent.click(screen.getByRole('button', { name: /spin the wheel/i }));
@@ -279,10 +220,7 @@ describe('RandomizerWheel', () => {
       // Second spin with different random value
       vi.spyOn(Math, 'random').mockReturnValue(0.9);
       rerender(
-        <RandomizerWheel
-          projects={mockProjects}
-          onSpinComplete={(project) => calls.push(project)}
-        />
+        <RandomizerWheel projects={mockProjects} onSpinComplete={project => calls.push(project)} />
       );
 
       fireEvent.click(screen.getByRole('button', { name: /spin the wheel/i }));
@@ -328,12 +266,7 @@ describe('RandomizerWheel', () => {
 
   describe('Responsive Design', () => {
     it('applies responsive classes to wheel', () => {
-      render(
-        <RandomizerWheel
-          projects={mockProjects}
-          onSpinComplete={mockOnSpinComplete}
-        />
-      );
+      render(<RandomizerWheel projects={mockProjects} onSpinComplete={mockOnSpinComplete} />);
 
       const wheelElement = document.querySelector('.w-72');
       expect(wheelElement).toBeInTheDocument();
@@ -341,12 +274,7 @@ describe('RandomizerWheel', () => {
     });
 
     it('applies responsive classes to arrow', () => {
-      render(
-        <RandomizerWheel
-          projects={mockProjects}
-          onSpinComplete={mockOnSpinComplete}
-        />
-      );
+      render(<RandomizerWheel projects={mockProjects} onSpinComplete={mockOnSpinComplete} />);
 
       const arrowElement = document.querySelector('.w-8');
       expect(arrowElement).toBeInTheDocument();
@@ -356,35 +284,20 @@ describe('RandomizerWheel', () => {
 
   describe('Accessibility', () => {
     it('provides accessible button with clear label', () => {
-      render(
-        <RandomizerWheel
-          projects={mockProjects}
-          onSpinComplete={mockOnSpinComplete}
-        />
-      );
+      render(<RandomizerWheel projects={mockProjects} onSpinComplete={mockOnSpinComplete} />);
 
       const spinButton = screen.getByRole('button', { name: /spin the wheel/i });
       expect(spinButton).toBeInTheDocument();
     });
 
     it('provides instructional text for users', () => {
-      render(
-        <RandomizerWheel
-          projects={mockProjects}
-          onSpinComplete={mockOnSpinComplete}
-        />
-      );
+      render(<RandomizerWheel projects={mockProjects} onSpinComplete={mockOnSpinComplete} />);
 
       expect(screen.getByText(/click the button to spin and randomly select/i)).toBeInTheDocument();
     });
 
     it('shows helpful message in empty state', () => {
-      render(
-        <RandomizerWheel
-          projects={[]}
-          onSpinComplete={mockOnSpinComplete}
-        />
-      );
+      render(<RandomizerWheel projects={[]} onSpinComplete={mockOnSpinComplete} />);
 
       expect(screen.getByText(/select your in-progress projects below/i)).toBeInTheDocument();
     });
@@ -392,12 +305,7 @@ describe('RandomizerWheel', () => {
 
   describe('Color Assignment', () => {
     it('assigns colors consistently to projects', () => {
-      render(
-        <RandomizerWheel
-          projects={mockProjects}
-          onSpinComplete={mockOnSpinComplete}
-        />
-      );
+      render(<RandomizerWheel projects={mockProjects} onSpinComplete={mockOnSpinComplete} />);
 
       // Check that SVG paths exist (indicating colored segments)
       const pathElements = document.querySelectorAll('path');
@@ -407,12 +315,7 @@ describe('RandomizerWheel', () => {
 
   describe('Animation Styles', () => {
     it('includes custom animation CSS', () => {
-      render(
-        <RandomizerWheel
-          projects={mockProjects}
-          onSpinComplete={mockOnSpinComplete}
-        />
-      );
+      render(<RandomizerWheel projects={mockProjects} onSpinComplete={mockOnSpinComplete} />);
 
       const styleElement = document.querySelector('style');
       expect(styleElement?.textContent).toContain('@keyframes spin-custom');

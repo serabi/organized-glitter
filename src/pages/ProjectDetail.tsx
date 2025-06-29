@@ -22,7 +22,7 @@ const ProjectDetail = () => {
   console.log('[ProjectDetail] ProjectDetail component mounting!');
   console.log('[ProjectDetail] Current URL:', window.location.href);
   console.log('[ProjectDetail] Current pathname:', window.location.pathname);
-  
+
   const { id } = useParams<{ id: string }>();
   const projectId = id || '';
   const location = useLocation();
@@ -32,8 +32,12 @@ const ProjectDetail = () => {
   const { isAuthenticated, initialCheckComplete, isLoading: authLoading } = useAuth();
 
   console.log('[ProjectDetail] Extracted project ID from params:', projectId);
-  console.log('[ProjectDetail] Auth state:', { isAuthenticated, initialCheckComplete, authLoading });
-  
+  console.log('[ProjectDetail] Auth state:', {
+    isAuthenticated,
+    initialCheckComplete,
+    authLoading,
+  });
+
   // Check for optimistic navigation data in location state
   const navigationState = location.state as {
     fromNavigation?: boolean;
@@ -41,7 +45,7 @@ const ProjectDetail = () => {
     projectData?: any;
     timestamp?: number;
   } | null;
-  
+
   if (navigationState?.fromNavigation) {
     console.log('[ProjectDetail] Optimistic navigation detected:', navigationState);
   }
@@ -66,7 +70,7 @@ const ProjectDetail = () => {
     error: error ? { message: error.message, status: (error as any)?.status } : null,
     isAuthenticated,
     initialCheckComplete,
-    authLoading
+    authLoading,
   });
 
   // Track project detail page visits
@@ -97,7 +101,11 @@ const ProjectDetail = () => {
 
   // Show loading state while fetching project data or during auth check
   if (loading || authLoading || !initialCheckComplete) {
-    console.log('[ProjectDetail] Showing loading state:', { loading, authLoading, initialCheckComplete });
+    console.log('[ProjectDetail] Showing loading state:', {
+      loading,
+      authLoading,
+      initialCheckComplete,
+    });
     return (
       <MainLayout isAuthenticated={true}>
         <LoadingState />

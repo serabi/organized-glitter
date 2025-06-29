@@ -18,19 +18,19 @@ sequenceDiagram
     DashboardStats->>PocketBase: Query project counts by status
     PocketBase-->>DashboardStats: Return stats data
     DashboardStats-->>Overview: Display welcome section with stats
-    
+
     Overview->>ProjectsQuery: Fetch in-progress projects
     ProjectsQuery->>PocketBase: Query projects where status = 'In Progress'
     PocketBase-->>ProjectsQuery: Return project list
     ProjectsQuery-->>Overview: Display in-progress projects grid
-    
+
     Overview-->>User: Show personalized dashboard with quick actions
-    
+
     alt User clicks "Add New Project"
         User->>Overview: Click "Add New Project"
         Overview->>NewProject: Navigate to /projects/new
         NewProject-->>User: Show project creation form
-        
+
     else User clicks "View Full Dashboard"
         User->>Overview: Click "View Full Dashboard"
         Overview->>Dashboard: Navigate to /dashboard
@@ -38,7 +38,7 @@ sequenceDiagram
         ProjectsQuery->>PocketBase: Query projects with pagination/filters
         PocketBase-->>ProjectsQuery: Return filtered project list
         Dashboard-->>User: Show comprehensive project management interface
-        
+
     else User clicks "Import Projects via CSV"
         User->>Overview: Click "Import Projects via CSV"
         Overview->>Import: Navigate to /import

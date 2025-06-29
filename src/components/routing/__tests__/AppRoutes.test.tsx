@@ -139,7 +139,7 @@ describe('AppRoutes - Authenticated User Routes', () => {
     mockUseAuth.mockReturnValue({
       user: { id: '1', email: 'test@example.com' },
       isAuthenticated: true,
-      isLoading: false
+      isLoading: false,
     });
   });
 
@@ -169,7 +169,7 @@ describe('AppRoutes - Unauthenticated User Routes', () => {
     mockUseAuth.mockReturnValue({
       user: null,
       isAuthenticated: false,
-      isLoading: false
+      isLoading: false,
     });
   });
 
@@ -200,7 +200,7 @@ describe('AppRoutes - Error Handling', () => {
     mockUseAuth.mockReturnValue({
       user: null,
       isAuthenticated: false,
-      isLoading: false
+      isLoading: false,
     });
   });
 
@@ -213,7 +213,7 @@ describe('AppRoutes - Error Handling', () => {
     mockUseAuth.mockReturnValue({
       user: { id: '1', email: 'test@example.com' },
       isAuthenticated: true,
-      isLoading: false
+      isLoading: false,
     });
     renderWithRouter(['/profile/123']);
     expect(screen.getByTestId('not-found')).toBeInTheDocument();
@@ -225,7 +225,7 @@ describe('AppRoutes - Project Routes', () => {
     mockUseAuth.mockReturnValue({
       user: { id: '1', email: 'test@example.com' },
       isAuthenticated: true,
-      isLoading: false
+      isLoading: false,
     });
   });
 
@@ -256,7 +256,7 @@ describe('AppRoutes - Data Management Routes', () => {
     mockUseAuth.mockReturnValue({
       user: { id: '1', email: 'test@example.com' },
       isAuthenticated: true,
-      isLoading: false
+      isLoading: false,
     });
   });
 

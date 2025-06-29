@@ -155,7 +155,7 @@ This project is a welcoming space for the diamond painting community. We expect 
 
 ## Commercial Use & Dual Licensing
 
-While this project is AGPL-3.0 licensed (which prevents commercial reselling).  **At this time, there is no plan or intention to offer any commercial licenses.** However, the the project maintainer, Sarah Wolff (serabi) retains the right to offer commercial licenses for specific use cases.
+While this project is AGPL-3.0 licensed (which prevents commercial reselling). **At this time, there is no plan or intention to offer any commercial licenses.** However, the the project maintainer, Sarah Wolff (serabi) retains the right to offer commercial licenses for specific use cases.
 
 If you need to use this code in a way that's incompatible with AGPL-3.0, please reach out to Sarah directly to discuss commercial licensing options.
 

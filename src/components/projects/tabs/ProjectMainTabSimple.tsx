@@ -22,7 +22,7 @@ import CompanySelect from '@/components/projects/form/CompanySelect';
 // Type-safe status options that match ProjectStatus type
 const STATUS_OPTIONS: Record<ProjectStatus, string> = {
   wishlist: 'Wishlist',
-  purchased: 'Purchased', 
+  purchased: 'Purchased',
   stash: 'In Stash',
   progress: 'In Progress',
   completed: 'Completed',
@@ -53,7 +53,7 @@ export const ProjectMainTabSimple = ({
 
   // Initialize image upload hook with proper parameters
   const imageUploadHook = useImageUpload('project-images', 'project-image');
-  
+
   // Initialize unified project update mutation
   const updateProjectMutation = useProjectUpdateUnified();
 
@@ -63,7 +63,7 @@ export const ProjectMainTabSimple = ({
     if (file && formData) {
       const updatedData = { ...formData, imageFile: file };
       onChange(updatedData);
-      
+
       // Auto-save when image is selected and onSave is provided
       if (onSave) {
         onSave(updatedData);
@@ -94,7 +94,6 @@ export const ProjectMainTabSimple = ({
       onChange(updatedData);
     }
   };
-
 
   if (!formData) {
     return <div>Loading form data...</div>;

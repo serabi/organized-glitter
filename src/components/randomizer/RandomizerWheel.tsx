@@ -290,22 +290,22 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
   }
 
   const segmentAngle = 360 / projects.length;
-  
+
   // Responsive wheel sizes matching CSS classes:
   // Mobile: h-72 w-72 = 288px, Tablet: sm:h-96 sm:w-96 = 384px, Desktop: lg:h-140 lg:w-140 = 560px
   const getWheelSize = () => {
     if (windowSize.width >= 1024) return 560; // lg breakpoint - desktop
-    if (windowSize.width >= 640) return 384;  // sm breakpoint - tablet
+    if (windowSize.width >= 640) return 384; // sm breakpoint - tablet
     return 288; // mobile default
   };
-  
+
   const wheelSize = getWheelSize();
   const radius = wheelSize / 2;
 
   // Calculate responsive text properties based on wheel size and project count
   const getTextProperties = () => {
     const projectCount = projects.length;
-    
+
     // Base properties by screen size
     if (windowSize.width >= 1024) {
       // Desktop: larger wheel (560px)
@@ -381,7 +381,7 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
         {/* Wheel */}
         <div
           ref={wheelRef}
-          className={`lg:h-140 lg:w-140 duration-3000 relative h-72 w-72 overflow-hidden rounded-full border-4 border-flamingo-300 transition-transform ease-out sm:h-96 sm:w-96 ${
+          className={`duration-3000 relative h-72 w-72 overflow-hidden rounded-full border-4 border-flamingo-300 transition-transform ease-out sm:h-96 sm:w-96 lg:h-140 lg:w-140 ${
             isSpinning ? 'animate-spin-custom' : ''
           }`}
           style={{

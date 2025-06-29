@@ -286,7 +286,7 @@ describe('useSpinHistory', () => {
       renderHook(() => useSpinHistory({ userId: 'user1' }));
 
       const error500 = { message: 'Internal Server Error 500' };
-      
+
       expect(retryFn(0, error500)).toBe(true); // First retry
       expect(retryFn(1, error500)).toBe(true); // Second retry
       expect(retryFn(2, error500)).toBe(false); // No third retry
@@ -303,7 +303,7 @@ describe('useSpinHistory', () => {
       renderHook(() => useSpinHistory({ userId: 'user1' }));
 
       const networkError = { message: 'Network Error' };
-      
+
       expect(retryFn(0, networkError)).toBe(true);
       expect(retryFn(1, networkError)).toBe(true);
       expect(retryFn(2, networkError)).toBe(false);
@@ -320,7 +320,7 @@ describe('useSpinHistory', () => {
       renderHook(() => useSpinHistory({ userId: 'user1' }));
 
       const errorWithoutMessage = {};
-      
+
       expect(retryFn(0, errorWithoutMessage)).toBe(true);
       expect(retryFn(1, errorWithoutMessage)).toBe(true);
       expect(retryFn(2, errorWithoutMessage)).toBe(false);

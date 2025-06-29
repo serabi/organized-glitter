@@ -26,10 +26,13 @@ import Privacy from '@/pages/Privacy';
 import Terms from '@/pages/Terms';
 
 // Enhanced chunk loading with retry logic and comprehensive debugging
-const createLazyComponent = (importFn: () => Promise<{ default: React.ComponentType<unknown> }>, componentName: string) => {
+const createLazyComponent = (
+  importFn: () => Promise<{ default: React.ComponentType<unknown> }>,
+  componentName: string
+) => {
   return lazy(() =>
     importFn()
-      .then((module) => {
+      .then(module => {
         logger.debug(`Successfully loaded ${componentName} chunk`, {
           componentName,
           timestamp: new Date().toISOString(),
@@ -37,7 +40,7 @@ const createLazyComponent = (importFn: () => Promise<{ default: React.ComponentT
         });
         return module;
       })
-      .catch((error) => {
+      .catch(error => {
         logger.error(`Failed to load ${componentName} page chunk:`, {
           componentName,
           error: error.message,
@@ -47,14 +50,15 @@ const createLazyComponent = (importFn: () => Promise<{ default: React.ComponentT
           timestamp: new Date().toISOString(),
           networkOnline: navigator.onLine,
         });
-        
+
         // Return a more helpful error component with retry functionality
         return {
           default: () => (
             <div className="container mx-auto px-4 py-8 text-center">
               <h1 className="mb-4 text-2xl font-bold">Failed to load page</h1>
               <p className="mb-6 text-muted-foreground">
-                There was an error loading the {componentName} page. This may be due to a network issue or a recent deployment.
+                There was an error loading the {componentName} page. This may be due to a network
+                issue or a recent deployment.
               </p>
               <button
                 onClick={() => {
@@ -91,13 +95,15 @@ const AdvancedEdit = createLazyComponent(() => import('@/pages/AdvancedEdit'), '
 const NewProject = createLazyComponent(() => import('@/pages/NewProject'), 'NewProject');
 const ProjectDetail = createLazyComponent(() => {
   logger.debug('🔄 Loading ProjectDetail component...');
-  return import('@/pages/ProjectDetail').then(module => {
-    logger.debug('✅ ProjectDetail component loaded successfully');
-    return module;
-  }).catch(error => {
-    logger.error('❌ Failed to load ProjectDetail component:', error);
-    throw error;
-  });
+  return import('@/pages/ProjectDetail')
+    .then(module => {
+      logger.debug('✅ ProjectDetail component loaded successfully');
+      return module;
+    })
+    .catch(error => {
+      logger.error('❌ Failed to load ProjectDetail component:', error);
+      throw error;
+    });
 }, 'ProjectDetail');
 const EditProject = createLazyComponent(() => import('@/pages/EditProject'), 'EditProject');
 
@@ -110,7 +116,10 @@ const Import = lazy(() => import('@/pages/Import'));
 // Lazy load utility pages
 const DeleteAccount = lazy(() => import('@/pages/DeleteAccount'));
 const SupportSuccess = lazy(() => import('@/pages/SupportSuccess'));
-const ProjectRandomizer = createLazyComponent(() => import('@/pages/ProjectRandomizer'), 'ProjectRandomizer');
+const ProjectRandomizer = createLazyComponent(
+  () => import('@/pages/ProjectRandomizer'),
+  'ProjectRandomizer'
+);
 
 // Debug wrapper for ProjectDetail route
 const ProjectDetailWrapper: React.FC = () => {
@@ -119,10 +128,9 @@ const ProjectDetailWrapper: React.FC = () => {
     currentPathname: window.location.pathname,
     timestamp: new Date().toISOString(),
   });
-  
+
   return <ProjectDetail />;
 };
-
 
 /**
  * Main application routing configuration
@@ -131,7 +139,7 @@ const ProjectDetailWrapper: React.FC = () => {
 export const AppRoutes: React.FC = () => {
   // Track pageviews with PostHog
   usePostHogPageTracking();
-  
+
   // Monitor navigation for debugging routing issues
   useNavigationMonitoring();
 
@@ -370,7 +378,6 @@ export const AppRoutes: React.FC = () => {
           </ProtectedRoute>
         }
       />
-
 
       {/* Public information routes */}
       <Route path="/about" element={<About />} />

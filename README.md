@@ -180,16 +180,18 @@ npm run dev
 For local development, you'll need to set up your own PocketBase instance:
 
 1. **Download PocketBase**
-   
-   Visit [PocketBase Downloads](https://pocketbase.io/docs/) and download PocketBase - OG currently runs on v0.28.3. 
+
+   Visit [PocketBase Downloads](https://pocketbase.io/docs/) and download PocketBase - OG currently runs on v0.28.3.
 
 2. **Create a local PocketBase directory**
+
    ```bash
    mkdir pocketbase-local
    cd pocketbase-local
    ```
 
 3. **Extract and run PocketBase**
+
    ```bash
    # Extract the downloaded file to this directory
    # Then start PocketBase
@@ -197,16 +199,17 @@ For local development, you'll need to set up your own PocketBase instance:
    ```
 
 4. **Set up admin account**
-   
+
    Navigate to `http://127.0.0.1:8090/_/` in your browser and create an admin account.
 
 5. **Configure collections**
-   
+
    You'll need to set up the required collections for the application. You can find a list of the collections in the [Database Readme](database_readme.md) Use the PocketBase admin interface or a migration script to create these collections with the appropriate fields.
 
 6. **Update environment variables**
-   
+
    In your `.env` file, set:
+
    ```
    VITE_POCKETBASE_URL=http://127.0.0.1:8090
    ```
@@ -220,6 +223,7 @@ For local development, you'll need to set up your own PocketBase instance:
 ### Standard Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/serabi/organized-glitter.git
    cd organized-glitter
@@ -291,8 +295,6 @@ The project includes comprehensive test coverage for:
 
 The application is deployed at [organizedglitter.app](https://organizedglitter.app).
 
-
-
 ## Database Schema
 
 The application uses a comprehensive collection-based structure managed by PocketBase (using SQLite), with the following main collections:
@@ -334,7 +336,7 @@ This project is licensed under the GNU Affero General Public License v3.0 (AGPL-
 
 ### Commercial Licensing
 
-At this time, no commercial licensing is available. I will update this README if that changes in the future. 
+At this time, no commercial licensing is available. I will update this README if that changes in the future.
 
 ## Acknowledgments
 
@@ -342,7 +344,7 @@ At this time, no commercial licensing is available. I will update this README if
 - [shadcn/ui](https://ui.shadcn.com) for UI components
 - [Vite](https://vitejs.dev) for build tooling
 - [Vercel](https://vercel.com) for deployment platform
-- The diamond painting community for inspiration and feedback - especially the Crafter's Den Discord 
+- The diamond painting community for inspiration and feedback - especially the Crafter's Den Discord
 
 ---
 

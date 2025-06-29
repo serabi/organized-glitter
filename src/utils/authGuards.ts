@@ -18,16 +18,16 @@ export class AuthenticationError extends Error {
 
 /**
  * Requires authentication using PocketBase auth store.
- * 
+ *
  * Use this guard in:
  * - Data fetch hooks (useQuery) before making PocketBase collection calls
  * - Service layer functions that interact directly with PocketBase
  * - Any function that needs to verify the auth token is valid
- * 
+ *
  * This checks pb.authStore.isValid which validates the JWT token state.
- * 
+ *
  * @throws {AuthenticationError} When pb.authStore.isValid is false
- * 
+ *
  * @example
  * // In a query hook
  * export function useUserProjects() {
@@ -47,19 +47,19 @@ export function requireValidAuthStore(): void {
 
 /**
  * Requires authentication and returns authenticated user ID from React auth context.
- * 
+ *
  * Use this guard in:
  * - React mutation hooks (useMutation) to validate the user object from useAuth()
  * - Component event handlers that need to verify user identity
  * - Any React context where you have a user object and need the user.id
- * 
+ *
  * This validates the user object from React context and extracts the user ID.
  * Different from requireValidAuthStore() which checks PocketBase token validity.
- * 
+ *
  * @param user - User object from auth context (useAuth hook)
  * @returns The authenticated user ID
  * @throws {AuthenticationError} When user is null/undefined or has no ID
- * 
+ *
  * @example
  * // In a mutation hook
  * export function useCreateProject() {
@@ -81,7 +81,7 @@ export function requireAuthenticatedUser(user: PocketBaseUser | null | undefined
 
 /**
  * Type guard to check if an error is an AuthenticationError
- * 
+ *
  * @param error - Error to check
  * @returns True if error is AuthenticationError
  */
@@ -91,7 +91,7 @@ export function isAuthenticationError(error: unknown): error is AuthenticationEr
 
 /**
  * Checks if the current user is authenticated using PocketBase auth store
- * 
+ *
  * @returns True if user is authenticated
  */
 export function isAuthenticated(): boolean {
@@ -100,7 +100,7 @@ export function isAuthenticated(): boolean {
 
 /**
  * Gets the current authenticated user ID from PocketBase auth store
- * 
+ *
  * @returns User ID if authenticated, null otherwise
  */
 export function getCurrentUserId(): string | null {
@@ -112,7 +112,7 @@ export function getCurrentUserId(): string | null {
 
 /**
  * Higher-order function that wraps an async function with authentication check
- * 
+ *
  * @param fn - Async function to wrap
  * @returns Wrapped function that requires authentication
  */

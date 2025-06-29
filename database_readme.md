@@ -4,20 +4,23 @@ This document provides a comprehensive overview of the PocketBase database schem
 
 ## Overview
 
-**Database**: PocketBase v0.28.2  
+**Database**: PocketBase v0.28.2
 
 The database follows a relational model with user-scoped data access and comprehensive security rules.
 
 ## Security Model
 
 ### Authentication
+
 - **Primary Auth**: Email/password authentication
 - **OAuth2 Providers**: Google, Discord
 - **Token Duration**: 7 days for user sessions
 - **Password Requirements**: Minimum 8 characters
 
 ### Access Control
+
 All user data is strictly scoped to the authenticated user:
+
 - Users can only access their own projects, notes, tags, artists, and companies
 - Cross-user data access is prevented at the database level
 - Admin access is separate from user access
@@ -25,9 +28,11 @@ All user data is strictly scoped to the authenticated user:
 ## Core Collections
 
 ### users (Authentication Collection)
+
 Primary user accounts with authentication and profile data.
 
 **Fields:**
+
 - `id` (text, 15 chars, primary key)
 - `email` (email, required, unique)
 - `username` (text, 4-25 chars, required, unique)
@@ -37,18 +42,22 @@ Primary user accounts with authentication and profile data.
 - `created`, `updated` (auto-managed timestamps)
 
 **Security Rules:**
+
 - List/View: `id = @request.auth.id`
 - Create: Open registration
 - Update/Delete: `id = @request.auth.id`
 
 **OAuth2 Configuration:**
+
 - Google and Discord providers enabled
 - Username and avatar mapping from OAuth providers
 
 ### projects
+
 Core project management with comprehensive metadata.
 
 **Fields:**
+
 - `id` (text, 15 chars, primary key)
 - `title` (text, required)
 - `user` (relation to users, required)
@@ -77,17 +86,21 @@ Core project management with comprehensive metadata.
 - `created`, `updated` (auto-managed timestamps)
 
 **Security Rules:**
+
 - All operations: `user = @request.auth.id`
 
 **Indexes:**
+
 - User-based filtering and sorting optimizations
 - Status and date-based queries
 - Composite indexes for common query patterns
 
 ### progress_notes
+
 Progress tracking with rich content and image support.
 
 **Fields:**
+
 - `id` (text, 15 chars, primary key)
 - `project` (relation to projects, required, cascade delete)
 - `content` (rich text editor, optional)
@@ -98,24 +111,30 @@ Progress tracking with rich content and image support.
 - `created`, `updated` (auto-managed timestamps)
 
 **Security Rules:**
+
 - All operations: `project.user = @request.auth.id`
 
 ### artists
+
 Artist/designer management for project attribution.
 
 **Fields:**
+
 - `id` (text, 15 chars, primary key)
 - `name` (text, required)
 - `user` (relation to users, required)
 - `created`, `updated` (auto-managed timestamps)
 
 **Security Rules:**
+
 - All operations: `user = @request.auth.id`
 
 ### companies
+
 Company/brand management for project sourcing.
 
 **Fields:**
+
 - `id` (text, 15 chars, primary key)
 - `name` (text, required)
 - `website_url` (URL, optional)
@@ -123,12 +142,15 @@ Company/brand management for project sourcing.
 - `created`, `updated` (auto-managed timestamps)
 
 **Security Rules:**
+
 - All operations: `user = @request.auth.id`
 
 ### tags
+
 Flexible tagging system for project organization.
 
 **Fields:**
+
 - `id` (text, 15 chars, primary key)
 - `name` (text, 1-50 chars, required)
 - `slug` (text, required)
@@ -137,25 +159,31 @@ Flexible tagging system for project organization.
 - `created`, `updated` (auto-managed timestamps)
 
 **Security Rules:**
+
 - All operations: `user = @request.auth.id`
 
 ### project_tags
+
 Junction table for many-to-many relationship between projects and tags.
 
 **Fields:**
+
 - `id` (text, 15 chars, primary key)
 - `project` (relation to projects, required)
 - `tag` (relation to tags, required)
 - `created`, `updated` (auto-managed timestamps)
 
 **Security Rules:**
+
 - All operations: `project.user = @request.auth.id`
 - Create: Additional validation `tag.user = @request.auth.id`
 
 ### user_yearly_stats
+
 Cached statistics for performance optimization of yearly analytics.
 
 **Fields:**
+
 - `id` (text, 15 chars, primary key)
 - `user` (relation to users, required, cascade delete)
 - `year` (number, 2020-2050, required)
@@ -175,15 +203,19 @@ Cached statistics for performance optimization of yearly analytics.
 - `created`, `updated` (auto-managed timestamps)
 
 **Security Rules:**
+
 - All operations: `user = @request.auth.id`
 
 **Unique Constraint:**
+
 - Combination of user, year, and stats_type must be unique
 
 ### account_deletions
+
 Audit trail for deleted user accounts (admin access only).
 
 **Fields:**
+
 - `id` (text, 15 chars, primary key)
 - `user_id` (text, required)
 - `user_email` (text, required)
@@ -192,13 +224,16 @@ Audit trail for deleted user accounts (admin access only).
 - `created`, `updated` (auto-managed timestamps)
 
 **Security Rules:**
+
 - Create: `@request.auth.id != ""`
 - List/View/Update/Delete: Admin only
 
 ### randomizer_spins
+
 Project randomizer spin history for tracking which projects users have randomly selected.
 
 **Fields:**
+
 - `id` (text, 15 chars, primary key)
 - `user` (relation to users, required, cascade delete)
 - `project` (relation to projects, optional, set null on delete)
@@ -208,19 +243,23 @@ Project randomizer spin history for tracking which projects users have randomly 
 - `created`, `updated` (auto-managed timestamps)
 
 **Security Rules:**
+
 - All operations: `user = @request.auth.id`
 
 **Cascade Delete Rules:**
+
 - When user deleted: CASCADE DELETE (remove all spin records)
 - When project deleted: SET NULL (preserve spin history with readable title)
 
 **Indexes:**
+
 - `idx_randomizer_spins_user_spun_at` - Composite index on (user, spun_at DESC) for primary query pattern
 - `idx_randomizer_spins_user` - User-only index for user-specific operations
 - `idx_randomizer_spins_spun_at` - Date-only index on (spun_at DESC) for analytics
 - `idx_randomizer_spins_project` - Project index for analytics and cascade operations
 
 **Usage:**
+
 - Records each randomizer wheel spin with the selected project
 - Maintains history even if projects are deleted (via project_title field)
 - Supports pagination with "Show More" functionality (8 recent, expand to 50)
@@ -239,6 +278,7 @@ The following collections are managed by PocketBase for authentication and secur
 ## File Storage
 
 ### Image Handling
+
 - **Storage**: PocketBase native file storage
 - **Formats**: JPEG, PNG, WebP, GIF, HEIC, HEIF, SVG (avatars only)
 - **Size Limits**: 10MB for project and progress images
@@ -246,6 +286,7 @@ The following collections are managed by PocketBase for authentication and secur
 - **Security**: File access controlled by collection permissions
 
 ### Content Security
+
 - All file uploads are validated for type and size
 - Rich text content is sanitized to prevent XSS
 - URL fields validate proper URL format
@@ -253,11 +294,13 @@ The following collections are managed by PocketBase for authentication and secur
 ## Performance Optimizations
 
 ### Indexing Strategy
+
 - User-scoped queries optimized with composite indexes
 - Date range queries supported for analytics
 - Status filtering optimized for dashboard queries
 
 ### Caching
+
 - Yearly statistics are pre-calculated and cached
 - Cache invalidation on relevant data changes
 - Performance monitoring with calculation duration tracking
@@ -265,37 +308,41 @@ The following collections are managed by PocketBase for authentication and secur
 ## Data Integrity
 
 ### Referential Integrity
+
 - Cascade deletes configured for user-owned data
 - Foreign key constraints enforced at database level
 - Orphaned record prevention through proper relationship configuration
 
 ### Validation
+
 - Field-level validation for data types and formats
 - Business logic validation in application layer
 - Comprehensive error handling for constraint violations
 
-
 ## Migration Notes
 
 ### Recent Changes
+
 - Migrated from Cloudflare R2 to PocketBase native file storage
 - Enhanced image support including HEIC/HEIF formats
 - Added yearly statistics caching system
 - Implemented comprehensive indexing strategy
 
 ### Frontend-Database Field Mapping
+
 **CRITICAL**: The database uses snake_case field names while the frontend uses camelCase. This mapping is required for proper data submission:
 
 | Frontend (camelCase) | Database (snake_case) |
-|---------------------|----------------------|
-| `datePurchased`     | `date_purchased`     |
-| `dateReceived`      | `date_received`      |
-| `dateStarted`       | `date_started`      |
-| `dateCompleted`     | `date_completed`     |
+| -------------------- | --------------------- |
+| `datePurchased`      | `date_purchased`      |
+| `dateReceived`       | `date_received`       |
+| `dateStarted`        | `date_started`        |
+| `dateCompleted`      | `date_completed`      |
 
 **Implementation**: See `src/hooks/useEditProjectSimplified.tsx` for the field mapping logic used in project updates.
 
 ### Future Considerations
+
 - Schema changes should be backward compatible
 - Type generation should be updated after schema modifications
 - Performance monitoring for query optimization

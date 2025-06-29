@@ -29,7 +29,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     timestamp: new Date().toISOString(),
     environment: import.meta.env.MODE,
   });
-  
+
   // Alert if there's a mismatch between React Router and browser location
   if (location.pathname !== window.location.pathname) {
     protectedRouteLogger.warn('LOCATION MISMATCH DETECTED!', {
@@ -38,7 +38,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
       timestamp: new Date().toISOString(),
     });
   }
-
 
   // Wait for both loading to complete AND initial check to complete
   // Also handle the case where user might be null during authentication
@@ -55,8 +54,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
         <div className="ml-3">
           <p className="text-muted-foreground">Loading...</p>
           {import.meta.env.DEV && (
-            <p className="text-xs text-muted-foreground mt-1">
-              Route: {location.pathname} | Loading: {isLoading.toString()} | InitialCheck: {initialCheckComplete.toString()} | HasUser: {(!!user).toString()}
+            <p className="mt-1 text-xs text-muted-foreground">
+              Route: {location.pathname} | Loading: {isLoading.toString()} | InitialCheck:{' '}
+              {initialCheckComplete.toString()} | HasUser: {(!!user).toString()}
             </p>
           )}
         </div>

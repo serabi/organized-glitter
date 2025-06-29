@@ -7,7 +7,7 @@ sequenceDiagram
     participant User
     participant Browser
     participant RootRoute as RootRoute.tsx
-    participant Home as Home.tsx  
+    participant Home as Home.tsx
     participant Login as Login.tsx
     participant AuthProvider as AuthProvider.tsx
     participant PocketBase as PocketBase Backend
@@ -18,17 +18,17 @@ sequenceDiagram
     Browser->>RootRoute: Load /
     RootRoute->>AuthProvider: Check authentication status
     AuthProvider->>PocketBase: Validate session token
-    
+
     alt User not authenticated
         PocketBase-->>AuthProvider: No valid session
         AuthProvider-->>RootRoute: User not authenticated
         RootRoute->>Home: Render landing page
         Home-->>User: Show marketing page with CTAs
-        
+
         User->>Home: Click "Get Started for Free"
         Home->>Login: Navigate to /login
         Login-->>User: Show login/register form
-        
+
         alt User registers
             User->>Login: Submit registration form
             Login->>AuthProvider: Register user
@@ -36,24 +36,24 @@ sequenceDiagram
             PocketBase-->>AuthProvider: Send verification email
             AuthProvider-->>Login: Registration success
             Login-->>User: Show "Check email" message
-            
+
             User->>User: Check email and click verification link
             User->>Login: Return to login with verified account
         end
-        
+
         User->>Login: Submit login credentials
         Login->>AuthProvider: Authenticate user
         AuthProvider->>PocketBase: Validate credentials
         PocketBase-->>AuthProvider: Return user data + token
         AuthProvider-->>Login: Authentication success
         Login->>Browser: Redirect to /overview
-        
+
     else User authenticated
         PocketBase-->>AuthProvider: Valid session
         AuthProvider-->>RootRoute: User authenticated
         RootRoute->>Browser: Redirect to /overview
     end
-    
+
     Browser->>ProtectedRoute: Load protected route
     ProtectedRoute->>AuthProvider: Verify authentication
     AuthProvider-->>ProtectedRoute: User authenticated

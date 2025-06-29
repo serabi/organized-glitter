@@ -1,6 +1,6 @@
 /**
  * NewProject Component
- * 
+ *
  * Full-featured form for creating diamond painting projects using EditProject layout
  */
 
@@ -28,7 +28,7 @@ const NewProject = () => {
   const createProjectMutation = useCreateProjectWithRedirect();
   const createCompanyMutation = useCreateCompany();
   const createArtistMutation = useCreateArtist();
-  
+
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState('main');
@@ -62,14 +62,13 @@ const NewProject = () => {
     if (user?.id && !formData.userId) {
       setFormData(prev => ({
         ...prev,
-        userId: user.id
+        userId: user.id,
       }));
     }
   }, [user?.id, formData.userId]);
 
-
   const clearError = () => setError(null);
-  
+
   const handleCancel = () => {
     navigate('/dashboard');
   };
@@ -113,8 +112,12 @@ const NewProject = () => {
         }
       }
 
-      // Create artist if needed  
-      if (data.artist && !['other', 'unknown'].includes(data.artist) && !artistNames.includes(data.artist)) {
+      // Create artist if needed
+      if (
+        data.artist &&
+        !['other', 'unknown'].includes(data.artist) &&
+        !artistNames.includes(data.artist)
+      ) {
         try {
           await createArtistMutation.mutateAsync({ name: data.artist });
         } catch (error) {
@@ -157,7 +160,6 @@ const NewProject = () => {
 
       // Success toast and navigation are handled by the mutation hook
       // No manual navigation needed - the hook handles redirect before cache invalidation
-      
     } catch (error) {
       console.error('Failed to create project:', error);
       setError('Failed to create project. Please try again.');
@@ -177,7 +179,7 @@ const NewProject = () => {
         <div className="container mx-auto max-w-6xl px-4 py-6">
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
+              <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
               <p className="text-muted-foreground">Loading...</p>
             </div>
           </div>
@@ -193,9 +195,7 @@ const NewProject = () => {
           <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Alert className="mb-4 w-full max-w-md">
-                <AlertDescription>
-                  Please log in to create a new project.
-                </AlertDescription>
+                <AlertDescription>Please log in to create a new project.</AlertDescription>
               </Alert>
             </div>
           </div>
@@ -260,16 +260,11 @@ const NewProject = () => {
             </Tabs>
 
             <div className="flex justify-end space-x-4 border-t pt-6">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCancel}
-                disabled={submitting}
-              >
+              <Button type="button" variant="outline" onClick={handleCancel} disabled={submitting}>
                 Cancel
               </Button>
-              <Button 
-                onClick={() => handleSubmit(formData)} 
+              <Button
+                onClick={() => handleSubmit(formData)}
                 disabled={submitting || !formData.title?.trim()}
               >
                 <Save className="mr-2 h-4 w-4" />

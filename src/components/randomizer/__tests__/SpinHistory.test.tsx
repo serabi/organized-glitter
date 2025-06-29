@@ -580,7 +580,10 @@ describe('SpinHistory', () => {
       render(<SpinHistory userId="user1" />);
 
       const projectLinks = screen.getAllByRole('link');
-      expect(projectLinks[0]).toHaveAttribute('aria-label', expect.stringContaining('Test Project 1'));
+      expect(projectLinks[0]).toHaveAttribute(
+        'aria-label',
+        expect.stringContaining('Test Project 1')
+      );
     });
   });
 

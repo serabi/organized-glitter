@@ -37,15 +37,15 @@ export const NewProjectStatsTab = ({
       {/* Dates */}
       <Card>
         <CardContent className="pt-6">
-          <h3 className="text-lg font-semibold mb-4">Important Dates</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <h3 className="mb-4 text-lg font-semibold">Important Dates</h3>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="datePurchased">Date Purchased</Label>
               <Input
                 id="datePurchased"
                 type="date"
                 value={formData.datePurchased || ''}
-                onChange={(e) => handleDateChange('datePurchased', e.target.value)}
+                onChange={e => handleDateChange('datePurchased', e.target.value)}
                 disabled={isSubmitting}
               />
             </div>
@@ -56,7 +56,7 @@ export const NewProjectStatsTab = ({
                 id="dateReceived"
                 type="date"
                 value={formData.dateReceived || ''}
-                onChange={(e) => handleDateChange('dateReceived', e.target.value)}
+                onChange={e => handleDateChange('dateReceived', e.target.value)}
                 disabled={isSubmitting}
               />
             </div>
@@ -67,7 +67,7 @@ export const NewProjectStatsTab = ({
                 id="dateStarted"
                 type="date"
                 value={formData.dateStarted || ''}
-                onChange={(e) => handleDateChange('dateStarted', e.target.value)}
+                onChange={e => handleDateChange('dateStarted', e.target.value)}
                 disabled={isSubmitting}
               />
             </div>
@@ -78,7 +78,7 @@ export const NewProjectStatsTab = ({
                 id="dateCompleted"
                 type="date"
                 value={formData.dateCompleted || ''}
-                onChange={(e) => handleDateChange('dateCompleted', e.target.value)}
+                onChange={e => handleDateChange('dateCompleted', e.target.value)}
                 disabled={isSubmitting}
               />
             </div>
@@ -89,8 +89,8 @@ export const NewProjectStatsTab = ({
       {/* Dimensions and Statistics */}
       <Card>
         <CardContent className="pt-6">
-          <h3 className="text-lg font-semibold mb-4">Project Specifications</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <h3 className="mb-4 text-lg font-semibold">Project Specifications</h3>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="width">Width (cm)</Label>
               <Input
@@ -99,7 +99,7 @@ export const NewProjectStatsTab = ({
                 min="0"
                 step="0.1"
                 value={formData.width || ''}
-                onChange={(e) => handleNumberChange('width', e.target.value)}
+                onChange={e => handleNumberChange('width', e.target.value)}
                 placeholder="Enter width"
                 disabled={isSubmitting}
               />
@@ -113,7 +113,7 @@ export const NewProjectStatsTab = ({
                 min="0"
                 step="0.1"
                 value={formData.height || ''}
-                onChange={(e) => handleNumberChange('height', e.target.value)}
+                onChange={e => handleNumberChange('height', e.target.value)}
                 placeholder="Enter height"
                 disabled={isSubmitting}
               />
@@ -126,7 +126,7 @@ export const NewProjectStatsTab = ({
                 type="number"
                 min="0"
                 value={formData.totalDiamonds || ''}
-                onChange={(e) => handleNumberChange('totalDiamonds', e.target.value)}
+                onChange={e => handleNumberChange('totalDiamonds', e.target.value)}
                 placeholder="Enter total diamonds"
                 disabled={isSubmitting}
               />

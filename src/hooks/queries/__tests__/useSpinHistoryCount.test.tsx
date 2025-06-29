@@ -23,7 +23,7 @@ vi.mock('@tanstack/react-query', () => ({
 describe('useSpinHistoryCount', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Default mock return
     mockUseQuery.mockReturnValue({
       data: 0,
@@ -78,7 +78,7 @@ describe('useSpinHistoryCount', () => {
   describe('queryFn', () => {
     it('calls getSpinHistoryCount with correct userId', async () => {
       mockGetSpinHistoryCount.mockResolvedValue(15);
-      
+
       renderHook(() => useSpinHistoryCount({ userId: 'test-user' }));
 
       const callArgs = mockUseQuery.mock.calls[0][0];

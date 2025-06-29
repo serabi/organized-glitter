@@ -162,7 +162,7 @@ pb.afterSend = function (response: Response, data: unknown): unknown {
   // Note: PocketBase SDK only provides (response, data) - no third parameter
   const now = performance.now();
   let cleaned = false;
-  
+
   // Clear request deduplication cache for failed requests
   if (response.status >= 400) {
     // Find and remove failed requests from pending cache

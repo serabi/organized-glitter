@@ -27,12 +27,12 @@ export function mapFormDataToPocketBase(formData: ProjectFormValues): ProjectUpd
   // Helper function to format dates for PocketBase (YYYY-MM-DD format only)
   const formatDateForPocketBase = (value: string | undefined): string | null => {
     if (!value || value === '') return null;
-    
+
     // If it's already in YYYY-MM-DD format, return as is
     if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
       return value;
     }
-    
+
     // If it's an ISO string or other date format, extract just the date part
     try {
       const date = new Date(value);
@@ -73,11 +73,11 @@ export function mapFormDataToPocketBase(formData: ProjectFormValues): ProjectUpd
   // Only include company and artist if they are valid PocketBase IDs
   const companyId = safeRelationId(formData.company);
   const artistId = safeRelationId(formData.artist);
-  
+
   if (companyId) {
     result.company = companyId;
   }
-  
+
   if (artistId) {
     result.artist = artistId;
   }
@@ -91,7 +91,7 @@ export function mapFormDataToPocketBase(formData: ProjectFormValues): ProjectUpd
 export const FIELD_MAPPING = {
   // Frontend (camelCase) -> Backend (snake_case)
   datePurchased: 'date_purchased',
-  dateReceived: 'date_received', 
+  dateReceived: 'date_received',
   dateStarted: 'date_started',
   dateCompleted: 'date_completed',
   drillShape: 'drill_shape',
@@ -129,12 +129,12 @@ export function reverseMapFieldName(snakeCaseField: string): string {
  */
 export function camelToSnakeCase(obj: Record<string, unknown>): Record<string, unknown> {
   const result: Record<string, unknown> = {};
-  
+
   for (const [key, value] of Object.entries(obj)) {
     const snakeKey = FIELD_MAPPING[key as keyof typeof FIELD_MAPPING] || key;
     result[snakeKey] = value;
   }
-  
+
   return result;
 }
 
@@ -143,11 +143,11 @@ export function camelToSnakeCase(obj: Record<string, unknown>): Record<string, u
  */
 export function snakeToCamelCase(obj: Record<string, unknown>): Record<string, unknown> {
   const result: Record<string, unknown> = {};
-  
+
   for (const [key, value] of Object.entries(obj)) {
     const camelKey = REVERSE_FIELD_MAPPING[key] || key;
     result[camelKey] = value;
   }
-  
+
   return result;
 }

@@ -1,15 +1,15 @@
 /**
  * @fileoverview Comprehensive project editing hook with field mapping and state management
- * 
+ *
  * This hook provides complete project editing functionality including:
  * - Data fetching with expanded relations
- * - Form state management with dirty tracking  
+ * - Form state management with dirty tracking
  * - Critical field name mapping (camelCase ↔ snake_case)
  * - File upload handling
  * - Tag synchronization
  * - Navigation protection
  * - CRUD operations with confirmations
- * 
+ *
  * @author Organized Glitter Team
  * @since 1.0.0
  * @version 1.1.0 - Added field mapping fix for date fields
@@ -37,13 +37,13 @@ const logger = createLogger('useEditProjectSimplified');
 
 /**
  * Extended project interface with PocketBase expand relations
- * 
+ *
  * @interface ProjectWithExpand
  * @extends ProjectsResponse
- * 
+ *
  * @property expand - Optional expanded relations from PocketBase
  * @property expand.company - Expanded company information
- * @property expand.artist - Expanded artist information  
+ * @property expand.artist - Expanded artist information
  * @property expand.user - Expanded user information
  * @property expand.project_tags_via_project - Expanded tag relationships
  */
@@ -64,10 +64,10 @@ interface ProjectWithExpand extends ProjectsResponse {
 
 /**
  * Transform PocketBase record to ProjectType format
- * 
+ *
  * @param record - PocketBase project record with expanded relations
  * @returns Transformed project data in ProjectType format
- * 
+ *
  * @description Converts snake_case database fields to camelCase frontend format,
  * handles date field extraction, and properly maps related entities (company, artist)
  */
@@ -101,10 +101,10 @@ const transformProject = (record: ProjectWithExpand): ProjectType => {
 
 /**
  * Creates a toast adapter that maps extended variant types to supported ones
- * 
+ *
  * @param toast - Base toast function with limited variant support
  * @returns Enhanced toast function that accepts additional variant types
- * 
+ *
  * @description Maps 'success' and 'warning' variants to 'default' since the base
  * toast component only supports 'default' and 'destructive' variants
  */
@@ -135,10 +135,10 @@ const createToastAdapter =
 
 /**
  * Prepares initial form data from a project object
- * 
+ *
  * @param project - Project data to transform into form values
  * @returns Form data structure ready for form initialization
- * 
+ *
  * @description Converts ProjectType data to ProjectFormValues format,
  * handling type conversions and setting appropriate defaults for form fields
  */
@@ -168,10 +168,10 @@ const prepareFormInitialData = (project: ProjectType): ProjectFormValues => {
 
 /**
  * Comprehensive hook for project editing functionality
- * 
+ *
  * @param projectId - ID of the project to edit (undefined for new projects)
  * @returns Object containing project data, form handlers, and UI state
- * 
+ *
  * @description This hook provides a complete project editing solution that includes:
  * - Project data fetching with expanded relations (company, artist, tags)
  * - Form state management with dirty state tracking
@@ -181,7 +181,7 @@ const prepareFormInitialData = (project: ProjectType): ProjectFormValues => {
  * - Navigation protection for unsaved changes
  * - Archive and delete operations with confirmation dialogs
  * - Real-time cache invalidation for optimal UX
- * 
+ *
  * @example
  * ```tsx
  * const {
@@ -192,9 +192,9 @@ const prepareFormInitialData = (project: ProjectType): ProjectFormValues => {
  *   ConfirmationDialog
  * } = useEditProjectSimplified(projectId);
  * ```
- * 
+ *
  * @throws Will show toast notifications for network errors and validation failures
- * 
+ *
  * @since 1.0.0 - Initial implementation
  * @since 1.1.0 - Added field name mapping fix for date fields
  */
@@ -304,9 +304,9 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
 
   /**
    * Handles form field changes and dirty state tracking
-   * 
+   *
    * @param data - Partial form data with updated field values
-   * 
+   *
    * @description Updates form state, tracks dirty status, and handles
    * special logic for image file selection
    */
@@ -335,9 +335,9 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
 
   /**
    * Handles form submission with comprehensive project update logic
-   * 
+   *
    * @param data - Complete form data to submit
-   * 
+   *
    * @description Performs a complete project update including:
    * - Field name mapping from camelCase to snake_case for PocketBase compatibility
    * - Company/artist name resolution to database IDs
@@ -345,7 +345,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
    * - Tag synchronization (add/remove operations)
    * - Cache invalidation and navigation after successful update
    * - Comprehensive error handling with user feedback
-   * 
+   *
    * @throws Shows toast notifications for validation errors and network failures
    */
   const handleSubmit = useCallback(
@@ -381,12 +381,12 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
 
         if (dataToSubmit.company) {
           try {
-            const companyRecord = await pb
-              .collection('companies')
-              .getFirstListItem(pb.filter('name = {:name} && user = {:user}', { 
-                name: dataToSubmit.company, 
-                user: user?.id 
-              }));
+            const companyRecord = await pb.collection('companies').getFirstListItem(
+              pb.filter('name = {:name} && user = {:user}', {
+                name: dataToSubmit.company,
+                user: user?.id,
+              })
+            );
             companyId = companyRecord?.id || null;
           } catch (error) {
             logger.warn('Company not found:', dataToSubmit.company);
@@ -401,12 +401,12 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
 
         if (dataToSubmit.artist) {
           try {
-            const artistRecord = await pb
-              .collection('artists')
-              .getFirstListItem(pb.filter('name = {:name} && user = {:user}', { 
-                name: dataToSubmit.artist, 
-                user: user?.id 
-              }));
+            const artistRecord = await pb.collection('artists').getFirstListItem(
+              pb.filter('name = {:name} && user = {:user}', {
+                name: dataToSubmit.artist,
+                user: user?.id,
+              })
+            );
             artistId = artistRecord?.id || null;
           } catch (error) {
             logger.warn('Artist not found:', dataToSubmit.artist);
@@ -423,33 +423,41 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
         const formData = new FormData();
 
         // Add all form fields except special ones
-        const fieldsToExclude = ['id', 'tags', 'tagIds', 'imageFile', '_imageReplacement', 'company', 'artist'];
-        
+        const fieldsToExclude = [
+          'id',
+          'tags',
+          'tagIds',
+          'imageFile',
+          '_imageReplacement',
+          'company',
+          'artist',
+        ];
+
         // Date fields that should allow empty strings (to clear the field in PocketBase)
         // Note: These are the camelCase form field names that need conversion to snake_case
         const dateFields = ['datePurchased', 'dateReceived', 'dateStarted', 'dateCompleted'];
-        
+
         // Map camelCase form fields to snake_case PocketBase fields
         // CRITICAL: This mapping is required because frontend uses camelCase
         // but PocketBase database expects snake_case field names
         const fieldNameMap: Record<string, string> = {
           datePurchased: 'date_purchased',
-          dateReceived: 'date_received', 
+          dateReceived: 'date_received',
           dateStarted: 'date_started',
           dateCompleted: 'date_completed',
         };
-        
+
         Object.entries(dataToSubmit).forEach(([key, value]) => {
           if (!fieldsToExclude.includes(key) && value !== undefined && value !== null) {
             // For date fields, allow empty strings (required to clear DateFields in PocketBase)
             // For other fields, skip empty strings to avoid overwriting with empty values
             const shouldInclude = dateFields.includes(key) ? true : value !== '';
-            
+
             if (shouldInclude) {
               // Convert camelCase field names to snake_case for PocketBase
               const fieldName = fieldNameMap[key] || key;
               formData.append(fieldName, String(value));
-              
+
               // Log date field updates for debugging
               if (dateFields.includes(key)) {
                 logger.debug(`Date field update: ${key} -> ${fieldName} = "${value}"`);
@@ -472,29 +480,33 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
         }
 
         // Log FormData contents for debugging (excluding sensitive data)
-        const actualDateFieldsInFormData = Object.values(fieldNameMap).filter(field => formData.has(field));
+        const actualDateFieldsInFormData = Object.values(fieldNameMap).filter(field =>
+          formData.has(field)
+        );
         logger.debug('Updating project with FormData:', {
           projectId,
           fieldsCount: Array.from(formData.keys()).length,
           dateFields: actualDateFieldsInFormData.map(field => ({
             field,
-            value: formData.get(field)
+            value: formData.get(field),
           })),
-          allFormDataKeys: Array.from(formData.keys())
+          allFormDataKeys: Array.from(formData.keys()),
         });
 
         // Update the project in PocketBase
-        const updatedProject = await pb.collection(Collections.Projects).update(projectId, formData);
-        
+        const updatedProject = await pb
+          .collection(Collections.Projects)
+          .update(projectId, formData);
+
         // Handle tag synchronization
         const currentTagIds = tagIds;
         const originalTags = project?.tags || [];
         const originalTagIds = originalTags.map(tag => tag.id);
-        
+
         // Find tags to add and remove
         const tagsToAdd = currentTagIds.filter(tagId => !originalTagIds.includes(tagId));
         const tagsToRemove = originalTagIds.filter(tagId => !currentTagIds.includes(tagId));
-        
+
         // Add new tags
         for (const tagId of tagsToAdd) {
           try {
@@ -508,7 +520,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
             });
           }
         }
-        
+
         // Remove old tags
         for (const tagId of tagsToRemove) {
           try {
@@ -541,12 +553,12 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
 
           // Remove beforeunload listener to prevent navigation confirmation
           removeBeforeUnloadListener();
-          
+
           // Navigate back to project detail page using React Router
           logger.info('🚀 Navigating back to project detail page');
           await navigateToProject(projectId, {
             projectData: response.data,
-            replace: true // Replace current history entry since we're coming from edit
+            replace: true, // Replace current history entry since we're coming from edit
           });
 
           // Defer cache invalidation to happen after navigation
@@ -587,13 +599,20 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
         setSubmitting(false);
       }
     },
-    [toast, projectId, queryClient, user?.id, removeBeforeUnloadListener, project, navigateToProject]
+    [
+      toast,
+      projectId,
+      queryClient,
+      user?.id,
+      removeBeforeUnloadListener,
+      project,
+      navigateToProject,
+    ]
   );
-
 
   /**
    * Handles project archiving with confirmation and unsaved changes protection
-   * 
+   *
    * @description Archives the current project by setting its status to 'archived'.
    * Includes protection for unsaved changes and requires user confirmation.
    * Navigates to dashboard after successful archiving.
@@ -613,7 +632,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
 
     try {
       setSubmitting(true);
-      
+
       logger.debug(`Updating project ${projectId} status to archived`);
       await pb.collection('projects').update(projectId, {
         status: 'archived',
@@ -635,7 +654,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
 
   /**
    * Handles project deletion with confirmation and unsaved changes protection
-   * 
+   *
    * @description Permanently deletes the current project using React Query mutation.
    * Includes protection for unsaved changes and requires user confirmation.
    * Navigates to dashboard after successful deletion.
@@ -655,7 +674,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
 
     try {
       setSubmitting(true);
-      
+
       // Use React Query mutation for deletion
       await deleteProjectMutation.mutateAsync({
         projectId,
@@ -674,11 +693,20 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
     } finally {
       setSubmitting(false);
     }
-  }, [projectId, project, isDirty, toast, unsafeNavigate, confirmUnsavedChanges, confirmDelete, deleteProjectMutation]);
+  }, [
+    projectId,
+    project,
+    isDirty,
+    toast,
+    unsafeNavigate,
+    confirmUnsavedChanges,
+    confirmDelete,
+    deleteProjectMutation,
+  ]);
 
   /**
    * Refreshes company and artist lists from the database
-   * 
+   *
    * @description Reloads the current user's companies and artists lists
    * to ensure form dropdowns have the latest data
    */
@@ -719,13 +747,13 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
     artists,
     /** Current form data values */
     formData,
-    
+
     // State
     /** Whether form has unsaved changes */
     isDirty,
     /** Whether user has selected a new image file */
     hasSelectedNewImage,
-    
+
     // Navigation
     /** Navigation function that warns about unsaved changes */
     navigateWithWarning,
@@ -733,7 +761,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
     navigationState,
     /** Clear any navigation errors */
     clearNavigationError,
-    
+
     // Handlers
     /** Update form data and dirty state */
     handleFormChange,
@@ -745,7 +773,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
     handleDelete,
     /** Refresh company and artist lists */
     refreshLists,
-    
+
     // UI Components
     /** Confirmation dialog component for user interactions */
     ConfirmationDialog,

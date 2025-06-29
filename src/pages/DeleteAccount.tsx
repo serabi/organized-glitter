@@ -71,11 +71,17 @@ const DeleteAccount = () => {
     }
 
     setIsLoading(true);
-    deleteAccountLogger.debug('🔐 [SECURE DELETION] Starting account deletion process for user:', user.id);
+    deleteAccountLogger.debug(
+      '🔐 [SECURE DELETION] Starting account deletion process for user:',
+      user.id
+    );
 
     try {
       // Manual cascade deletion - delete related records first to avoid foreign key constraints
-      deleteAccountLogger.debug('🗑️ [SECURE DELETION] Starting manual cascade deletion for user:', user.id);
+      deleteAccountLogger.debug(
+        '🗑️ [SECURE DELETION] Starting manual cascade deletion for user:',
+        user.id
+      );
 
       // Step 1: Delete project_tags records for user's projects
       deleteAccountLogger.debug('🏷️ [SECURE DELETION] Deleting project tags...');
@@ -130,7 +136,9 @@ const DeleteAccount = () => {
       deleteAccountLogger.debug('👤 [SECURE DELETION] Deleting user account...');
       await pb.collection('users').delete(user.id);
 
-      deleteAccountLogger.debug('✅ [SECURE DELETION] User account and all related data deleted successfully');
+      deleteAccountLogger.debug(
+        '✅ [SECURE DELETION] User account and all related data deleted successfully'
+      );
 
       // Step 6: Sign out user for security (user is already deleted)
       deleteAccountLogger.debug('🚪 [SECURE DELETION] Signing out user session');
@@ -159,7 +167,9 @@ const DeleteAccount = () => {
 
         // Check for specific error patterns without exposing details
         if (errorObj.status === 403) {
-          deleteAccountLogger.error('❌ [DEBUG] Permission denied - check users collection delete rules');
+          deleteAccountLogger.error(
+            '❌ [DEBUG] Permission denied - check users collection delete rules'
+          );
           userMessage =
             'You do not have permission to perform this action. Please contact support.';
         } else if (errorObj.status === 404) {

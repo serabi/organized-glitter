@@ -14,7 +14,11 @@ import { ClientResponseError } from 'pocketbase';
 import { DashboardStatsService } from '@/services/pocketbase/dashboardStatsService';
 import type { ProjectUpdatePayload, ProjectFormWithFile } from '@/types/file-upload';
 import { mapFormDataToPocketBase } from '@/utils/field-mapping';
-import { buildFormDataForUpdate, validateFormDataForUpdate, logFormData } from '@/utils/formdata-builder';
+import {
+  buildFormDataForUpdate,
+  validateFormDataForUpdate,
+  logFormData,
+} from '@/utils/formdata-builder';
 
 const logger = createLogger('useProjectUpdateUnified');
 
@@ -28,7 +32,9 @@ export const useProjectUpdateUnified = () => {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async (payload: ProjectUpdatePayload | ProjectFormWithFile): Promise<ProjectsResponse> => {
+    mutationFn: async (
+      payload: ProjectUpdatePayload | ProjectFormWithFile
+    ): Promise<ProjectsResponse> => {
       let projectId: string;
       let formData: FormData;
 
@@ -37,7 +43,7 @@ export const useProjectUpdateUnified = () => {
         // ProjectUpdatePayload format
         const { id, data, fileUpload } = payload as ProjectUpdatePayload;
         projectId = id;
-        
+
         // Use the new FormData builder
         formData = buildFormDataForUpdate(data, fileUpload?.file);
       } else {
@@ -46,7 +52,7 @@ export const useProjectUpdateUnified = () => {
         if (!formPayload.id) {
           throw new Error('Project ID is required for update');
         }
-        
+
         projectId = formPayload.id;
 
         // Map form data to PocketBase format
@@ -87,28 +93,38 @@ export const useProjectUpdateUnified = () => {
             message: error.message,
             data: error.data,
             response: error.response,
-            url: error.url
+            url: error.url,
           });
-          
+
           // Log the specific validation errors if available
           if (error.data) {
-            logger.error('PocketBase Validation Errors (detailed):', JSON.stringify(error.data, null, 2));
+            logger.error(
+              'PocketBase Validation Errors (detailed):',
+              JSON.stringify(error.data, null, 2)
+            );
           }
-          
+
           // Log the FormData being sent for debugging
-          logger.error('FormData being sent:', Array.from(formData.entries()).map(([key, value]) => ({
-            key,
-            value: value instanceof File ? `[File: ${value.name}, ${value.size} bytes, ${value.type}]` : value
-          })));
+          logger.error(
+            'FormData being sent:',
+            Array.from(formData.entries()).map(([key, value]) => ({
+              key,
+              value:
+                value instanceof File
+                  ? `[File: ${value.name}, ${value.size} bytes, ${value.type}]`
+                  : value,
+            }))
+          );
         }
         throw error;
       }
     },
 
-    onMutate: async (variables) => {
-      const projectId = 'id' in variables && 'data' in variables 
-        ? variables.id 
-        : (variables as ProjectFormWithFile).id;
+    onMutate: async variables => {
+      const projectId =
+        'id' in variables && 'data' in variables
+          ? variables.id
+          : (variables as ProjectFormWithFile).id;
 
       if (!projectId) return {};
 
@@ -180,7 +196,7 @@ export const useProjectUpdateUnified = () => {
       // Rollback optimistic update
       if (context?.previousProject && context?.projectId) {
         queryClient.setQueryData(
-          queryKeys.projects.detail(context.projectId), 
+          queryKeys.projects.detail(context.projectId),
           context.previousProject
         );
       }
@@ -189,19 +205,22 @@ export const useProjectUpdateUnified = () => {
 
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       const lowerErrorMessage = errorMessage.toLowerCase();
-      
-      const isRateLimit = lowerErrorMessage.includes('429') || 
-                         lowerErrorMessage.includes('rate limit') ||
-                         lowerErrorMessage.includes('too many requests');
 
-      const isForeignKeyError = lowerErrorMessage.includes('foreign key') ||
-                               lowerErrorMessage.includes('artist') ||
-                               lowerErrorMessage.includes('company') ||
-                               lowerErrorMessage.includes('relation');
+      const isRateLimit =
+        lowerErrorMessage.includes('429') ||
+        lowerErrorMessage.includes('rate limit') ||
+        lowerErrorMessage.includes('too many requests');
 
-      const isFileError = lowerErrorMessage.includes('file') ||
-                         lowerErrorMessage.includes('upload') ||
-                         lowerErrorMessage.includes('image');
+      const isForeignKeyError =
+        lowerErrorMessage.includes('foreign key') ||
+        lowerErrorMessage.includes('artist') ||
+        lowerErrorMessage.includes('company') ||
+        lowerErrorMessage.includes('relation');
+
+      const isFileError =
+        lowerErrorMessage.includes('file') ||
+        lowerErrorMessage.includes('upload') ||
+        lowerErrorMessage.includes('image');
 
       let title = 'Error Updating Project';
       let description = errorMessage || 'Failed to update project. Please try again.';
@@ -211,7 +230,8 @@ export const useProjectUpdateUnified = () => {
         description = 'Server is busy. Please wait a moment and try again.';
       } else if (isForeignKeyError) {
         title = 'Invalid Field Reference';
-        description = 'Artist or company reference is invalid. Please try selecting from the dropdown again.';
+        description =
+          'Artist or company reference is invalid. Please try selecting from the dropdown again.';
       } else if (isFileError) {
         title = 'File Upload Error';
         description = 'Failed to upload image. Please check the file and try again.';
@@ -225,8 +245,11 @@ export const useProjectUpdateUnified = () => {
     },
 
     onSettled: (_, __, variables, context) => {
-      const projectId = context?.projectId || 
-                       ('id' in variables && 'data' in variables ? variables.id : (variables as ProjectFormWithFile).id);
+      const projectId =
+        context?.projectId ||
+        ('id' in variables && 'data' in variables
+          ? variables.id
+          : (variables as ProjectFormWithFile).id);
 
       if (projectId) {
         // Always refetch the project detail to ensure consistency

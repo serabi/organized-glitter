@@ -214,7 +214,7 @@ describe('useCreateSpin', () => {
       renderHook(() => useCreateSpin());
 
       const errorWithoutMessage = {};
-      
+
       await expect(onError(errorWithoutMessage, mockSpinData)).resolves.toBeUndefined();
       expect(mockToast.error).toHaveBeenCalledWith('Failed to record spin. Please try again.');
     });
@@ -257,7 +257,7 @@ describe('useCreateSpin', () => {
   describe('Integration Tests', () => {
     it('works with realistic data flow', async () => {
       mockCreateSpin.mockResolvedValue(mockSpinRecord);
-      
+
       let mutationFn: any;
       let onSuccess: any;
 
@@ -288,7 +288,7 @@ describe('useCreateSpin', () => {
     it('handles complete error flow', async () => {
       const serviceError = new Error('Service unavailable');
       mockCreateSpin.mockRejectedValue(serviceError);
-      
+
       let mutationFn: any;
       let onError: any;
 

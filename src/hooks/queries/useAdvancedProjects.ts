@@ -154,7 +154,9 @@ export const useAdvancedProjects = (userId: string | undefined) => {
             dateCompleted: dbProject.date_completed || undefined,
             generalNotes: dbProject.general_notes || undefined,
             imageUrl: dbProject.image
-              ? pb.files.getURL({ ...dbProject, collectionName: 'projects' }, dbProject.image, { thumb: '300x200f' })
+              ? pb.files.getURL({ ...dbProject, collectionName: 'projects' }, dbProject.image, {
+                  thumb: '300x200f',
+                })
               : undefined,
             sourceUrl: dbProject.source_url || undefined,
             totalDiamonds: dbProject.total_diamonds || undefined,

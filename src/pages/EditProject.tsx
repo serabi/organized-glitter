@@ -95,12 +95,7 @@ const EditProject = () => {
 
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCancel}
-              disabled={submitting}
-            >
+            <Button variant="ghost" size="sm" onClick={handleCancel} disabled={submitting}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
@@ -151,12 +146,7 @@ const EditProject = () => {
             </Tabs>
 
             <div className="flex justify-end space-x-4 border-t pt-6">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCancel}
-                disabled={submitting}
-              >
+              <Button type="button" variant="outline" onClick={handleCancel} disabled={submitting}>
                 Cancel
               </Button>
               <Button

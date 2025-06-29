@@ -33,12 +33,18 @@ const invalidateProjectQueries = async (
       // For deletions, remove the project and related data completely from cache to prevent 404 refetch attempts
       invalidations.push(
         queryClient.removeQueries({ queryKey: queryKeys.projects.detail(projectId), exact: true }),
-        queryClient.removeQueries({ queryKey: queryKeys.progressNotes.list(projectId), exact: true })
+        queryClient.removeQueries({
+          queryKey: queryKeys.progressNotes.list(projectId),
+          exact: true,
+        })
       );
     } else {
       // For non-deletion operations, invalidate to trigger refetch with fresh data
       invalidations.push(
-        queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(projectId), exact: true })
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.projects.detail(projectId),
+          exact: true,
+        })
       );
     }
   }
@@ -47,36 +53,36 @@ const invalidateProjectQueries = async (
   if (userId) {
     invalidations.push(
       // Only invalidate advanced projects for this specific user
-      queryClient.invalidateQueries({ 
-        queryKey: queryKeys.projects.advanced(userId), 
-        exact: true 
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.projects.advanced(userId),
+        exact: true,
       })
     );
-    
+
     // For paginated lists, we use exact: false but with specific user context
     invalidations.push(
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: queryKeys.projects.lists(),
         exact: false,
-        refetchType: 'active' // Only refetch currently active queries
+        refetchType: 'active', // Only refetch currently active queries
       })
     );
   } else {
     // Fallback: broader invalidation if no userId
     invalidations.push(
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: queryKeys.projects.lists(),
-        refetchType: 'active'
+        refetchType: 'active',
       })
     );
   }
 
   // Precisely invalidate tag stats with exact matching
   invalidations.push(
-    queryClient.invalidateQueries({ 
-      queryKey: queryKeys.tags.stats(), 
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.tags.stats(),
       exact: true,
-      refetchType: 'none' // Mark stale but don't refetch immediately
+      refetchType: 'none', // Mark stale but don't refetch immediately
     })
   );
 
@@ -93,14 +99,16 @@ const invalidateProjectQueries = async (
     startTransition(() => {
       DashboardStatsService.updateCacheAfterProjectChange(userId)
         .then(() => {
-          logger.info('Background stats cache updated successfully after project change:', { projectId });
+          logger.info('Background stats cache updated successfully after project change:', {
+            projectId,
+          });
         })
         .catch(error => {
           logger.error('Failed to update stats cache after project change:', error);
           // Fallback: mark stats as stale for next access
-          queryClient.invalidateQueries({ 
-            queryKey: queryKeys.stats.overview(userId), 
-            refetchType: 'none' 
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.stats.overview(userId),
+            refetchType: 'none',
           });
         });
     });
@@ -156,9 +164,7 @@ export const useUpdateProjectStatusMutation = () => {
             const data = oldData as { projects: Array<{ id: string; [key: string]: unknown }> };
             return {
               ...data,
-              projects: data.projects.map(p => 
-                p.id === projectId ? { ...p, status } : p
-              )
+              projects: data.projects.map(p => (p.id === projectId ? { ...p, status } : p)),
             };
           });
 
@@ -166,13 +172,12 @@ export const useUpdateProjectStatusMutation = () => {
           queryClient.setQueriesData(
             { queryKey: queryKeys.projects.lists(), exact: false },
             (oldData: unknown) => {
-              if (!oldData || typeof oldData !== 'object' || !('projects' in oldData)) return oldData;
+              if (!oldData || typeof oldData !== 'object' || !('projects' in oldData))
+                return oldData;
               const data = oldData as { projects: Array<{ id: string; [key: string]: unknown }> };
               return {
                 ...data,
-                projects: data.projects.map(p => 
-                  p.id === projectId ? { ...p, status } : p
-                )
+                projects: data.projects.map(p => (p.id === projectId ? { ...p, status } : p)),
               };
             }
           );
@@ -180,13 +185,13 @@ export const useUpdateProjectStatusMutation = () => {
           // Update project detail cache
           queryClient.setQueryData(queryKeys.projects.detail(projectId), (oldData: unknown) => {
             if (!oldData || typeof oldData !== 'object') return oldData;
-            return { ...oldData as Record<string, unknown>, status };
+            return { ...(oldData as Record<string, unknown>), status };
           });
 
           // Mark dashboard stats as stale without immediate refetch
-          queryClient.invalidateQueries({ 
-            queryKey: queryKeys.stats.overview(user.id), 
-            refetchType: 'none' 
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.stats.overview(user.id),
+            refetchType: 'none',
           });
         });
       }
@@ -202,11 +207,10 @@ export const useUpdateProjectStatusMutation = () => {
       // Background stats update
       startTransition(() => {
         if (user?.id) {
-          DashboardStatsService.updateCacheAfterProjectChange(user.id)
-            .catch(error => {
-              logger.error('Background stats cache update failed:', error);
-              queryClient.invalidateQueries({ queryKey: queryKeys.stats.overview(user.id) });
-            });
+          DashboardStatsService.updateCacheAfterProjectChange(user.id).catch(error => {
+            logger.error('Background stats cache update failed:', error);
+            queryClient.invalidateQueries({ queryKey: queryKeys.stats.overview(user.id) });
+          });
         }
       });
     },
@@ -229,9 +233,9 @@ export const useUpdateProjectNotesMutation = () => {
     },
     onSuccess: (_, { projectId }) => {
       // Precisely invalidate only the specific project detail
-      queryClient.invalidateQueries({ 
-        queryKey: queryKeys.projects.detail(projectId), 
-        exact: true 
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.projects.detail(projectId),
+        exact: true,
       });
 
       toast({
@@ -276,14 +280,14 @@ export const useAddProgressNoteMutation = () => {
       // Use batch for efficient cache updates
       notifyManager.batch(() => {
         // Precisely invalidate the specific project detail
-        queryClient.invalidateQueries({ 
-          queryKey: queryKeys.projects.detail(projectId), 
-          exact: true 
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.projects.detail(projectId),
+          exact: true,
         });
         // Precisely invalidate progress notes for this project
-        queryClient.invalidateQueries({ 
-          queryKey: queryKeys.progressNotes.list(projectId), 
-          exact: true 
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.progressNotes.list(projectId),
+          exact: true,
         });
       });
 
@@ -321,14 +325,14 @@ export const useUpdateProgressNoteMutation = () => {
       // Use batch for efficient cache updates
       notifyManager.batch(() => {
         // Precisely invalidate the specific project detail
-        queryClient.invalidateQueries({ 
-          queryKey: queryKeys.projects.detail(projectId), 
-          exact: true 
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.projects.detail(projectId),
+          exact: true,
         });
         // Precisely invalidate progress notes for this project
-        queryClient.invalidateQueries({ 
-          queryKey: queryKeys.progressNotes.list(projectId), 
-          exact: true 
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.progressNotes.list(projectId),
+          exact: true,
         });
       });
 
@@ -361,23 +365,23 @@ export const useDeleteProgressNoteMutation = () => {
       notifyManager.batch(() => {
         if (projectId) {
           // Precisely invalidate specific project queries
-          queryClient.invalidateQueries({ 
-            queryKey: queryKeys.projects.detail(projectId), 
-            exact: true 
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.projects.detail(projectId),
+            exact: true,
           });
-          queryClient.invalidateQueries({ 
-            queryKey: queryKeys.progressNotes.list(projectId), 
-            exact: true 
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.progressNotes.list(projectId),
+            exact: true,
           });
         } else {
           // Otherwise invalidate broader queries with exact matching where possible
-          queryClient.invalidateQueries({ 
-            queryKey: queryKeys.progressNotes.all, 
-            exact: true 
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.progressNotes.all,
+            exact: true,
           });
-          queryClient.invalidateQueries({ 
-            queryKey: queryKeys.projects.details(), 
-            exact: true 
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.projects.details(),
+            exact: true,
           });
         }
       });
@@ -411,14 +415,14 @@ export const useDeleteProgressNoteImageMutation = () => {
       // Use batch for efficient cache updates
       notifyManager.batch(() => {
         // Precisely invalidate the specific project detail
-        queryClient.invalidateQueries({ 
-          queryKey: queryKeys.projects.detail(projectId), 
-          exact: true 
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.projects.detail(projectId),
+          exact: true,
         });
         // Precisely invalidate progress notes for this project
-        queryClient.invalidateQueries({ 
-          queryKey: queryKeys.progressNotes.list(projectId), 
-          exact: true 
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.progressNotes.list(projectId),
+          exact: true,
         });
       });
 
@@ -469,9 +473,9 @@ export const useArchiveProjectMutation = () => {
             const data = oldData as { projects: Array<{ id: string; [key: string]: unknown }> };
             return {
               ...data,
-              projects: data.projects.map(p => 
+              projects: data.projects.map(p =>
                 p.id === projectId ? { ...p, status: PROJECT_STATUS.ARCHIVED } : p
-              )
+              ),
             };
           });
 
@@ -479,13 +483,14 @@ export const useArchiveProjectMutation = () => {
           queryClient.setQueriesData(
             { queryKey: queryKeys.projects.lists(), exact: false },
             (oldData: unknown) => {
-              if (!oldData || typeof oldData !== 'object' || !('projects' in oldData)) return oldData;
+              if (!oldData || typeof oldData !== 'object' || !('projects' in oldData))
+                return oldData;
               const data = oldData as { projects: Array<{ id: string; [key: string]: unknown }> };
               return {
                 ...data,
-                projects: data.projects.map(p => 
+                projects: data.projects.map(p =>
                   p.id === projectId ? { ...p, status: PROJECT_STATUS.ARCHIVED } : p
-                )
+                ),
               };
             }
           );
@@ -493,13 +498,13 @@ export const useArchiveProjectMutation = () => {
           // Update project detail cache if it exists
           queryClient.setQueryData(queryKeys.projects.detail(projectId), (oldData: unknown) => {
             if (!oldData || typeof oldData !== 'object') return oldData;
-            return { ...oldData as Record<string, unknown>, status: PROJECT_STATUS.ARCHIVED };
+            return { ...(oldData as Record<string, unknown>), status: PROJECT_STATUS.ARCHIVED };
           });
 
           // Mark dashboard stats as stale without immediate refetch
-          queryClient.invalidateQueries({ 
-            queryKey: queryKeys.stats.overview(user.id), 
-            refetchType: 'none' 
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.stats.overview(user.id),
+            refetchType: 'none',
           });
         });
       }
@@ -628,15 +633,18 @@ export const useDeleteProjectMutation = () => {
           queryClient.removeQueries({ queryKey: queryKeys.projects.detail(projectId) });
           // Remove any progress notes for the deleted project
           queryClient.removeQueries({ queryKey: queryKeys.progressNotes.list(projectId) });
-          
+
           // Optimistically update advanced projects list by removing the deleted project
           queryClient.setQueryData(queryKeys.projects.advanced(user.id), (oldData: unknown) => {
             if (!oldData || typeof oldData !== 'object' || !('projects' in oldData)) return oldData;
-            const data = oldData as { projects: Array<{ id: string; [key: string]: unknown }>; totalItems: number };
+            const data = oldData as {
+              projects: Array<{ id: string; [key: string]: unknown }>;
+              totalItems: number;
+            };
             return {
               ...data,
               projects: data.projects.filter(p => p.id !== projectId),
-              totalItems: Math.max(0, data.totalItems - 1)
+              totalItems: Math.max(0, data.totalItems - 1),
             };
           });
 
@@ -644,26 +652,30 @@ export const useDeleteProjectMutation = () => {
           queryClient.setQueriesData(
             { queryKey: queryKeys.projects.lists(), exact: false },
             (oldData: unknown) => {
-              if (!oldData || typeof oldData !== 'object' || !('projects' in oldData)) return oldData;
-              const data = oldData as { projects: Array<{ id: string; [key: string]: unknown }>; totalItems: number };
+              if (!oldData || typeof oldData !== 'object' || !('projects' in oldData))
+                return oldData;
+              const data = oldData as {
+                projects: Array<{ id: string; [key: string]: unknown }>;
+                totalItems: number;
+              };
               return {
                 ...data,
                 projects: data.projects.filter(p => p.id !== projectId),
-                totalItems: Math.max(0, data.totalItems - 1)
+                totalItems: Math.max(0, data.totalItems - 1),
               };
             }
           );
 
           // Mark dashboard stats as stale without immediate refetch (defer to background)
-          queryClient.invalidateQueries({ 
-            queryKey: queryKeys.stats.overview(user.id), 
-            refetchType: 'none' 
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.stats.overview(user.id),
+            refetchType: 'none',
           });
-          
+
           // Mark tag stats as stale without immediate refetch
-          queryClient.invalidateQueries({ 
-            queryKey: queryKeys.tags.stats(), 
-            refetchType: 'none' 
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.tags.stats(),
+            refetchType: 'none',
           });
         });
       }
