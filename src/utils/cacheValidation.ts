@@ -16,8 +16,8 @@ const logger = createLogger('CacheValidation');
 export function isValidPocketBaseId(id: string): boolean {
   if (!id || typeof id !== 'string') return false;
   
-  // PocketBase IDs are typically 15 characters long and alphanumeric
-  const pocketBaseIdPattern = /^[a-zA-Z0-9]{15}$/;
+  // PocketBase IDs are 16 characters long and use Base62 alphanumeric characters
+  const pocketBaseIdPattern = /^[a-zA-Z0-9]{16}$/;
   return pocketBaseIdPattern.test(id);
 }
 
@@ -26,16 +26,16 @@ export function isValidPocketBaseId(id: string): boolean {
  */
 export function validateQueryKey(queryKey: unknown[]): boolean {
   for (const key of queryKey) {
-    // Check any string that could be a PocketBase ID (15 chars or looks like an ID)
+    // Check any string that could be a PocketBase ID (16 chars or looks like an ID)
     if (typeof key === 'string') {
-      // If it's exactly 15 characters, it should be a valid PocketBase ID
-      if (key.length === 15 && !isValidPocketBaseId(key)) {
+      // If it's exactly 16 characters, it should be a valid PocketBase ID
+      if (key.length === 16 && !isValidPocketBaseId(key)) {
         logger.debug(`Invalid PocketBase ID found in query key: ${key}`);
         return false;
       }
       
       // Also check strings that contain dashes or other invalid characters that might be malformed IDs
-      if (key.length > 10 && key.length < 20 && (key.includes('-') || key.includes(' ') || key.includes('!'))) {
+      if (key.length > 10 && key.length < 25 && (key.includes('-') || key.includes(' ') || key.includes('!'))) {
         logger.debug(`Suspicious ID-like string found in query key: ${key}`);
         return false;
       }

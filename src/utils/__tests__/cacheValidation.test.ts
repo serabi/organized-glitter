@@ -20,9 +20,9 @@ describe('cacheValidation', () => {
 
   describe('isValidPocketBaseId', () => {
     it('should validate correct PocketBase IDs', () => {
-      expect(isValidPocketBaseId('abc123def456ghi')).toBe(true);
-      expect(isValidPocketBaseId('123456789012345')).toBe(true);
-      expect(isValidPocketBaseId('abcdefghijklmno')).toBe(true);
+      expect(isValidPocketBaseId('abc123def456ghij')).toBe(true);
+      expect(isValidPocketBaseId('1234567890123456')).toBe(true);
+      expect(isValidPocketBaseId('abcdefghijklmnop')).toBe(true);
     });
 
     it('should reject invalid PocketBase IDs', () => {
@@ -43,17 +43,17 @@ describe('cacheValidation', () => {
   describe('validateQueryKey', () => {
     it('should validate query keys with valid IDs', () => {
       expect(validateQueryKey(['projects', 'list'])).toBe(true);
-      expect(validateQueryKey(['projects', 'detail', 'abc123def456ghi'])).toBe(true);
-      expect(validateQueryKey(['user', 'profile', '123456789012345'])).toBe(true);
+      expect(validateQueryKey(['projects', 'detail', 'abc123def456ghij'])).toBe(true);
+      expect(validateQueryKey(['user', 'profile', '1234567890123456'])).toBe(true);
     });
 
-    it('should reject query keys with invalid 15-char IDs', () => {
-      expect(validateQueryKey(['projects', 'detail', 'invalid-with-da'])).toBe(false);
+    it('should reject query keys with invalid 16-char IDs', () => {
+      expect(validateQueryKey(['projects', 'detail', 'invalid-with-dash'])).toBe(false);
       expect(validateQueryKey(['projects', 'detail', 'has spaces here'])).toBe(false);
     });
 
     it('should handle mixed valid/invalid keys', () => {
-      expect(validateQueryKey(['projects', 'abc123def456ghi', 'invalid-with-da'])).toBe(false);
+      expect(validateQueryKey(['projects', 'abc123def456ghij', 'invalid-with-dash'])).toBe(false);
     });
   });
 
