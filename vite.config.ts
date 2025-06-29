@@ -4,6 +4,7 @@ import { fileURLToPath, URL } from 'node:url';
 
 export default defineConfig(({ mode }) => {
   return {
+    base: '/', // Ensure all assets load from root path
     plugins: [react()],
 
     resolve: {
