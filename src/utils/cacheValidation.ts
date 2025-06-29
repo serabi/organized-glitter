@@ -94,6 +94,16 @@ export function cleanInvalidCacheEntries(queryClient: QueryClient): number {
 
 /**
  * Sets up automatic cache cleaning on navigation
+ * 
+ * IMPORTANT: This function modifies global history methods as a fallback.
+ * Prefer using useNavigationCacheCleaning() hook with Wouter instead.
+ * 
+ * This implementation uses safeguards to preserve existing behavior:
+ * - Stores original method references before modification
+ * - Chains calls to preserve existing functionality  
+ * - Uses custom events to avoid direct coupling
+ * - Includes detection to prevent double-wrapping
+ * - Provides proper cleanup to restore original state
  */
 export function setupAutomaticCacheCleaning(queryClient: QueryClient): () => void {
   // Clean cache every time the user navigates
@@ -107,25 +117,65 @@ export function setupAutomaticCacheCleaning(queryClient: QueryClient): () => voi
   // Listen for popstate events (back/forward navigation)
   window.addEventListener('popstate', handleNavigation);
   
-  // Also listen for pushstate/replacestate (programmatic navigation)
-  const originalPushState = history.pushState;
-  const originalReplaceState = history.replaceState;
-  
-  history.pushState = function(...args) {
-    originalPushState.apply(this, args);
-    handleNavigation();
+  // Create a safer navigation monitoring system using custom events
+  const navigationHandler = (event: Event) => {
+    if (event.type === 'navigation') {
+      handleNavigation();
+    }
   };
   
-  history.replaceState = function(...args) {
-    originalReplaceState.apply(this, args);
-    handleNavigation();
+  // Listen for custom navigation events
+  window.addEventListener('navigation', navigationHandler);
+  
+  // Store references to original methods for safe chaining
+  const originalPushState = history.pushState.bind(history);
+  const originalReplaceState = history.replaceState.bind(history);
+  
+  // Create a wrapper that preserves existing behavior and adds our functionality
+  const wrappedPushState = function(this: History, ...args: Parameters<History['pushState']>) {
+    // Call the original method first to preserve existing behavior
+    const result = originalPushState.apply(this, args);
+    
+    // Dispatch custom event instead of direct callback
+    window.dispatchEvent(new CustomEvent('navigation', { 
+      detail: { type: 'pushState', args } 
+    }));
+    
+    return result;
   };
   
-  // Return cleanup function
+  const wrappedReplaceState = function(this: History, ...args: Parameters<History['replaceState']>) {
+    // Call the original method first to preserve existing behavior
+    const result = originalReplaceState.apply(this, args);
+    
+    // Dispatch custom event instead of direct callback
+    window.dispatchEvent(new CustomEvent('navigation', { 
+      detail: { type: 'replaceState', args } 
+    }));
+    
+    return result;
+  };
+  
+  // Only override if we haven't already wrapped these methods
+  if (!history.pushState.toString().includes('wrappedPushState')) {
+    history.pushState = wrappedPushState;
+  }
+  if (!history.replaceState.toString().includes('wrappedReplaceState')) {
+    history.replaceState = wrappedReplaceState;
+  }
+  
+  // Return cleanup function that safely restores original behavior
   return () => {
     window.removeEventListener('popstate', handleNavigation);
-    history.pushState = originalPushState;
-    history.replaceState = originalReplaceState;
+    window.removeEventListener('navigation', navigationHandler);
+    
+    // Only restore if we were the ones who wrapped it
+    if (history.pushState === wrappedPushState) {
+      history.pushState = originalPushState;
+    }
+    if (history.replaceState === wrappedReplaceState) {
+      history.replaceState = originalReplaceState;
+    }
   };
 }
 
@@ -141,4 +191,24 @@ export function safeInvalidateQueries(
   
   // Then perform normal invalidation
   return queryClient.invalidateQueries(filters);
+}
+
+/**
+ * Wouter-aware cache cleaning setup (preferred when using Wouter router)
+ * This should be used in a React component that has access to Wouter hooks
+ * 
+ * @deprecated Use useNavigationCacheCleaning hook instead for better integration
+ */
+export function createNavigationAwareCacheCleaner(queryClient: QueryClient) {
+  return {
+    // Call this function when navigation occurs (e.g., in useEffect with location dependency)
+    onNavigationChange: () => {
+      setTimeout(() => {
+        cleanInvalidCacheEntries(queryClient);
+      }, 100);
+    },
+    
+    // Call this to manually clean cache
+    cleanCache: () => cleanInvalidCacheEntries(queryClient),
+  };
 }
