@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { pb } from '@/lib/pocketbase';
+import { createFilter } from '@/utils/filterBuilder';
 import FormField from '@/components/projects/form/FormField';
 
 interface AddCompanyDialogProps {
@@ -93,7 +94,10 @@ const AddCompanyDialog = ({ onCompanyAdded }: AddCompanyDialogProps) => {
 
       // Check if company already exists
       const existingCompanies = await pb.collection('companies').getList(1, 1, {
-        filter: `user = "${user.id}" && name = "${newCompanyName.trim()}"`,
+        filter: createFilter()
+          .userScope(user.id)
+          .equals('name', newCompanyName.trim())
+          .build(),
       });
 
       if (existingCompanies.items.length > 0) {

@@ -4,6 +4,7 @@ import { ServiceResponse, createSuccessResponse, createErrorResponse } from '@/t
 import { TAG_COLOR_PALETTE } from '@/utils/tagColors';
 import { Collections, ProjectTagsResponse, TagsResponse } from '@/types/pocketbase.types';
 import { withAuthentication } from '@/lib/tagAuth';
+import { createFilter } from '@/utils/filterBuilder';
 
 // Extract hex colors from the centralized color palette
 const TAG_COLORS = TAG_COLOR_PALETTE.map(color => color.hex);
@@ -24,10 +25,11 @@ export class TagService {
   static async getUserTags(options: TagFilterOptions = {}): Promise<ServiceResponse<Tag[]>> {
     return withAuthentication(async (userId: string) => {
       try {
-        let filter = pb.filter('user = {:userId}', { userId });
+        const filterBuilder = createFilter().userScope(userId);
         if (options.search) {
-          filter += pb.filter(' && name ~ {:search}', { search: options.search });
+          filterBuilder.like('name', options.search);
         }
+        const filter = filterBuilder.build();
 
         const records = await pb.collection(Collections.Tags).getList(1, 200, {
           filter,

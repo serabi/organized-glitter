@@ -8,6 +8,7 @@
 import { pb } from '@/lib/pocketbase';
 import { Collections } from '@/types/pocketbase.types';
 import { DashboardStatsService } from '@/services/pocketbase/dashboardStatsService';
+import { createFilter } from '@/utils/filterBuilder';
 
 export interface DebugStats {
   userId: string;
@@ -39,7 +40,9 @@ export async function debugUserStats(userIdOrEmail: string): Promise<DebugStats>
   // If it looks like an email, find the user first
   if (userIdOrEmail.includes('@')) {
     try {
-      const user = await pb.collection('users').getFirstListItem(`email="${userIdOrEmail}"`);
+      const user = await pb.collection('users').getFirstListItem(
+        createFilter().equals('email', userIdOrEmail).build()
+      );
       userId = user.id;
       email = user.email;
     } catch (error) {
@@ -49,7 +52,7 @@ export async function debugUserStats(userIdOrEmail: string): Promise<DebugStats>
 
   // Get all projects for this user
   const allProjects = await pb.collection(Collections.Projects).getFullList({
-    filter: `user="${userId}"`,
+    filter: createFilter().userScope(userId).build(),
     fields: 'id,title,status,date_completed,date_started',
     sort: '-updated',
   });
@@ -76,7 +79,11 @@ export async function debugUserStats(userIdOrEmail: string): Promise<DebugStats>
   // Test the actual query used by the stats service
   const yearStart = '2025-01-01';
   const queryResult = await pb.collection(Collections.Projects).getList(1, 1, {
-    filter: `user="${userId}" && status="completed" && date_completed>="${yearStart}"`,
+    filter: createFilter()
+      .userScope(userId)
+      .status('completed')
+      .greaterThan('date_completed', yearStart)
+      .build(),
     fields: 'id',
   });
 
@@ -85,9 +92,16 @@ export async function debugUserStats(userIdOrEmail: string): Promise<DebugStats>
   try {
     const cached = await pb
       .collection('user_yearly_stats')
-      .getFirstListItem(`user="${userId}" && year=2025 && stats_type="yearly"`, {
-        fields: 'completed_count,last_calculated,cache_version',
-      });
+      .getFirstListItem(
+        createFilter()
+          .userScope(userId)
+          .equals('year', 2025)
+          .equals('stats_type', 'yearly')
+          .build(),
+        {
+          fields: 'completed_count,last_calculated,cache_version',
+        }
+      );
     cachedStats = {
       completed_count: cached.completed_count,
       last_calculated: cached.last_calculated,

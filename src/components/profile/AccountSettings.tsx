@@ -5,6 +5,7 @@ import { Mail, Lock, User, Trash } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { pb } from '@/lib/pocketbase';
 import { useAuth } from '@/hooks/useAuth';
+import { createFilter } from '@/utils/filterBuilder';
 import {
   Dialog,
   DialogContent,
@@ -76,7 +77,10 @@ const AccountSettings = ({
     try {
       // Check if username already exists (except for current user)
       const existingUsers = await pb.collection('users').getList(1, 1, {
-        filter: `username = "${newUsername}" && id != "${userId}"`,
+        filter: createFilter()
+          .equals('username', newUsername)
+          .notEquals('id', userId)
+          .build(),
       });
 
       if (existingUsers.items.length > 0) {
