@@ -7,6 +7,7 @@
 
 import { pb } from '@/lib/pocketbase';
 import { Collections } from '@/types/pocketbase.types';
+import { createFilter } from '@/utils/filterBuilder';
 
 export interface DiagnosticResult {
   totalProjects: number;
@@ -67,7 +68,7 @@ export async function runOverviewDiagnostics(userId: string): Promise<Diagnostic
 
     // First, get the total count and first batch
     const firstBatch = await pb.collection(Collections.Projects).getList(1, 500, {
-      filter: `user = "${userId}"`,
+      filter: createFilter().userScope(userId).build(),
       fields: 'id,date_started,created,updated',
       requestKey: `diagnostic-all-${userId}-${Date.now()}`,
       $autoCancel: false,
@@ -85,7 +86,7 @@ export async function runOverviewDiagnostics(userId: string): Promise<Diagnostic
 
       for (let page = 2; page <= totalPages; page++) {
         const batch = await pb.collection(Collections.Projects).getList(page, 500, {
-          filter: `user = "${userId}"`,
+          filter: createFilter().userScope(userId).build(),
           fields: 'id,date_started,created,updated',
           requestKey: `diagnostic-batch-${page}-${userId}-${Date.now()}`,
           $autoCancel: false,
@@ -145,7 +146,10 @@ export async function runOverviewDiagnostics(userId: string): Promise<Diagnostic
     console.log('[Diagnostics] Test 3: Date-filtered query timing...');
     const dateStart = performance.now();
     const dateFiltered = await pb.collection(Collections.Projects).getList(1, 1, {
-      filter: `user = "${userId}" && date_started >= "${currentYear}-01-01"`,
+      filter: createFilter()
+        .userScope(userId)
+        .greaterThan('date_started', `${currentYear}-01-01`)
+        .build(),
       fields: 'id',
       requestKey: `diagnostic-date-${userId}-${currentYear}-${Date.now()}`,
       $autoCancel: false,
@@ -160,7 +164,12 @@ export async function runOverviewDiagnostics(userId: string): Promise<Diagnostic
     console.log('[Diagnostics] Test 4: Optimized query timing...');
     const optStart = performance.now();
     const optimized = await pb.collection(Collections.Projects).getList(1, 1, {
-      filter: `user = "${userId}" && date_started != "" && date_started != null && date_started >= "${currentYear}-01-01"`,
+      filter: createFilter()
+        .userScope(userId)
+        .notEquals('date_started', '')
+        .isNotNull('date_started')
+        .greaterThan('date_started', `${currentYear}-01-01`)
+        .build(),
       fields: 'id',
       requestKey: `diagnostic-opt-${userId}-${currentYear}-${Date.now()}`,
       $autoCancel: false,

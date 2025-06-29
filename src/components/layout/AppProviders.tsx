@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'next-themes';
@@ -11,10 +11,23 @@ import FeedbackDialogProvider from '@/components/FeedbackDialogProvider';
 import PerformancePrefetcher from '@/components/PerformancePrefetcher';
 
 import { queryClient } from '@/lib/queryClient';
+import { setupAutomaticCacheCleaning } from '@/utils/cacheValidation';
 
 interface AppProvidersProps {
   children: React.ReactNode;
 }
+
+/**
+ * Cache cleaning component that sets up automatic cleanup on navigation
+ */
+const CacheCleanupHandler: React.FC = () => {
+  useEffect(() => {
+    const cleanup = setupAutomaticCacheCleaning(queryClient);
+    return cleanup;
+  }, []);
+  
+  return null;
+};
 
 /**
  * Centralized provider wrapper for the entire application
@@ -30,6 +43,7 @@ export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
         key="main-router"
       >
         <QueryClientProvider client={queryClient}>
+          <CacheCleanupHandler />
           <AuthProvider>
             <MetadataProvider>
               <FeedbackDialogProvider />

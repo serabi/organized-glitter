@@ -1,39 +1,28 @@
 import { useQuery } from '@tanstack/react-query';
-import { pb } from '@/lib/pocketbase';
-import { Collections, TagsResponse } from '@/types/pocketbase.types';
+import { TagService } from '@/lib/tags';
 import { queryKeys } from './queryKeys';
 import { useAuth } from '@/hooks/useAuth';
 import type { Tag } from '@/types/tag';
 import { ClientResponseError } from 'pocketbase';
-
-async function fetchTags(userId: string): Promise<Tag[]> {
-  const result = await pb.collection(Collections.Tags).getList(1, 200, {
-    filter: `user = "${userId}"`,
-    sort: 'name',
-    requestKey: `tags-${userId}`,
-  });
-
-  return result.items.map((item: TagsResponse) => ({
-    id: item.id,
-    userId: item.user,
-    name: item.name,
-    slug: item.slug,
-    color: item.color,
-    createdAt: item.created,
-    updatedAt: item.updated,
-  }));
-}
 
 export function useTags() {
   const { user } = useAuth();
 
   return useQuery<Tag[], Error>({
     queryKey: queryKeys.tags.list(user?.id || ''),
-    queryFn: () => {
+    queryFn: async () => {
       if (!user?.id) {
         throw new Error('User not authenticated');
       }
-      return fetchTags(user.id);
+      
+      // Use secure TagService instead of direct PocketBase calls
+      const result = await TagService.getUserTags();
+      
+      if (result.status === 'error') {
+        throw new Error(result.error || 'Failed to fetch tags');
+      }
+      
+      return result.data;
     },
     enabled: !!user?.id,
     staleTime: 10 * 60 * 1000, // 10 minutes - tags don't change often

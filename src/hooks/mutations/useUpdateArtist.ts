@@ -5,6 +5,7 @@ import { queryKeys } from '../queries/queryKeys';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { requireAuthenticatedUser } from '@/utils/authGuards';
+import { FilterBuilder } from '@/utils/filterBuilder';
 
 interface UpdateArtistData {
   id: string;
@@ -21,9 +22,14 @@ async function updateArtist(data: UpdateArtistData, userId: string): Promise<Art
 
   // Check if artist name already exists (if name changed)
   if (data.name.trim() !== currentArtist.name) {
+    const filter = new FilterBuilder()
+      .userScope(userId)
+      .equals('name', data.name.trim())
+      .build();
+
     const existing = await pb
       .collection(Collections.Artists)
-      .getFirstListItem(`user = "${userId}" && name = "${data.name.trim()}"`, { requestKey: null })
+      .getFirstListItem(filter, { requestKey: null })
       .catch(() => null);
 
     if (existing && existing.id !== data.id) {

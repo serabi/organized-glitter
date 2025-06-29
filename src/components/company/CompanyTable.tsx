@@ -1,3 +1,15 @@
+/**
+ * @fileoverview Company Management Table Component
+ * 
+ * Displays a comprehensive table of user companies with management capabilities
+ * including viewing, editing, and deleting companies. Uses secure FilterBuilder
+ * utility for PocketBase queries to count projects and ensure data integrity.
+ * 
+ * @author Generated with Claude Code
+ * @version 1.0.0
+ * @since 2024-06-29
+ */
+
 import { useState, useEffect } from 'react';
 import {
   Table,
@@ -10,6 +22,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Trash2, Link2, Loader2, FileText } from 'lucide-react';
 import { pb } from '@/lib/pocketbase';
+import { createFilter } from '@/utils/filterBuilder';
 import EditCompanyDialog from './EditCompanyDialog';
 import { Link } from 'react-router-dom';
 import { CompaniesResponse } from '@/types/pocketbase.types';
@@ -25,12 +38,50 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
+/**
+ * Props interface for the CompanyTable component
+ * 
+ * @interface CompanyTableProps
+ * @property {CompaniesResponse[]} companies - Array of company records from PocketBase
+ * @property {boolean} loading - Whether the companies data is currently loading
+ * @property {() => void} onCompanyUpdated - Callback function triggered when a company is updated or deleted
+ */
 interface CompanyTableProps {
   companies: CompaniesResponse[];
   loading: boolean;
   onCompanyUpdated: () => void;
 }
 
+/**
+ * CompanyTable Component
+ * 
+ * Renders a data table displaying user companies with management functionality.
+ * Features include project count display, editing capabilities, and secure deletion.
+ * 
+ * Key Features:
+ * - Displays company name, project count, and management actions
+ * - Uses secure FilterBuilder for user-scoped project counting
+ * - Provides edit and delete functionality with confirmation dialogs
+ * - Handles loading states and error scenarios gracefully
+ * 
+ * Security Features:
+ * - Uses FilterBuilder utility for secure PocketBase queries
+ * - Prevents SQL injection through parameterized filtering
+ * - Ensures user-scoped data access only
+ * 
+ * @component
+ * @param {CompanyTableProps} props - Component properties
+ * @returns {JSX.Element} Rendered company management table
+ * 
+ * @example
+ * ```tsx
+ * <CompanyTable
+ *   companies={companiesData}
+ *   loading={false}
+ *   onCompanyUpdated={() => refetchCompanies()}
+ * />
+ * ```
+ */
 const CompanyTable = ({ companies, loading, onCompanyUpdated }: CompanyTableProps) => {
   const [projectCounts, setProjectCounts] = useState<Record<string, number>>({});
   const [loadingCounts, setLoadingCounts] = useState(true);
@@ -39,6 +90,31 @@ const CompanyTable = ({ companies, loading, onCompanyUpdated }: CompanyTableProp
   const deleteCompanyMutation = useDeleteCompany();
 
   useEffect(() => {
+    /**
+     * Fetches project counts for each company using secure queries
+     * 
+     * Efficiently retrieves the number of projects associated with each company
+     * using user-scoped filtering to ensure data security. Uses pagination with
+     * limit 1 to get totalItems count without fetching actual project data.
+     * 
+     * Security Features:
+     * - Uses FilterBuilder utility for secure parameter injection
+     * - Ensures user-scoped queries (users can only see their own data)
+     * - Prevents SQL injection through parameterized filters
+     * 
+     * Performance Features:
+     * - Parallel processing of company count queries
+     * - Minimal data transfer (only fetches IDs for counting)
+     * - Request deduplication through requestKey
+     * 
+     * @async
+     * @function
+     * @returns {Promise<void>} Resolves when all project counts are fetched
+     * 
+     * @example
+     * // Called automatically when companies array changes
+     * // Updates projectCounts state with company ID -> count mapping
+     */
     const fetchProjectCounts = async () => {
       if (!companies.length) return;
 
@@ -57,7 +133,10 @@ const CompanyTable = ({ companies, loading, onCompanyUpdated }: CompanyTableProp
           companies.map(async company => {
             try {
               const result = await pb.collection('projects').getList(1, 1, {
-                filter: `user = "${userId}" && company = "${company.id}"`,
+                filter: createFilter()
+                  .userScope(userId)
+                  .company(company.id)
+                  .build(),
                 fields: 'id',
                 requestKey: `company-count-${company.id}`,
               });
