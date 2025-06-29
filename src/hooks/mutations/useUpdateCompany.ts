@@ -5,6 +5,7 @@ import { queryKeys } from '../queries/queryKeys';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { requireAuthenticatedUser } from '@/utils/authGuards';
+import { FilterBuilder } from '@/utils/filterBuilder';
 
 interface UpdateCompanyData {
   id: string;
@@ -22,9 +23,14 @@ async function updateCompany(data: UpdateCompanyData, userId: string): Promise<C
 
   // Check if company name already exists (if name changed)
   if (data.name.trim() !== currentCompany.name) {
+    const filter = new FilterBuilder()
+      .userScope(userId)
+      .equals('name', data.name.trim())
+      .build();
+
     const existing = await pb
       .collection(Collections.Companies)
-      .getFirstListItem(`user = "${userId}" && name = "${data.name.trim()}"`, { requestKey: null })
+      .getFirstListItem(filter, { requestKey: null })
       .catch(() => null);
 
     if (existing && existing.id !== data.id) {
