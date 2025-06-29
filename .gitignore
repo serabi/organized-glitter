@@ -147,7 +147,6 @@ scripts/
 scripts/*
 
 # Production-specific configuration files (exclude from open source)
-vercel.json
 api/send-feedback.js
 
 # Additional sensitive patterns (but allow page components)
