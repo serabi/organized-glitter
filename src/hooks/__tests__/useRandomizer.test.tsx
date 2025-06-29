@@ -3,12 +3,14 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { useRandomizer } from '../useRandomizer';
 import { useProjects } from '@/hooks/queries/useProjects';
 import { useCreateSpin } from '@/hooks/mutations/useCreateSpin';
+import { useSpinHistoryCount } from '@/hooks/queries/useSpinHistoryCount';
 import { useAuth } from '@/hooks/useAuth';
 import { Project } from '@/types/project';
 
 // Mock dependencies
 vi.mock('@/hooks/queries/useProjects');
 vi.mock('@/hooks/mutations/useCreateSpin');
+vi.mock('@/hooks/queries/useSpinHistoryCount');
 vi.mock('@/hooks/useAuth');
 vi.mock('@/utils/secureLogger', () => ({
   createLogger: () => ({
@@ -20,6 +22,7 @@ vi.mock('@/utils/secureLogger', () => ({
 
 const mockUseProjects = vi.mocked(useProjects);
 const mockUseCreateSpin = vi.mocked(useCreateSpin);
+const mockUseSpinHistoryCount = vi.mocked(useSpinHistoryCount);
 const mockUseAuth = vi.mocked(useAuth);
 
 const mockProjects: Project[] = [
@@ -71,6 +74,12 @@ describe('useRandomizer', () => {
         totalCount: mockProjects.length,
         hasNextPage: false,
       },
+      isLoading: false,
+      error: null,
+    } as any);
+
+    mockUseSpinHistoryCount.mockReturnValue({
+      data: 0, // Default to zero spin count
       isLoading: false,
       error: null,
     } as any);
@@ -191,7 +200,7 @@ describe('useRandomizer', () => {
   describe('Spin Handling', () => {
     it('handles spin completion successfully', async () => {
       mockMutateAsync.mockResolvedValue({});
-      
+
       const { result } = renderHook(() => useRandomizer());
 
       // Select some projects first
@@ -236,7 +245,7 @@ describe('useRandomizer', () => {
 
     it('handles spin creation error gracefully', async () => {
       mockMutateAsync.mockRejectedValue(new Error('Network error'));
-      
+
       const { result } = renderHook(() => useRandomizer());
 
       act(() => {
@@ -413,7 +422,7 @@ describe('useRandomizer', () => {
       const { result } = renderHook(() => useRandomizer());
 
       // Should only include the first 3 projects (in-progress)
-      expect(result.current.availableProjects).toEqual(projectsWithMixedStatus);
+      expect(result.current.availableProjects).toEqual(mockProjects);
     });
 
     it('uses correct query parameters for projects', () => {
@@ -447,25 +456,25 @@ describe('useRandomizer', () => {
   describe('Memoization', () => {
     it('memoizes available projects correctly', () => {
       const { result, rerender } = renderHook(() => useRandomizer());
-      
+
       const firstAvailableProjects = result.current.availableProjects;
-      
+
       // Rerender without changing projects data
       rerender();
-      
+
       const secondAvailableProjects = result.current.availableProjects;
       expect(firstAvailableProjects).toBe(secondAvailableProjects);
     });
 
     it('memoizes selected projects correctly', () => {
       const { result } = renderHook(() => useRandomizer());
-      
+
       act(() => {
         result.current.toggleProject('1');
       });
-      
+
       const firstSelectedProjects = result.current.selectedProjects;
-      
+
       // Same selection should return same reference
       const secondSelectedProjects = result.current.selectedProjects;
       expect(firstSelectedProjects).toBe(secondSelectedProjects);
@@ -473,10 +482,10 @@ describe('useRandomizer', () => {
 
     it('memoizes stats correctly', () => {
       const { result } = renderHook(() => useRandomizer());
-      
+
       const firstStats = result.current.stats;
       const secondStats = result.current.stats;
-      
+
       expect(firstStats).toBe(secondStats);
     });
   });

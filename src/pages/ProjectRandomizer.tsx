@@ -212,7 +212,7 @@ const ProjectRandomizer: React.FC = () => {
           <Card>
             <CardContent className="p-4">
               <div className="text-2xl font-bold">{stats.recentSpins}</div>
-              <p className="text-sm text-muted-foreground">Recent Spins</p>
+              <p className="text-sm text-muted-foreground">Total Spins</p>
             </CardContent>
           </Card>
           <Card>

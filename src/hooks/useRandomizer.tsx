@@ -14,6 +14,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { Project } from '@/types/project';
 import { useProjects } from '@/hooks/queries/useProjects';
 import { useCreateSpin } from '@/hooks/mutations/useCreateSpin';
+import { useSpinHistoryCount } from '@/hooks/queries/useSpinHistoryCount';
 import { useAuth } from '@/hooks/useAuth';
 import { createLogger } from '@/utils/secureLogger';
 
@@ -124,7 +125,11 @@ export const useRandomizer = () => {
     pageSize: 100, // Get all in-progress projects
   });
 
-  // Spin history is now handled directly in the SpinHistory component
+  // Fetch spin history count for stats (efficient count-only query)
+  const { data: totalSpinCount = 0 } = useSpinHistoryCount({
+    userId: user?.id,
+    enabled: !!user?.id,
+  });
 
   // Create spin mutation
   const createSpinMutation = useCreateSpin();
@@ -214,11 +219,11 @@ export const useRandomizer = () => {
       totalProjects,
       selectedCount,
       canSpin,
-      recentSpins: 0, // This will be handled in SpinHistory component
+      recentSpins: totalSpinCount, // Keep the property name for backward compatibility
       hasProjects: totalProjects > 0,
       hasSelection: selectedCount > 0,
     };
-  }, [availableProjects.length, selectedProjectIds.size]);
+  }, [availableProjects.length, selectedProjectIds.size, totalSpinCount]);
 
   // Loading and error states
   const isLoading = isLoadingProjects;
