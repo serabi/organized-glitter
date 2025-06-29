@@ -1,7 +1,7 @@
 import { useState, useCallback, memo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Menu, Home, LayoutDashboard, Settings, LogOut, MessageSquare } from 'lucide-react';
+import { Menu, Home, LayoutDashboard, Settings, LogOut, MessageSquare, Shuffle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useToast } from '@/hooks/use-toast';
@@ -158,6 +158,17 @@ const Navbar = memo(({ isAuthenticated = false }: NavbarProps) => {
                     >
                       <LayoutDashboard className="mr-2 h-4 w-4" />
                       Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link
+                      to="/randomizer"
+                      className="flex items-center"
+                      aria-current={location.pathname === '/randomizer' ? 'page' : undefined}
+                      onClick={() => handleNavClick('/randomizer', 'Randomizer')}
+                    >
+                      <Shuffle className="mr-2 h-4 w-4" />
+                      Randomizer
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>

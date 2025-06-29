@@ -195,6 +195,37 @@ Audit trail for deleted user accounts (admin access only).
 - Create: `@request.auth.id != ""`
 - List/View/Update/Delete: Admin only
 
+### randomizer_spins
+Project randomizer spin history for tracking which projects users have randomly selected.
+
+**Fields:**
+- `id` (text, 15 chars, primary key)
+- `user` (relation to users, required, cascade delete)
+- `project` (relation to projects, optional, set null on delete)
+- `project_title` (text, required) - Stores project title for historical reference
+- `selected_projects` (JSON, required) - Array of project IDs that were available during spin
+- `spun_at` (date, required) - Timestamp when the spin occurred
+- `created`, `updated` (auto-managed timestamps)
+
+**Security Rules:**
+- All operations: `user = @request.auth.id`
+
+**Cascade Delete Rules:**
+- When user deleted: CASCADE DELETE (remove all spin records)
+- When project deleted: SET NULL (preserve spin history with readable title)
+
+**Indexes:**
+- `idx_randomizer_spins_user_spun_at` - Composite index on (user, spun_at DESC) for primary query pattern
+- `idx_randomizer_spins_user` - User-only index for user-specific operations
+- `idx_randomizer_spins_spun_at` - Date-only index on (spun_at DESC) for analytics
+- `idx_randomizer_spins_project` - Project index for analytics and cascade operations
+
+**Usage:**
+- Records each randomizer wheel spin with the selected project
+- Maintains history even if projects are deleted (via project_title field)
+- Supports pagination with "Show More" functionality (8 recent, expand to 50)
+- Enables analytics on most-spun projects and user engagement
+
 ## System Collections
 
 The following collections are managed by PocketBase for authentication and security:

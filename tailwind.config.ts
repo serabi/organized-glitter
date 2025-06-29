@@ -19,6 +19,10 @@ export default {
       },
     },
     extend: {
+      spacing: {
+        '120': '30rem', // 480px for tablet wheel size
+        '140': '35rem', // 560px for desktop wheel size
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
