@@ -116,6 +116,7 @@ export class TagService {
 
   /**
    * Create new tag with secure validation
+   */
   static async createTag(tagData: TagFormValues): Promise<ServiceResponse<Tag>> {
     return withAuthentication(async (userId: string) => {
       try {
@@ -172,6 +173,7 @@ export class TagService {
 
   /**
    * Get tags for specific project with security validation
+   */
   static async getProjectTags(projectId: string): Promise<ServiceResponse<Tag[]>> {
     console.log(`[TagService.getProjectTags] Attempting to fetch tags for projectId: ${projectId}`);
     return withAuthentication(async (userId: string) => {
@@ -224,6 +226,7 @@ export class TagService {
 
   /**
    * Update tag with secure validation and duplicate checking
+   */
   static async updateTag(
     tagId: string,
     updates: Partial<TagFormValues>
@@ -294,6 +297,7 @@ export class TagService {
 
   /**
    * Delete tag and all associated project relationships
+   */
   static async deleteTag(tagId: string): Promise<ServiceResponse<void>> {
     return withAuthentication(async (userId: string) => {
       try {
@@ -332,6 +336,7 @@ export class TagService {
 
   /**
    * Add tag to project with security validation
+   */
   static async addTagToProject(projectId: string, tagId: string): Promise<ServiceResponse<void>> {
     return withAuthentication(async (userId: string) => {
       try {
@@ -372,6 +377,7 @@ export class TagService {
 
   /**
    * Remove tag from project with security validation
+   */
   static async removeTagFromProject(
     projectId: string,
     tagId: string
@@ -411,6 +417,7 @@ export class TagService {
 
   /**
    * Get tag statistics including project count
+   */
   static async getTagStats(tagId: string): Promise<ServiceResponse<{ projectCount: number }>> {
     return withAuthentication(async (userId: string) => {
       try {
@@ -443,6 +450,7 @@ export class TagService {
 
   /**
    * Get bulk tag statistics using reverse expansion for performance
+   */
   static async getBulkTagStats(tagIds: string[]): Promise<ServiceResponse<Record<string, number>>> {
     console.log(
       '[TagService.getBulkTagStats] Starting with reverse expansion approach for tagIds:',
