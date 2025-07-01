@@ -7,17 +7,8 @@ import { pb } from '@/lib/pocketbase';
 import { PROJECT_IMAGE_CONSTANTS } from '@/components/projects/ProgressNoteForm/constants';
 import { logger } from '@/utils/logger';
 import { TAG_COLOR_PALETTE } from '@/utils/tagColors'; // For default tag color
+import { generateSlug, generateUniqueSlug } from '@/utils/slugify';
 
-// Helper function to generate slugs (if not imported from elsewhere)
-const slugify = (text: string): string => {
-  return text
-    .toString()
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-') // Replace spaces with -
-    .replace(/[^\w-]+/g, '') // Remove all non-word chars
-    .replace(/--+/g, '-'); // Replace multiple hyphens
-};
 const DEFAULT_TAG_COLOR_HEX = TAG_COLOR_PALETTE[0].hex; // Default color for new tags
 
 interface ImportStats {
@@ -167,16 +158,37 @@ export const useProjectImport = () => {
         let createdTagsCount = 0;
         for (const tagName of newTagNamesToCreate) {
           try {
+            // Create a function to check if slug exists for this user
+            const checkSlugExists = async (slug: string): Promise<boolean> => {
+              try {
+                const existingSlugs = await pb.collection('tags').getList(1, 1, {
+                  filter: pb.filter('user = {:userId} && slug = {:slug}', { userId: user.id, slug }),
+                  fields: 'id',
+                });
+                return existingSlugs.items.length > 0;
+              } catch (error) {
+                // If error checking, assume it doesn't exist to avoid infinite loops
+                logger.warn(`Error checking slug existence for "${slug}":`, error);
+                return false;
+              }
+            };
+
+            // Generate unique slug for this user
+            const uniqueSlug = await generateUniqueSlug(tagName, checkSlugExists);
+
             const newTagData = {
               name: tagName,
-              slug: slugify(tagName),
+              slug: uniqueSlug,
               color: DEFAULT_TAG_COLOR_HEX,
               user: user.id,
             };
             const createdTag = await pb.collection('tags').create(newTagData);
             tagNameMap[tagName] = createdTag.id;
             createdTagsCount++;
-            logger.csvImport(`Successfully created new tag: ${tagName}`, { id: createdTag.id });
+            logger.csvImport(`Successfully created new tag: ${tagName}`, { 
+              id: createdTag.id, 
+              slug: uniqueSlug 
+            });
           } catch (tagCreateError) {
             logger.error(`Failed to pre-create new tag: ${tagName}`, tagCreateError);
             currentTagWarnings.push(
