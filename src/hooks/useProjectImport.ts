@@ -7,7 +7,8 @@ import { pb } from '@/lib/pocketbase';
 import { PROJECT_IMAGE_CONSTANTS } from '@/components/projects/ProgressNoteForm/constants';
 import { logger } from '@/utils/logger';
 import { TAG_COLOR_PALETTE } from '@/utils/tagColors'; // For default tag color
-import { generateSlug, generateUniqueSlug } from '@/utils/slugify';
+import { generateUniqueSlug } from '@/utils/slugify';
+import { validateProjectData, validateTagNames, ValidationIssue } from '@/utils/csvValidation';
 
 const DEFAULT_TAG_COLOR_HEX = TAG_COLOR_PALETTE[0].hex; // Default color for new tags
 
@@ -17,6 +18,7 @@ interface ImportStats {
   total: number;
   errors: string[];
   tagWarnings: string[];
+  validationIssues: ValidationIssue[];
 }
 
 export const useProjectImport = () => {
@@ -28,6 +30,7 @@ export const useProjectImport = () => {
     total: 0,
     errors: [],
     tagWarnings: [],
+    validationIssues: [],
   });
 
   const { createProject } = useImportCreateProject();
@@ -93,6 +96,7 @@ export const useProjectImport = () => {
       total: 0,
       errors: [],
       tagWarnings: [],
+      validationIssues: [],
     });
 
     try {
@@ -125,6 +129,16 @@ export const useProjectImport = () => {
       logger.csvImport('Starting batch tag processing...', {
         allUniqueTagNamesCount: allUniqueTagNames.length,
       });
+      
+      // Validate all tag names first
+      const tagValidationResult = validateTagNames(allUniqueTagNames);
+      const validationIssues: ValidationIssue[] = [...tagValidationResult.issues];
+      
+      // Use validated tag names
+      const validatedTagNamesMap = new Map(
+        tagValidationResult.validatedTags.map(({ original, normalized }) => [original, normalized])
+      );
+      
       const tagNameMap: Record<string, string> = {};
       const currentTagWarnings: string[] = []; // Use a local var for warnings during this phase
 
@@ -141,10 +155,11 @@ export const useProjectImport = () => {
         });
 
         const newTagNamesToCreate: string[] = [];
-        allUniqueTagNames.forEach(name => {
-          if (name && !tagNameMap[name]) {
-            // Ensure name is not empty
-            newTagNamesToCreate.push(name);
+        allUniqueTagNames.forEach(originalName => {
+          const normalizedName = validatedTagNamesMap.get(originalName) || originalName;
+          if (normalizedName && !tagNameMap[normalizedName]) {
+            // Ensure normalized name is not empty and not already mapped
+            newTagNamesToCreate.push(normalizedName);
           }
         });
         logger.csvImport('Identified new tags to create.', {
@@ -211,31 +226,52 @@ export const useProjectImport = () => {
       }
       // --- END BATCH TAG PROCESSING ---
 
-      // Convert parsed projects to ProjectCreateDTO format
+      // Convert parsed projects to ProjectCreateDTO format with validation
       const projectsToCreate: ProjectCreateDTO[] = parsedCsvProjects.map(
         (parsedProject): ProjectCreateDTO => {
-          const projectTagIds = (parsedProject.tagNames || [])
-            .map(name => tagNameMap[name]) // Get ID from our map
-            .filter(id => !!id) as string[]; // Filter out any undefined IDs (e.g., if a tag name failed creation)
-
-          return {
-            userId: user.id,
-            title: parsedProject.title || 'Untitled Project',
-            company: parsedProject.company,
-            artist: parsedProject.artist,
+          // Validate and normalize project data
+          const projectValidation = validateProjectData({
+            title: parsedProject.title,
             drillShape: parsedProject.drillShape,
-            width: parsedProject.width,
-            height: parsedProject.height,
-            status: parsedProject.status || 'wishlist',
+            status: parsedProject.status,
+            kit_category: parsedProject.kit_category,
             datePurchased: parsedProject.datePurchased,
             dateReceived: parsedProject.dateReceived,
             dateStarted: parsedProject.dateStarted,
             dateCompleted: parsedProject.dateCompleted,
             generalNotes: parsedProject.generalNotes,
-            imageUrl: parsedProject.imageUrl,
             sourceUrl: parsedProject.sourceUrl,
+          });
+          
+          // Add validation issues to our tracking
+          validationIssues.push(...projectValidation.issues);
+          
+          // Map tag names to IDs using validated names
+          const projectTagIds = (parsedProject.tagNames || [])
+            .map(originalName => {
+              const normalizedName = validatedTagNamesMap.get(originalName) || originalName;
+              return tagNameMap[normalizedName];
+            })
+            .filter(id => !!id) as string[];
+
+          return {
+            userId: user.id,
+            title: projectValidation.correctedData.title || 'Untitled Project',
+            company: parsedProject.company,
+            artist: parsedProject.artist,
+            drillShape: projectValidation.correctedData.drillShape,
+            width: parsedProject.width,
+            height: parsedProject.height,
+            status: projectValidation.correctedData.status,
+            datePurchased: projectValidation.correctedData.datePurchased,
+            dateReceived: projectValidation.correctedData.dateReceived,
+            dateStarted: projectValidation.correctedData.dateStarted,
+            dateCompleted: projectValidation.correctedData.dateCompleted,
+            generalNotes: projectValidation.correctedData.generalNotes,
+            imageUrl: parsedProject.imageUrl,
+            sourceUrl: projectValidation.correctedData.sourceUrl,
             totalDiamonds: parsedProject.totalDiamonds,
-            kit_category: parsedProject.kit_category,
+            kit_category: projectValidation.correctedData.kit_category,
             tagIds: projectTagIds, // Pass resolved tag IDs
           };
         }
@@ -295,6 +331,7 @@ export const useProjectImport = () => {
           total: totalProjects,
           errors,
           tagWarnings,
+          validationIssues,
         });
 
         if (i < projectsToCreate.length - 1) {
@@ -304,18 +341,31 @@ export const useProjectImport = () => {
 
       let successMessage = `Successfully imported ${successCount} out of ${totalProjects} projects. View them in your dashboard.`;
 
-      if (tagWarnings.length > 0) {
-        successMessage += ` Note: Some issues occurred with tags (see console for details).`;
+      const totalIssues = tagWarnings.length + validationIssues.length;
+      if (totalIssues > 0) {
+        successMessage += ` Note: ${totalIssues} data issues were automatically corrected (see details below).`;
       }
 
       toast({
         title: 'Import complete',
         description: successMessage,
-        variant: tagWarnings.length > 0 ? 'warning' : 'default',
+        variant: totalIssues > 0 ? 'warning' : 'default',
       });
 
       if (tagWarnings.length > 0) {
         logger.warn('Tag processing/linking warnings:', { tagWarnings });
+      }
+      
+      if (validationIssues.length > 0) {
+        logger.warn('Data validation issues corrected:', { 
+          validationIssues: validationIssues.map(issue => ({
+            field: issue.field,
+            severity: issue.severity,
+            message: issue.message,
+            originalValue: issue.originalValue,
+            correctedValue: issue.correctedValue
+          }))
+        });
       }
 
       return true;
@@ -335,6 +385,7 @@ export const useProjectImport = () => {
           error instanceof Error ? error.message : 'Unknown error during import',
         ],
         tagWarnings: [],
+        validationIssues: [],
       }));
 
       return false;
