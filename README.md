@@ -3,17 +3,16 @@
 [![Instagram](https://img.shields.io/badge/Instagram-E4405F?style=for-the-badge&logo=instagram&logoColor=white)](https://www.instagram.com/organized_glitter/)
 ![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/serabi/organized-glitter?utm_source=oss&utm_medium=github&utm_campaign=serabi%2Forganized-glitter&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
 
-A modern web application for diamond painters! Allows for tracking projects, managing your "stash", and documenting progress.
+Organized Glitter is a modern web application for diamond painters! Allows for tracking projects, managing your "stash", and documenting progress.
 
-Built with React, TypeScript, and PocketBase.
+Currently built with React, TypeScript, and PocketBase. I'll be adding WordPress in to manage the feedback and changelogs in the future. 
 
 ## Core Features
 
-- **Responsive Design**: Works seamlessly on desktop, tablet, and mobile devices
-- **Secure Authentication**: Email/password authentication with PocketBase Auth
-- **Modern UI**: Clean, intuitive interface with dark/light theme support
-- **Real-time Updates**: Live data synchronization across devices
-- **Cloud Storage**: Secure image and data storage with PocketBase
+- **Responsive Design**: Goal: works seamlessly on desktop, tablet, and mobile devices
+- **Secure Authentication**: Email/password authentication with PocketBase Auth - everything should be fully secure, with data only available to the person who adds the data. 
+- **Modern UI**: dark/light theme support
+- **Cloud Storage**: Secure image and data storage with PocketBase, backed up to Cloudflare 
 - **User-Centric**: Designed specifically for diamond painters by a diamond painter
 
 ## Project Management Features
@@ -44,7 +43,7 @@ Built with React, TypeScript, and PocketBase.
   - Company and artist management
   - Advanced filtering and sorting
   - Search functionality
-  - Import/export capabilities
+  - Import/export capabilities - currently text based, looking to add image export in the future! 
 
 - **User Management**:
   - Individual user profiles with customizable avatars
@@ -58,7 +57,7 @@ Built with React, TypeScript, and PocketBase.
 
 - **Framework**: React 18 with TypeScript
 - **Build Tool**: Vite
-- **UI Components**: shadcn/ui (based on Radix UI)
+- **UI Components**: shadcn/ui
 - **Styling**: Tailwind CSS with CSS Variables
 - **State Management**: React Query (TanStack Query) + React Context
 - **Form Handling**: React Hook Form with Zod validation
@@ -336,7 +335,7 @@ This project is licensed under the GNU Affero General Public License v3.0 (AGPL-
 
 ### Commercial Licensing
 
-At this time, no commercial licensing is available. I will update this README if that changes in the future.
+At this time, **no commercial licensing is available.** I will update this README if that changes in the future.
 
 ## Acknowledgments
 
