@@ -9,6 +9,7 @@ import { logger } from '@/utils/logger';
 import { TAG_COLOR_PALETTE } from '@/utils/tagColors'; // For default tag color
 import { generateUniqueSlug } from '@/utils/slugify';
 import { validateProjectData, validateTagNames, ValidationIssue } from '@/utils/csvValidation';
+import { analyzeCSVFile, generateColumnValidationMessage, ColumnAnalysisResult } from '@/utils/csvColumnAnalysis';
 
 const DEFAULT_TAG_COLOR_HEX = TAG_COLOR_PALETTE[0].hex; // Default color for new tags
 
@@ -19,6 +20,8 @@ interface ImportStats {
   errors: string[];
   tagWarnings: string[];
   validationIssues: ValidationIssue[];
+  columnAnalysis?: ColumnAnalysisResult;
+  currentProject?: string;
 }
 
 export const useProjectImport = () => {
@@ -100,14 +103,55 @@ export const useProjectImport = () => {
     });
 
     try {
-      // First read the file content for debugging
-      // const fileContent = await file.text(); // Removed as it's unused
+      // Step 1: Analyze CSV columns before parsing
+      logger.csvImport('Analyzing CSV column structure...');
+      const columnAnalysis = await analyzeCSVFile(file);
+      const validationMessage = generateColumnValidationMessage(columnAnalysis);
+      
+      // Log column analysis results
+      logger.csvImport('CSV column analysis complete', {
+        detectedColumns: columnAnalysis.detectedColumns.length,
+        missingRequired: columnAnalysis.missingRequired.length,
+        missingOptional: columnAnalysis.missingOptional.length,
+        unmappedColumns: columnAnalysis.unmappedColumns.length,
+        hasAllRequired: columnAnalysis.summary.hasAllRequired,
+        canProceed: validationMessage.canProceed
+      });
+
+      // Check if we can proceed with import
+      if (!validationMessage.canProceed) {
+        toast({
+          title: 'CSV Validation Failed',
+          description: validationMessage.message,
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return false;
+      }
+
+      // Show column validation feedback
+      if (validationMessage.severity === 'warning') {
+        toast({
+          title: 'Column Mapping Notice',
+          description: validationMessage.message,
+          variant: 'default',
+        });
+      } else if (validationMessage.severity === 'success') {
+        toast({
+          title: 'Column Analysis Complete',
+          description: validationMessage.message,
+          variant: 'default',
+        });
+      }
+
+      // Update import stats with column analysis
+      setImportStats(prev => ({ ...prev, columnAnalysis }));
 
       // Debug CSV tag parsing (ORG-36)
       logger.csvImport('Running CSV tag debug analysis...');
       // logCSVTagDebugInfo removed for PocketBase migration
 
-      // Parse CSV file directly using Papa Parse with progress callback
+      // Step 2: Parse CSV file directly using Papa Parse with progress callback
       const { projects: parsedCsvProjects, allUniqueTagNames }: ParsedCsvData =
         await parseCsvFileToProjects(file, parseProgress => {
           // Papa Parse progress is for parsing, we'll map it to ~10% of total progress initially
@@ -292,8 +336,12 @@ export const useProjectImport = () => {
       const baseProgressForProjectLoop = 25;
 
       for (let i = 0; i < projectsToCreate.length; i++) {
+        const project = projectsToCreate[i];
+        
+        // Update current project being imported
+        setImportStats(prev => ({ ...prev, currentProject: project.title }));
+        
         try {
-          const project = projectsToCreate[i];
           const result = await createProject(project); // createProject now expects tagIds
           successCount++;
 
@@ -313,7 +361,7 @@ export const useProjectImport = () => {
           const errorMessage =
             error instanceof Error
               ? error.message
-              : `Failed to import project "${projectsToCreate[i].title || 'Untitled'}"`;
+              : `Failed to import project "${project.title || 'Untitled'}"`;
 
           errors.push(errorMessage);
         }
@@ -332,6 +380,8 @@ export const useProjectImport = () => {
           errors,
           tagWarnings,
           validationIssues,
+          columnAnalysis,
+          currentProject: project.title,
         });
 
         if (i < projectsToCreate.length - 1) {
@@ -344,6 +394,12 @@ export const useProjectImport = () => {
       const totalIssues = tagWarnings.length + validationIssues.length;
       if (totalIssues > 0) {
         successMessage += ` Note: ${totalIssues} data issues were automatically corrected (see details below).`;
+      }
+
+      // Add column mapping summary to success message
+      const mappedColumns = importStats.columnAnalysis?.detectedColumns.length || 0;
+      if (mappedColumns > 0) {
+        successMessage += ` Mapped ${mappedColumns} CSV columns successfully.`;
       }
 
       toast({
@@ -368,6 +424,9 @@ export const useProjectImport = () => {
         });
       }
 
+      // Clear current project when import completes
+      setImportStats(prev => ({ ...prev, currentProject: undefined }));
+
       return true;
     } catch (error) {
       console.error('Import error:', error);
@@ -386,6 +445,8 @@ export const useProjectImport = () => {
         ],
         tagWarnings: [],
         validationIssues: [],
+        columnAnalysis: prev.columnAnalysis, // Preserve column analysis if it was completed
+        currentProject: undefined, // Clear current project on error
       }));
 
       return false;

@@ -13,7 +13,7 @@ import { createLogger } from '@/utils/secureLogger';
 
 const logger = createLogger('CSVValidation');
 
-// Maximum field lengths (conservative estimates based on typical database constraints)
+// Maximum field lengths (based on PocketBase database schema constraints)
 export const FIELD_LIMITS = {
   TAG_NAME_MAX_LENGTH: 100,
   PROJECT_TITLE_MAX_LENGTH: 200,

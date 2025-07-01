@@ -118,7 +118,7 @@ const Import = () => {
                     </li>
                     <li>
                       <strong>Tags</strong> - Separate multiple tags with semicolons (e.g.,
-                      "Fantasy; Nature; Abstract") Tags can be up to 100 characters long. 
+                      "Fantasy; Nature; Abstract"). Tag names can be up to 100 characters long.
                     </li>
                     <li>
                       <strong>File Size</strong> - Maximum 10MB
@@ -330,6 +330,11 @@ const Import = () => {
                         <p className="text-sm text-muted-foreground">
                           Importing projects... {progress}%
                         </p>
+                        {importStats.currentProject && (
+                          <p className="text-xs text-muted-foreground italic">
+                            Currently importing: {importStats.currentProject}
+                          </p>
+                        )}
                       </div>
                     )}
 

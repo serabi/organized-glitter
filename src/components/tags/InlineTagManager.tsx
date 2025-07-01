@@ -182,11 +182,11 @@ export function InlineTagManager({
       return;
     }
 
-    // Check character limit (50 characters max as per database constraint)
-    if (searchQuery.trim().length > 50) {
+    // Check character limit (100 characters max as per database constraint)
+    if (searchQuery.trim().length > 100) {
       toast({
         title: 'Tag name too long',
-        description: 'Tag names must be 50 characters or less.',
+        description: 'Tag names must be 100 characters or less.',
         variant: 'destructive',
       });
       return;
@@ -354,10 +354,10 @@ export function InlineTagManager({
               {searchQuery.length > 0 && (
                 <div
                   className={`absolute right-2 top-1/2 -translate-y-1/2 transform text-xs ${
-                    searchQuery.length > 50 ? 'text-destructive' : 'text-muted-foreground'
+                    searchQuery.length > 100 ? 'text-destructive' : 'text-muted-foreground'
                   }`}
                 >
-                  {searchQuery.length}/50
+                  {searchQuery.length}/100
                 </div>
               )}
             </div>
@@ -387,11 +387,11 @@ export function InlineTagManager({
                       key="create-new-tag-command-item"
                       onSelect={handleCreateAndAddTag}
                       className={`flex cursor-pointer items-center gap-2 ${
-                        searchQuery.trim().length > 50 || isCreating
+                        searchQuery.trim().length > 100 || isCreating
                           ? 'cursor-not-allowed opacity-50'
                           : ''
                       }`}
-                      disabled={searchQuery.trim().length > 50 || isCreating}
+                      disabled={searchQuery.trim().length > 100 || isCreating}
                     >
                       <Hash className="h-3 w-3" />
                       <span className="truncate">
@@ -401,7 +401,7 @@ export function InlineTagManager({
                           : searchQuery.trim()}
                         "
                       </span>
-                      {searchQuery.trim().length > 50 && (
+                      {searchQuery.trim().length > 100 && (
                         <span className="ml-auto text-xs text-destructive">Too long</span>
                       )}
                     </CommandItem>

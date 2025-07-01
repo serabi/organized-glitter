@@ -42,11 +42,11 @@ const AddTagDialog = ({ onTagAdded }: AddTagDialogProps) => {
       return;
     }
 
-    // Check character limit (50 characters max as per database constraint)
-    if (newTagName.trim().length > 50) {
+    // Check character limit (100 characters max as per database constraint)
+    if (newTagName.trim().length > 100) {
       toast({
         title: 'Tag name too long',
-        description: 'Tag names must be 50 characters or less.',
+        description: 'Tag names must be 100 characters or less.',
         variant: 'destructive',
       });
       return;
@@ -110,22 +110,22 @@ const AddTagDialog = ({ onTagAdded }: AddTagDialogProps) => {
                   onChange={e => setNewTagName(e.target.value)}
                   disabled={isSubmitting}
                   autoFocus
-                  className={newTagName.length > 50 ? 'border-destructive' : ''}
+                  className={newTagName.length > 100 ? 'border-destructive' : ''}
                 />
                 {/* Character count indicator */}
                 {newTagName.length > 0 && (
                   <div
                     className={`absolute right-2 top-1/2 -translate-y-1/2 transform text-xs ${
-                      newTagName.length > 50 ? 'text-destructive' : 'text-muted-foreground'
+                      newTagName.length > 100 ? 'text-destructive' : 'text-muted-foreground'
                     }`}
                   >
-                    {newTagName.length}/50
+                    {newTagName.length}/100
                   </div>
                 )}
               </div>
-              {newTagName.length > 50 && (
+              {newTagName.length > 100 && (
                 <p className="mt-1 text-xs text-destructive">
-                  Tag name must be 50 characters or less
+                  Tag name must be 100 characters or less
                 </p>
               )}
             </FormField>
@@ -149,7 +149,7 @@ const AddTagDialog = ({ onTagAdded }: AddTagDialogProps) => {
           </div>
 
           <DialogFooter>
-            <Button type="submit" disabled={isSubmitting || newTagName.length > 50}>
+            <Button type="submit" disabled={isSubmitting || newTagName.length > 100}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Add Tag
             </Button>
