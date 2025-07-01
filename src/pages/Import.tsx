@@ -118,7 +118,7 @@ const Import = () => {
                     </li>
                     <li>
                       <strong>Tags</strong> - Separate multiple tags with semicolons (e.g.,
-                      "Fantasy; Nature; Abstract")
+                      "Fantasy; Nature; Abstract") Tags can be up to 100 characters long. 
                     </li>
                     <li>
                       <strong>File Size</strong> - Maximum 10MB
