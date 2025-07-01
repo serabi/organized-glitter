@@ -379,42 +379,98 @@ function truncateAtWordBoundary(text: string, maxLength: number): string {
 }
 
 /**
- * Fix common year typos
+ * Configuration for year correction logic
  */
-function fixCommonYearTypos(year: number): number | null {
+interface YearCorrectionOptions {
+  minValidYear?: number;
+  maxValidYear?: number;
+  currentYear?: number;
+  maxYearDeviation?: number; // How many years from current to consider valid
+}
+
+/**
+ * Fix common year typos using dynamic correction logic
+ */
+function fixCommonYearTypos(year: number, options: YearCorrectionOptions = {}): number | null {
+  const currentYear = options.currentYear ?? new Date().getFullYear();
+  const minValidYear = options.minValidYear ?? Math.max(1900, currentYear - 50); // Default: 50 years back
+  const maxValidYear = options.maxValidYear ?? currentYear + 10; // Default: 10 years forward
+  const maxDeviation = options.maxYearDeviation ?? 20; // Years from current considered reasonable
+  
   const yearStr = year.toString();
   
-  // Handle cases like 242 -> 2024 (interpreted from 0242)
-  if (yearStr.length === 3 && year < 100) {
-    // Likely missing leading 20
-    const candidate = 2000 + year;
-    if (candidate >= 1900 && candidate <= 2100) {
-      return candidate;
-    }
+  // Helper function to check if a year is within reasonable bounds
+  const isReasonableYear = (candidate: number): boolean => {
+    return candidate >= minValidYear && 
+           candidate <= maxValidYear && 
+           Math.abs(candidate - currentYear) <= maxDeviation;
+  };
+  
+  // Helper function to find the closest reasonable year to current year
+  const findClosestReasonableYear = (candidates: number[]): number | null => {
+    const validCandidates = candidates.filter(isReasonableYear);
+    if (validCandidates.length === 0) return null;
+    
+    return validCandidates.reduce((closest, candidate) => {
+      return Math.abs(candidate - currentYear) < Math.abs(closest - currentYear) 
+        ? candidate : closest;
+    });
+  };
+  
+  // Handle 3-digit years (likely missing century)
+  if (yearStr.length === 3) {
+    const candidates = [
+      1900 + year,  // 19XX
+      2000 + year   // 20XX
+    ];
+    return findClosestReasonableYear(candidates);
   }
   
-  // Handle cases like 242 -> 2024 (when from 0242 pattern)
-  if (yearStr.length === 3 && year >= 100) {
-    // Specific pattern fixes for common typos like 0242 -> 2024
-    if (year === 242) return 2024;
-    if (year === 232) return 2023;
-    if (year === 252) return 2025;
-  }
-  
-  // Handle cases like 0242 -> 2024 (first digit wrong)
+  // Handle 4-digit years starting with 0 (likely typo in first digit)
   if (yearStr.length === 4 && yearStr.startsWith('0')) {
-    const withoutFirst = yearStr.substring(1);
-    const candidate = parseInt(`2${withoutFirst}`);
-    if (candidate >= 1900 && candidate <= 2100) {
-      return candidate;
-    }
+    const lastThreeDigits = yearStr.substring(1);
+    const candidates = [
+      parseInt(`1${lastThreeDigits}`), // 1XXX
+      parseInt(`2${lastThreeDigits}`)  // 2XXX
+    ];
+    return findClosestReasonableYear(candidates);
   }
   
-  // Handle cases like 2042 -> 2024 (digit swap)
-  if (yearStr.length === 4 && yearStr.startsWith('20')) {
-    // Common pattern: 2042 instead of 2024
-    if (yearStr === '2042') return 2024;
-    if (yearStr === '2032') return 2023;
+  // Handle potential digit transposition in 4-digit years
+  if (yearStr.length === 4) {
+    const digits = yearStr.split('').map(Number);
+    const candidates: number[] = [];
+    
+    // Try swapping adjacent digits
+    for (let i = 0; i < digits.length - 1; i++) {
+      const swapped = [...digits];
+      [swapped[i], swapped[i + 1]] = [swapped[i + 1], swapped[i]];
+      const candidate = parseInt(swapped.join(''));
+      if (candidate !== year) {
+        candidates.push(candidate);
+      }
+    }
+    
+    // For years starting with 20, also try common digit inversions
+    if (yearStr.startsWith('20')) {
+      const lastTwoDigits = yearStr.substring(2);
+      const reversed = lastTwoDigits.split('').reverse().join('');
+      candidates.push(parseInt(`20${reversed}`));
+    }
+    
+    return findClosestReasonableYear(candidates);
+  }
+  
+  // Handle 2-digit years (assume they're in the current century or previous)
+  if (yearStr.length === 2) {
+    const currentCentury = Math.floor(currentYear / 100) * 100;
+    const previousCentury = currentCentury - 100;
+    
+    const candidates = [
+      currentCentury + year,
+      previousCentury + year
+    ];
+    return findClosestReasonableYear(candidates);
   }
   
   return null;

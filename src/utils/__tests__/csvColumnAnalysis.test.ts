@@ -287,6 +287,38 @@ describe('csvColumnAnalysis', () => {
       const result = await analyzeCSVFile(file);
       expect(result).toBeDefined();
     });
+
+    it('handles complex CSV formats with quoted fields and commas', async () => {
+      // Test CSV with complex quoted headers that would fail with simple string splitting
+      const csvContent = '"Project Title","Status, Current","Company Name","Artist, First & Last","Notes with ""quotes"""\n"Test Project","progress","TestCo","John ""Johnny"" Doe","Complex, notes with commas and ""quotes"""';
+      const file = new File([csvContent], 'complex.csv', { type: 'text/csv' });
+      
+      const result = await analyzeCSVFile(file);
+      
+      // Papaparse should correctly parse all 5 headers with complex quoting
+      expect(result.summary.totalCsvColumns).toBe(5);
+      
+      // Verify the headers were parsed correctly (not corrupted by manual string splitting)
+      const allHeaders = [
+        ...result.detectedColumns.map(col => col.csvHeader),
+        ...result.unmappedColumns
+      ];
+      expect(allHeaders).toContain('Project Title');
+      expect(allHeaders).toContain('Status, Current');
+      expect(allHeaders).toContain('Company Name');
+      expect(allHeaders).toContain('Artist, First & Last');
+      expect(allHeaders).toContain('Notes with "quotes"');
+      
+      // Only 'Project Title' matches our aliases, the others would be unmapped
+      expect(result.detectedColumns).toHaveLength(1);
+      expect(result.detectedColumns[0]).toEqual({
+        csvHeader: 'Project Title',
+        mappedTo: 'title',
+        confidence: 'alias'
+      });
+      expect(result.summary.hasAllRequired).toBe(true);
+      expect(result.unmappedColumns).toHaveLength(4);
+    });
   });
 
   describe('EXPECTED_COLUMNS configuration', () => {

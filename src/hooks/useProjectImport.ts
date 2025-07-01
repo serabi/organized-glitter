@@ -176,7 +176,7 @@ export const useProjectImport = () => {
       
       // Validate all tag names first
       const tagValidationResult = validateTagNames(allUniqueTagNames);
-      const validationIssues: ValidationIssue[] = [...tagValidationResult.issues];
+      const allValidationIssues: ValidationIssue[] = [...tagValidationResult.issues];
       
       // Use validated tag names
       const validatedTagNamesMap = new Map(
@@ -201,7 +201,7 @@ export const useProjectImport = () => {
         const newTagNamesToCreate: string[] = [];
         allUniqueTagNames.forEach(originalName => {
           const normalizedName = validatedTagNamesMap.get(originalName) || originalName;
-          if (normalizedName && !tagNameMap[normalizedName]) {
+          if (normalizedName && normalizedName.trim() !== '' && !tagNameMap[normalizedName]) {
             // Ensure normalized name is not empty and not already mapped
             newTagNamesToCreate.push(normalizedName);
           }
@@ -226,9 +226,11 @@ export const useProjectImport = () => {
                 });
                 return existingSlugs.items.length > 0;
               } catch (error) {
-                // If error checking, assume it doesn't exist to avoid infinite loops
-                logger.warn(`Error checking slug existence for "${slug}":`, error);
-                return false;
+                // If error checking, assume it DOES exist to prevent duplicate creation
+                // This conservative approach avoids duplicate slugs at the cost of potentially 
+                // generating a longer slug than necessary
+                logger.warn(`Error checking slug existence for "${slug}", assuming it exists to prevent duplicates:`, error);
+                return true;
               }
             };
 
@@ -288,7 +290,7 @@ export const useProjectImport = () => {
           });
           
           // Add validation issues to our tracking
-          validationIssues.push(...projectValidation.issues);
+          allValidationIssues.push(...projectValidation.issues);
           
           // Map tag names to IDs using validated names
           const projectTagIds = (parsedProject.tagNames || [])
@@ -379,7 +381,7 @@ export const useProjectImport = () => {
           total: totalProjects,
           errors,
           tagWarnings,
-          validationIssues,
+          validationIssues: allValidationIssues,
           columnAnalysis,
           currentProject: project.title,
         });
@@ -391,7 +393,7 @@ export const useProjectImport = () => {
 
       let successMessage = `Successfully imported ${successCount} out of ${totalProjects} projects. View them in your dashboard.`;
 
-      const totalIssues = tagWarnings.length + validationIssues.length;
+      const totalIssues = tagWarnings.length + allValidationIssues.length;
       if (totalIssues > 0) {
         successMessage += ` Note: ${totalIssues} data issues were automatically corrected (see details below).`;
       }
@@ -412,9 +414,9 @@ export const useProjectImport = () => {
         logger.warn('Tag processing/linking warnings:', { tagWarnings });
       }
       
-      if (validationIssues.length > 0) {
+      if (allValidationIssues.length > 0) {
         logger.warn('Data validation issues corrected:', { 
-          validationIssues: validationIssues.map(issue => ({
+          validationIssues: allValidationIssues.map(issue => ({
             field: issue.field,
             severity: issue.severity,
             message: issue.message,

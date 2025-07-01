@@ -275,8 +275,8 @@ describe('csvValidation', () => {
       expect(result.validatedTags).toHaveLength(3);
       expect(result.validatedTags[0].normalized).toBe('normal tag');
       expect(result.validatedTags[1].normalized.length).toBeLessThanOrEqual(FIELD_LIMITS.TAG_NAME_MAX_LENGTH);
-      // Check if any issues exist (depends on whether tags exceed limit)
-      expect(result.issues.length).toBeGreaterThanOrEqual(0);
+      // No issues should exist since the longest tag (67 chars) is under the 100-char limit
+      expect(result.issues).toHaveLength(0);
     });
   });
 });

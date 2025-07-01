@@ -8,6 +8,7 @@
  * @since 2025-07-01
  */
 
+import Papa from 'papaparse';
 import { createLogger } from '@/utils/secureLogger';
 
 const logger = createLogger('CSVColumnAnalysis');
@@ -169,13 +170,23 @@ export interface ColumnAnalysisResult {
   // Unmapped columns
   unmappedColumns: string[];
   
+  // Duplicate mappings
+  duplicateMappings: Array<{
+    field: ExpectedColumnKey;
+    csvHeaders: string[];
+    selectedHeader: string; // Which header will be used
+    reason: string; // Why this header was selected
+  }>;
+  
   // Summary
   summary: {
     totalCsvColumns: number;
     mappedColumns: number;
     missingRequiredCount: number;
     missingOptionalCount: number;
+    duplicateMappingsCount: number;
     hasAllRequired: boolean;
+    hasDuplicateMappings: boolean;
   };
 }
 
@@ -188,48 +199,137 @@ export function analyzeCSVColumns(csvHeaders: string[]): ColumnAnalysisResult {
   const missingRequired: ColumnAnalysisResult['missingRequired'] = [];
   const missingOptional: ColumnAnalysisResult['missingOptional'] = [];
   const unmappedColumns: string[] = [];
+  const duplicateMappings: ColumnAnalysisResult['duplicateMappings'] = [];
   const mappedHeaderIndices = new Set<number>();
+  
+  // Track all potential mappings for each field to detect duplicates
+  const fieldMappings = new Map<ExpectedColumnKey, Array<{
+    csvHeader: string;
+    headerIndex: number;
+    confidence: 'exact' | 'alias' | 'fuzzy';
+    aliasIndex: number; // Position in aliases array (for priority)
+  }>>();
 
   logger.debug('Analyzing CSV columns', { csvHeaders, normalizedHeaders });
 
-  // Check each expected column against CSV headers
+  // First pass: Find all potential mappings for each field
   for (const [fieldKey, fieldConfig] of Object.entries(EXPECTED_COLUMNS)) {
     const field = fieldKey as ExpectedColumnKey;
-    let found = false;
+    const potentialMappings: Array<{
+      csvHeader: string;
+      headerIndex: number;
+      confidence: 'exact' | 'alias' | 'fuzzy';
+      aliasIndex: number;
+    }> = [];
 
-    // Check for exact matches first, then aliases
-    for (const alias of fieldConfig.aliases) {
+    // Check for matches against all aliases
+    fieldConfig.aliases.forEach((alias: string, aliasIndex: number) => {
       const aliasNormalized = alias.toLowerCase().trim();
-      const headerIndex = normalizedHeaders.findIndex(h => h === aliasNormalized);
       
-      if (headerIndex !== -1) {
-        detectedColumns.push({
-          csvHeader: csvHeaders[headerIndex],
-          mappedTo: field,
-          confidence: alias === field ? 'exact' : 'alias'
-        });
-        mappedHeaderIndices.add(headerIndex);
-        found = true;
-        break;
-      }
-    }
+      normalizedHeaders.forEach((header, headerIndex) => {
+        if (header === aliasNormalized) {
+          potentialMappings.push({
+            csvHeader: csvHeaders[headerIndex],
+            headerIndex,
+            confidence: alias === field ? 'exact' : 'alias',
+            aliasIndex
+          });
+        }
+      });
+    });
 
-    // Track missing columns
-    if (!found) {
+    if (potentialMappings.length > 0) {
+      fieldMappings.set(field, potentialMappings);
+    }
+  }
+
+  // Second pass: Process mappings and detect duplicates
+  for (const [fieldKey, fieldConfig] of Object.entries(EXPECTED_COLUMNS)) {
+    const field = fieldKey as ExpectedColumnKey;
+    const potentialMappings = fieldMappings.get(field);
+
+    if (!potentialMappings || potentialMappings.length === 0) {
+      // Track missing columns
       if (fieldConfig.required) {
         missingRequired.push({
           field,
           description: fieldConfig.description,
-          aliases: [...fieldConfig.aliases] // Convert readonly to mutable array
+          aliases: [...fieldConfig.aliases]
         });
       } else {
         missingOptional.push({
           field,
           description: fieldConfig.description,
-          aliases: [...fieldConfig.aliases], // Convert readonly to mutable array
+          aliases: [...fieldConfig.aliases],
           defaultValue: 'defaultValue' in fieldConfig ? fieldConfig.defaultValue : undefined
         });
       }
+      continue;
+    }
+
+    // Handle single mapping
+    if (potentialMappings.length === 1) {
+      const mapping = potentialMappings[0];
+      detectedColumns.push({
+        csvHeader: mapping.csvHeader,
+        mappedTo: field,
+        confidence: mapping.confidence
+      });
+      mappedHeaderIndices.add(mapping.headerIndex);
+    } 
+    // Handle duplicate mappings
+    else {
+      // Select the best mapping based on priority:
+      // 1. Exact matches over aliases
+      // 2. Earlier position in aliases array (higher priority)
+      // 3. First occurrence in CSV if all else equal
+      const bestMapping = potentialMappings.reduce((best, current) => {
+        // Prefer exact matches
+        if (best.confidence === 'exact' && current.confidence !== 'exact') {
+          return best;
+        }
+        if (current.confidence === 'exact' && best.confidence !== 'exact') {
+          return current;
+        }
+        
+        // If same confidence level, prefer higher priority alias (lower index)
+        if (current.aliasIndex < best.aliasIndex) {
+          return current;
+        }
+        if (best.aliasIndex < current.aliasIndex) {
+          return best;
+        }
+        
+        // If same priority, prefer first occurrence in CSV
+        return current.headerIndex < best.headerIndex ? current : best;
+      });
+
+      // Add the selected mapping
+      detectedColumns.push({
+        csvHeader: bestMapping.csvHeader,
+        mappedTo: field,
+        confidence: bestMapping.confidence
+      });
+      mappedHeaderIndices.add(bestMapping.headerIndex);
+
+      // Track the duplicate mapping
+      const reasonParts = [];
+      if (bestMapping.confidence === 'exact') {
+        reasonParts.push('exact field name match');
+      } else {
+        reasonParts.push(`primary alias "${fieldConfig.aliases[bestMapping.aliasIndex]}"`);
+      }
+      
+      if (potentialMappings.some(m => m.headerIndex < bestMapping.headerIndex)) {
+        reasonParts.push('appears first in CSV');
+      }
+
+      duplicateMappings.push({
+        field,
+        csvHeaders: potentialMappings.map(m => m.csvHeader),
+        selectedHeader: bestMapping.csvHeader,
+        reason: reasonParts.join(', ')
+      });
     }
   }
 
@@ -245,12 +345,15 @@ export function analyzeCSVColumns(csvHeaders: string[]): ColumnAnalysisResult {
     missingRequired,
     missingOptional,
     unmappedColumns,
+    duplicateMappings,
     summary: {
       totalCsvColumns: csvHeaders.length,
       mappedColumns: detectedColumns.length,
       missingRequiredCount: missingRequired.length,
       missingOptionalCount: missingOptional.length,
-      hasAllRequired: missingRequired.length === 0
+      duplicateMappingsCount: duplicateMappings.length,
+      hasAllRequired: missingRequired.length === 0,
+      hasDuplicateMappings: duplicateMappings.length > 0
     }
   };
 
@@ -266,7 +369,7 @@ export function generateColumnValidationMessage(analysis: ColumnAnalysisResult):
   severity: 'success' | 'warning' | 'error';
   canProceed: boolean;
 } {
-  const { summary, missingRequired, missingOptional, unmappedColumns } = analysis;
+  const { summary, missingRequired, missingOptional, unmappedColumns, duplicateMappings } = analysis;
   
   if (!summary.hasAllRequired) {
     const missingFields = missingRequired.map(m => m.field).join(', ');
@@ -277,7 +380,8 @@ export function generateColumnValidationMessage(analysis: ColumnAnalysisResult):
     };
   }
 
-  if (missingOptional.length === 0 && unmappedColumns.length === 0) {
+  // Check for perfect scenario (no issues at all)
+  if (missingOptional.length === 0 && unmappedColumns.length === 0 && duplicateMappings.length === 0) {
     return {
       message: `All expected columns found and mapped successfully. Ready to import ${summary.mappedColumns} columns.`,
       severity: 'success',
@@ -286,6 +390,15 @@ export function generateColumnValidationMessage(analysis: ColumnAnalysisResult):
   }
 
   let message = `Ready to import with ${summary.mappedColumns} columns mapped.`;
+  
+  // Handle duplicate mappings first (most important warning)
+  if (duplicateMappings.length > 0) {
+    message += ` WARNING: ${duplicateMappings.length} duplicate column mapping${duplicateMappings.length > 1 ? 's' : ''} detected.`;
+    const duplicateDetails = duplicateMappings.map(dup => 
+      `${dup.field}: using "${dup.selectedHeader}" (${dup.reason})`
+    ).join('; ');
+    message += ` ${duplicateDetails}.`;
+  }
   
   if (missingOptional.length > 0) {
     const withDefaults = missingOptional.filter(m => m.defaultValue);
@@ -320,7 +433,7 @@ export function generateColumnReport(analysis: ColumnAnalysisResult): {
   details: string[];
   suggestions: string[];
 } {
-  const { summary, detectedColumns, missingRequired, missingOptional, unmappedColumns } = analysis;
+  const { summary, detectedColumns, missingRequired, missingOptional, unmappedColumns, duplicateMappings } = analysis;
   
   let severity: 'success' | 'warning' | 'error' = 'success';
   let title = 'CSV Column Analysis';
@@ -331,7 +444,7 @@ export function generateColumnReport(analysis: ColumnAnalysisResult): {
   if (missingRequired.length > 0) {
     severity = 'error';
     title = 'Missing Required Columns';
-  } else if (missingOptional.length > 0 || unmappedColumns.length > 0) {
+  } else if (missingOptional.length > 0 || unmappedColumns.length > 0 || duplicateMappings.length > 0) {
     severity = 'warning';
     title = 'CSV Import Ready with Notes';
   } else {
@@ -343,6 +456,15 @@ export function generateColumnReport(analysis: ColumnAnalysisResult): {
   
   if (detectedColumns.length > 0) {
     details.push(`Mapped columns: ${detectedColumns.map(c => c.csvHeader).join(', ')}`);
+  }
+
+  // Duplicate mappings (handle before other warnings since this is critical)
+  if (duplicateMappings.length > 0) {
+    details.push(`Duplicate column mappings: ${duplicateMappings.length} field${duplicateMappings.length > 1 ? 's' : ''} mapped to multiple CSV columns`);
+    duplicateMappings.forEach(dup => {
+      details.push(`  - ${dup.field}: "${dup.selectedHeader}" selected from [${dup.csvHeaders.join(', ')}] (${dup.reason})`);
+    });
+    suggestions.push('Review duplicate column mappings - ensure the selected columns contain the data you want to import');
   }
 
   // Missing required columns
@@ -422,30 +544,59 @@ export function generateCSVTemplate(): string {
 
 /**
  * Analyze CSV file headers without parsing the entire file
+ * Uses papaparse to correctly handle quoted fields, escaped quotes, and other CSV edge cases
  */
 export async function analyzeCSVFile(file: File): Promise<ColumnAnalysisResult> {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    
-    reader.onload = (e) => {
-      try {
-        const text = e.target?.result as string;
-        const firstLine = text.split('\n')[0];
-        const headers = firstLine.split(',').map(h => h.trim().replace(/^["']|["']$/g, ''));
-        
-        const analysis = analyzeCSVColumns(headers);
-        resolve(analysis);
-      } catch (error) {
-        reject(new Error(`Failed to analyze CSV headers: ${error instanceof Error ? error.message : 'Unknown error'}`));
+    // Use papaparse to parse just the header row
+    Papa.parse(file, {
+      header: false, // We want raw array data, not objects
+      preview: 1,    // Only parse the first row (headers)
+      skipEmptyLines: true,
+      transformHeader: (name: string) => name.trim(), // Clean up header names
+      complete: (results) => {
+        try {
+          if (results.errors && results.errors.length > 0) {
+            logger.warn('CSV parsing warnings during header analysis:', results.errors);
+          }
+
+          if (!results.data || results.data.length === 0) {
+            reject(new Error('CSV file appears to be empty or has no valid header row'));
+            return;
+          }
+
+          // Get the first row as headers
+          const headerRow = results.data[0] as string[];
+          if (!headerRow || headerRow.length === 0) {
+            reject(new Error('CSV file has no columns in the header row'));
+            return;
+          }
+
+          // Clean and validate headers
+          const headers = headerRow
+            .map(header => (header || '').toString().trim())
+            .filter(header => header.length > 0); // Remove empty headers
+
+          if (headers.length === 0) {
+            reject(new Error('CSV file has no valid column headers'));
+            return;
+          }
+
+          logger.debug('Successfully parsed CSV headers using papaparse', { 
+            headerCount: headers.length, 
+            headers: headers.slice(0, 10) // Log first 10 headers for debugging
+          });
+
+          const analysis = analyzeCSVColumns(headers);
+          resolve(analysis);
+        } catch (error) {
+          reject(new Error(`Failed to analyze CSV headers: ${error instanceof Error ? error.message : 'Unknown error'}`));
+        }
+      },
+      error: (error) => {
+        logger.error('Papaparse error during header analysis:', error);
+        reject(new Error(`Failed to parse CSV file: ${error.message || 'Unknown parsing error'}`));
       }
-    };
-    
-    reader.onerror = () => {
-      reject(new Error('Failed to read CSV file'));
-    };
-    
-    // Read only the first 1KB to get headers
-    const blob = file.slice(0, 1024);
-    reader.readAsText(blob);
+    });
   });
 }
