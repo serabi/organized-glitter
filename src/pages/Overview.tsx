@@ -5,7 +5,7 @@ import { useProfileData } from '@/hooks/queries/useUserProfileQuery';
 import { logger } from '@/utils/logger';
 
 // Import custom hooks
-import { useAuthRedirect } from '@/hooks/useAuthRedirect';
+import { useAuth } from '@/hooks/useAuth';
 import { useInProgressProjects } from '@/hooks/queries/useInProgressProjects';
 import { usePerformanceMonitoring } from '@/hooks/usePerformanceMonitoring';
 
@@ -41,7 +41,7 @@ const Overview = () => {
   }, []);
 
   // Custom hooks
-  const { user, authLoading, isAuthenticated } = useAuthRedirect();
+  const { user, isLoading: authLoading } = useAuth();
   const { profile, isLoading: profileLoading } = useProfileData(user?.id);
   const { toast } = useToast();
 
@@ -117,25 +117,13 @@ const Overview = () => {
     }
   }, [error, user?.id, isError, toast]);
 
-  // PHASE 1.2: Progressive Loading - Only block on auth, not profile/stats
+  // Progressive Loading - Only block on auth loading, ProtectedRoute handles auth redirects
   if (authLoading) {
     return (
       <MainLayout>
         <div className="flex min-h-[60vh] items-center justify-center">
           <div className="h-12 w-12 animate-spin rounded-full border-4 border-t-primary"></div>
           <p className="ml-3 text-muted-foreground">Loading...</p>
-        </div>
-      </MainLayout>
-    );
-  }
-
-  // If not authenticated, show loading while redirect happens
-  if (!isAuthenticated) {
-    return (
-      <MainLayout>
-        <div className="flex min-h-[60vh] items-center justify-center">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-t-primary"></div>
-          <p className="ml-3 text-muted-foreground">Redirecting...</p>
         </div>
       </MainLayout>
     );
