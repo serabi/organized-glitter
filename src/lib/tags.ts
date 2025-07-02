@@ -24,6 +24,7 @@ import { Collections, ProjectTagsResponse, TagsResponse } from '@/types/pocketba
 import { withAuthentication } from '@/lib/tagAuth';
 import { createFilter } from '@/utils/filterBuilder';
 import { createLogger } from '@/utils/secureLogger';
+import { generateSlug } from '@/utils/slugify';
 
 const logger = createLogger('TagService');
 
@@ -89,34 +90,6 @@ export class TagService {
     });
   }
 
-  /**
-   * Generate URL-safe slug from tag name
-   * 
-   * Creates a URL-safe slug from a tag name by converting to lowercase,
-   * replacing non-alphanumeric characters with hyphens, and removing
-   * leading/trailing hyphens. Used for SEO-friendly URLs and consistent
-   * tag identification.
-   * 
-   * @private
-   * @static
-   * @function
-   * @param {string} tagName - Original tag name to convert
-   * @returns {string} URL-safe slug representation
-   * 
-   * @example
-   * ```typescript
-   * TagService.generateSlug('My Awesome Tag!'); // Returns: 'my-awesome-tag'
-   * TagService.generateSlug('  Special & Characters  '); // Returns: 'special-characters'
-   * ```
-   */
-  private static generateSlug(tagName: string): string {
-    return tagName
-      .toString()
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-zA-Z0-9]+/g, '-') // Replace non-alphanumeric chars with hyphens
-      .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
-  }
 
   /**
    * Create new tag with secure validation
@@ -140,8 +113,8 @@ export class TagService {
           return createErrorResponse(new Error('Failed to check for existing tags'));
         }
 
-        // Generate slug client-side
-        const slug = this.generateSlug(trimmedName);
+        // Generate slug client-side using shared utility
+        const slug = generateSlug(trimmedName);
 
         // Assign random color if not provided
         const color = tagData.color || TAG_COLORS[Math.floor(Math.random() * TAG_COLORS.length)];
@@ -272,7 +245,7 @@ export class TagService {
           }
 
           updateData.name = trimmedName;
-          updateData.slug = this.generateSlug(trimmedName);
+          updateData.slug = generateSlug(trimmedName);
         }
 
         if (updates.color !== undefined) {

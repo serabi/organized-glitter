@@ -7,17 +7,10 @@ import { pb } from '@/lib/pocketbase';
 import { PROJECT_IMAGE_CONSTANTS } from '@/components/projects/ProgressNoteForm/constants';
 import { logger } from '@/utils/logger';
 import { TAG_COLOR_PALETTE } from '@/utils/tagColors'; // For default tag color
+import { generateUniqueSlug } from '@/utils/slugify';
+import { validateProjectData, validateTagNames, ValidationIssue } from '@/utils/csvValidation';
+import { analyzeCSVFile, generateColumnValidationMessage, ColumnAnalysisResult } from '@/utils/csvColumnAnalysis';
 
-// Helper function to generate slugs (if not imported from elsewhere)
-const slugify = (text: string): string => {
-  return text
-    .toString()
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-') // Replace spaces with -
-    .replace(/[^\w-]+/g, '') // Remove all non-word chars
-    .replace(/--+/g, '-'); // Replace multiple hyphens
-};
 const DEFAULT_TAG_COLOR_HEX = TAG_COLOR_PALETTE[0].hex; // Default color for new tags
 
 interface ImportStats {
@@ -26,6 +19,9 @@ interface ImportStats {
   total: number;
   errors: string[];
   tagWarnings: string[];
+  validationIssues: ValidationIssue[];
+  columnAnalysis?: ColumnAnalysisResult;
+  currentProject?: string;
 }
 
 export const useProjectImport = () => {
@@ -37,6 +33,7 @@ export const useProjectImport = () => {
     total: 0,
     errors: [],
     tagWarnings: [],
+    validationIssues: [],
   });
 
   const { createProject } = useImportCreateProject();
@@ -102,17 +99,59 @@ export const useProjectImport = () => {
       total: 0,
       errors: [],
       tagWarnings: [],
+      validationIssues: [],
     });
 
     try {
-      // First read the file content for debugging
-      // const fileContent = await file.text(); // Removed as it's unused
+      // Step 1: Analyze CSV columns before parsing
+      logger.csvImport('Analyzing CSV column structure...');
+      const columnAnalysis = await analyzeCSVFile(file);
+      const validationMessage = generateColumnValidationMessage(columnAnalysis);
+      
+      // Log column analysis results
+      logger.csvImport('CSV column analysis complete', {
+        detectedColumns: columnAnalysis.detectedColumns.length,
+        missingRequired: columnAnalysis.missingRequired.length,
+        missingOptional: columnAnalysis.missingOptional.length,
+        unmappedColumns: columnAnalysis.unmappedColumns.length,
+        hasAllRequired: columnAnalysis.summary.hasAllRequired,
+        canProceed: validationMessage.canProceed
+      });
+
+      // Check if we can proceed with import
+      if (!validationMessage.canProceed) {
+        toast({
+          title: 'CSV Validation Failed',
+          description: validationMessage.message,
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return false;
+      }
+
+      // Show column validation feedback
+      if (validationMessage.severity === 'warning') {
+        toast({
+          title: 'Column Mapping Notice',
+          description: validationMessage.message,
+          variant: 'default',
+        });
+      } else if (validationMessage.severity === 'success') {
+        toast({
+          title: 'Column Analysis Complete',
+          description: validationMessage.message,
+          variant: 'default',
+        });
+      }
+
+      // Update import stats with column analysis
+      setImportStats(prev => ({ ...prev, columnAnalysis }));
 
       // Debug CSV tag parsing (ORG-36)
       logger.csvImport('Running CSV tag debug analysis...');
       // logCSVTagDebugInfo removed for PocketBase migration
 
-      // Parse CSV file directly using Papa Parse with progress callback
+      // Step 2: Parse CSV file directly using Papa Parse with progress callback
       const { projects: parsedCsvProjects, allUniqueTagNames }: ParsedCsvData =
         await parseCsvFileToProjects(file, parseProgress => {
           // Papa Parse progress is for parsing, we'll map it to ~10% of total progress initially
@@ -134,6 +173,16 @@ export const useProjectImport = () => {
       logger.csvImport('Starting batch tag processing...', {
         allUniqueTagNamesCount: allUniqueTagNames.length,
       });
+      
+      // Validate all tag names first
+      const tagValidationResult = validateTagNames(allUniqueTagNames);
+      const allValidationIssues: ValidationIssue[] = [...tagValidationResult.issues];
+      
+      // Use validated tag names
+      const validatedTagNamesMap = new Map(
+        tagValidationResult.validatedTags.map(({ original, normalized }) => [original, normalized])
+      );
+      
       const tagNameMap: Record<string, string> = {};
       const currentTagWarnings: string[] = []; // Use a local var for warnings during this phase
 
@@ -150,10 +199,11 @@ export const useProjectImport = () => {
         });
 
         const newTagNamesToCreate: string[] = [];
-        allUniqueTagNames.forEach(name => {
-          if (name && !tagNameMap[name]) {
-            // Ensure name is not empty
-            newTagNamesToCreate.push(name);
+        allUniqueTagNames.forEach(originalName => {
+          const normalizedName = validatedTagNamesMap.get(originalName) || originalName;
+          if (normalizedName && normalizedName.trim() !== '' && !tagNameMap[normalizedName]) {
+            // Ensure normalized name is not empty and not already mapped
+            newTagNamesToCreate.push(normalizedName);
           }
         });
         logger.csvImport('Identified new tags to create.', {
@@ -167,16 +217,39 @@ export const useProjectImport = () => {
         let createdTagsCount = 0;
         for (const tagName of newTagNamesToCreate) {
           try {
+            // Create a function to check if slug exists for this user
+            const checkSlugExists = async (slug: string): Promise<boolean> => {
+              try {
+                const existingSlugs = await pb.collection('tags').getList(1, 1, {
+                  filter: pb.filter('user = {:userId} && slug = {:slug}', { userId: user.id, slug }),
+                  fields: 'id',
+                });
+                return existingSlugs.items.length > 0;
+              } catch (error) {
+                // If error checking, assume it DOES exist to prevent duplicate creation
+                // This conservative approach avoids duplicate slugs at the cost of potentially 
+                // generating a longer slug than necessary
+                logger.warn(`Error checking slug existence for "${slug}", assuming it exists to prevent duplicates:`, error);
+                return true;
+              }
+            };
+
+            // Generate unique slug for this user
+            const uniqueSlug = await generateUniqueSlug(tagName, checkSlugExists);
+
             const newTagData = {
               name: tagName,
-              slug: slugify(tagName),
+              slug: uniqueSlug,
               color: DEFAULT_TAG_COLOR_HEX,
               user: user.id,
             };
             const createdTag = await pb.collection('tags').create(newTagData);
             tagNameMap[tagName] = createdTag.id;
             createdTagsCount++;
-            logger.csvImport(`Successfully created new tag: ${tagName}`, { id: createdTag.id });
+            logger.csvImport(`Successfully created new tag: ${tagName}`, { 
+              id: createdTag.id, 
+              slug: uniqueSlug 
+            });
           } catch (tagCreateError) {
             logger.error(`Failed to pre-create new tag: ${tagName}`, tagCreateError);
             currentTagWarnings.push(
@@ -199,31 +272,52 @@ export const useProjectImport = () => {
       }
       // --- END BATCH TAG PROCESSING ---
 
-      // Convert parsed projects to ProjectCreateDTO format
+      // Convert parsed projects to ProjectCreateDTO format with validation
       const projectsToCreate: ProjectCreateDTO[] = parsedCsvProjects.map(
         (parsedProject): ProjectCreateDTO => {
-          const projectTagIds = (parsedProject.tagNames || [])
-            .map(name => tagNameMap[name]) // Get ID from our map
-            .filter(id => !!id) as string[]; // Filter out any undefined IDs (e.g., if a tag name failed creation)
-
-          return {
-            userId: user.id,
-            title: parsedProject.title || 'Untitled Project',
-            company: parsedProject.company,
-            artist: parsedProject.artist,
+          // Validate and normalize project data
+          const projectValidation = validateProjectData({
+            title: parsedProject.title,
             drillShape: parsedProject.drillShape,
-            width: parsedProject.width,
-            height: parsedProject.height,
-            status: parsedProject.status || 'wishlist',
+            status: parsedProject.status,
+            kit_category: parsedProject.kit_category,
             datePurchased: parsedProject.datePurchased,
             dateReceived: parsedProject.dateReceived,
             dateStarted: parsedProject.dateStarted,
             dateCompleted: parsedProject.dateCompleted,
             generalNotes: parsedProject.generalNotes,
-            imageUrl: parsedProject.imageUrl,
             sourceUrl: parsedProject.sourceUrl,
+          });
+          
+          // Add validation issues to our tracking
+          allValidationIssues.push(...projectValidation.issues);
+          
+          // Map tag names to IDs using validated names
+          const projectTagIds = (parsedProject.tagNames || [])
+            .map(originalName => {
+              const normalizedName = validatedTagNamesMap.get(originalName) || originalName;
+              return tagNameMap[normalizedName];
+            })
+            .filter(id => !!id) as string[];
+
+          return {
+            userId: user.id,
+            title: projectValidation.correctedData.title || 'Untitled Project',
+            company: parsedProject.company,
+            artist: parsedProject.artist,
+            drillShape: projectValidation.correctedData.drillShape,
+            width: parsedProject.width,
+            height: parsedProject.height,
+            status: projectValidation.correctedData.status,
+            datePurchased: projectValidation.correctedData.datePurchased,
+            dateReceived: projectValidation.correctedData.dateReceived,
+            dateStarted: projectValidation.correctedData.dateStarted,
+            dateCompleted: projectValidation.correctedData.dateCompleted,
+            generalNotes: projectValidation.correctedData.generalNotes,
+            imageUrl: parsedProject.imageUrl,
+            sourceUrl: projectValidation.correctedData.sourceUrl,
             totalDiamonds: parsedProject.totalDiamonds,
-            kit_category: parsedProject.kit_category,
+            kit_category: projectValidation.correctedData.kit_category,
             tagIds: projectTagIds, // Pass resolved tag IDs
           };
         }
@@ -244,8 +338,12 @@ export const useProjectImport = () => {
       const baseProgressForProjectLoop = 25;
 
       for (let i = 0; i < projectsToCreate.length; i++) {
+        const project = projectsToCreate[i];
+        
+        // Update current project being imported
+        setImportStats(prev => ({ ...prev, currentProject: project.title }));
+        
         try {
-          const project = projectsToCreate[i];
           const result = await createProject(project); // createProject now expects tagIds
           successCount++;
 
@@ -265,7 +363,7 @@ export const useProjectImport = () => {
           const errorMessage =
             error instanceof Error
               ? error.message
-              : `Failed to import project "${projectsToCreate[i].title || 'Untitled'}"`;
+              : `Failed to import project "${project.title || 'Untitled'}"`;
 
           errors.push(errorMessage);
         }
@@ -283,6 +381,9 @@ export const useProjectImport = () => {
           total: totalProjects,
           errors,
           tagWarnings,
+          validationIssues: allValidationIssues,
+          columnAnalysis,
+          currentProject: project.title,
         });
 
         if (i < projectsToCreate.length - 1) {
@@ -292,19 +393,41 @@ export const useProjectImport = () => {
 
       let successMessage = `Successfully imported ${successCount} out of ${totalProjects} projects. View them in your dashboard.`;
 
-      if (tagWarnings.length > 0) {
-        successMessage += ` Note: Some issues occurred with tags (see console for details).`;
+      const totalIssues = tagWarnings.length + allValidationIssues.length;
+      if (totalIssues > 0) {
+        successMessage += ` Note: ${totalIssues} data issues were automatically corrected (see details below).`;
+      }
+
+      // Add column mapping summary to success message
+      const mappedColumns = importStats.columnAnalysis?.detectedColumns.length || 0;
+      if (mappedColumns > 0) {
+        successMessage += ` Mapped ${mappedColumns} CSV columns successfully.`;
       }
 
       toast({
         title: 'Import complete',
         description: successMessage,
-        variant: tagWarnings.length > 0 ? 'warning' : 'default',
+        variant: totalIssues > 0 ? 'warning' : 'default',
       });
 
       if (tagWarnings.length > 0) {
         logger.warn('Tag processing/linking warnings:', { tagWarnings });
       }
+      
+      if (allValidationIssues.length > 0) {
+        logger.warn('Data validation issues corrected:', { 
+          validationIssues: allValidationIssues.map(issue => ({
+            field: issue.field,
+            severity: issue.severity,
+            message: issue.message,
+            originalValue: issue.originalValue,
+            correctedValue: issue.correctedValue
+          }))
+        });
+      }
+
+      // Clear current project when import completes
+      setImportStats(prev => ({ ...prev, currentProject: undefined }));
 
       return true;
     } catch (error) {
@@ -323,6 +446,9 @@ export const useProjectImport = () => {
           error instanceof Error ? error.message : 'Unknown error during import',
         ],
         tagWarnings: [],
+        validationIssues: [],
+        columnAnalysis: prev.columnAnalysis, // Preserve column analysis if it was completed
+        currentProject: undefined, // Clear current project on error
       }));
 
       return false;

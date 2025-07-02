@@ -61,8 +61,8 @@ const EditTagDialog = ({ tag }: EditTagDialogProps) => {
       return;
     }
 
-    // Check character limit (50 characters max as per database constraint)
-    if (tagName.trim().length > 50) {
+    // Check character limit (100 characters max as per database constraint)
+    if (tagName.trim().length > 100) {
       return;
     }
 
@@ -133,22 +133,22 @@ const EditTagDialog = ({ tag }: EditTagDialogProps) => {
                   onChange={e => setTagName(e.target.value)}
                   disabled={updateTagMutation.isPending}
                   autoFocus
-                  className={tagName.length > 50 ? 'border-destructive' : ''}
+                  className={tagName.length > 100 ? 'border-destructive' : ''}
                 />
                 {/* Character count indicator */}
                 {tagName.length > 0 && (
                   <div
                     className={`absolute right-2 top-1/2 -translate-y-1/2 transform text-xs ${
-                      tagName.length > 50 ? 'text-destructive' : 'text-muted-foreground'
+                      tagName.length > 100 ? 'text-destructive' : 'text-muted-foreground'
                     }`}
                   >
-                    {tagName.length}/50
+                    {tagName.length}/100
                   </div>
                 )}
               </div>
-              {tagName.length > 50 && (
+              {tagName.length > 100 && (
                 <p className="mt-1 text-xs text-destructive">
-                  Tag name must be 50 characters or less
+                  Tag name must be 100 characters or less
                 </p>
               )}
             </FormField>
@@ -172,7 +172,7 @@ const EditTagDialog = ({ tag }: EditTagDialogProps) => {
           </div>
 
           <DialogFooter>
-            <Button type="submit" disabled={updateTagMutation.isPending || tagName.length > 50}>
+            <Button type="submit" disabled={updateTagMutation.isPending || tagName.length > 100}>
               {updateTagMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Update Tag
             </Button>
