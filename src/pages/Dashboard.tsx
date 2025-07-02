@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useEffect, useState, createContext, useContext } from 'react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import DashboardFilterSection from '@/components/dashboard/DashboardFilterSection';
@@ -10,6 +10,23 @@ import { DashboardFiltersProvider } from '@/contexts/DashboardFiltersContext';
 import { useDashboardFiltersContext } from '@/hooks/useDashboardFiltersContext';
 import { NavigationContext } from '@/hooks/useNavigateToProject';
 import { createLogger } from '@/utils/secureLogger';
+import { useToast } from '@/hooks/use-toast';
+
+// Context for tracking recently edited projects
+interface RecentlyEditedContextValue {
+  recentlyEditedProjectId: string | null;
+  setRecentlyEditedProjectId: (id: string | null) => void;
+}
+
+const RecentlyEditedContext = createContext<RecentlyEditedContextValue | undefined>(undefined);
+
+export const useRecentlyEdited = () => {
+  const context = useContext(RecentlyEditedContext);
+  if (context === undefined) {
+    throw new Error('useRecentlyEdited must be used within a RecentlyEditedProvider');
+  }
+  return context;
+};
 
 const logger = createLogger('Dashboard');
 
@@ -18,7 +35,11 @@ const logger = createLogger('Dashboard');
 const DashboardInternal: React.FC = () => {
   const isMobile = useIsMobile();
   const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { toast } = useToast();
   const { errorProjects } = useDashboardFiltersContext();
+  const { setRecentlyEditedProjectId } = useRecentlyEdited();
 
   // Check for edit return state in location
   const editReturnState = location.state as {
@@ -32,20 +53,100 @@ const DashboardInternal: React.FC = () => {
 
   // Handle position restoration after edit return
   useEffect(() => {
-    if (editReturnState?.fromEdit && editReturnState?.preservePosition) {
-      logger.debug('Processing edit return with position restoration:', editReturnState);
+    if (editReturnState?.fromEdit && editReturnState?.preservePosition && editReturnState?.navigationContext) {
+      logger.info('🔄 Processing edit return with position restoration');
       
-      // TODO: Implement position restoration logic here
-      // This would involve:
-      // 1. Restoring filters from navigationContext
-      // 2. Restoring pagination state
-      // 3. Scrolling to the preserved position
-      // 4. Highlighting the recently edited project
+      const { navigationContext } = editReturnState;
       
-      // For now, log the intention
-      logger.info('Edit return detected - position restoration will be implemented in next iteration');
+      try {
+        // 1. Restore filters and pagination via URL parameters
+        const newSearchParams = new URLSearchParams();
+        
+        // Restore filter state
+        if (navigationContext.filters.status !== 'all') {
+          newSearchParams.set('status', navigationContext.filters.status);
+        }
+        if (navigationContext.filters.company !== 'all') {
+          newSearchParams.set('company', navigationContext.filters.company);
+        }
+        if (navigationContext.filters.artist !== 'all') {
+          newSearchParams.set('artist', navigationContext.filters.artist);
+        }
+        if (navigationContext.filters.drillShape !== 'all') {
+          newSearchParams.set('drillShape', navigationContext.filters.drillShape);
+        }
+        if (navigationContext.filters.yearFinished !== 'all') {
+          newSearchParams.set('yearFinished', navigationContext.filters.yearFinished);
+        }
+        if (!navigationContext.filters.includeMiniKits) {
+          newSearchParams.set('includeMiniKits', 'false');
+        }
+        if (navigationContext.filters.searchTerm) {
+          newSearchParams.set('search', navigationContext.filters.searchTerm);
+        }
+        if (navigationContext.filters.selectedTags?.length > 0) {
+          newSearchParams.set('tags', navigationContext.filters.selectedTags.join(','));
+        }
+        
+        // Restore sort state
+        if (navigationContext.sortField !== 'last_updated') {
+          newSearchParams.set('sort', navigationContext.sortField);
+        }
+        if (navigationContext.sortDirection !== 'desc') {
+          newSearchParams.set('sortDirection', navigationContext.sortDirection);
+        }
+        
+        // Restore pagination
+        if (navigationContext.currentPage !== 1) {
+          newSearchParams.set('page', navigationContext.currentPage.toString());
+        }
+        if (navigationContext.pageSize !== 25) {
+          newSearchParams.set('pageSize', navigationContext.pageSize.toString());
+        }
+        
+        // Update URL parameters to trigger filter restoration
+        setSearchParams(newSearchParams, { replace: true });
+        
+        // 2. Schedule scroll position restoration after React renders
+        const scrollPosition = navigationContext.preservationContext?.scrollPosition || 0;
+        setTimeout(() => {
+          window.scrollTo({ top: scrollPosition, behavior: 'smooth' });
+          logger.debug('Scroll position restored to:', scrollPosition);
+        }, 100);
+        
+        // 3. Mark recently edited project for visual highlighting
+        if (editReturnState.editedProjectId) {
+          setRecentlyEditedProjectId(editReturnState.editedProjectId);
+          
+          // Clear the highlight after 3 seconds
+          setTimeout(() => {
+            setRecentlyEditedProjectId(null);
+          }, 3000);
+        }
+        
+        // 4. Show user feedback
+        toast({
+          title: 'Position Restored',
+          description: 'Returned to your previous location after editing.',
+        });
+        
+        // 5. Clear location state to prevent re-triggering
+        navigate(location.pathname + location.search, { 
+          replace: true, 
+          state: null 
+        });
+        
+        logger.info('✅ Position restoration completed successfully');
+      } catch (error) {
+        logger.error('❌ Error during position restoration:', error);
+        toast({
+          title: 'Restoration Issue',
+          description: 'There was an issue restoring your previous position.',
+          variant: 'destructive',
+        });
+      }
     }
-  }, [editReturnState]);
+  }, [editReturnState, navigate, location.pathname, location.search, setSearchParams, toast]);
 
   return (
     <MainLayout>
@@ -77,15 +178,18 @@ const DashboardInternal: React.FC = () => {
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
+  const [recentlyEditedProjectId, setRecentlyEditedProjectId] = useState<string | null>(null);
 
   if (!user) {
     return null;
   }
 
   return (
-    <DashboardFiltersProvider user={user}>
-      <DashboardInternal />
-    </DashboardFiltersProvider>
+    <RecentlyEditedContext.Provider value={{ recentlyEditedProjectId, setRecentlyEditedProjectId }}>
+      <DashboardFiltersProvider user={user}>
+        <DashboardInternal />
+      </DashboardFiltersProvider>
+    </RecentlyEditedContext.Provider>
   );
 };
 

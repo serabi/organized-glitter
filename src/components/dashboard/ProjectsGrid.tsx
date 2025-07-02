@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { useDashboardFiltersContext } from '@/hooks/useDashboardFiltersContext'; // Import context hook
 import ProjectPagination from '@/components/ui/ProjectPagination';
 import { useNavigateToProject, createNavigationContext } from '@/hooks/useNavigateToProject';
+import { useRecentlyEdited } from '@/pages/Dashboard';
 
 // Interface ProjectsGridProps removed as it's no longer needed.
 // All data is sourced from DashboardFiltersContext.
@@ -16,6 +17,7 @@ const ProjectsGridComponent = () => {
   const navigate = useNavigate();
   const navigateToProject = useNavigateToProject();
   const dashboardContext = useDashboardFiltersContext();
+  const { recentlyEditedProjectId } = useRecentlyEdited();
   const {
     isLoadingProjects: loading, // Use from context
     processedAndPaginatedProjects: projects, // Use paginated projects instead
@@ -135,6 +137,7 @@ const ProjectsGridComponent = () => {
           key={project.id}
           project={project}
           onClick={() => handleProjectClick(project)}
+          isRecentlyEdited={project.id === recentlyEditedProjectId}
         />
       );
     });

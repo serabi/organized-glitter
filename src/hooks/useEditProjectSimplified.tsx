@@ -209,7 +209,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
   const deleteProjectMutation = useDeleteProjectMutation();
 
   // Extract navigation state from location
-  const navigationState = location.state as {
+  const locationState = location.state as {
     fromNavigation?: boolean;
     projectId?: string;
     timestamp?: number;
@@ -566,8 +566,8 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
           removeBeforeUnloadListener();
 
           // Check if we should return to dashboard with preserved position
-          const shouldReturnToDashboard = navigationState?.navigationContext && 
-                                        navigationState.navigationContext.preservationContext?.isEditNavigation;
+          const shouldReturnToDashboard = locationState?.navigationContext && 
+                                        locationState.navigationContext.preservationContext?.isEditNavigation;
 
           if (shouldReturnToDashboard) {
             logger.info('🚀 Returning to dashboard with preserved position after edit');
@@ -580,7 +580,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
                 editedProjectId: projectId,
                 editedProjectData: response.data,
                 timestamp: Date.now(),
-                navigationContext: navigationState.navigationContext,
+                navigationContext: locationState.navigationContext,
                 preservePosition: true,
               }
             });
@@ -588,7 +588,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
             // Navigate back to project detail page using React Router
             logger.info('🚀 Navigating back to project detail page');
             await navigateToProject(projectId, {
-              projectData: response.data,
+              projectData: updatedProject as ProjectsResponse,
               replace: true, // Replace current history entry since we're coming from edit
             });
           }
@@ -640,7 +640,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
       project,
       navigateToProject,
       navigate,
-      navigationState,
+      locationState,
     ]
   );
 
