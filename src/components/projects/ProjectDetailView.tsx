@@ -1,9 +1,34 @@
+/**
+ * @fileoverview Project detail view component with database-backed navigation
+ * 
+ * This component displays comprehensive project information including:
+ * - Project images and details
+ * - Notable dates (purchased, received, started, completed)
+ * - Project notes and progress tracking
+ * - Navigation arrows with smart fallback system
+ * 
+ * Key features:
+ * - Smart navigation context resolution (router state → database fallback)
+ * - Mobile-responsive layout with optimized button placement
+ * - Integrated progress notes with real-time updates
+ * - Archive and delete operations with confirmation dialogs
+ * 
+ * Navigation Context Resolution:
+ * - Uses useUnifiedNavigationContext for integrated navigation and sibling analysis
+ * - Supports both normal dashboard navigation and direct URL access
+ * - Database fallback ensures navigation arrows work from bookmarked URLs
+ * - Single hook provides both context resolution and sibling navigation data
+ * 
+ * @author serabi
+ * @since 2025-07-02
+ */
+
 // Functional components don't need to import React with modern JSX transform
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ProjectType, ProjectStatus, ProgressNote } from '@/types/project';
 import { PocketBaseUser } from '@/contexts/AuthContext.types';
-import { NavigationContext } from '@/hooks/useNavigateToProject';
+import { useUnifiedNavigationContext } from '@/hooks/useUnifiedNavigationContext';
 import ImageGallery from '@/components/projects/ImageGallery';
 import ProjectDetails from '@/components/projects/ProjectDetails';
 import ProjectNotes from '@/components/projects/form/ProjectNotes';
@@ -22,27 +47,58 @@ import {
 } from '@/components/ui/alert-dialog';
 import { formatDate } from '@/lib/utils';
 
+/**
+ * Props for the ProjectDetailView component
+ */
 interface ProjectDetailViewProps {
+  /** Project data with optional progress notes */
   project: ProjectType & {
     progressNotes?: ProgressNote[];
   };
+  /** Whether the interface is in mobile mode */
   isMobile: boolean;
+  /** Handler for project status changes */
   onStatusChange: (status: ProjectStatus) => void;
+  /** Handler for updating project notes */
   onUpdateNotes: (notes: string) => Promise<void>;
+  /** Handler for archiving the project */
   onArchive: () => void;
+  /** Handler for deleting the project */
   onDelete: () => void;
+  /** Navigation handler for edit mode */
   navigateToEdit: () => void;
+  /** Whether any operation is currently submitting */
   isSubmitting?: boolean;
+  /** Current authenticated user */
   user: PocketBaseUser | null;
-  navigationState: {
-    fromNavigation?: boolean;
-    projectId?: string;
-    projectData?: unknown;
-    timestamp?: number;
-    navigationContext?: NavigationContext;
-  } | null;
 }
 
+/**
+ * Project detail view component with comprehensive project information display
+ * 
+ * This component provides a complete view of a project including images, details,
+ * notable dates, notes, and progress tracking. It features a sophisticated 
+ * navigation system with database-backed fallback for direct URL access.
+ * 
+ * Key Features:
+ * - Smart navigation context resolution (router → database → null)
+ * - Mobile-responsive layout with optimized controls
+ * - Real-time progress notes integration
+ * - Archive/delete operations with confirmation
+ * - Navigation arrows that work from bookmarked URLs
+ * 
+ * Navigation Context:
+ * Uses useUnifiedNavigationContext which implements a priority system:
+ * 1. React Router state (normal dashboard navigation)
+ * 2. Database fallback (direct URL access)
+ * 3. Default context (fallback for new users)
+ * 
+ * The unified hook also provides integrated sibling navigation analysis,
+ * eliminating the need for separate context resolution and sibling analysis.
+ * 
+ * @param props - Component props
+ * @returns Rendered project detail view
+ */
 const ProjectDetailView = ({
   project,
   isMobile,
@@ -53,24 +109,31 @@ const ProjectDetailView = ({
   navigateToEdit,
   isSubmitting = false,
   user,
-  navigationState,
 }: ProjectDetailViewProps) => {
+  // Use unified navigation context with integrated sibling analysis
+  const { navigationContext, sibling } = useUnifiedNavigationContext({
+    currentProjectId: project.id,
+    userId: user?.id,
+  });
   return (
     <div className="container mx-auto px-4 py-6">
       <div className="mb-6 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
         <div className="flex-1">
-          <div className="flex items-center justify-between gap-4 mb-2">
+          {/* Navigation area - Back to Dashboard + discrete navigation arrows */}
+          <div className="flex items-center gap-4 mb-2">
             <Link to="/dashboard" className="inline-block text-accent hover:underline">
               &larr; Back to Dashboard
             </Link>
-            {/* Navigation arrows - shown when navigation context is available */}
-            {user && navigationState?.navigationContext && (
+            {/* Discrete navigation arrows - shown when navigation context is available */}
+            {user && navigationContext && (
               <ProjectNavigationArrows
                 currentProjectId={project.id}
                 userId={user.id}
-                size="sm"
-                showLabels={!isMobile}
-                className="flex-shrink-0"
+                context={navigationContext}
+                sibling={sibling}
+                variant="discrete"
+                showLabels={false}
+                className="ml-2"
               />
             )}
           </div>

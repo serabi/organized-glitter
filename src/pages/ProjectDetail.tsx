@@ -181,7 +181,6 @@ const ProjectDetail = () => {
             navigateToEdit={navigateToEdit}
             isSubmitting={submitting}
             user={user}
-            navigationState={navigationState}
           />
         </ProjectContentErrorBoundary>
       </div>

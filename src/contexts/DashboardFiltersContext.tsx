@@ -1,3 +1,33 @@
+/**
+ * @fileoverview Dashboard filters context with navigation auto-save
+ * 
+ * This context manages all dashboard filtering, sorting, and pagination state
+ * with comprehensive React Query integration and automatic navigation context
+ * persistence to the database.
+ * 
+ * Key Features:
+ * - Server-side filtering, sorting, and pagination
+ * - Real-time auto-save of filter state to database
+ * - React Query optimization with deferred values
+ * - URL synchronization for deep linking
+ * - Navigation context preservation for direct URL access
+ * 
+ * Navigation Context Auto-Save:
+ * - Automatically saves current filter/sort state to PocketBase
+ * - 1-second debounce prevents excessive database writes
+ * - Enables navigation arrows to work from bookmarked URLs
+ * - Fallback system for when React Router state is unavailable
+ * 
+ * Performance Optimizations:
+ * - Deferred search values for non-blocking UI
+ * - Memoized filter options and computed values
+ * - Server-side processing reduces client-side computation
+ * - React Query caching with smart invalidation
+ * 
+ * @author serabi
+ * @since 2025-07-02
+ */
+
 import React, {
   createContext,
   useMemo,
@@ -6,6 +36,7 @@ import React, {
   useState,
   useCallback,
   useDeferredValue,
+  useEffect,
 } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Project, ProjectFilterStatus, Tag } from '@/types/project'; // Import ProjectFilterStatus from here
@@ -22,6 +53,7 @@ import {
 import useDebounce from '@/hooks/useDebounce'; // For search term
 import { useDashboardStats } from '@/hooks/queries/useDashboardStats';
 import { useAvailableYearsAsStrings } from '@/hooks/queries/useAvailableYears';
+import { useSaveNavigationContext } from '@/hooks/mutations/useSaveNavigationContext';
 
 export type SortDirectionType = 'asc' | 'desc';
 
@@ -207,6 +239,10 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
     // Get dashboard stats for tab counts (independent of current filters)
     const { stats: dashboardStats } = useDashboardStats();
 
+    // Auto-save navigation context for fallback when accessing via direct URL
+    // This enables navigation arrows to work when users bookmark project URLs
+    const saveNavigationContext = useSaveNavigationContext();
+
     // Extract data from React Query result
     const rawProjects = useMemo(() => projectsData?.projects || [], [projectsData?.projects]);
     const totalItems = projectsData?.totalItems || 0;
@@ -217,6 +253,62 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
     const refetchProjectsAsync = useCallback(async () => {
       await refetchProjects();
     }, [refetchProjects]);
+
+    // Auto-save navigation context when filters change (debounced)
+    // This creates a database fallback for direct URL access scenarios
+    useEffect(() => {
+      // Only save if we have a user and this isn't the initial render
+      if (!userId) return;
+      
+      // Create a simplified navigation context with just the essential data
+      // This will be used as fallback when users access project URLs directly
+      const navigationContext = {
+        filters: {
+          status: activeStatus,
+          company: selectedCompany,
+          artist: selectedArtist,
+          drillShape: selectedDrillShape,
+          yearFinished: selectedYearFinished,
+          includeMiniKits,
+          searchTerm: deferredSearchTerm,
+          selectedTags,
+        },
+        sortField,
+        sortDirection,
+        currentPage,
+        pageSize,
+        preservationContext: {
+          scrollPosition: 0, // Will be set during actual navigation
+          timestamp: Date.now(),
+        },
+      };
+      
+      // Debounce the save operation to avoid excessive database writes
+      // 1-second delay prevents rapid-fire saves during filter adjustments
+      const timeoutId = setTimeout(() => {
+        saveNavigationContext.mutate({
+          userId,
+          navigationContext,
+        });
+      }, 1000); // 1 second debounce
+
+      return () => clearTimeout(timeoutId);
+    }, [
+      userId,
+      activeStatus,
+      selectedCompany,
+      selectedArtist,
+      selectedDrillShape,
+      selectedYearFinished,
+      includeMiniKits,
+      deferredSearchTerm,
+      selectedTags,
+      sortField,
+      sortDirection,
+      currentPage,
+      pageSize,
+      saveNavigationContext,
+    ]);
 
     // Debug logging removed for performance
 

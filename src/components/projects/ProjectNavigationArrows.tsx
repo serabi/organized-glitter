@@ -2,10 +2,8 @@ import React, { useCallback, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useSiblingNavigation } from '@/hooks/useSiblingNavigation';
-import { useNavigateToProject, createNavigationContext } from '@/hooks/useNavigateToProject';
-import { useLocation } from 'react-router-dom';
-import { DashboardFiltersContextValue } from '@/contexts/DashboardFiltersContext';
+import { useNavigateToProject } from '@/hooks/useNavigateToProject';
+import { UnifiedNavigationContext, SiblingNavigationResult } from '@/hooks/useUnifiedNavigationContext';
 import { createLogger } from '@/utils/secureLogger';
 
 const logger = createLogger('ProjectNavigationArrows');
@@ -13,30 +11,61 @@ const logger = createLogger('ProjectNavigationArrows');
 export interface ProjectNavigationArrowsProps {
   currentProjectId: string;
   userId: string;
+  /** Unified navigation context from useUnifiedNavigationContext */
+  context: UnifiedNavigationContext;
+  /** Sibling navigation data from useUnifiedNavigationContext */
+  sibling: SiblingNavigationResult;
   className?: string;
   /** Whether to show text labels alongside arrows */
   showLabels?: boolean;
-  /** Size variant for the buttons */
+  /** Visual variant - 'buttons' for prominent buttons, 'discrete' for subtle links */
+  variant?: 'buttons' | 'discrete';
+  /** Size variant for the buttons (only applies to 'buttons' variant) */
   size?: 'sm' | 'default' | 'lg';
   /** Whether navigation arrows should be disabled */
   disabled?: boolean;
 }
 
 /**
- * Navigation arrows component for browsing between sibling projects.
+ * Modern navigation arrows component using unified navigation context.
+ * 
+ * This component now uses the unified navigation context pattern from
+ * useUnifiedNavigationContext, eliminating the need for separate location
+ * state management and sibling navigation analysis.
  * 
  * Features:
- * - Maintains dashboard filter/sort context
+ * - Unified navigation context with database fallback support
+ * - Pre-computed sibling navigation data for optimal performance
  * - Keyboard navigation support (ArrowLeft/ArrowRight)
  * - Accessible with proper aria labels
- * - Responsive design
+ * - Responsive design with mobile optimizations
  * - Visual feedback for available navigation
+ * - Works with direct URL access via database fallback
  * 
- * Usage:
+ * Modern Usage:
  * ```tsx
+ * const { navigationContext, sibling } = useUnifiedNavigationContext({
+ *   currentProjectId: project.id,
+ *   userId: user?.id,
+ * });
+ * 
+ * // Discrete variant for subtle navigation
  * <ProjectNavigationArrows 
- *   currentProjectId="project-123"
- *   userId="user-456"
+ *   currentProjectId={project.id}
+ *   userId={user.id}
+ *   context={navigationContext}
+ *   sibling={sibling}
+ *   variant="discrete"
+ *   showLabels={false}
+ * />
+ * 
+ * // Button variant for prominent navigation
+ * <ProjectNavigationArrows 
+ *   currentProjectId={project.id}
+ *   userId={user.id}
+ *   context={navigationContext}
+ *   sibling={sibling}
+ *   variant="buttons"
  *   showLabels={true}
  * />
  * ```
@@ -44,18 +73,17 @@ export interface ProjectNavigationArrowsProps {
 export const ProjectNavigationArrows: React.FC<ProjectNavigationArrowsProps> = ({
   currentProjectId,
   userId,
+  context,
+  sibling,
   className,
   showLabels = false,
+  variant = 'buttons',
   size = 'default',
   disabled = false,
 }) => {
-  const location = useLocation();
   const navigateToProject = useNavigateToProject();
 
-  // Extract navigation context from location state if available
-  const navigationContext = location.state?.navigationContext as DashboardFiltersContextValue | undefined;
-
-  // Get sibling navigation information
+  // Extract sibling navigation data from unified context
   const {
     previousProject,
     nextProject,
@@ -64,11 +92,22 @@ export const ProjectNavigationArrows: React.FC<ProjectNavigationArrowsProps> = (
     currentIndex,
     totalProjects,
     isLoading,
-  } = useSiblingNavigation({
-    currentProjectId,
-    userId,
-    dashboardContext: navigationContext,
-  });
+  } = sibling;
+
+  // Convert unified context to NavigationContext format
+  const createNavigationContextFromUnified = useCallback((unifiedContext: UnifiedNavigationContext) => {
+    return {
+      filters: unifiedContext.filters,
+      sortField: unifiedContext.sortField,
+      sortDirection: unifiedContext.sortDirection,
+      currentPage: unifiedContext.currentPage,
+      pageSize: unifiedContext.pageSize,
+      preservationContext: unifiedContext.preservationContext || {
+        scrollPosition: window.scrollY,
+        timestamp: Date.now(),
+      },
+    };
+  }, []);
 
   // Navigation handlers
   const navigateToPrevious = useCallback(async () => {
@@ -79,13 +118,13 @@ export const ProjectNavigationArrows: React.FC<ProjectNavigationArrowsProps> = (
 
     logger.info(`🎯 Navigating to previous project: ${previousProject.id}`);
     
-    const navContext = createNavigationContext(navigationContext);
+    const navContext = createNavigationContextFromUnified(context);
     await navigateToProject(previousProject.id, {
       navigationContext: navContext,
       successMessage: undefined, // Don't show success message for sibling navigation
       showLoadingFeedback: false, // Keep navigation snappy
     });
-  }, [previousProject, disabled, navigationContext, navigateToProject]);
+  }, [previousProject, disabled, context, navigateToProject, createNavigationContextFromUnified]);
 
   const navigateToNext = useCallback(async () => {
     if (!nextProject || disabled) {
@@ -95,13 +134,13 @@ export const ProjectNavigationArrows: React.FC<ProjectNavigationArrowsProps> = (
 
     logger.info(`🎯 Navigating to next project: ${nextProject.id}`);
     
-    const navContext = createNavigationContext(navigationContext);
+    const navContext = createNavigationContextFromUnified(context);
     await navigateToProject(nextProject.id, {
       navigationContext: navContext,
       successMessage: undefined, // Don't show success message for sibling navigation
       showLoadingFeedback: false, // Keep navigation snappy
     });
-  }, [nextProject, disabled, navigationContext, navigateToProject]);
+  }, [nextProject, disabled, context, navigateToProject, createNavigationContextFromUnified]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -147,6 +186,67 @@ export const ProjectNavigationArrows: React.FC<ProjectNavigationArrowsProps> = (
     return null;
   }
 
+  // Render discrete variant with subtle link styling
+  if (variant === 'discrete') {
+    return (
+      <div 
+        className={cn(
+          'flex items-center gap-3 text-sm',
+          className
+        )}
+        role="navigation"
+        aria-label="Project navigation"
+      >
+        {/* Previous link */}
+        <button
+          onClick={navigateToPrevious}
+          disabled={!hasPrevious || disabled}
+          aria-label={
+            previousProject 
+              ? `Go to previous project: ${previousProject.title}`
+              : 'Go to previous project'
+          }
+          className={cn(
+            'flex items-center gap-1 text-muted-foreground hover:text-accent transition-colors',
+            (!hasPrevious || disabled) && 'opacity-50 cursor-not-allowed hover:text-muted-foreground'
+          )}
+        >
+          <ChevronLeft className="h-3 w-3" />
+          <span className="text-xs">Prev</span>
+        </button>
+
+        {/* Position indicator */}
+        {currentIndex !== null && totalProjects > 0 && (
+          <span 
+            className="text-xs text-muted-foreground px-1"
+            aria-label={`Project ${currentIndex + 1} of ${totalProjects}`}
+          >
+            {currentIndex + 1} of {totalProjects}
+          </span>
+        )}
+
+        {/* Next link */}
+        <button
+          onClick={navigateToNext}
+          disabled={!hasNext || disabled}
+          aria-label={
+            nextProject 
+              ? `Go to next project: ${nextProject.title}`
+              : 'Go to next project'
+          }
+          className={cn(
+            'flex items-center gap-1 text-muted-foreground hover:text-accent transition-colors',
+            (!hasNext || disabled) && 'opacity-50 cursor-not-allowed hover:text-muted-foreground'
+          )}
+        >
+          <span className="text-xs">Next</span>
+          <ChevronRight className="h-3 w-3" />
+        </button>
+      </div>
+    );
+  }
+
+  // Render button variant (original styling)
   return (
     <div 
       className={cn(

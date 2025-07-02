@@ -1,7 +1,28 @@
+/**
+ * @fileoverview React Query key definitions for consistent caching
+ * 
+ * This file defines hierarchical query keys used throughout the application
+ * for React Query cache management. Keys follow a consistent pattern:
+ * [resource, type, identifier, params]
+ * 
+ * Key principles:
+ * - Hierarchical structure enables targeted cache invalidation
+ * - Consistent naming prevents cache key collisions
+ * - TypeScript const assertions ensure type safety
+ * - Parameters are included for cache isolation
+ * 
+ * @author serabi
+ * @since 2025-07-02
+ */
+
 import { ServerFilters } from './useProjects';
 import { DashboardValidSortField } from '@/features/dashboard/dashboard.constants';
 import { SortDirectionType } from '@/contexts/DashboardFiltersContext';
 
+/**
+ * Parameters for project list queries
+ * Used to create unique cache keys for different filter/sort combinations
+ */
 export interface ProjectQueryParams {
   filters: ServerFilters;
   sortField: DashboardValidSortField;
@@ -10,17 +31,39 @@ export interface ProjectQueryParams {
   pageSize: number;
 }
 
+/**
+ * Hierarchical query key definitions for React Query cache management
+ * 
+ * Structure follows the pattern: [resource, type, identifier, params]
+ * This enables targeted cache invalidation and prevents key collisions.
+ * 
+ * @example
+ * // Invalidate all project queries
+ * queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
+ * 
+ * // Invalidate specific project list
+ * queryClient.invalidateQueries({ queryKey: queryKeys.projects.list(userId, params) });
+ */
 export const queryKeys = {
   // Project-related keys
   projects: {
+    /** Base key for all project queries */
     all: ['projects'] as const,
+    /** Base key for project list queries */
     lists: () => [...queryKeys.projects.all, 'list'] as const,
+    /** Specific project list with user and parameters */
     list: (userId: string, params: ProjectQueryParams) =>
       [...queryKeys.projects.lists(), userId, params] as const,
+    /** Base key for project detail queries */
     details: () => [...queryKeys.projects.all, 'detail'] as const,
+    /** Specific project detail by ID */
     detail: (id: string) => [...queryKeys.projects.details(), id] as const,
+    /** Advanced project queries for specific user */
     advanced: (userId: string) => [...queryKeys.projects.all, 'advanced', userId] as const,
+    /** Available years for project filtering */
     availableYears: (userId: string) => [...queryKeys.projects.all, 'available-years', userId] as const,
+    /** Navigation context fallback for direct URL access */
+    navigationContext: (userId: string) => [...queryKeys.projects.all, 'navigation-context', userId] as const,
   },
 
   // Company-related keys
