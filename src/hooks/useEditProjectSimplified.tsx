@@ -16,11 +16,12 @@
  */
 
 import { useState, useEffect, useCallback, useMemo, startTransition } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ProjectType, ProjectFormValues } from '@/types/project';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigationWithWarning } from '@/hooks/useNavigationWithWarning';
 import { useConfirmationDialog } from '@/hooks/useConfirmationDialog';
-import { useNavigateToProject } from '@/hooks/useNavigateToProject';
+import { useNavigateToProject, NavigationContext } from '@/hooks/useNavigateToProject';
 // Using PocketBase directly
 import { pb } from '@/lib/pocketbase';
 import { ProjectsResponse, CompaniesResponse, ArtistsResponse } from '@/types/pocketbase.types';
@@ -202,8 +203,18 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
   const { toast } = useServiceToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const location = useLocation();
   const navigateToProject = useNavigateToProject();
   const deleteProjectMutation = useDeleteProjectMutation();
+
+  // Extract navigation state from location
+  const navigationState = location.state as {
+    fromNavigation?: boolean;
+    projectId?: string;
+    timestamp?: number;
+    navigationContext?: NavigationContext;
+  } | null;
 
   // State management
   const [project, setProject] = useState<ProjectType | null>(null);
@@ -554,12 +565,33 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
           // Remove beforeunload listener to prevent navigation confirmation
           removeBeforeUnloadListener();
 
-          // Navigate back to project detail page using React Router
-          logger.info('🚀 Navigating back to project detail page');
-          await navigateToProject(projectId, {
-            projectData: response.data,
-            replace: true, // Replace current history entry since we're coming from edit
-          });
+          // Check if we should return to dashboard with preserved position
+          const shouldReturnToDashboard = navigationState?.navigationContext && 
+                                        navigationState.navigationContext.preservationContext?.isEditNavigation;
+
+          if (shouldReturnToDashboard) {
+            logger.info('🚀 Returning to dashboard with preserved position after edit');
+            
+            // Navigate back to dashboard with preserved context
+            navigate('/dashboard', {
+              replace: true,
+              state: {
+                fromEdit: true,
+                editedProjectId: projectId,
+                editedProjectData: response.data,
+                timestamp: Date.now(),
+                navigationContext: navigationState.navigationContext,
+                preservePosition: true,
+              }
+            });
+          } else {
+            // Navigate back to project detail page using React Router
+            logger.info('🚀 Navigating back to project detail page');
+            await navigateToProject(projectId, {
+              projectData: response.data,
+              replace: true, // Replace current history entry since we're coming from edit
+            });
+          }
 
           // Defer cache invalidation to happen after navigation
           // Use startTransition to mark cache updates as non-urgent
@@ -589,7 +621,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
         }
       } catch (error) {
         // Only show toast for network errors not handled by service
-        console.error('Network error updating project:', error);
+        logger.error('Network error updating project:', error);
         toast({
           title: 'Error updating project',
           description: error instanceof Error ? error.message : 'Network error',
@@ -607,6 +639,8 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
       removeBeforeUnloadListener,
       project,
       navigateToProject,
+      navigate,
+      navigationState,
     ]
   );
 

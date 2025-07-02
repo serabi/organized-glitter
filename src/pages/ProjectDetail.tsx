@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import MainLayout from '@/components/layout/MainLayout';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useProjectDetailReactQuery } from '@/hooks/useProjectDetailReactQuery';
-import { useNavigateToProjectEdit } from '@/hooks/useNavigateToProject';
+import { useNavigateToProjectEdit, NavigationContext } from '@/hooks/useNavigateToProject';
 import { ProjectType } from '@/types/project';
 import { createLogger } from '@/utils/secureLogger';
 
@@ -47,6 +47,7 @@ const ProjectDetail = () => {
     projectId?: string;
     projectData?: any;
     timestamp?: number;
+    navigationContext?: NavigationContext;
   } | null;
 
   if (navigationState?.fromNavigation) {
@@ -99,7 +100,34 @@ const ProjectDetail = () => {
     // Track navigation to edit page
     // addBreadcrumb removed
 
-    await navigateToProjectEdit(projectId);
+    // Create enhanced navigation context with edit tracking
+    let enhancedNavigationContext = navigationState?.navigationContext;
+    
+    if (enhancedNavigationContext) {
+      // Enhance existing context with edit tracking information
+      enhancedNavigationContext = {
+        ...enhancedNavigationContext,
+        preservationContext: {
+          ...enhancedNavigationContext.preservationContext,
+          scrollPosition: window.scrollY,
+          timestamp: Date.now(),
+          editedProjectId: projectId,
+          isEditNavigation: true,
+          // Keep existing preEditPosition if it exists, or set current position
+          preEditPosition: enhancedNavigationContext.preservationContext?.preEditPosition || {
+            index: 0, // Will be calculated properly when we have the context
+            page: enhancedNavigationContext.currentPage,
+            totalItems: 0, // Will be calculated properly when we have the context
+          },
+        },
+      };
+      
+      logger.debug('Enhanced navigation context for edit:', enhancedNavigationContext);
+    }
+
+    await navigateToProjectEdit(projectId, {
+      navigationContext: enhancedNavigationContext,
+    });
   };
 
   // Show loading state while fetching project data or during auth check

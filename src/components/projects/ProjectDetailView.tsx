@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ProjectType, ProjectStatus, ProgressNote } from '@/types/project';
 import { PocketBaseUser } from '@/contexts/AuthContext.types';
+import { NavigationContext } from '@/hooks/useNavigateToProject';
 import ImageGallery from '@/components/projects/ImageGallery';
 import ProjectDetails from '@/components/projects/ProjectDetails';
 import ProjectNotes from '@/components/projects/form/ProjectNotes';
@@ -33,7 +34,13 @@ interface ProjectDetailViewProps {
   navigateToEdit: () => void;
   isSubmitting?: boolean;
   user: PocketBaseUser | null;
-  navigationState: any;
+  navigationState: {
+    fromNavigation?: boolean;
+    projectId?: string;
+    projectData?: unknown;
+    timestamp?: number;
+    navigationContext?: NavigationContext;
+  } | null;
 }
 
 const ProjectDetailView = ({

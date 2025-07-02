@@ -28,6 +28,16 @@ export interface NavigationContext {
   preservationContext?: {
     scrollPosition: number;
     timestamp: number;
+    /** ID of the project being edited for position tracking */
+    editedProjectId?: string;
+    /** Original position of the project before edit for restoration */
+    preEditPosition?: {
+      index: number;
+      page: number;
+      totalItems: number;
+    };
+    /** Whether this navigation was for editing purposes */
+    isEditNavigation?: boolean;
   };
 }
 
@@ -279,15 +289,39 @@ export const useNavigateToProjectEdit = () => {
   return navigateToProjectEdit;
 };
 
+export interface CreateNavigationContextOptions {
+  /** ID of the project being edited for position tracking */
+  editedProjectId?: string;
+  /** Whether this navigation is for editing purposes */
+  isEditNavigation?: boolean;
+}
+
 /**
  * Helper function to create navigation context from dashboard filters context.
- * This preserves the user's current dashboard state for sibling navigation.
+ * This preserves the user's current dashboard state for sibling navigation and edit workflows.
  */
 export const createNavigationContext = (
-  dashboardContext?: DashboardFiltersContextValue
+  dashboardContext?: DashboardFiltersContextValue,
+  options?: CreateNavigationContextOptions
 ): NavigationContext | null => {
   if (!dashboardContext) {
     return null;
+  }
+
+  // Calculate pre-edit position if editing a project
+  let preEditPosition;
+  if (options?.editedProjectId && options?.isEditNavigation) {
+    const projects = dashboardContext.processedAndPaginatedProjects || [];
+    const projectIndex = projects.findIndex(p => p.id === options.editedProjectId);
+    
+    if (projectIndex !== -1) {
+      preEditPosition = {
+        index: projectIndex,
+        page: dashboardContext.currentPage,
+        totalItems: dashboardContext.totalItems,
+      };
+      logger.debug(`Storing pre-edit position for project ${options.editedProjectId}:`, preEditPosition);
+    }
   }
 
   return {
@@ -308,6 +342,9 @@ export const createNavigationContext = (
     preservationContext: {
       scrollPosition: window.scrollY,
       timestamp: Date.now(),
+      editedProjectId: options?.editedProjectId,
+      preEditPosition,
+      isEditNavigation: options?.isEditNavigation,
     },
   };
 };
