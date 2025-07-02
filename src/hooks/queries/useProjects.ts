@@ -73,12 +73,29 @@ const buildFilterString = (userId: string, serverFilters: ServerFilters): string
   if (serverFilters.yearFinished && serverFilters.yearFinished !== 'all') {
     const year = parseInt(serverFilters.yearFinished, 10);
     if (!isNaN(year)) {
-      filterParts.push(
+      // Include projects with ANY date field in the selected year
+      // This catches projects that were completed, started, received, or purchased in that year
+      const yearFilters = [
         pb.filter('date_completed >= {:startDate} && date_completed <= {:endDate}', {
           startDate: `${year}-01-01 00:00:00`,
           endDate: `${year}-12-31 23:59:59`,
+        }),
+        pb.filter('date_started >= {:startDateStarted} && date_started <= {:endDateStarted}', {
+          startDateStarted: `${year}-01-01 00:00:00`,
+          endDateStarted: `${year}-12-31 23:59:59`,
+        }),
+        pb.filter('date_received >= {:startDateReceived} && date_received <= {:endDateReceived}', {
+          startDateReceived: `${year}-01-01 00:00:00`,
+          endDateReceived: `${year}-12-31 23:59:59`,
+        }),
+        pb.filter('date_purchased >= {:startDatePurchased} && date_purchased <= {:endDatePurchased}', {
+          startDatePurchased: `${year}-01-01 00:00:00`,
+          endDatePurchased: `${year}-12-31 23:59:59`,
         })
-      );
+      ];
+      
+      // Use OR logic to include projects with any relevant date in the selected year
+      filterParts.push(`(${yearFilters.join(' || ')})`);
     }
   }
   if (serverFilters.includeMiniKits === false) {

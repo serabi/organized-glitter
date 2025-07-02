@@ -33,6 +33,7 @@ import { createLogger } from '@/utils/secureLogger';
 import { Collections } from '@/types/pocketbase.types';
 import { TagService } from '@/lib/tags';
 import { useDeleteProjectMutation } from '@/hooks/mutations/useProjectDetailMutations';
+import { updateProjectInCache } from '@/utils/cacheUtils';
 
 const logger = createLogger('useEditProjectSimplified');
 
@@ -593,21 +594,11 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
             });
           }
 
-          // Defer cache invalidation to happen after navigation
-          // Use startTransition to mark cache updates as non-urgent
+          // Use optimistic updates instead of cache invalidation to preserve sort order
+          // This maintains the user's current dashboard filters and sort preferences
           startTransition(() => {
-            // Invalidate React Query cache to ensure fresh data
-            queryClient.invalidateQueries({
-              queryKey: queryKeys.projects.detail(projectId),
-            });
-            queryClient.invalidateQueries({
-              queryKey: queryKeys.projects.lists(),
-            });
-            queryClient.invalidateQueries({
-              queryKey: queryKeys.projects.advanced(user?.id || ''),
-            });
-
-            logger.info('Project update cache invalidation completed');
+            updateProjectInCache(queryClient, projectId, response.data, user?.id || '');
+            logger.info('Project update optimistic cache updates completed');
           });
         } else {
           if (response?.error) {

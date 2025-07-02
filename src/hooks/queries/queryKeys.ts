@@ -20,6 +20,7 @@ export const queryKeys = {
     details: () => [...queryKeys.projects.all, 'detail'] as const,
     detail: (id: string) => [...queryKeys.projects.details(), id] as const,
     advanced: (userId: string) => [...queryKeys.projects.all, 'advanced', userId] as const,
+    availableYears: (userId: string) => [...queryKeys.projects.all, 'available-years', userId] as const,
   },
 
   // Company-related keys

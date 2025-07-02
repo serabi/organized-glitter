@@ -21,6 +21,7 @@ import {
 } from '@/features/dashboard/dashboard.constants';
 import useDebounce from '@/hooks/useDebounce'; // For search term
 import { useDashboardStats } from '@/hooks/queries/useDashboardStats';
+import { useAvailableYearsAsStrings } from '@/hooks/queries/useAvailableYears';
 
 export type SortDirectionType = 'asc' | 'desc';
 
@@ -454,20 +455,11 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
         ] as string[],
       [rawProjects]
     );
-    const yearFinishedOptions = useMemo(
-      () =>
-        [
-          ...new Set(
-            rawProjects
-              .map(p =>
-                p.dateCompleted ? new Date(p.dateCompleted).getFullYear().toString() : null
-              )
-              .filter(Boolean)
-              .sort((a, b) => parseInt(b!) - parseInt(a!))
-          ),
-        ] as string[],
-      [rawProjects]
-    );
+    // Use modern hook for available years instead of deriving from current page results
+    // This fixes the issue where years were missing if projects were on other pages
+    const { years: yearFinishedOptions, isLoading: isLoadingYears } = useAvailableYearsAsStrings({ 
+      userId: user?.id 
+    });
 
     // Memoize artists and companies mappings to prevent unnecessary re-renders
     const artistsOptions = useMemo(
@@ -578,7 +570,8 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
         isMetadataLoading:
           userMetadata.isLoading.companies ||
           userMetadata.isLoading.artists ||
-          userMetadata.isLoading.tags,
+          userMetadata.isLoading.tags ||
+          isLoadingYears,
       }),
       [
         // Core data
@@ -609,6 +602,7 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
         userMetadata.isLoading.companies,
         userMetadata.isLoading.artists,
         userMetadata.isLoading.tags,
+        isLoadingYears,
         drillShapes,
         allTags,
         yearFinishedOptions,
