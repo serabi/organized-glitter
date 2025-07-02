@@ -6,8 +6,30 @@ import { Collections, ProjectsResponse } from '@/types/pocketbase.types';
 import { queryKeys } from './queries/queryKeys';
 import { useToast } from '@/hooks/use-toast';
 import { createLogger } from '@/utils/secureLogger';
+import { DashboardFiltersContextValue } from '@/contexts/DashboardFiltersContext';
 
 const logger = createLogger('useNavigateToProject');
+
+export interface NavigationContext {
+  filters: {
+    status: string;
+    company: string;
+    artist: string;
+    drillShape: string;
+    yearFinished: string;
+    includeMiniKits: boolean;
+    searchTerm: string;
+    selectedTags: string[];
+  };
+  sortField: string;
+  sortDirection: string;
+  currentPage: number;
+  pageSize: number;
+  preservationContext?: {
+    scrollPosition: number;
+    timestamp: number;
+  };
+}
 
 interface NavigateToProjectOptions {
   /** Replace current history entry instead of pushing new one */
@@ -20,6 +42,8 @@ interface NavigateToProjectOptions {
   successMessage?: string;
   /** Whether to show loading feedback during verification */
   showLoadingFeedback?: boolean;
+  /** Navigation context for sibling navigation and position preservation */
+  navigationContext?: NavigationContext | null;
 }
 
 interface NavigationResult {
@@ -67,6 +91,7 @@ export const useNavigateToProject = () => {
         maxRetries = 2,
         successMessage,
         showLoadingFeedback = true,
+        navigationContext,
       } = options;
 
       logger.info(`🎯 Starting navigation to project ${projectId}`);
@@ -86,6 +111,8 @@ export const useNavigateToProject = () => {
           timestamp: Date.now(),
           // Include project data in state for immediate rendering
           projectData: projectData || null,
+          // Include navigation context for sibling navigation and position preservation
+          navigationContext: navigationContext || null,
         };
 
         logger.debug(`🚀 Initiating React Router navigation to: ${targetPath}`);
@@ -215,7 +242,7 @@ export const useNavigateToProjectEdit = () => {
       projectId: string,
       options: Omit<NavigateToProjectOptions, 'projectData'> = {}
     ): Promise<NavigationResult> => {
-      const { replace = false } = options;
+      const { replace = false, navigationContext } = options;
 
       try {
         logger.info(`🎯 Navigating to edit project ${projectId}`);
@@ -227,6 +254,8 @@ export const useNavigateToProjectEdit = () => {
             fromNavigation: true,
             projectId,
             timestamp: Date.now(),
+            // Include navigation context for returning to proper position
+            navigationContext: navigationContext || null,
           },
         });
 
@@ -248,4 +277,37 @@ export const useNavigateToProjectEdit = () => {
   );
 
   return navigateToProjectEdit;
+};
+
+/**
+ * Helper function to create navigation context from dashboard filters context.
+ * This preserves the user's current dashboard state for sibling navigation.
+ */
+export const createNavigationContext = (
+  dashboardContext?: DashboardFiltersContextValue
+): NavigationContext | null => {
+  if (!dashboardContext) {
+    return null;
+  }
+
+  return {
+    filters: {
+      status: dashboardContext.activeStatus,
+      company: dashboardContext.selectedCompany,
+      artist: dashboardContext.selectedArtist,
+      drillShape: dashboardContext.selectedDrillShape,
+      yearFinished: dashboardContext.selectedYearFinished,
+      includeMiniKits: dashboardContext.includeMiniKits,
+      searchTerm: dashboardContext.searchTerm,
+      selectedTags: dashboardContext.selectedTags,
+    },
+    sortField: dashboardContext.sortField,
+    sortDirection: dashboardContext.sortDirection,
+    currentPage: dashboardContext.currentPage,
+    pageSize: dashboardContext.pageSize,
+    preservationContext: {
+      scrollPosition: window.scrollY,
+      timestamp: Date.now(),
+    },
+  };
 };

@@ -6,6 +6,7 @@ import { ProjectType } from '@/types/project'; // Still needed for ProjectCard a
 import { Separator } from '@/components/ui/separator';
 import { useDashboardFiltersContext } from '@/hooks/useDashboardFiltersContext'; // Import context hook
 import ProjectPagination from '@/components/ui/ProjectPagination';
+import { useNavigateToProject, createNavigationContext } from '@/hooks/useNavigateToProject';
 
 // Interface ProjectsGridProps removed as it's no longer needed.
 // All data is sourced from DashboardFiltersContext.
@@ -13,6 +14,8 @@ import ProjectPagination from '@/components/ui/ProjectPagination';
 const ProjectsGridComponent = () => {
   // Removed unused props
   const navigate = useNavigate();
+  const navigateToProject = useNavigateToProject();
+  const dashboardContext = useDashboardFiltersContext();
   const {
     isLoadingProjects: loading, // Use from context
     processedAndPaginatedProjects: projects, // Use paginated projects instead
@@ -28,7 +31,7 @@ const ProjectsGridComponent = () => {
     totalPages,
     setCurrentPage,
     setPageSize,
-  } = useDashboardFiltersContext();
+  } = dashboardContext;
 
   const {
     isCurrentSortDateBased,
@@ -44,13 +47,19 @@ const ProjectsGridComponent = () => {
     }
   }, [loading, projects.length, viewType, searchTerm, sortField]); // Changed sortBy to sortField
 
-  // Handle project card click with breadcrumb tracking
+  // Handle project card click with navigation context
   const handleProjectClick = React.useCallback(
-    (project: ProjectType) => {
-      // addBreadcrumb removed
-      navigate(`/projects/${project.id}`);
+    async (project: ProjectType) => {
+      // Create navigation context to preserve dashboard state
+      const navigationContext = createNavigationContext(dashboardContext);
+      
+      // Navigate using enhanced navigation hook
+      await navigateToProject(project.id, {
+        navigationContext,
+        showLoadingFeedback: false, // Keep navigation snappy
+      });
     },
-    [navigate]
+    [navigateToProject, dashboardContext]
   );
 
   if (loading) {

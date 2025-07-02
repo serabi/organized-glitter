@@ -6,11 +6,14 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useProjectDetailReactQuery } from '@/hooks/useProjectDetailReactQuery';
 import { useNavigateToProjectEdit } from '@/hooks/useNavigateToProject';
 import { ProjectType } from '@/types/project';
+import { createLogger } from '@/utils/secureLogger';
 
 import LoadingState from '@/components/projects/LoadingState';
 import ProjectNotFound from '@/components/projects/ProjectNotFound';
 import ProjectDetailView from '@/components/projects/ProjectDetailView';
 import { ProjectContentErrorBoundary } from '@/components/error/ComponentErrorBoundaries';
+
+const logger = createLogger('ProjectDetail');
 
 /**
  * ProjectDetail - Project detail page
@@ -19,9 +22,9 @@ import { ProjectContentErrorBoundary } from '@/components/error/ComponentErrorBo
  * Enhanced with better error handling and auth state tracking
  */
 const ProjectDetail = () => {
-  console.log('[ProjectDetail] ProjectDetail component mounting!');
-  console.log('[ProjectDetail] Current URL:', window.location.href);
-  console.log('[ProjectDetail] Current pathname:', window.location.pathname);
+  logger.debug('ProjectDetail component mounting');
+  logger.debug('Current URL:', window.location.href);
+  logger.debug('Current pathname:', window.location.pathname);
 
   const { id } = useParams<{ id: string }>();
   const projectId = id || '';
@@ -29,10 +32,10 @@ const ProjectDetail = () => {
   const navigate = useNavigate();
   const navigateToProjectEdit = useNavigateToProjectEdit();
   const isMobile = useIsMobile();
-  const { isAuthenticated, initialCheckComplete, isLoading: authLoading } = useAuth();
+  const { user, isAuthenticated, initialCheckComplete, isLoading: authLoading } = useAuth();
 
-  console.log('[ProjectDetail] Extracted project ID from params:', projectId);
-  console.log('[ProjectDetail] Auth state:', {
+  logger.debug('Extracted project ID from params:', projectId);
+  logger.debug('Auth state:', {
     isAuthenticated,
     initialCheckComplete,
     authLoading,
@@ -47,7 +50,7 @@ const ProjectDetail = () => {
   } | null;
 
   if (navigationState?.fromNavigation) {
-    console.log('[ProjectDetail] Optimistic navigation detected:', navigationState);
+    logger.debug('Optimistic navigation detected:', navigationState);
   }
 
   // Use our project detail hook with the service layer
@@ -63,7 +66,7 @@ const ProjectDetail = () => {
   } = useProjectDetailReactQuery(projectId);
 
   // Enhanced logging for debugging the 404 issue
-  console.log('[ProjectDetail] Project data state:', {
+  logger.debug('Project data state:', {
     projectId,
     hasProject: !!project,
     loading,
@@ -101,7 +104,7 @@ const ProjectDetail = () => {
 
   // Show loading state while fetching project data or during auth check
   if (loading || authLoading || !initialCheckComplete) {
-    console.log('[ProjectDetail] Showing loading state:', {
+    logger.debug('Showing loading state:', {
       loading,
       authLoading,
       initialCheckComplete,
@@ -115,7 +118,7 @@ const ProjectDetail = () => {
 
   // Show not found state if project doesn't exist (but only after auth is confirmed)
   if (!project && !loading && isAuthenticated && initialCheckComplete) {
-    console.log('[ProjectDetail] Showing ProjectNotFound - confirmed project does not exist');
+    logger.debug('Showing ProjectNotFound - confirmed project does not exist');
     return (
       <MainLayout isAuthenticated={true}>
         <ProjectNotFound />
@@ -125,7 +128,7 @@ const ProjectDetail = () => {
 
   // If we get here without a project and without proper auth state, show loading
   if (!project) {
-    console.log('[ProjectDetail] No project data yet, continuing to show loading...');
+    logger.debug('No project data yet, continuing to show loading...');
     return (
       <MainLayout isAuthenticated={true}>
         <LoadingState />
@@ -149,6 +152,8 @@ const ProjectDetail = () => {
             onDelete={handleDelete}
             navigateToEdit={navigateToEdit}
             isSubmitting={submitting}
+            user={user}
+            navigationState={navigationState}
           />
         </ProjectContentErrorBoundary>
       </div>

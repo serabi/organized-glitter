@@ -2,10 +2,12 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ProjectType, ProjectStatus, ProgressNote } from '@/types/project';
+import { PocketBaseUser } from '@/contexts/AuthContext.types';
 import ImageGallery from '@/components/projects/ImageGallery';
 import ProjectDetails from '@/components/projects/ProjectDetails';
 import ProjectNotes from '@/components/projects/form/ProjectNotes';
 import ProjectProgressNotes from '@/components/projects/ProjectProgressNotes';
+import ProjectNavigationArrows from '@/components/projects/ProjectNavigationArrows';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,8 +31,9 @@ interface ProjectDetailViewProps {
   onArchive: () => void;
   onDelete: () => void;
   navigateToEdit: () => void;
-  // userName?: string; // Removed unused parameter
   isSubmitting?: boolean;
+  user: PocketBaseUser | null;
+  navigationState: any;
 }
 
 const ProjectDetailView = ({
@@ -41,16 +44,29 @@ const ProjectDetailView = ({
   onArchive,
   onDelete,
   navigateToEdit,
-  // userName removed as unused
   isSubmitting = false,
+  user,
+  navigationState,
 }: ProjectDetailViewProps) => {
   return (
     <div className="container mx-auto px-4 py-6">
       <div className="mb-6 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
-        <div>
-          <Link to="/dashboard" className="mb-2 inline-block text-accent hover:underline">
-            &larr; Back to Dashboard
-          </Link>
+        <div className="flex-1">
+          <div className="flex items-center justify-between gap-4 mb-2">
+            <Link to="/dashboard" className="inline-block text-accent hover:underline">
+              &larr; Back to Dashboard
+            </Link>
+            {/* Navigation arrows - shown when navigation context is available */}
+            {user && navigationState?.navigationContext && (
+              <ProjectNavigationArrows
+                currentProjectId={project.id}
+                userId={user.id}
+                size="sm"
+                showLabels={!isMobile}
+                className="flex-shrink-0"
+              />
+            )}
+          </div>
           <h1 className="text-2xl font-bold">{project.title || 'Untitled Project'}</h1>
           {!project.title && <p className="text-red-500">Warning: Project title is missing</p>}
         </div>
