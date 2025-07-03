@@ -157,7 +157,9 @@ export const useSaveNavigationContext = () => {
       logger.error('Save failure details:', {
         userId,
         errorMessage: error?.message,
-        errorStatus: error?.status,
+        errorStatus: error && typeof error === 'object' && 'status' in error 
+          ? (error as { status: unknown }).status 
+          : undefined,
         timestamp: Date.now()
       });
       
