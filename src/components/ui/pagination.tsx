@@ -29,21 +29,39 @@ PaginationItem.displayName = 'PaginationItem';
 type PaginationLinkProps = {
   isActive?: boolean;
 } & Pick<ButtonProps, 'size'> &
-  React.ComponentProps<'a'>;
+  (React.ComponentProps<'a'> | React.ComponentProps<'button'>);
 
-const PaginationLink = ({ className, isActive, size = 'icon', ...props }: PaginationLinkProps) => (
-  <a
-    aria-current={isActive ? 'page' : undefined}
-    className={cn(
-      buttonVariants({
-        variant: isActive ? 'outline' : 'ghost',
-        size,
-      }),
-      className
-    )}
-    {...props}
-  />
-);
+const PaginationLink = ({ className, isActive, size = 'icon', ...props }: PaginationLinkProps) => {
+  const commonClassName = cn(
+    buttonVariants({
+      variant: isActive ? 'outline' : 'ghost',
+      size,
+    }),
+    className
+  );
+
+  // If onClick is provided, render as button for proper click handling
+  if ('onClick' in props && props.onClick) {
+    const { href, ...buttonProps } = props as React.ComponentProps<'button'> & { href?: string };
+    return (
+      <button
+        type="button"
+        aria-current={isActive ? 'page' : undefined}
+        className={commonClassName}
+        {...buttonProps}
+      />
+    );
+  }
+
+  // Otherwise render as anchor for navigation
+  return (
+    <a
+      aria-current={isActive ? 'page' : undefined}
+      className={commonClassName}
+      {...(props as React.ComponentProps<'a'>)}
+    />
+  );
+};
 PaginationLink.displayName = 'PaginationLink';
 
 const PaginationPrevious = ({

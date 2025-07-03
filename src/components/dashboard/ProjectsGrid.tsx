@@ -1,39 +1,38 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import ProjectCard from '@/components/dashboard/ProjectCard';
 import { ProjectType } from '@/types/project'; // Still needed for ProjectCard and internal logic
 import { Separator } from '@/components/ui/separator';
-import { useDashboardFiltersContext } from '@/hooks/useDashboardFiltersContext'; // Import context hook
+import { useDashboardFilters } from '@/contexts/DashboardFiltersContext';
 import ProjectPagination from '@/components/ui/ProjectPagination';
-import { useNavigateToProject, createNavigationContext } from '@/hooks/useNavigateToProject';
+import { useNavigateToProject } from '@/hooks/useNavigateToProject';
 import { useRecentlyEdited } from '@/pages/Dashboard';
 
 // Interface ProjectsGridProps removed as it's no longer needed.
 // All data is sourced from DashboardFiltersContext.
 
 const ProjectsGridComponent = () => {
-  // Removed unused props
-  const navigate = useNavigate();
   const navigateToProject = useNavigateToProject();
-  const dashboardContext = useDashboardFiltersContext();
+  const dashboardContext = useDashboardFilters();
   const { recentlyEditedProjectId } = useRecentlyEdited();
   const {
-    isLoadingProjects: loading, // Use from context
-    processedAndPaginatedProjects: projects, // Use paginated projects instead
-    viewType, // Use from context
-    searchTerm, // Use from context
-    sortField, // Use from context
-    resetAllFilters, // Use from context
+    isLoadingProjects: loading,
+    projects,
+    filters,
+    resetAllFilters,
     dynamicSeparatorProps,
-    // Pagination props
-    currentPage,
-    pageSize,
     totalItems,
     totalPages,
-    setCurrentPage,
-    setPageSize,
+    updatePage,
+    updatePageSize,
   } = dashboardContext;
+
+  // Extract individual properties from filters
+  const viewType = filters.viewType;
+  const searchTerm = filters.searchTerm;
+  const sortField = filters.sortField;
+  const currentPage = filters.currentPage;
+  const pageSize = filters.pageSize;
 
   const {
     isCurrentSortDateBased,
@@ -49,19 +48,13 @@ const ProjectsGridComponent = () => {
     }
   }, [loading, projects.length, viewType, searchTerm, sortField]); // Changed sortBy to sortField
 
-  // Handle project card click with navigation context
+  // Handle project card click with simple navigation
   const handleProjectClick = React.useCallback(
-    async (project: ProjectType) => {
-      // Create navigation context to preserve dashboard state
-      const navigationContext = createNavigationContext(dashboardContext);
-      
-      // Navigate using enhanced navigation hook
-      await navigateToProject(project.id, {
-        navigationContext,
-        showLoadingFeedback: false, // Keep navigation snappy
-      });
+    (project: ProjectType) => {
+      // Simple navigation - dashboard filters will be saved automatically on navigation
+      navigateToProject(project.id);
     },
-    [navigateToProject, dashboardContext]
+    [navigateToProject]
   );
 
   if (loading) {
@@ -101,20 +94,25 @@ const ProjectsGridComponent = () => {
   // If a distinction is needed, further logic would be required here.
 
   const renderProjectsWithDivider = () => {
-    let dividerInserted = false;
     const elements: JSX.Element[] = [];
 
-    projects.forEach((project: ProjectType) => {
-      if (
-        isCurrentSortDateBased &&
-        currentSortDatePropertyKey &&
-        currentSortDateFriendlyName &&
-        countOfItemsWithoutCurrentSortDate &&
-        countOfItemsWithoutCurrentSortDate > 0 &&
-        countOfItemsWithoutCurrentSortDate < projects.length && // Ensures items in both groups
-        !project[currentSortDatePropertyKey] && // Current project lacks the specific date
-        !dividerInserted
-      ) {
+    // Calculate the separator position before rendering
+    let separatorIndex = -1;
+    if (
+      isCurrentSortDateBased &&
+      currentSortDatePropertyKey &&
+      currentSortDateFriendlyName &&
+      countOfItemsWithoutCurrentSortDate &&
+      countOfItemsWithoutCurrentSortDate > 0 &&
+      countOfItemsWithoutCurrentSortDate < projects.length
+    ) {
+      // Find the first project without the date - this is where separator should go
+      separatorIndex = projects.findIndex(project => !project[currentSortDatePropertyKey]);
+    }
+
+    projects.forEach((project: ProjectType, index: number) => {
+      // Insert separator before the first undated project
+      if (separatorIndex === index) {
         elements.push(
           <Separator
             key={`separator-${currentSortDatePropertyKey}`}
@@ -129,7 +127,6 @@ const ProjectsGridComponent = () => {
             Kits with no {currentSortDateFriendlyName} ({countOfItemsWithoutCurrentSortDate} kits):
           </h4>
         );
-        dividerInserted = true;
       }
 
       elements.push(
@@ -160,8 +157,8 @@ const ProjectsGridComponent = () => {
           totalPages={totalPages}
           pageSize={pageSize}
           totalItems={totalItems}
-          onPageChange={setCurrentPage}
-          onPageSizeChange={setPageSize}
+          onPageChange={updatePage}
+          onPageSizeChange={updatePageSize}
         />
       )}
     </div>

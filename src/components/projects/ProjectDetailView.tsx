@@ -28,12 +28,10 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ProjectType, ProjectStatus, ProgressNote } from '@/types/project';
 import { PocketBaseUser } from '@/contexts/AuthContext.types';
-import { useUnifiedNavigationContext } from '@/hooks/useUnifiedNavigationContext';
 import ImageGallery from '@/components/projects/ImageGallery';
 import ProjectDetails from '@/components/projects/ProjectDetails';
 import ProjectNotes from '@/components/projects/form/ProjectNotes';
 import ProjectProgressNotes from '@/components/projects/ProjectProgressNotes';
-import ProjectNavigationArrows from '@/components/projects/ProjectNavigationArrows';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -110,32 +108,15 @@ const ProjectDetailView = ({
   isSubmitting = false,
   user,
 }: ProjectDetailViewProps) => {
-  // Use unified navigation context with integrated sibling analysis
-  const { navigationContext, sibling } = useUnifiedNavigationContext({
-    currentProjectId: project.id,
-    userId: user?.id,
-  });
   return (
     <div className="container mx-auto px-4 py-6">
       <div className="mb-6 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
         <div className="flex-1">
-          {/* Navigation area - Back to Dashboard + discrete navigation arrows */}
+          {/* Navigation area - Back to Dashboard */}
           <div className="flex items-center gap-4 mb-2">
             <Link to="/dashboard" className="inline-block text-accent hover:underline">
               &larr; Back to Dashboard
             </Link>
-            {/* Discrete navigation arrows - shown when navigation context is available */}
-            {user && navigationContext && (
-              <ProjectNavigationArrows
-                currentProjectId={project.id}
-                userId={user.id}
-                context={navigationContext}
-                sibling={sibling}
-                variant="discrete"
-                showLabels={false}
-                className="ml-2"
-              />
-            )}
           </div>
           <h1 className="text-2xl font-bold">{project.title || 'Untitled Project'}</h1>
           {!project.title && <p className="text-red-500">Warning: Project title is missing</p>}

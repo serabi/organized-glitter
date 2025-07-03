@@ -1,81 +1,77 @@
 /**
- * @fileoverview Dashboard filters context with optimized state management
+ * @fileoverview Minimal Dashboard Filters Context - Clean, Simple, TypeSafe
  * 
- * This context manages all dashboard filtering, sorting, and pagination state
- * with comprehensive React Query integration and immediate database persistence.
- * Uses database as the single source of truth for all filter state with
- * architectural optimizations to prevent infinite loops and improve performance.
+ * This context provides a clean, minimal implementation of dashboard filtering
+ * with database persistence, URL parameter support, and pagination.
  * 
  * Key Features:
- * - Server-side filtering, sorting, and pagination
- * - Immediate auto-save of filter state to database
- * - React Query optimization with deferred values
- * - Database-first state management with URL parameter override support
- * - Two-effect architecture for optimal performance
- * 
- * Architectural Design:
- * - Split initialization and URL handling into separate focused effects
- * - Run-once initialization logic using useRef to prevent infinite loops
- * - Direct database access eliminates redundant useNavigationFallback dependency
- * - Clear separation of concerns between database restoration and URL parameters
- * - Eliminated circular dependencies that caused performance issues
- * 
- * Database State Management:
- * - Automatically saves current filter/sort state to PocketBase immediately
- * - One-time initialization loads saved filter state on component mount
- * - URL parameters take precedence over saved database filters
- * - Enables reliable navigation arrows and state preservation
- * - Single source of truth eliminates race conditions
- * 
- * Performance Optimizations:
- * - Two focused useEffect hooks prevent infinite loops
- * - Deferred search values for non-blocking UI
- * - Memoized filter options and computed values
- * - Server-side processing reduces client-side computation
- * - React Query caching with smart invalidation
- * - Immediate saves prevent state loss
- * - Eliminated redundant hook calls and circular dependencies
- * 
- * URL Parameter Support:
- * - Supports navigation from overview, companies, tags, and artists pages
- * - URL parameters automatically override database filters
- * - Clean URL experience (parameters cleared after application)
- * - Preserves all existing navigation functionality
+ * - Simple useState-based state management
+ * - Debounced database saves (300ms)
+ * - URL parameter support for navigation
+ * - Server-side filtering and pagination
+ * - Clean separation of concerns
+ * - Stable references to prevent infinite loops
  * 
  * @author serabi
- * @since 2025-07-02
- * @version 3.0.0 - Optimized two-effect architecture, eliminated infinite loops
+ * @since 2025-07-03
+ * @version 1.0.0 - Minimal clean implementation
  */
 
 import React, {
   createContext,
-  useMemo,
-  ReactNode,
-  useRef,
+  useContext,
   useState,
-  useCallback,
-  useDeferredValue,
   useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+  ReactNode,
 } from 'react';
-import { Project, ProjectFilterStatus, Tag } from '@/types/project';
+import { useLocation, useNavigate } from 'react-router-dom';
+import useDebounce from '@/hooks/useDebounce';
 import { useMetadata } from '@/contexts/MetadataContext';
 import { useProjects, ServerFilters } from '@/hooks/queries/useProjects';
+import { useDashboardStats } from '@/hooks/queries/useDashboardStats';
+import { useAvailableYearsAsStrings } from '@/hooks/queries/useAvailableYears';
+import { useSaveNavigationContext } from '@/hooks/mutations/useSaveNavigationContext';
+import { createLogger } from '@/utils/secureLogger';
+import { useToast } from '@/hooks/use-toast';
+import { Project, ProjectFilterStatus, Tag } from '@/types/project';
 import {
   DashboardValidSortField,
   DATE_SORT_FIELDS,
   SORT_FIELD_TO_PROJECT_KEY,
   SORT_FIELD_TO_FRIENDLY_NAME,
 } from '@/features/dashboard/dashboard.constants';
-import useDebounce from '@/hooks/useDebounce'; // For search term
-import { useDashboardStats } from '@/hooks/queries/useDashboardStats';
-import { useAvailableYearsAsStrings } from '@/hooks/queries/useAvailableYears';
-import { useSaveNavigationContext } from '@/hooks/mutations/useSaveNavigationContext';
-import { createLogger } from '@/utils/secureLogger';
-import { useToast } from '@/hooks/use-toast';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { pb } from '@/lib/pocketbase';
 
+const logger = createLogger('DashboardFilters');
+
+// Types
 export type SortDirectionType = 'asc' | 'desc';
+export type ViewType = 'grid' | 'list';
+
+export interface FilterState {
+  // Server-side filters
+  activeStatus: ProjectFilterStatus;
+  selectedCompany: string;
+  selectedArtist: string;
+  selectedDrillShape: string;
+  selectedYearFinished: string;
+  includeMiniKits: boolean;
+  searchTerm: string;
+  selectedTags: string[];
+  
+  // Sorting
+  sortField: DashboardValidSortField;
+  sortDirection: SortDirectionType;
+  
+  // Pagination
+  currentPage: number;
+  pageSize: number;
+  
+  // View
+  viewType: ViewType;
+}
 
 export interface CountsForTabsType {
   all: number;
@@ -95,924 +91,610 @@ export interface DynamicSeparatorPropsType {
   countOfItemsWithoutCurrentSortDate: number;
 }
 
-export type ViewType = 'grid' | 'list';
-
 export interface DashboardFiltersContextValue {
-  // Data from server (via useProjects React Query hook)
-  projects: Project[]; // Data after server-side filtering/sorting/pagination
+  // Current filter state
+  filters: FilterState;
+  
+  // Projects data
+  projects: Project[];
   isLoadingProjects: boolean;
   errorProjects: Error | null;
+  totalItems: number;
+  totalPages: number;
   refetchProjects: () => Promise<void>;
-  totalItems: number; // Total items from server for pagination
-  totalPages: number; // Total pages from server
-
-  // Server-side filter states
-  activeStatus: ProjectFilterStatus;
-  selectedCompany: string;
-  selectedArtist: string;
-  selectedDrillShape: string;
-  selectedYearFinished: string;
-  includeMiniKits: boolean;
-
-  // Client-side filter states
-  searchTerm: string;
-  selectedTags: string[]; // Changed from selectedTag to selectedTags for multi-select
-  isSearchPending?: boolean; // OG-91: Indicates if search results are being deferred
-
-  // Sorting state (server-side)
-  sortField: DashboardValidSortField;
-  sortDirection: SortDirectionType;
-
-  // Pagination state (server-side)
-  currentPage: number;
-  pageSize: number;
-
-  // View type (client-side)
-  viewType: ViewType;
-
-  // Available options for filters (derived from raw data or metadata)
-  companies: { label: string; value: string }[];
-  artists: { label: string; value: string }[];
-  drillShapes: string[];
-  allTags: Tag[]; // All available tags for the filter dropdown
-  yearFinishedOptions: string[];
-
-  // Actions
-  applyStatusFilter: (status: ProjectFilterStatus) => void;
-  applyCompanyFilter: (company: string | null) => void;
-  applyArtistFilter: (artist: string | null) => void;
-  applyDrillShapeFilter: (shape: string | null) => void;
-  applyYearFinishedFilter: (year: string | null) => void;
-  applyIncludeMiniKitsFilter: (include: boolean) => void;
-  applySearchTerm: (term: string | null) => void;
-  applyTagFilter: (tagId: string) => void; // For toggling a single tag
-  clearTagFilters: () => void;
-  applySort: (field: DashboardValidSortField, direction: SortDirectionType) => void;
-  setCurrentPage: (page: number) => void;
-  setPageSize: (pageSize: number) => void;
-  applyViewType: (type: ViewType) => void;
+  
+  // Filter actions
+  updateStatus: (status: ProjectFilterStatus) => void;
+  updateCompany: (company: string | null) => void;
+  updateArtist: (artist: string | null) => void;
+  updateDrillShape: (shape: string | null) => void;
+  updateYearFinished: (year: string | null) => void;
+  updateIncludeMiniKits: (include: boolean) => void;
+  updateSearchTerm: (term: string) => void;
+  updateTags: (tags: string[]) => void;
+  toggleTag: (tagId: string) => void;
+  clearAllTags: () => void;
+  updateSort: (field: DashboardValidSortField, direction: SortDirectionType) => void;
+  updatePage: (page: number) => void;
+  updatePageSize: (size: number) => void;
+  updateViewType: (type: ViewType) => void;
   resetAllFilters: () => void;
-
-  // Utilities
+  
+  // Computed values
   getActiveFilterCount: () => number;
   getCountsForTabs: () => CountsForTabsType;
   dynamicSeparatorProps: DynamicSeparatorPropsType;
+  
+  // Available options
+  companies: { label: string; value: string }[];
+  artists: { label: string; value: string }[];
+  drillShapes: string[];
+  allTags: Tag[];
+  yearFinishedOptions: string[];
+  
+  // UI state
   searchInputRef: React.RefObject<HTMLInputElement>;
-
-  // Processed projects (after client-side filtering)
-  processedAndPaginatedProjects: Project[];
+  isSearchPending: boolean;
   isMetadataLoading: boolean;
 }
 
-export const DashboardFiltersContext = createContext<DashboardFiltersContextValue | undefined>(
-  undefined
-);
+const DashboardFiltersContext = createContext<DashboardFiltersContextValue | undefined>(undefined);
+
+// Default filter state
+const getDefaultFilters = (): FilterState => ({
+  activeStatus: 'all',
+  selectedCompany: 'all',
+  selectedArtist: 'all',
+  selectedDrillShape: 'all',
+  selectedYearFinished: 'all',
+  includeMiniKits: true,
+  searchTerm: '',
+  selectedTags: [],
+  sortField: 'last_updated',
+  sortDirection: 'desc',
+  currentPage: 1,
+  pageSize: 25,
+  viewType: 'grid',
+});
+
+// Validate and sanitize filter state
+const validateAndSanitizeFilters = (filters: Partial<FilterState>): FilterState => {
+  const defaults = getDefaultFilters();
+  
+  return {
+    activeStatus: filters.activeStatus || defaults.activeStatus,
+    selectedCompany: filters.selectedCompany ?? defaults.selectedCompany,
+    selectedArtist: filters.selectedArtist ?? defaults.selectedArtist,
+    selectedDrillShape: filters.selectedDrillShape ?? defaults.selectedDrillShape,
+    selectedYearFinished: filters.selectedYearFinished ?? defaults.selectedYearFinished,
+    includeMiniKits: filters.includeMiniKits ?? defaults.includeMiniKits,
+    searchTerm: filters.searchTerm ?? defaults.searchTerm,
+    selectedTags: Array.isArray(filters.selectedTags) ? filters.selectedTags : defaults.selectedTags,
+    sortField: filters.sortField || defaults.sortField,
+    sortDirection: filters.sortDirection || defaults.sortDirection,
+    currentPage: filters.currentPage || defaults.currentPage,
+    pageSize: filters.pageSize || defaults.pageSize,
+    viewType: filters.viewType || defaults.viewType,
+  };
+};
 
 interface DashboardFiltersProviderProps {
   children: ReactNode;
   user: { id: string; email?: string } | null;
 }
 
-// Stable empty array to prevent unnecessary re-renders
-const EMPTY_TAGS_ARRAY: string[] = [];
-
-export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> = React.memo(
-  ({ children, user }) => {
-    // Reduced logging for performance
-    // console.log('🔄 DashboardFiltersProvider render:', user?.id);
-
-    const searchInputRef = useRef<HTMLInputElement>(null);
-    const userMetadata = useMetadata();
-    const { toast } = useToast();
-    const location = useLocation();
-    const navigate = useNavigate();
-    const userId = useMemo(() => user?.id, [user?.id]);
-
-    // Server-side filter states
-    const [activeStatus, setActiveStatus] = useState<ProjectFilterStatus>('all');
-    const [selectedCompany, setSelectedCompany] = useState<string>('all');
-    const [selectedArtist, setSelectedArtist] = useState<string>('all');
-    const [selectedDrillShape, setSelectedDrillShape] = useState<string>('all');
-    const [selectedYearFinished, setSelectedYearFinished] = useState<string>('all');
-    const [includeMiniKits, setIncludeMiniKits] = useState<boolean>(true); // Default to include
-
-    // Client-side filter states
-    const [searchTerm, setSearchTerm] = useState<string>('');
-    const [selectedTags, setSelectedTags] = useState<string[]>(EMPTY_TAGS_ARRAY); // Array of tag IDs
-
-    // Sorting state
-    const [sortField, setSortField] = useState<DashboardValidSortField>('last_updated');
-    const [sortDirection, setSortDirection] = useState<SortDirectionType>('desc');
-
-    // Pagination state
-    const [currentPage, setCurrentPage] = useState<number>(1);
-    const [pageSize, setPageSize] = useState<number>(25);
-
-    // View type
-    const [viewType, setViewType] = useState<ViewType>('grid');
-
-    const debouncedSearchTerm = useDebounce(searchTerm, 150); // Reduced from 300ms for better responsiveness
-
-    // OG-91: Use deferred value for search to keep UI responsive
-    const deferredSearchTerm = useDeferredValue(debouncedSearchTerm);
-
-    // OG-91: Detect when search is pending (user typed but results not yet updated)
-    const isSearchPending = debouncedSearchTerm !== deferredSearchTerm;
-
-    // Prepare filters for useProjects React Query hook - including search and tags for server-side filtering
-    const serverFilters = useMemo(
-      (): ServerFilters => ({
-        status: activeStatus,
-        company: selectedCompany,
-        artist: selectedArtist,
-        drillShape: selectedDrillShape,
-        yearFinished: selectedYearFinished,
-        includeMiniKits: includeMiniKits,
-        searchTerm: deferredSearchTerm, // OG-91: Use deferred value for non-blocking search
-        selectedTags: selectedTags,
-      }),
-      [
-        activeStatus,
-        selectedCompany,
-        selectedArtist,
-        selectedDrillShape,
-        selectedYearFinished,
-        includeMiniKits,
-        deferredSearchTerm,
-        selectedTags,
-      ]
-    );
-
-    const {
-      data: projectsData,
-      isLoading: isLoadingProjects,
-      error: queryError,
-      refetch: refetchProjects,
-    } = useProjects({
-      userId,
-      filters: serverFilters,
-      sortField,
-      sortDirection,
-      currentPage,
-      pageSize,
-    });
-
-    // Get dashboard stats for tab counts (independent of current filters)
-    const { stats: dashboardStats } = useDashboardStats();
-
-    // Auto-save navigation context for fallback when accessing via direct URL
-    // This enables navigation arrows to work when users bookmark project URLs
-    const saveNavigationContext = useSaveNavigationContext();
-
-    // Memoize navigation context to prevent unnecessary saves when data hasn't changed
-    const navigationContextToSave = useMemo(() => ({
+export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> = ({
+  children,
+  user,
+}) => {
+  const userMetadata = useMetadata();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const saveNavigationContext = useSaveNavigationContext();
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  
+  // Filter state - always start with valid defaults
+  const [filters, setFilters] = useState<FilterState>(() => {
+    try {
+      return getDefaultFilters();
+    } catch (error) {
+      logger.error('Error initializing default filters:', error);
+      // Return minimal safe state
+      return {
+        activeStatus: 'all',
+        selectedCompany: 'all',
+        selectedArtist: 'all',
+        selectedDrillShape: 'all',
+        selectedYearFinished: 'all',
+        includeMiniKits: true,
+        searchTerm: '',
+        selectedTags: [],
+        sortField: 'last_updated',
+        sortDirection: 'desc',
+        currentPage: 1,
+        pageSize: 25,
+        viewType: 'grid',
+      } as FilterState;
+    }
+  });
+  const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Debounced search for better UX
+  const debouncedSearchTerm = useDebounce(filters.searchTerm, 300);
+  const isSearchPending = filters.searchTerm !== debouncedSearchTerm;
+  
+  // Server filters for useProjects
+  const serverFilters = useMemo((): ServerFilters => ({
+    status: filters.activeStatus,
+    company: filters.selectedCompany,
+    artist: filters.selectedArtist,
+    drillShape: filters.selectedDrillShape,
+    yearFinished: filters.selectedYearFinished,
+    includeMiniKits: filters.includeMiniKits,
+    searchTerm: debouncedSearchTerm,
+    selectedTags: filters.selectedTags,
+  }), [
+    filters.activeStatus,
+    filters.selectedCompany,
+    filters.selectedArtist,
+    filters.selectedDrillShape,
+    filters.selectedYearFinished,
+    filters.includeMiniKits,
+    debouncedSearchTerm,
+    filters.selectedTags,
+  ]);
+  
+  // Projects query
+  const {
+    data: projectsData,
+    isLoading: isLoadingProjects,
+    error: queryError,
+    refetch: refetchProjects,
+  } = useProjects({
+    userId: user?.id,
+    filters: serverFilters,
+    sortField: filters.sortField,
+    sortDirection: filters.sortDirection,
+    currentPage: filters.currentPage,
+    pageSize: filters.pageSize,
+  });
+  
+  // Dashboard stats
+  const { stats: dashboardStats } = useDashboardStats();
+  
+  // Available options
+  const { years: yearFinishedOptions } = useAvailableYearsAsStrings({ userId: user?.id });
+  
+  // Extract projects data
+  const projects = useMemo(() => projectsData?.projects || [], [projectsData?.projects]);
+  const totalItems = projectsData?.totalItems || 0;
+  const totalPages = projectsData?.totalPages || 0;
+  const errorProjects = queryError ? (queryError as Error) : null;
+  
+  // Wrap refetch
+  const refetchProjectsAsync = useCallback(async () => {
+    await refetchProjects();
+  }, [refetchProjects]);
+  
+  // Use ref to store latest state for save-on-navigation to avoid stale closures
+  const latestStateRef = useRef({ filters, user, isInitialized, saveNavigationContext });
+  latestStateRef.current = { filters, user, isInitialized, saveNavigationContext };
+  
+  // Save filters on navigation away from dashboard
+  const saveFiltersToDatabase = useCallback(() => {
+    const { filters: currentFilters, user: currentUser, isInitialized: currentInitialized, saveNavigationContext: currentSaveNavigationContext } = latestStateRef.current;
+    
+    if (!currentInitialized || !currentUser?.id) {
+      logger.debug('Skipping save - not initialized or no user', { currentInitialized, hasUser: !!currentUser?.id });
+      return;
+    }
+    
+    // Defensive check to ensure valid filter state
+    if (!currentFilters.activeStatus || !currentFilters.sortField || !currentFilters.sortDirection) {
+      logger.warn('Skipping database save due to incomplete filter state', { filters: currentFilters });
+      return;
+    }
+    
+    const navigationContext = {
       filters: {
-        status: activeStatus,
-        company: selectedCompany,
-        artist: selectedArtist,
-        drillShape: selectedDrillShape,
-        yearFinished: selectedYearFinished,
-        includeMiniKits,
-        searchTerm: deferredSearchTerm,
-        selectedTags,
+        status: currentFilters.activeStatus,
+        company: currentFilters.selectedCompany,
+        artist: currentFilters.selectedArtist,
+        drillShape: currentFilters.selectedDrillShape,
+        yearFinished: currentFilters.selectedYearFinished,
+        includeMiniKits: currentFilters.includeMiniKits,
+        searchTerm: currentFilters.searchTerm,
+        selectedTags: currentFilters.selectedTags,
       },
-      sortField,
-      sortDirection,
-      currentPage,
-      pageSize,
+      sortField: currentFilters.sortField,
+      sortDirection: currentFilters.sortDirection,
+      currentPage: currentFilters.currentPage,
+      pageSize: currentFilters.pageSize,
       preservationContext: {
-        scrollPosition: 0, // Will be set during actual navigation
+        scrollPosition: window.scrollY || 0,
         timestamp: Date.now(),
       },
-    }), [
-      activeStatus,
-      selectedCompany,
-      selectedArtist,
-      selectedDrillShape,
-      selectedYearFinished,
-      includeMiniKits,
-      deferredSearchTerm,
-      selectedTags,
-      sortField,
-      sortDirection,
-      currentPage,
-      pageSize,
-    ]);
-
-    // Extract data from React Query result
-    const rawProjects = useMemo(() => projectsData?.projects || [], [projectsData?.projects]);
-    const totalItems = projectsData?.totalItems || 0;
-    const totalPages = projectsData?.totalPages || 0;
-    const errorProjects = queryError ? (queryError as Error) : null;
-
-    // Wrap refetch to match expected interface
-    const refetchProjectsAsync = useCallback(async () => {
-      await refetchProjects();
-    }, [refetchProjects]);
-
-    // Note: Auto-save is now handled immediately in each filter action function
-    // This eliminates debounce delays and provides instant state persistence
-
-    // Debug logging removed for performance
-
-    // Note: Refetch is handled automatically by React Query when dependencies change
-    // No manual refetch useEffect needed since React Query already handles dependency changes
-
-    // Note: Database filter restoration is now handled entirely within the consolidated restoration effect
-    // No separate hook needed since DashboardFiltersContext already manages database state
-
-    // Restoration state tracking to prevent infinite loops during filter restoration
-    const [isRestoringFromDatabase, setIsRestoringFromDatabase] = useState(false);
+    };
     
-    // Track if initial database restoration has completed to prevent multiple runs
-    const hasInitialized = useRef(false);
+    currentSaveNavigationContext.mutate({
+      userId: currentUser.id,
+      navigationContext,
+    });
+    
+    logger.info('✅ Saved current filter state on navigation', { 
+      userId: currentUser.id, 
+      activeStatus: currentFilters.activeStatus,
+      searchTerm: currentFilters.searchTerm,
+      selectedCompany: currentFilters.selectedCompany
+    });
+  }, []); // Empty dependency array is safe now since we use ref
 
-    /**
-     * Immediately saves current filter state to database
-     * This ensures all filter changes are persisted instantly for reliable state management
-     */
-    const saveCurrentStateToDatabase = useCallback(() => {
-      const logger = createLogger('DashboardFiltersContext-Save');
-      
-      if (!userId || isRestoringFromDatabase) {
-        // Don't save during restoration to prevent infinite loops or if no user is logged in
-        logger.info('⏭️ Skipping database save', {
-          reason: !userId ? 'No user ID' : 'Currently restoring from database',
-          userId: !!userId,
-          isRestoringFromDatabase
-        });
-        return;
+  // Save filters when navigating away from dashboard
+  useEffect(() => {
+    const currentPath = location.pathname;
+    
+    return () => {
+      // Only save if we're currently on dashboard and navigating away
+      if (currentPath === '/dashboard' && isInitialized) {
+        saveFiltersToDatabase();
       }
-
-      logger.info('🔄 Initiating database save for filter state', {
-        userId,
-        timestamp: Date.now()
-      });
-
-      // Use memoized navigation context to prevent unnecessary saves
-      // Update timestamp for current save operation
-      const navigationContext = {
-        ...navigationContextToSave,
-        preservationContext: {
-          ...navigationContextToSave.preservationContext,
-          timestamp: Date.now(),
-        },
-      };
-
-      // Immediate save without debounce for reliable state persistence
-      saveNavigationContext.mutate({
-        userId,
-        navigationContext,
-      });
-    }, [
-      userId,
-      isRestoringFromDatabase,
-      navigationContextToSave,
-      // Note: saveNavigationContext removed from dependencies as React Query mutations
-      // are not stable references and would cause infinite re-renders
-    ]);
-
-    // --- Action Implementations ---
-    /**
-     * Applies status filter and immediately saves state to database
-     * @param status - The project status to filter by
-     */
-    const applyStatusFilter = useCallback(
-      (status: ProjectFilterStatus) => {
-        setActiveStatus(status);
-        setCurrentPage(1); // Reset to first page on filter change
+    };
+  }, [location.pathname, saveFiltersToDatabase, isInitialized]);
+  
+  // Initialize from database
+  useEffect(() => {
+    if (!user?.id || isInitialized || userMetadata.isLoading.tags || userMetadata.isLoading.companies || userMetadata.isLoading.artists) {
+      return;
+    }
+    
+    const initializeFromDatabase = async () => {
+      try {
+        const { pb } = await import('@/lib/pocketbase');
+        const record = await pb.collection('user_dashboard_settings')
+          .getFirstListItem(`user="${user.id}"`);
         
-        // Immediate database save for reliable state persistence
-        saveCurrentStateToDatabase();
-      },
-      [saveCurrentStateToDatabase]
-    );
-
-    /**
-     * Applies company filter and immediately saves state to database
-     * @param company - The company ID to filter by or null for 'all'
-     */
-    const applyCompanyFilter = useCallback((company: string | null) => {
-      const normalizedCompany = company ?? 'all';
-      setSelectedCompany(normalizedCompany);
-      setCurrentPage(1);
-      
-      // Immediate database save for reliable state persistence
-      saveCurrentStateToDatabase();
-    }, [saveCurrentStateToDatabase]);
-
-    /**
-     * Applies artist filter and immediately saves state to database
-     * @param artist - The artist ID to filter by or null for 'all'
-     */
-    const applyArtistFilter = useCallback((artist: string | null) => {
-      const normalizedArtist = artist ?? 'all';
-      setSelectedArtist(normalizedArtist);
-      setCurrentPage(1);
-      
-      // Immediate database save for reliable state persistence
-      saveCurrentStateToDatabase();
-    }, [saveCurrentStateToDatabase]);
-
-    /**
-     * Applies drill shape filter and immediately saves state to database
-     * @param shape - The drill shape to filter by or null for 'all'
-     */
-    const applyDrillShapeFilter = useCallback((shape: string | null) => {
-      const normalizedShape = shape ?? 'all';
-      setSelectedDrillShape(normalizedShape);
-      setCurrentPage(1);
-      
-      // Immediate database save for reliable state persistence
-      saveCurrentStateToDatabase();
-    }, [saveCurrentStateToDatabase]);
-
-    /**
-     * Applies year finished filter and immediately saves state to database
-     * @param year - The year to filter by or null for 'all'
-     */
-    const applyYearFinishedFilter = useCallback((year: string | null) => {
-      const normalizedYear = year ?? 'all';
-      setSelectedYearFinished(normalizedYear);
-      setCurrentPage(1);
-      
-      // Immediate database save for reliable state persistence
-      saveCurrentStateToDatabase();
-    }, [saveCurrentStateToDatabase]);
-
-    /**
-     * Applies include mini kits filter and immediately saves state to database
-     * @param include - Whether to include mini kits in results
-     */
-    const applyIncludeMiniKitsFilter = useCallback((include: boolean) => {
-      setIncludeMiniKits(include);
-      setCurrentPage(1);
-      
-      // Immediate database save for reliable state persistence
-      saveCurrentStateToDatabase();
-    }, [saveCurrentStateToDatabase]);
-
-    /**
-     * Applies search term filter and immediately saves state to database
-     * @param term - The search term to filter by or null to clear
-     */
-    const applySearchTerm = useCallback((term: string | null) => {
-      setSearchTerm(term ?? '');
-      setCurrentPage(1); // Reset to first page since this now triggers server-side filtering
-      
-      // Immediate database save for reliable state persistence
-      saveCurrentStateToDatabase();
-    }, [saveCurrentStateToDatabase]);
-
-    /**
-     * Toggles a tag filter on/off and immediately saves state to database
-     * @param tagId - The tag ID to toggle
-     */
-    const applyTagFilter = useCallback((tagId: string) => {
-      setSelectedTags(prevTags =>
-        prevTags.includes(tagId) ? prevTags.filter(t => t !== tagId) : [...prevTags, tagId]
-      );
-      setCurrentPage(1); // Reset to first page since this now triggers server-side filtering
-      
-      // Immediate database save for reliable state persistence
-      saveCurrentStateToDatabase();
-    }, [saveCurrentStateToDatabase]);
-
-    /**
-     * Clears all tag filters and immediately saves state to database
-     */
-    const clearTagFilters = useCallback(() => {
-      setSelectedTags(EMPTY_TAGS_ARRAY);
-      
-      // Immediate database save for reliable state persistence
-      saveCurrentStateToDatabase();
-    }, [saveCurrentStateToDatabase]);
-
-    /**
-     * Applies sort settings and immediately saves state to database
-     * @param newSortField - The field to sort by
-     * @param newSortDirection - The sort direction (asc/desc)
-     */
-    const applySort = useCallback(
-      (newSortField: DashboardValidSortField, newSortDirection: SortDirectionType) => {
-        setSortField(newSortField);
-        setSortDirection(newSortDirection);
-        setCurrentPage(1); // Reset to first page on sort change
-        
-        // Immediate database save for reliable state persistence
-        saveCurrentStateToDatabase();
-      },
-      [saveCurrentStateToDatabase]
-    );
-
-    /**
-     * Sets current page and immediately saves state to database
-     * @param page - The page number to navigate to
-     */
-    const handleSetCurrentPage = useCallback((page: number) => {
-      setCurrentPage(page);
-      
-      // Immediate database save for reliable state persistence
-      saveCurrentStateToDatabase();
-    }, [saveCurrentStateToDatabase]);
-
-    /**
-     * Sets page size and immediately saves state to database
-     * @param newPageSize - The new page size
-     */
-    const handleSetPageSize = useCallback((newPageSize: number) => {
-      setPageSize(newPageSize);
-      setCurrentPage(1); // Reset to first page on page size change
-      
-      // Immediate database save for reliable state persistence
-      saveCurrentStateToDatabase();
-    }, [saveCurrentStateToDatabase]);
-
-    const applyViewType = useCallback((type: ViewType) => {
-      setViewType(type);
-    }, []);
-
-    /**
-     * Resets all filters to default values and immediately saves state to database
-     * @param skipDatabaseSave - If true, doesn't save to database (used during URL override)
-     */
-    const resetAllFilters = useCallback((skipDatabaseSave = false) => {
-      setActiveStatus('all');
-      setSelectedCompany('all');
-      setSelectedArtist('all');
-      setSelectedDrillShape('all');
-      setSelectedYearFinished('all');
-      setIncludeMiniKits(true);
-      setSearchTerm('');
-      setSelectedTags(EMPTY_TAGS_ARRAY);
-      setSortField('last_updated');
-      setSortDirection('desc');
-      setCurrentPage(1);
-      // setPageSize(25); // Optionally reset page size
-      if (searchInputRef.current) {
-        searchInputRef.current.value = '';
+        if (record.navigation_context) {
+          const savedContext = record.navigation_context as any;
+          const rawSavedFilters = {
+            activeStatus: savedContext.filters?.status,
+            selectedCompany: savedContext.filters?.company,
+            selectedArtist: savedContext.filters?.artist,
+            selectedDrillShape: savedContext.filters?.drillShape,
+            selectedYearFinished: savedContext.filters?.yearFinished,
+            includeMiniKits: savedContext.filters?.includeMiniKits,
+            searchTerm: savedContext.filters?.searchTerm,
+            selectedTags: savedContext.filters?.selectedTags,
+            sortField: savedContext.sortField,
+            sortDirection: savedContext.sortDirection,
+            currentPage: savedContext.currentPage,
+            pageSize: savedContext.pageSize,
+            viewType: 'grid', // Always default to grid
+          };
+          
+          // Validate and sanitize the loaded state
+          const validatedFilters = validateAndSanitizeFilters(rawSavedFilters);
+          setFilters(validatedFilters);
+          logger.info('Restored and validated filters from database', { userId: user.id, validatedFilters });
+        }
+      } catch (error) {
+        if (error?.status !== 404) {
+          logger.error('Error loading saved filters:', error);
+        }
       }
       
-      // Immediate database save for reliable state persistence (unless skipped)
-      if (!skipDatabaseSave) {
-        saveCurrentStateToDatabase();
-      }
-    }, [saveCurrentStateToDatabase]);
-
-    /**
-     * Applies URL parameters to filter state without saving to database
-     * Used during URL override to set filters based on navigation URLs
-     */
-    const applyUrlParameters = useCallback((searchParams: URLSearchParams) => {
-      const logger = createLogger('DashboardFiltersContext-URLOverride');
+      setIsInitialized(true);
+    };
+    
+    initializeFromDatabase();
+  }, [user?.id, userMetadata.isLoading.tags, userMetadata.isLoading.companies, userMetadata.isLoading.artists]);
+  
+  // Handle URL parameters
+  useEffect(() => {
+    if (!isInitialized) return;
+    
+    const urlParams = new URLSearchParams(location.search);
+    const hasUrlParams = urlParams.toString().length > 0;
+    
+    if (hasUrlParams) {
+      logger.info('Processing URL parameters', { search: location.search });
       
-      // Apply status filter from URL
-      const urlStatus = searchParams.get('status');
+      const newFilters = { ...getDefaultFilters() };
+      let hasChanges = false;
+      
+      // Status filter
+      const urlStatus = urlParams.get('status');
       if (urlStatus && ['wishlist', 'purchased', 'stash', 'progress', 'completed', 'destashed', 'archived'].includes(urlStatus)) {
-        logger.info('📌 Applying status from URL', { status: urlStatus });
-        setActiveStatus(urlStatus as ProjectFilterStatus);
+        newFilters.activeStatus = urlStatus as ProjectFilterStatus;
+        hasChanges = true;
       }
       
-      // Apply company filter from URL
-      const urlCompany = searchParams.get('company');
+      // Company filter
+      const urlCompany = urlParams.get('company');
       if (urlCompany) {
-        logger.info('📌 Applying company from URL', { company: urlCompany });
-        setSelectedCompany(urlCompany);
+        newFilters.selectedCompany = urlCompany;
+        hasChanges = true;
       }
       
-      // Apply artist filter from URL
-      const urlArtist = searchParams.get('artist');
+      // Artist filter
+      const urlArtist = urlParams.get('artist');
       if (urlArtist) {
-        logger.info('📌 Applying artist from URL', { artist: urlArtist });
-        setSelectedArtist(urlArtist);
+        newFilters.selectedArtist = urlArtist;
+        hasChanges = true;
       }
       
-      // Apply tag filter from URL
-      const urlTag = searchParams.get('tag');
+      // Tag filter
+      const urlTag = urlParams.get('tag');
       if (urlTag) {
-        logger.info('📌 Applying tag from URL', { tag: urlTag });
-        // Find tag by name in metadata and use its ID
         const matchingTag = userMetadata.tags.find(tag => tag.name === urlTag);
         if (matchingTag) {
-          setSelectedTags([matchingTag.id]);
+          newFilters.selectedTags = [matchingTag.id];
+          hasChanges = true;
         }
       }
       
-      // Apply year filter from URL
-      const urlYear = searchParams.get('year');
+      // Year filter
+      const urlYear = urlParams.get('year');
       if (urlYear) {
-        logger.info('📌 Applying year from URL', { year: urlYear });
-        setSelectedYearFinished(urlYear);
+        newFilters.selectedYearFinished = urlYear;
+        hasChanges = true;
       }
       
-      // Apply drill shape filter from URL
-      const urlDrillShape = searchParams.get('drillShape');
+      // Drill shape filter
+      const urlDrillShape = urlParams.get('drillShape');
       if (urlDrillShape) {
-        logger.info('📌 Applying drill shape from URL', { drillShape: urlDrillShape });
-        setSelectedDrillShape(urlDrillShape);
+        newFilters.selectedDrillShape = urlDrillShape;
+        hasChanges = true;
       }
       
-      // Reset page to 1 when applying URL filters
-      setCurrentPage(1);
-    }, [userMetadata.tags]);
-
-    // --- Optimized: Server-Side Filtering ---
-    // Since filtering is now server-side, we don't need client-side filtering
-    // This significantly improves performance by reducing processing on large datasets
-    const processedAndPaginatedProjects = useMemo(() => rawProjects || [], [rawProjects]);
-
-    // --- Utilities ---
-    const getActiveFilterCount = useCallback(() => {
-      let count = 0;
-      if (activeStatus !== 'all') count++;
-      if (selectedCompany !== 'all') count++;
-      if (selectedArtist !== 'all') count++;
-      if (selectedDrillShape !== 'all') count++;
-      if (selectedYearFinished !== 'all') count++;
-      if (!includeMiniKits) count++; // Counts if "Include Mini Kits" is unchecked
-      if (searchTerm) count++;
-      if (selectedTags.length > 0) count++;
-      return count;
-    }, [
-      activeStatus,
-      selectedCompany,
-      selectedArtist,
-      selectedDrillShape,
-      selectedYearFinished,
-      includeMiniKits,
-      searchTerm,
-      selectedTags,
-    ]);
-
-    const getCountsForTabs = useMemo(
-      () => () => {
-        // Use dashboard stats for accurate counts across all projects (ignoring current filters)
-        // This ensures tab counts remain consistent regardless of which tab is selected
-        const counts: CountsForTabsType = {
-          all: 0,
-          wishlist: 0,
-          purchased: 0,
-          stash: 0,
-          progress: 0,
-          completed: 0,
-          destashed: 0,
-          archived: 0,
-        };
-
-        if (dashboardStats?.status_breakdown) {
-          // Use status breakdown from dashboard stats for accurate counts
-          const breakdown = dashboardStats.status_breakdown;
-          counts.wishlist = breakdown.wishlist ?? 0;
-          counts.purchased = breakdown.purchased ?? 0;
-          counts.stash = breakdown.stash ?? 0;
-          counts.progress = breakdown.progress ?? 0;
-          counts.completed = breakdown.completed ?? 0;
-          counts.destashed = breakdown.destashed ?? 0;
-          counts.archived = breakdown.archived ?? 0;
-
-          // Calculate 'all' as sum of all individual status counts
-          counts.all =
-            counts.wishlist +
-            counts.purchased +
-            counts.stash +
-            counts.progress +
-            counts.completed +
-            counts.destashed +
-            counts.archived;
-        } else {
-          // Fallback to current behavior if dashboard stats not available
-          rawProjects.forEach((project: Project) => {
-            if (project.status in counts) {
-              counts[project.status as keyof CountsForTabsType]++;
-            }
-          });
-          counts.all = totalItems;
-        }
-
-        return counts;
-      },
-      [dashboardStats?.status_breakdown, rawProjects, totalItems]
-    );
-
-    const dynamicSeparatorProps = useMemo((): DynamicSeparatorPropsType => {
-      // This logic might need adjustment if client-side filtering changes the set of projects
-      // before this calculation. It should ideally operate on the data *after* server-side sorting
-      // but *before* client-side filtering if the separator is based on the server sort.
-      // For now, using `clientFilteredProjects` which might not be ideal for date separator logic.
-      // Let's use `rawProjects` for this, as it reflects server sort order.
-      const projectsForSeparator = rawProjects || [];
-      const isDateSort = sortField && DATE_SORT_FIELDS.includes(sortField);
-      if (!isDateSort || !sortField) {
-        return { isCurrentSortDateBased: false, countOfItemsWithoutCurrentSortDate: 0 };
-      }
-      const currentSortField = sortField as DashboardValidSortField;
-      const projectKey = SORT_FIELD_TO_PROJECT_KEY[currentSortField];
-      const friendlyName = SORT_FIELD_TO_FRIENDLY_NAME[currentSortField];
-      if (!projectKey || !friendlyName) {
-        return { isCurrentSortDateBased: true, countOfItemsWithoutCurrentSortDate: 0 };
-      }
-      let count = 0;
-      for (const project of projectsForSeparator) {
-        const dateValue = project[projectKey];
-        if (!dateValue || (typeof dateValue === 'string' && dateValue.trim() === '')) {
-          count++;
-        }
-      }
-      return {
-        isCurrentSortDateBased: true,
-        currentSortDatePropertyKey: projectKey,
-        currentSortDateFriendlyName: friendlyName,
-        countOfItemsWithoutCurrentSortDate: count,
-      };
-    }, [sortField, rawProjects]);
-
-    // Use all tags from metadata instead of deriving from current projects
-    // This prevents circular dependency where tag filtering depends on tags derived from filtered projects
-    const allTags = useMemo(() => {
-      return userMetadata.tags.slice().sort((a, b) => a.name.localeCompare(b.name));
-    }, [userMetadata.tags]);
-
-    // Derive unique companies, artists, drill shapes, year finished options from rawProjects
-    // This should ideally come from `rawProjects` to reflect what's available in the current server-filtered dataset,
-    // or from `userMetadata` if those are meant to be exhaustive lists.
-    // For now, let's use userMetadata for companies/artists and derive others from rawProjects.
-    const drillShapes = useMemo(
-      () =>
-        [
-          ...new Set(
-            rawProjects
-              .map(p => p.drillShape)
-              .filter(Boolean)
-              .sort()
-          ),
-        ] as string[],
-      [rawProjects]
-    );
-    // Use modern hook for available years instead of deriving from current page results
-    // This fixes the issue where years were missing if projects were on other pages
-    const { years: yearFinishedOptions, isLoading: isLoadingYears } = useAvailableYearsAsStrings({ 
-      userId: user?.id 
-    });
-
-    // Memoize artists and companies mappings to prevent unnecessary re-renders
-    const artistsOptions = useMemo(
-      () => userMetadata.artists.map(artist => ({ label: artist.name, value: artist.id })),
-      [userMetadata.artists]
-    );
-    const companiesOptions = useMemo(
-      () => userMetadata.companies.map(company => ({ label: company.name, value: company.id })),
-      [userMetadata.companies]
-    );
-
-    // EFFECT 1: Initialize filters from database (runs once on mount)
-    useEffect(() => {
-      const logger = createLogger('DashboardFiltersContext-Init');
-      
-      // Only run once when user becomes available and metadata is loaded
-      if (!user?.id || hasInitialized.current || userMetadata.isLoading.tags || userMetadata.isLoading.companies || userMetadata.isLoading.artists) {
-        return;
-      }
-      
-      logger.info('🔄 Initializing dashboard filters from database', {
-        userId: user.id,
-        timestamp: Date.now()
-      });
-      
-      hasInitialized.current = true;
-      setIsRestoringFromDatabase(true);
-      
-      // Fetch saved filters directly from database
-      const fetchSavedFilters = async () => {
-        try {
-          const record = await pb.collection('user_dashboard_settings')
-            .getFirstListItem(`user="${user.id}"`);
-          
-          if (record.navigation_context) {
-            logger.info('💾 Restoring saved filters from database', {
-              filters: record.navigation_context.filters,
-              sortField: record.navigation_context.sortField,
-              sortDirection: record.navigation_context.sortDirection,
-              currentPage: record.navigation_context.currentPage,
-              pageSize: record.navigation_context.pageSize
-            });
-            
-            const savedFilters = record.navigation_context as any; // Type cast needed for database record
-            
-            // Apply saved filter state (type-safe conversions)
-            setActiveStatus((savedFilters.filters.status as ProjectFilterStatus) || 'all');
-            setSelectedCompany(savedFilters.filters.company || 'all');
-            setSelectedArtist(savedFilters.filters.artist || 'all');
-            setSelectedDrillShape(savedFilters.filters.drillShape || 'all');
-            setSelectedYearFinished(savedFilters.filters.yearFinished || 'all');
-            setIncludeMiniKits(savedFilters.filters.includeMiniKits ?? true);
-            setSearchTerm(savedFilters.filters.searchTerm || '');
-            setSelectedTags(savedFilters.filters.selectedTags || []);
-            setSortField((savedFilters.sortField as DashboardValidSortField) || 'last_updated');
-            setSortDirection((savedFilters.sortDirection as SortDirectionType) || 'desc');
-            setCurrentPage(savedFilters.currentPage || 1);
-            setPageSize(savedFilters.pageSize || 25);
-            
-            // Show user feedback for successful restoration (only in development to avoid spam)
-            if (import.meta.env.DEV) {
-              toast({
-                title: 'Filters Restored',
-                description: 'Your previous dashboard filters have been restored.',
-                duration: 2000,
-              });
-            }
-          } else {
-            logger.info('🏠 No saved filters found, using defaults');
-          }
-        } catch (error) {
-          // If no record exists (404), that's okay - use defaults
-          if (error?.status === 404) {
-            logger.info('🏠 No dashboard settings record found, using defaults');
-          } else {
-            logger.error('Error fetching saved filters:', error);
-          }
-        }
+      if (hasChanges) {
+        setFilters(newFilters);
         
-        // Clear restoration flag after completion (success or failure)
-        setIsRestoringFromDatabase(false);
-        logger.info('✅ Database filter initialization completed');
-      };
-      
-      fetchSavedFilters();
-    }, [user?.id, userMetadata.isLoading.tags, userMetadata.isLoading.companies, userMetadata.isLoading.artists, toast]);
-
-    // EFFECT 2: Handle URL parameters (runs when URL changes)
-    useEffect(() => {
-      const logger = createLogger('DashboardFiltersContext-URLParams');
-      
-      // Only proceed if user is available and we've completed initialization
-      if (!user?.id || !hasInitialized.current) {
-        return;
-      }
-      
-      const searchParams = new URLSearchParams(location.search);
-      const hasUrlParams = searchParams.size > 0;
-      
-      // Only process URL parameters if they exist
-      if (!hasUrlParams) {
-        return;
-      }
-      
-      logger.info('🎯 Processing URL parameters', {
-        search: location.search,
-        params: Object.fromEntries(searchParams.entries()),
-        timestamp: Date.now()
-      });
-      
-      setIsRestoringFromDatabase(true);
-      
-      // Reset all filters to defaults first (without saving to database)
-      resetAllFilters(true);
-      
-      // Apply URL parameters to override defaults
-      applyUrlParameters(searchParams);
-      
-      // Clear restoration flag and save new state to database
-      setTimeout(() => {
-        setIsRestoringFromDatabase(false);
-        
-        // Save the new filter state to database
-        saveCurrentStateToDatabase();
-        
-        // Clear URL parameters for clean browsing experience
+        // Clear URL parameters for clean URLs
         navigate(location.pathname, { replace: true });
         
-        logger.info('✅ URL parameters applied and state saved to database');
-        
-        // Show user feedback for URL override (only in development to avoid spam)
-        if (import.meta.env.DEV) {
-          toast({
-            title: 'Filters Applied',
-            description: 'Dashboard filters have been set based on your navigation.',
-            duration: 2000,
-          });
-        }
-      }, 0);
-    }, [location.search, user?.id, resetAllFilters, applyUrlParameters, saveCurrentStateToDatabase, navigate, toast]);
+        logger.info('Applied URL parameters to filters', { newFilters });
+      }
+    }
+  }, [location.search, isInitialized, navigate, location.pathname, userMetadata.tags]);
+  
+  // Filter update functions
+  const updateStatus = useCallback((status: ProjectFilterStatus) => {
+    setFilters(prev => ({ ...prev, activeStatus: status, currentPage: 1 }));
+  }, []);
+  
+  const updateCompany = useCallback((company: string | null) => {
+    setFilters(prev => ({ ...prev, selectedCompany: company || 'all', currentPage: 1 }));
+  }, []);
+  
+  const updateArtist = useCallback((artist: string | null) => {
+    setFilters(prev => ({ ...prev, selectedArtist: artist || 'all', currentPage: 1 }));
+  }, []);
+  
+  const updateDrillShape = useCallback((shape: string | null) => {
+    setFilters(prev => ({ ...prev, selectedDrillShape: shape || 'all', currentPage: 1 }));
+  }, []);
+  
+  const updateYearFinished = useCallback((year: string | null) => {
+    setFilters(prev => ({ ...prev, selectedYearFinished: year || 'all', currentPage: 1 }));
+  }, []);
+  
+  const updateIncludeMiniKits = useCallback((include: boolean) => {
+    setFilters(prev => ({ ...prev, includeMiniKits: include, currentPage: 1 }));
+  }, []);
+  
+  const updateSearchTerm = useCallback((term: string) => {
+    setFilters(prev => ({ ...prev, searchTerm: term, currentPage: 1 }));
+  }, []);
+  
+  const updateTags = useCallback((tags: string[]) => {
+    setFilters(prev => ({ ...prev, selectedTags: tags, currentPage: 1 }));
+  }, []);
+  
+  const toggleTag = useCallback((tagId: string) => {
+    setFilters(prev => ({
+      ...prev,
+      selectedTags: prev.selectedTags.includes(tagId)
+        ? prev.selectedTags.filter(id => id !== tagId)
+        : [...prev.selectedTags, tagId],
+      currentPage: 1,
+    }));
+  }, []);
+  
+  const clearAllTags = useCallback(() => {
+    setFilters(prev => ({ ...prev, selectedTags: [], currentPage: 1 }));
+  }, []);
+  
+  const updateSort = useCallback((field: DashboardValidSortField, direction: SortDirectionType) => {
+    setFilters(prev => ({ ...prev, sortField: field, sortDirection: direction, currentPage: 1 }));
+  }, []);
+  
+  const updatePage = useCallback((page: number) => {
+    setFilters(prev => ({ ...prev, currentPage: page }));
+  }, []);
+  
+  const updatePageSize = useCallback((size: number) => {
+    setFilters(prev => ({ ...prev, pageSize: size, currentPage: 1 }));
+  }, []);
+  
+  const updateViewType = useCallback((type: ViewType) => {
+    setFilters(prev => ({ ...prev, viewType: type }));
+  }, []);
+  
+  const resetAllFilters = useCallback(() => {
+    setFilters(getDefaultFilters());
+    if (searchInputRef.current) {
+      searchInputRef.current.value = '';
+    }
+  }, []);
+  
+  // Computed values
+  const getActiveFilterCount = useCallback(() => {
+    let count = 0;
+    if (filters.activeStatus !== 'all') count++;
+    if (filters.selectedCompany !== 'all') count++;
+    if (filters.selectedArtist !== 'all') count++;
+    if (filters.selectedDrillShape !== 'all') count++;
+    if (filters.selectedYearFinished !== 'all') count++;
+    if (!filters.includeMiniKits) count++;
+    if (filters.searchTerm) count++;
+    if (filters.selectedTags.length > 0) count++;
+    return count;
+  }, [filters]);
+  
+  const getCountsForTabs = useCallback((): CountsForTabsType => {
+    const statusBreakdown = dashboardStats?.status_breakdown;
+    const totalProjects = statusBreakdown 
+      ? Object.values(statusBreakdown).reduce((sum: number, count: unknown) => sum + (typeof count === 'number' ? count : 0), 0)
+      : 0;
+    
+    return {
+      all: totalProjects,
+      wishlist: typeof statusBreakdown?.wishlist === 'number' ? statusBreakdown.wishlist : 0,
+      purchased: typeof statusBreakdown?.purchased === 'number' ? statusBreakdown.purchased : 0,
+      stash: typeof statusBreakdown?.stash === 'number' ? statusBreakdown.stash : 0,
+      progress: typeof statusBreakdown?.progress === 'number' ? statusBreakdown.progress : 0,
+      completed: typeof statusBreakdown?.completed === 'number' ? statusBreakdown.completed : 0,
+      destashed: typeof statusBreakdown?.destashed === 'number' ? statusBreakdown.destashed : 0,
+      archived: typeof statusBreakdown?.archived === 'number' ? statusBreakdown.archived : 0,
+    };
+  }, [dashboardStats]);
+  
+  const dynamicSeparatorProps = useMemo((): DynamicSeparatorPropsType => {
+    const isCurrentSortDateBased = DATE_SORT_FIELDS.includes(filters.sortField);
+    
+    if (!isCurrentSortDateBased) {
+      return {
+        isCurrentSortDateBased: false,
+        countOfItemsWithoutCurrentSortDate: 0,
+      };
+    }
+    
+    const currentSortDatePropertyKey = SORT_FIELD_TO_PROJECT_KEY[filters.sortField];
+    const currentSortDateFriendlyName = SORT_FIELD_TO_FRIENDLY_NAME[filters.sortField];
+    
+    const countOfItemsWithoutCurrentSortDate = projects.filter(
+      project => !project[currentSortDatePropertyKey]
+    ).length;
+    
+    return {
+      isCurrentSortDateBased,
+      currentSortDateFriendlyName,
+      currentSortDatePropertyKey,
+      countOfItemsWithoutCurrentSortDate,
+    };
+  }, [filters.sortField, projects]);
+  
+  // Available options
+  const companies = useMemo(() => 
+    userMetadata?.companies?.map(company => ({ 
+      label: company.name, 
+      value: company.id 
+    })) || [], 
+    [userMetadata?.companies]
+  );
+  
+  const artists = useMemo(() => 
+    userMetadata?.artists?.map(artist => ({ 
+      label: artist.name, 
+      value: artist.id 
+    })) || [], 
+    [userMetadata?.artists]
+  );
+  
+  const allTags = useMemo(() => userMetadata?.tags || [], [userMetadata?.tags]);
+  
+  const drillShapes = useMemo(() => ['round', 'square'], []);
+  
+  const isMetadataLoading = useMemo(() => Boolean(
+    userMetadata?.isLoading?.companies || 
+    userMetadata?.isLoading?.artists || 
+    userMetadata?.isLoading?.tags
+  ), [userMetadata?.isLoading]);
+  
+  // Context value
+  const contextValue: DashboardFiltersContextValue = useMemo(() => ({
+    filters,
+    projects,
+    isLoadingProjects,
+    errorProjects,
+    totalItems,
+    totalPages,
+    refetchProjects: refetchProjectsAsync,
+    updateStatus,
+    updateCompany,
+    updateArtist,
+    updateDrillShape,
+    updateYearFinished,
+    updateIncludeMiniKits,
+    updateSearchTerm,
+    updateTags,
+    toggleTag,
+    clearAllTags,
+    updateSort,
+    updatePage,
+    updatePageSize,
+    updateViewType,
+    resetAllFilters,
+    getActiveFilterCount,
+    getCountsForTabs,
+    dynamicSeparatorProps,
+    companies,
+    artists,
+    drillShapes,
+    allTags,
+    yearFinishedOptions,
+    searchInputRef,
+    isSearchPending,
+    isMetadataLoading,
+  }), [
+    filters,
+    projects,
+    isLoadingProjects,
+    errorProjects,
+    totalItems,
+    totalPages,
+    refetchProjectsAsync,
+    updateStatus,
+    updateCompany,
+    updateArtist,
+    updateDrillShape,
+    updateYearFinished,
+    updateIncludeMiniKits,
+    updateSearchTerm,
+    updateTags,
+    toggleTag,
+    clearAllTags,
+    updateSort,
+    updatePage,
+    updatePageSize,
+    updateViewType,
+    resetAllFilters,
+    getActiveFilterCount,
+    getCountsForTabs,
+    dynamicSeparatorProps,
+    companies,
+    artists,
+    drillShapes,
+    allTags,
+    yearFinishedOptions,
+    searchInputRef,
+    isSearchPending,
+    isMetadataLoading,
+  ]);
+  
+  return (
+    <DashboardFiltersContext.Provider value={contextValue}>
+      {children}
+    </DashboardFiltersContext.Provider>
+  );
+};
 
-    const contextValue = useMemo(
-      (): DashboardFiltersContextValue => ({
-        projects: rawProjects, // Data from server
-        isLoadingProjects,
-        errorProjects,
-        refetchProjects: refetchProjectsAsync,
-        totalItems,
-        totalPages,
-
-        // Filter states
-        activeStatus,
-        selectedCompany,
-        selectedArtist,
-        selectedDrillShape,
-        selectedYearFinished,
-        includeMiniKits,
-        searchTerm,
-        selectedTags,
-        isSearchPending, // OG-91: Add pending state
-        sortField,
-        sortDirection,
-        currentPage,
-        pageSize,
-        viewType,
-
-        // Metadata
-        companies: companiesOptions,
-        artists: artistsOptions,
-        drillShapes,
-        allTags,
-        yearFinishedOptions,
-
-        // Actions
-        applyStatusFilter,
-        applyCompanyFilter,
-        applyArtistFilter,
-        applyDrillShapeFilter,
-        applyYearFinishedFilter,
-        applyIncludeMiniKitsFilter,
-        applySearchTerm,
-        applyTagFilter,
-        clearTagFilters,
-        applySort,
-        setCurrentPage: handleSetCurrentPage,
-        setPageSize: handleSetPageSize,
-        applyViewType,
-        resetAllFilters,
-
-        // Utilities
-        getActiveFilterCount,
-        getCountsForTabs,
-        dynamicSeparatorProps,
-        searchInputRef,
-        processedAndPaginatedProjects, // Use this for rendering
-        isMetadataLoading:
-          userMetadata.isLoading.companies ||
-          userMetadata.isLoading.artists ||
-          userMetadata.isLoading.tags ||
-          isLoadingYears,
-      }),
-      [
-        // Core data
-        rawProjects,
-        isLoadingProjects,
-        errorProjects,
-        refetchProjectsAsync,
-        totalItems,
-        totalPages,
-        // Filter states
-        activeStatus,
-        selectedCompany,
-        selectedArtist,
-        selectedDrillShape,
-        selectedYearFinished,
-        includeMiniKits,
-        searchTerm,
-        selectedTags,
-        isSearchPending,
-        sortField,
-        sortDirection,
-        currentPage,
-        pageSize,
-        viewType,
-        // Metadata and derived data
-        companiesOptions,
-        artistsOptions,
-        userMetadata.isLoading.companies,
-        userMetadata.isLoading.artists,
-        userMetadata.isLoading.tags,
-        isLoadingYears,
-        drillShapes,
-        allTags,
-        yearFinishedOptions,
-        // Functions (stable due to useCallback)
-        applyStatusFilter,
-        applyCompanyFilter,
-        applyArtistFilter,
-        applyDrillShapeFilter,
-        applyYearFinishedFilter,
-        applyIncludeMiniKitsFilter,
-        applySearchTerm,
-        applyTagFilter,
-        clearTagFilters,
-        applySort,
-        handleSetCurrentPage,
-        handleSetPageSize,
-        applyViewType,
-        resetAllFilters,
-        getActiveFilterCount,
-        getCountsForTabs,
-        dynamicSeparatorProps,
-        processedAndPaginatedProjects,
-      ]
-    );
-
-    return (
-      <DashboardFiltersContext.Provider value={contextValue}>
-        {children}
-      </DashboardFiltersContext.Provider>
-    );
+// Hook to use the context
+export const useDashboardFilters = () => {
+  const context = useContext(DashboardFiltersContext);
+  if (context === undefined) {
+    throw new Error('useDashboardFilters must be used within a DashboardFiltersProvider');
   }
-);
+  return context;
+};

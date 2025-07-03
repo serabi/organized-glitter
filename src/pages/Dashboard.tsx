@@ -31,8 +31,7 @@ import DashboardFilterSection from '@/components/dashboard/DashboardFilterSectio
 import ProjectsSection from '@/components/dashboard/ProjectsSection';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/hooks/useAuth';
-import { DashboardFiltersProvider } from '@/contexts/DashboardFiltersContext';
-import { useDashboardFiltersContext } from '@/hooks/useDashboardFiltersContext';
+import { DashboardFiltersProvider, useDashboardFilters } from '@/contexts/DashboardFiltersContext';
 import { NavigationContext } from '@/hooks/useNavigateToProject';
 import { createLogger } from '@/utils/secureLogger';
 import { useToast } from '@/hooks/use-toast';
@@ -62,7 +61,7 @@ const DashboardInternal: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { errorProjects } = useDashboardFiltersContext();
+  const { errorProjects } = useDashboardFilters();
   const { setRecentlyEditedProjectId } = useRecentlyEdited();
 
   // Check for edit return state in location

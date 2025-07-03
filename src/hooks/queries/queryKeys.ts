@@ -121,4 +121,10 @@ export const queryKeys = {
     overview: (userId: string) => [...queryKeys.stats.all, 'overview', userId] as const,
     analytics: (userId: string) => [...queryKeys.stats.all, 'analytics', userId] as const,
   },
+
+  // Dashboard filter state keys (for optimistic updates)
+  dashboardFilters: {
+    all: ['dashboardFilters'] as const,
+    state: (userId: string) => [...queryKeys.dashboardFilters.all, 'state', userId] as const,
+  },
 } as const;

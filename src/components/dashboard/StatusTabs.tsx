@@ -1,11 +1,12 @@
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectFilterStatus } from '@/types/project';
-import { useDashboardFiltersContext } from '@/hooks/useDashboardFiltersContext';
+import { useDashboardFilters } from '@/contexts/DashboardFiltersContext';
 
 const StatusTabsComponent = () => {
   // Removed unused props
-  const { getCountsForTabs, activeStatus, applyStatusFilter } = useDashboardFiltersContext();
+  const { getCountsForTabs, filters, updateStatus } = useDashboardFilters();
+  const activeStatus = filters.activeStatus;
   const counts = getCountsForTabs();
 
   return (
@@ -13,7 +14,7 @@ const StatusTabsComponent = () => {
       value={activeStatus}
       defaultValue={activeStatus}
       className="w-full"
-      onValueChange={value => applyStatusFilter(value as ProjectFilterStatus)} // Use context action
+      onValueChange={value => updateStatus(value as ProjectFilterStatus)}
     >
       <TabsList className="grid h-auto grid-cols-2 gap-2 md:grid-cols-4 lg:grid-cols-8">
         <TabsTrigger value="all" className="flex items-center gap-2">
