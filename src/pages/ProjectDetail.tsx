@@ -1,3 +1,35 @@
+/**
+ * @fileoverview Project Detail Page Component
+ * 
+ * Main page component for displaying individual project details. Handles authentication,
+ * navigation state management, and project data fetching with comprehensive error handling.
+ * Integrates with the simplified navigation system for smooth user experience.
+ * 
+ * Key Features:
+ * - URL parameter-based project identification
+ * - Authentication state verification
+ * - Optimistic navigation data handling
+ * - Comprehensive error boundary protection
+ * - Mobile-responsive layout integration
+ * - Navigation context preservation for edit workflows
+ * 
+ * Navigation Integration:
+ * - Handles navigation state from dashboard
+ * - Preserves context for edit page transitions
+ * - Supports optimistic navigation with cached data
+ * - Back navigation with position restoration
+ * 
+ * Error Handling:
+ * - Project not found scenarios
+ * - Authentication failures
+ * - Network and loading errors
+ * - Graceful degradation with user feedback
+ * 
+ * @author serabi
+ * @since 2025-07-03
+ * @version 1.0.0 - Simplified navigation integration
+ */
+
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -16,10 +48,20 @@ import { ProjectContentErrorBoundary } from '@/components/error/ComponentErrorBo
 const logger = createLogger('ProjectDetail');
 
 /**
- * ProjectDetail - Project detail page
- *
- * This component uses the project service layer for reliable data fetching.
- * Enhanced with better error handling and auth state tracking
+ * ProjectDetail Component
+ * 
+ * Main component for rendering individual project detail pages. Orchestrates
+ * authentication checks, project data fetching, navigation state handling,
+ * and error boundaries for a robust user experience.
+ * 
+ * Features:
+ * - Automatic authentication verification with redirects
+ * - Project data fetching with React Query integration
+ * - Navigation state preservation for edit workflows
+ * - Comprehensive error handling and loading states
+ * - Mobile-responsive layout integration
+ * 
+ * @returns JSX.Element The complete project detail page
  */
 const ProjectDetail = () => {
   logger.debug('ProjectDetail component mounting');

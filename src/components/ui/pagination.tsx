@@ -1,3 +1,36 @@
+/**
+ * @fileoverview Pagination UI Components (shadcn/ui)
+ * 
+ * A comprehensive set of pagination components built on top of shadcn/ui design system.
+ * Provides accessible navigation controls with proper ARIA labels and keyboard support.
+ * Components can render as either buttons or anchor links depending on usage.
+ * 
+ * Key Features:
+ * - Flexible rendering (button or anchor based on props)
+ * - Full accessibility with ARIA labels and current page indicators
+ * - Consistent styling with shadcn/ui button variants
+ * - Responsive design with appropriate sizing
+ * - Screen reader support with proper semantic markup
+ * 
+ * Components:
+ * - Pagination: Main navigation container
+ * - PaginationContent: List container for pagination items
+ * - PaginationItem: Individual pagination item wrapper
+ * - PaginationLink: Generic clickable pagination element
+ * - PaginationPrevious: Previous page navigation
+ * - PaginationNext: Next page navigation
+ * - PaginationEllipsis: Visual indicator for omitted pages
+ * 
+ * Usage Examples:
+ * - Button mode: Pass onClick handler for SPA navigation
+ * - Link mode: Pass href for traditional page navigation
+ * - Active state: Use isActive prop for current page highlighting
+ * 
+ * @author serabi
+ * @since 2025-07-03
+ * @version 1.0.0 - Enhanced shadcn/ui pagination components
+ */
+
 import * as React from 'react';
 import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
 

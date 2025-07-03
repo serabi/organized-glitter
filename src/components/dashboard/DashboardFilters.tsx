@@ -1,3 +1,31 @@
+/**
+ * @fileoverview Main Dashboard Filters Component
+ * 
+ * This component provides a comprehensive filtering interface for the dashboard projects view.
+ * It includes search, multiple filter dropdowns, view toggles, sorting controls, and a reset
+ * option. All state management is handled through the DashboardFiltersContext.
+ * 
+ * Key Features:
+ * - Real-time search with debounced input
+ * - Company, artist, drill shape, tag, and year filters
+ * - Include/exclude mini kits toggle
+ * - Grid/list view toggle
+ * - Dynamic sorting with field-specific direction labels
+ * - Active filter count badge
+ * - Reset all filters functionality
+ * - Responsive design with sticky positioning
+ * 
+ * Filter Behavior:
+ * - All filters are applied server-side for performance
+ * - Tag filtering supports single selection via dropdown
+ * - Sort direction labels change based on selected field
+ * - Filter state persists to database on navigation
+ * 
+ * @author serabi
+ * @since 2025-07-03
+ * @version 1.0.0 - Context-based filtering system
+ */
+
 import React, { useMemo } from 'react';
 import SearchProjects from '@/components/dashboard/SearchProjects';
 import FilterDropdown from '@/components/dashboard/FilterDropdown';
