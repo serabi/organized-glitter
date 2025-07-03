@@ -1,33 +1,50 @@
 /**
- * @fileoverview Dashboard filters context with database-only state management
+ * @fileoverview Dashboard filters context with optimized state management
  * 
  * This context manages all dashboard filtering, sorting, and pagination state
  * with comprehensive React Query integration and immediate database persistence.
- * Uses database as the single source of truth for all filter state.
+ * Uses database as the single source of truth for all filter state with
+ * architectural optimizations to prevent infinite loops and improve performance.
  * 
  * Key Features:
  * - Server-side filtering, sorting, and pagination
  * - Immediate auto-save of filter state to database
  * - React Query optimization with deferred values
- * - Database-first state management (no URL synchronization)
- * - Navigation context preservation for project detail navigation
+ * - Database-first state management with URL parameter override support
+ * - Two-effect architecture for optimal performance
+ * 
+ * Architectural Design:
+ * - Split initialization and URL handling into separate focused effects
+ * - Run-once initialization logic using useRef to prevent infinite loops
+ * - Direct database access eliminates redundant useNavigationFallback dependency
+ * - Clear separation of concerns between database restoration and URL parameters
+ * - Eliminated circular dependencies that caused performance issues
  * 
  * Database State Management:
  * - Automatically saves current filter/sort state to PocketBase immediately
- * - Loads saved filter state on component mount
+ * - One-time initialization loads saved filter state on component mount
+ * - URL parameters take precedence over saved database filters
  * - Enables reliable navigation arrows and state preservation
  * - Single source of truth eliminates race conditions
  * 
  * Performance Optimizations:
+ * - Two focused useEffect hooks prevent infinite loops
  * - Deferred search values for non-blocking UI
  * - Memoized filter options and computed values
  * - Server-side processing reduces client-side computation
  * - React Query caching with smart invalidation
  * - Immediate saves prevent state loss
+ * - Eliminated redundant hook calls and circular dependencies
+ * 
+ * URL Parameter Support:
+ * - Supports navigation from overview, companies, tags, and artists pages
+ * - URL parameters automatically override database filters
+ * - Clean URL experience (parameters cleared after application)
+ * - Preserves all existing navigation functionality
  * 
  * @author serabi
  * @since 2025-07-02
- * @version 2.0.0 - Database-only implementation
+ * @version 3.0.0 - Optimized two-effect architecture, eliminated infinite loops
  */
 
 import React, {
@@ -315,10 +332,22 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
      * This ensures all filter changes are persisted instantly for reliable state management
      */
     const saveCurrentStateToDatabase = useCallback(() => {
+      const logger = createLogger('DashboardFiltersContext-Save');
+      
       if (!userId || isRestoringFromDatabase) {
         // Don't save during restoration to prevent infinite loops or if no user is logged in
+        logger.info('⏭️ Skipping database save', {
+          reason: !userId ? 'No user ID' : 'Currently restoring from database',
+          userId: !!userId,
+          isRestoringFromDatabase
+        });
         return;
       }
+
+      logger.info('🔄 Initiating database save for filter state', {
+        userId,
+        timestamp: Date.now()
+      });
 
       // Use memoized navigation context to prevent unnecessary saves
       // Update timestamp for current save operation
@@ -354,7 +383,7 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
         setCurrentPage(1); // Reset to first page on filter change
         
         // Immediate database save for reliable state persistence
-        setTimeout(saveCurrentStateToDatabase, 0);
+        saveCurrentStateToDatabase();
       },
       [saveCurrentStateToDatabase]
     );
@@ -369,7 +398,7 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       setCurrentPage(1);
       
       // Immediate database save for reliable state persistence
-      setTimeout(saveCurrentStateToDatabase, 0);
+      saveCurrentStateToDatabase();
     }, [saveCurrentStateToDatabase]);
 
     /**
@@ -382,7 +411,7 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       setCurrentPage(1);
       
       // Immediate database save for reliable state persistence
-      setTimeout(saveCurrentStateToDatabase, 0);
+      saveCurrentStateToDatabase();
     }, [saveCurrentStateToDatabase]);
 
     /**
@@ -395,7 +424,7 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       setCurrentPage(1);
       
       // Immediate database save for reliable state persistence
-      setTimeout(saveCurrentStateToDatabase, 0);
+      saveCurrentStateToDatabase();
     }, [saveCurrentStateToDatabase]);
 
     /**
@@ -408,7 +437,7 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       setCurrentPage(1);
       
       // Immediate database save for reliable state persistence
-      setTimeout(saveCurrentStateToDatabase, 0);
+      saveCurrentStateToDatabase();
     }, [saveCurrentStateToDatabase]);
 
     /**
@@ -420,7 +449,7 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       setCurrentPage(1);
       
       // Immediate database save for reliable state persistence
-      setTimeout(saveCurrentStateToDatabase, 0);
+      saveCurrentStateToDatabase();
     }, [saveCurrentStateToDatabase]);
 
     /**
@@ -432,7 +461,7 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       setCurrentPage(1); // Reset to first page since this now triggers server-side filtering
       
       // Immediate database save for reliable state persistence
-      setTimeout(saveCurrentStateToDatabase, 0);
+      saveCurrentStateToDatabase();
     }, [saveCurrentStateToDatabase]);
 
     /**
@@ -446,7 +475,7 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       setCurrentPage(1); // Reset to first page since this now triggers server-side filtering
       
       // Immediate database save for reliable state persistence
-      setTimeout(saveCurrentStateToDatabase, 0);
+      saveCurrentStateToDatabase();
     }, [saveCurrentStateToDatabase]);
 
     /**
@@ -456,7 +485,7 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       setSelectedTags(EMPTY_TAGS_ARRAY);
       
       // Immediate database save for reliable state persistence
-      setTimeout(saveCurrentStateToDatabase, 0);
+      saveCurrentStateToDatabase();
     }, [saveCurrentStateToDatabase]);
 
     /**
@@ -471,7 +500,7 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
         setCurrentPage(1); // Reset to first page on sort change
         
         // Immediate database save for reliable state persistence
-        setTimeout(saveCurrentStateToDatabase, 0);
+        saveCurrentStateToDatabase();
       },
       [saveCurrentStateToDatabase]
     );
@@ -484,7 +513,7 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       setCurrentPage(page);
       
       // Immediate database save for reliable state persistence
-      setTimeout(saveCurrentStateToDatabase, 0);
+      saveCurrentStateToDatabase();
     }, [saveCurrentStateToDatabase]);
 
     /**
@@ -496,7 +525,7 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       setCurrentPage(1); // Reset to first page on page size change
       
       // Immediate database save for reliable state persistence
-      setTimeout(saveCurrentStateToDatabase, 0);
+      saveCurrentStateToDatabase();
     }, [saveCurrentStateToDatabase]);
 
     const applyViewType = useCallback((type: ViewType) => {
@@ -526,7 +555,7 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       
       // Immediate database save for reliable state persistence (unless skipped)
       if (!skipDatabaseSave) {
-        setTimeout(saveCurrentStateToDatabase, 0);
+        saveCurrentStateToDatabase();
       }
     }, [saveCurrentStateToDatabase]);
 
@@ -767,7 +796,7 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
               pageSize: record.navigation_context.pageSize
             });
             
-            const savedFilters = record.navigation_context;
+            const savedFilters = record.navigation_context as any; // Type cast needed for database record
             
             // Apply saved filter state (type-safe conversions)
             setActiveStatus((savedFilters.filters.status as ProjectFilterStatus) || 'all');
@@ -847,7 +876,7 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
         setIsRestoringFromDatabase(false);
         
         // Save the new filter state to database
-        setTimeout(saveCurrentStateToDatabase, 0);
+        saveCurrentStateToDatabase();
         
         // Clear URL parameters for clean browsing experience
         navigate(location.pathname, { replace: true });

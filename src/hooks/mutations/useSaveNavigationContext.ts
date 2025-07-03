@@ -39,7 +39,7 @@ const saveNavigationContext = async ({
     throw new Error('Navigation context is required');
   }
 
-  logger.debug(`Saving navigation context for user ${userId}`);
+  logger.info(`💾 Saving navigation context for user ${userId}`);
   const startTime = performance.now();
 
   try {
@@ -60,18 +60,18 @@ const saveNavigationContext = async ({
       await pb.collection('user_dashboard_settings').update(record.id, {
         navigation_context: navigationContext,
       });
-      logger.debug(`Updated existing navigation context for user ${userId}`);
+      logger.info(`✅ Updated existing navigation context for user ${userId}`);
     } else {
       // Create new record
       await pb.collection('user_dashboard_settings').create({
         user: userId,
         navigation_context: navigationContext,
       });
-      logger.debug(`Created new navigation context for user ${userId}`);
+      logger.info(`✅ Created new navigation context for user ${userId}`);
     }
 
     const endTime = performance.now();
-    logger.debug(`Navigation context save completed in ${Math.round(endTime - startTime)}ms`);
+    logger.info(`✅ Navigation context save completed in ${Math.round(endTime - startTime)}ms`);
   } catch (error) {
     logger.error('Error saving navigation context:', error);
     throw error;
@@ -126,14 +126,20 @@ export const useSaveNavigationContext = () => {
         queryKey: queryKeys.projects.navigationContext(userId),
       });
       
-      logger.debug(`Successfully saved and invalidated navigation context for user ${userId}`);
+      logger.info(`✅ Successfully saved and invalidated navigation context for user ${userId}`);
     },
     
     onError: (error, variables) => {
       const { userId } = variables;
       
       // Log error but don't throw - auto-save failures shouldn't break the UI
-      logger.error(`Failed to save navigation context for user ${userId}:`, error);
+      logger.error(`❌ Failed to save navigation context for user ${userId}:`, error);
+      logger.error('Save failure details:', {
+        userId,
+        errorMessage: error?.message,
+        errorStatus: error?.status,
+        timestamp: Date.now()
+      });
       
       // Could add toast notification here if desired
       // toast.error('Failed to save dashboard preferences');
