@@ -1,5 +1,30 @@
+/**
+ * @fileoverview Dashboard page with database-only state management
+ * 
+ * Main dashboard page that displays user projects with comprehensive filtering,
+ * sorting, and search capabilities. Uses database as the single source of truth
+ * for all filter state, eliminating URL parameter synchronization complexity.
+ * 
+ * Key Features:
+ * - Database-first filter state management (no URL dependencies)
+ * - Automatic state restoration from database on page load
+ * - Smooth position restoration after project editing
+ * - Recently edited project visual highlighting
+ * - Mobile-responsive layout with adaptive filter sections
+ * 
+ * State Management:
+ * - All filter/sort/search state handled by DashboardFiltersContext
+ * - Immediate auto-save to database prevents state loss
+ * - Navigation context preserved for project detail arrows
+ * - Edit return handling with scroll position restoration
+ * 
+ * @author serabi
+ * @since 2025-07-02
+ * @version 3.0.0 - Database-only implementation (simplified)
+ */
+
 import React, { useEffect, useState, createContext, useContext } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import DashboardFilterSection from '@/components/dashboard/DashboardFilterSection';
@@ -9,7 +34,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { DashboardFiltersProvider } from '@/contexts/DashboardFiltersContext';
 import { useDashboardFiltersContext } from '@/hooks/useDashboardFiltersContext';
 import { NavigationContext } from '@/hooks/useNavigateToProject';
-import { useNavigationFallback } from '@/hooks/queries/useNavigationFallback';
 import { createLogger } from '@/utils/secureLogger';
 import { useToast } from '@/hooks/use-toast';
 
@@ -37,16 +61,9 @@ const DashboardInternal: React.FC = () => {
   const isMobile = useIsMobile();
   const location = useLocation();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { errorProjects } = useDashboardFiltersContext();
   const { setRecentlyEditedProjectId } = useRecentlyEdited();
-  const { user } = useAuth();
-  
-  // Get fallback navigation context from database for filter restoration
-  const { navigationContext: fallbackContext, isLoadingFallback } = useNavigationFallback({ 
-    userId: user?.id 
-  });
 
   // Check for edit return state in location
   const editReturnState = location.state as {
@@ -58,75 +75,8 @@ const DashboardInternal: React.FC = () => {
     preservePosition?: boolean;
   } | null;
 
-  // Check if we need to restore filters from database (no router state)
-  useEffect(() => {
-    // Only apply fallback if:
-    // 1. No edit return state (not returning from project edit)
-    // 2. No search params in URL (fresh dashboard load)
-    // 3. We have fallback context from database
-    // 4. Not currently loading fallback data
-    const hasEditReturnState = location.state?.fromEdit;
-    const hasUrlParams = searchParams.toString().length > 0;
-    
-    if (!hasEditReturnState && !hasUrlParams && fallbackContext && !isLoadingFallback) {
-      logger.info('🔄 Restoring dashboard filters from database fallback');
-      
-      try {
-        const newSearchParams = new URLSearchParams();
-        
-        // Apply saved filter state
-        if (fallbackContext.filters.status !== 'all') {
-          newSearchParams.set('status', fallbackContext.filters.status);
-        }
-        if (fallbackContext.filters.company !== 'all') {
-          newSearchParams.set('company', fallbackContext.filters.company);
-        }
-        if (fallbackContext.filters.artist !== 'all') {
-          newSearchParams.set('artist', fallbackContext.filters.artist);
-        }
-        if (fallbackContext.filters.drillShape !== 'all') {
-          newSearchParams.set('drillShape', fallbackContext.filters.drillShape);
-        }
-        if (fallbackContext.filters.yearFinished !== 'all') {
-          newSearchParams.set('yearFinished', fallbackContext.filters.yearFinished);
-        }
-        if (!fallbackContext.filters.includeMiniKits) {
-          newSearchParams.set('includeMiniKits', 'false');
-        }
-        if (fallbackContext.filters.searchTerm) {
-          newSearchParams.set('search', fallbackContext.filters.searchTerm);
-        }
-        if (fallbackContext.filters.selectedTags?.length > 0) {
-          newSearchParams.set('tags', fallbackContext.filters.selectedTags.join(','));
-        }
-        
-        // Apply saved sort state
-        if (fallbackContext.sortField !== 'last_updated') {
-          newSearchParams.set('sort', fallbackContext.sortField);
-        }
-        if (fallbackContext.sortDirection !== 'desc') {
-          newSearchParams.set('sortDirection', fallbackContext.sortDirection);
-        }
-        
-        // Apply saved pagination
-        if (fallbackContext.currentPage !== 1) {
-          newSearchParams.set('page', fallbackContext.currentPage.toString());
-        }
-        if (fallbackContext.pageSize !== 25) {
-          newSearchParams.set('pageSize', fallbackContext.pageSize.toString());
-        }
-        
-        // Update URL to trigger filter restoration
-        setSearchParams(newSearchParams, { replace: true });
-        
-        logger.info('✅ Dashboard filters restored from database');
-      } catch (error) {
-        logger.error('❌ Error restoring dashboard filters from database:', error);
-      }
-    }
-  }, [location.state, searchParams, fallbackContext, isLoadingFallback, setSearchParams]);
 
-  // Handle position restoration after edit return
+  // Handle position restoration after edit return (database-only approach)
   useEffect(() => {
     if (editReturnState?.fromEdit && editReturnState?.preservePosition && editReturnState?.navigationContext) {
       logger.info('🔄 Processing edit return with position restoration');
@@ -134,62 +84,15 @@ const DashboardInternal: React.FC = () => {
       const { navigationContext } = editReturnState;
       
       try {
-        // 1. Restore filters and pagination via URL parameters
-        const newSearchParams = new URLSearchParams();
-        
-        // Restore filter state
-        if (navigationContext.filters.status !== 'all') {
-          newSearchParams.set('status', navigationContext.filters.status);
-        }
-        if (navigationContext.filters.company !== 'all') {
-          newSearchParams.set('company', navigationContext.filters.company);
-        }
-        if (navigationContext.filters.artist !== 'all') {
-          newSearchParams.set('artist', navigationContext.filters.artist);
-        }
-        if (navigationContext.filters.drillShape !== 'all') {
-          newSearchParams.set('drillShape', navigationContext.filters.drillShape);
-        }
-        if (navigationContext.filters.yearFinished !== 'all') {
-          newSearchParams.set('yearFinished', navigationContext.filters.yearFinished);
-        }
-        if (!navigationContext.filters.includeMiniKits) {
-          newSearchParams.set('includeMiniKits', 'false');
-        }
-        if (navigationContext.filters.searchTerm) {
-          newSearchParams.set('search', navigationContext.filters.searchTerm);
-        }
-        if (navigationContext.filters.selectedTags?.length > 0) {
-          newSearchParams.set('tags', navigationContext.filters.selectedTags.join(','));
-        }
-        
-        // Restore sort state
-        if (navigationContext.sortField !== 'last_updated') {
-          newSearchParams.set('sort', navigationContext.sortField);
-        }
-        if (navigationContext.sortDirection !== 'desc') {
-          newSearchParams.set('sortDirection', navigationContext.sortDirection);
-        }
-        
-        // Restore pagination
-        if (navigationContext.currentPage !== 1) {
-          newSearchParams.set('page', navigationContext.currentPage.toString());
-        }
-        if (navigationContext.pageSize !== 25) {
-          newSearchParams.set('pageSize', navigationContext.pageSize.toString());
-        }
-        
-        // Update URL parameters to trigger filter restoration
-        setSearchParams(newSearchParams, { replace: true });
-        
-        // 2. Schedule scroll position restoration after React renders
+        // 1. Schedule scroll position restoration after React renders
+        // Filter state restoration is handled automatically by DashboardFiltersContext from database
         const scrollPosition = navigationContext.preservationContext?.scrollPosition || 0;
         setTimeout(() => {
           window.scrollTo({ top: scrollPosition, behavior: 'smooth' });
           logger.debug('Scroll position restored to:', scrollPosition);
         }, 100);
         
-        // 3. Mark recently edited project for visual highlighting
+        // 2. Mark recently edited project for visual highlighting
         if (editReturnState.editedProjectId) {
           setRecentlyEditedProjectId(editReturnState.editedProjectId);
           
@@ -199,14 +102,14 @@ const DashboardInternal: React.FC = () => {
           }, 3000);
         }
         
-        // 4. Show user feedback
+        // 3. Show user feedback
         toast({
           title: 'Position Restored',
           description: 'Returned to your previous location after editing.',
         });
         
-        // 5. Clear location state to prevent re-triggering
-        navigate(location.pathname + location.search, { 
+        // 4. Clear location state to prevent re-triggering
+        navigate(location.pathname, { 
           replace: true, 
           state: null 
         });
@@ -221,7 +124,7 @@ const DashboardInternal: React.FC = () => {
         });
       }
     }
-  }, [editReturnState, navigate, location.pathname, location.search, setSearchParams, toast]);
+  }, [editReturnState, navigate, location.pathname, toast, setRecentlyEditedProjectId]);
 
   return (
     <MainLayout>

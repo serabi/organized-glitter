@@ -1,31 +1,33 @@
 /**
- * @fileoverview Dashboard filters context with navigation auto-save
+ * @fileoverview Dashboard filters context with database-only state management
  * 
  * This context manages all dashboard filtering, sorting, and pagination state
- * with comprehensive React Query integration and automatic navigation context
- * persistence to the database.
+ * with comprehensive React Query integration and immediate database persistence.
+ * Uses database as the single source of truth for all filter state.
  * 
  * Key Features:
  * - Server-side filtering, sorting, and pagination
- * - Real-time auto-save of filter state to database
+ * - Immediate auto-save of filter state to database
  * - React Query optimization with deferred values
- * - URL synchronization for deep linking
- * - Navigation context preservation for direct URL access
+ * - Database-first state management (no URL synchronization)
+ * - Navigation context preservation for project detail navigation
  * 
- * Navigation Context Auto-Save:
- * - Automatically saves current filter/sort state to PocketBase
- * - 1-second debounce prevents excessive database writes
- * - Enables navigation arrows to work from bookmarked URLs
- * - Fallback system for when React Router state is unavailable
+ * Database State Management:
+ * - Automatically saves current filter/sort state to PocketBase immediately
+ * - Loads saved filter state on component mount
+ * - Enables reliable navigation arrows and state preservation
+ * - Single source of truth eliminates race conditions
  * 
  * Performance Optimizations:
  * - Deferred search values for non-blocking UI
  * - Memoized filter options and computed values
  * - Server-side processing reduces client-side computation
  * - React Query caching with smart invalidation
+ * - Immediate saves prevent state loss
  * 
  * @author serabi
  * @since 2025-07-02
+ * @version 2.0.0 - Database-only implementation
  */
 
 import React, {
@@ -38,11 +40,8 @@ import React, {
   useDeferredValue,
   useEffect,
 } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Project, ProjectFilterStatus, Tag } from '@/types/project'; // Import ProjectFilterStatus from here
+import { Project, ProjectFilterStatus, Tag } from '@/types/project';
 import { useMetadata } from '@/contexts/MetadataContext';
-// import useDashboardFilters from '@/hooks/useDashboardFilters'; // This will be re-evaluated
-import useUrlFilterSync from '@/hooks/dashboard/useUrlFilterSync';
 import { useProjects, ServerFilters } from '@/hooks/queries/useProjects';
 import {
   DashboardValidSortField,
@@ -54,6 +53,7 @@ import useDebounce from '@/hooks/useDebounce'; // For search term
 import { useDashboardStats } from '@/hooks/queries/useDashboardStats';
 import { useAvailableYearsAsStrings } from '@/hooks/queries/useAvailableYears';
 import { useSaveNavigationContext } from '@/hooks/mutations/useSaveNavigationContext';
+import { useNavigationFallback } from '@/hooks/queries/useNavigationFallback';
 
 export type SortDirectionType = 'asc' | 'desc';
 
@@ -165,7 +165,6 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
     const userMetadata = useMetadata();
     // const { toast } = useToast(); // Removed as it's unused
     const userId = useMemo(() => user?.id, [user?.id]);
-    const [, setSearchParams] = useSearchParams();
 
     // Server-side filter states
     const [activeStatus, setActiveStatus] = useState<ProjectFilterStatus>('all');
@@ -254,14 +253,32 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       await refetchProjects();
     }, [refetchProjects]);
 
-    // Auto-save navigation context when filters change (debounced)
-    // This creates a database fallback for direct URL access scenarios
-    useEffect(() => {
-      // Only save if we have a user and this isn't the initial render
-      if (!userId) return;
-      
-      // Create a simplified navigation context with just the essential data
-      // This will be used as fallback when users access project URLs directly
+    // Note: Auto-save is now handled immediately in each filter action function
+    // This eliminates debounce delays and provides instant state persistence
+
+    // Debug logging removed for performance
+
+    // Note: Refetch is handled automatically by React Query when dependencies change
+    // No manual refetch useEffect needed since React Query already handles dependency changes
+
+    // Load saved filter state from database on component mount
+    const { navigationContext: savedFilters, isLoading: isLoadingFallback } = useNavigationFallback({ 
+      userId: user?.id 
+    });
+
+    // Apply saved filters on initial load (only once)
+    const [hasInitializedFromDatabase, setHasInitializedFromDatabase] = useState(false);
+
+    /**
+     * Immediately saves current filter state to database
+     * This ensures all filter changes are persisted instantly for reliable state management
+     */
+    const saveCurrentStateToDatabase = useCallback(() => {
+      if (!userId || !hasInitializedFromDatabase) {
+        // Don't save during initial database load to prevent overriding saved state
+        return;
+      }
+
       const navigationContext = {
         filters: {
           status: activeStatus,
@@ -282,19 +299,15 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
           timestamp: Date.now(),
         },
       };
-      
-      // Debounce the save operation to avoid excessive database writes
-      // 1-second delay prevents rapid-fire saves during filter adjustments
-      const timeoutId = setTimeout(() => {
-        saveNavigationContext.mutate({
-          userId,
-          navigationContext,
-        });
-      }, 1000); // 1 second debounce
 
-      return () => clearTimeout(timeoutId);
+      // Immediate save without debounce for reliable state persistence
+      saveNavigationContext.mutate({
+        userId,
+        navigationContext,
+      });
     }, [
       userId,
+      hasInitializedFromDatabase,
       activeStatus,
       selectedCompany,
       selectedArtist,
@@ -310,148 +323,169 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       saveNavigationContext,
     ]);
 
-    // Debug logging removed for performance
-
-    // Note: Refetch is handled automatically by React Query when dependencies change
-    // No manual refetch useEffect needed since React Query already handles dependency changes
-
     // --- Action Implementations ---
+    /**
+     * Applies status filter and immediately saves state to database
+     * @param status - The project status to filter by
+     */
     const applyStatusFilter = useCallback(
       (status: ProjectFilterStatus) => {
         setActiveStatus(status);
         setCurrentPage(1); // Reset to first page on filter change
-
-        // Update URL to reflect the new status filter using React Router
-        setSearchParams(params => {
-          if (status === 'all') {
-            params.delete('status');
-          } else {
-            params.set('status', status);
-          }
-          return params;
-        });
+        
+        // Immediate database save for reliable state persistence
+        setTimeout(saveCurrentStateToDatabase, 0);
       },
-      [setSearchParams]
+      [saveCurrentStateToDatabase]
     );
 
+    /**
+     * Applies company filter and immediately saves state to database
+     * @param company - The company ID to filter by or null for 'all'
+     */
     const applyCompanyFilter = useCallback((company: string | null) => {
       const normalizedCompany = company ?? 'all';
       setSelectedCompany(normalizedCompany);
       setCurrentPage(1);
+      
+      // Immediate database save for reliable state persistence
+      setTimeout(saveCurrentStateToDatabase, 0);
+    }, [saveCurrentStateToDatabase]);
 
-      // Update URL to reflect the new company filter using React Router
-      setSearchParams(params => {
-        if (normalizedCompany === 'all') {
-          params.delete('company');
-        } else {
-          params.set('company', normalizedCompany);
-        }
-        return params;
-      });
-    }, [setSearchParams]);
-
+    /**
+     * Applies artist filter and immediately saves state to database
+     * @param artist - The artist ID to filter by or null for 'all'
+     */
     const applyArtistFilter = useCallback((artist: string | null) => {
       const normalizedArtist = artist ?? 'all';
       setSelectedArtist(normalizedArtist);
       setCurrentPage(1);
+      
+      // Immediate database save for reliable state persistence
+      setTimeout(saveCurrentStateToDatabase, 0);
+    }, [saveCurrentStateToDatabase]);
 
-      // Update URL to reflect the new artist filter using React Router
-      setSearchParams(params => {
-        if (normalizedArtist === 'all') {
-          params.delete('artist');
-        } else {
-          params.set('artist', normalizedArtist);
-        }
-        return params;
-      });
-    }, [setSearchParams]);
-
+    /**
+     * Applies drill shape filter and immediately saves state to database
+     * @param shape - The drill shape to filter by or null for 'all'
+     */
     const applyDrillShapeFilter = useCallback((shape: string | null) => {
       const normalizedShape = shape ?? 'all';
       setSelectedDrillShape(normalizedShape);
       setCurrentPage(1);
+      
+      // Immediate database save for reliable state persistence
+      setTimeout(saveCurrentStateToDatabase, 0);
+    }, [saveCurrentStateToDatabase]);
 
-      // Update URL to reflect the new drill shape filter using React Router
-      setSearchParams(params => {
-        if (normalizedShape === 'all') {
-          params.delete('drillShape');
-        } else {
-          params.set('drillShape', normalizedShape);
-        }
-        return params;
-      });
-    }, [setSearchParams]);
-
+    /**
+     * Applies year finished filter and immediately saves state to database
+     * @param year - The year to filter by or null for 'all'
+     */
     const applyYearFinishedFilter = useCallback((year: string | null) => {
       const normalizedYear = year ?? 'all';
       setSelectedYearFinished(normalizedYear);
       setCurrentPage(1);
+      
+      // Immediate database save for reliable state persistence
+      setTimeout(saveCurrentStateToDatabase, 0);
+    }, [saveCurrentStateToDatabase]);
 
-      // Update URL to reflect the new year finished filter using React Router
-      setSearchParams(params => {
-        if (normalizedYear === 'all') {
-          params.delete('yearFinished');
-        } else {
-          params.set('yearFinished', normalizedYear);
-        }
-        return params;
-      });
-    }, [setSearchParams]);
-
+    /**
+     * Applies include mini kits filter and immediately saves state to database
+     * @param include - Whether to include mini kits in results
+     */
     const applyIncludeMiniKitsFilter = useCallback((include: boolean) => {
       setIncludeMiniKits(include);
       setCurrentPage(1);
+      
+      // Immediate database save for reliable state persistence
+      setTimeout(saveCurrentStateToDatabase, 0);
+    }, [saveCurrentStateToDatabase]);
 
-      // Update URL to reflect the new include mini kits filter using React Router
-      setSearchParams(params => {
-        if (include === true) {
-          // Default is true, so remove parameter when true
-          params.delete('includeMiniKits');
-        } else {
-          params.set('includeMiniKits', 'false');
-        }
-        return params;
-      });
-    }, [setSearchParams]);
-
+    /**
+     * Applies search term filter and immediately saves state to database
+     * @param term - The search term to filter by or null to clear
+     */
     const applySearchTerm = useCallback((term: string | null) => {
       setSearchTerm(term ?? '');
       setCurrentPage(1); // Reset to first page since this now triggers server-side filtering
-    }, []);
+      
+      // Immediate database save for reliable state persistence
+      setTimeout(saveCurrentStateToDatabase, 0);
+    }, [saveCurrentStateToDatabase]);
 
+    /**
+     * Toggles a tag filter on/off and immediately saves state to database
+     * @param tagId - The tag ID to toggle
+     */
     const applyTagFilter = useCallback((tagId: string) => {
       setSelectedTags(prevTags =>
         prevTags.includes(tagId) ? prevTags.filter(t => t !== tagId) : [...prevTags, tagId]
       );
       setCurrentPage(1); // Reset to first page since this now triggers server-side filtering
-    }, []);
+      
+      // Immediate database save for reliable state persistence
+      setTimeout(saveCurrentStateToDatabase, 0);
+    }, [saveCurrentStateToDatabase]);
 
+    /**
+     * Clears all tag filters and immediately saves state to database
+     */
     const clearTagFilters = useCallback(() => {
       setSelectedTags(EMPTY_TAGS_ARRAY);
-    }, []);
+      
+      // Immediate database save for reliable state persistence
+      setTimeout(saveCurrentStateToDatabase, 0);
+    }, [saveCurrentStateToDatabase]);
 
+    /**
+     * Applies sort settings and immediately saves state to database
+     * @param newSortField - The field to sort by
+     * @param newSortDirection - The sort direction (asc/desc)
+     */
     const applySort = useCallback(
       (newSortField: DashboardValidSortField, newSortDirection: SortDirectionType) => {
         setSortField(newSortField);
         setSortDirection(newSortDirection);
         setCurrentPage(1); // Reset to first page on sort change
+        
+        // Immediate database save for reliable state persistence
+        setTimeout(saveCurrentStateToDatabase, 0);
       },
-      []
+      [saveCurrentStateToDatabase]
     );
 
+    /**
+     * Sets current page and immediately saves state to database
+     * @param page - The page number to navigate to
+     */
     const handleSetCurrentPage = useCallback((page: number) => {
       setCurrentPage(page);
-    }, []);
+      
+      // Immediate database save for reliable state persistence
+      setTimeout(saveCurrentStateToDatabase, 0);
+    }, [saveCurrentStateToDatabase]);
 
+    /**
+     * Sets page size and immediately saves state to database
+     * @param newPageSize - The new page size
+     */
     const handleSetPageSize = useCallback((newPageSize: number) => {
       setPageSize(newPageSize);
       setCurrentPage(1); // Reset to first page on page size change
-    }, []);
+      
+      // Immediate database save for reliable state persistence
+      setTimeout(saveCurrentStateToDatabase, 0);
+    }, [saveCurrentStateToDatabase]);
 
     const applyViewType = useCallback((type: ViewType) => {
       setViewType(type);
     }, []);
 
+    /**
+     * Resets all filters to default values and immediately saves state to database
+     */
     const resetAllFilters = useCallback(() => {
       setActiveStatus('all');
       setSelectedCompany('all');
@@ -468,7 +502,10 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       if (searchInputRef.current) {
         searchInputRef.current.value = '';
       }
-    }, []);
+      
+      // Immediate database save for reliable state persistence
+      setTimeout(saveCurrentStateToDatabase, 0);
+    }, [saveCurrentStateToDatabase]);
 
     // --- Optimized: Server-Side Filtering ---
     // Since filtering is now server-side, we don't need client-side filtering
@@ -618,47 +655,26 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       [userMetadata.companies]
     );
 
-    // Simplified - React Query handles caching and deduplication, reducing need for complex memoization
-
-    useUrlFilterSync({
-      // Pass setters for server-side filters
-      setActiveStatus,
-      setSelectedCompany: applyCompanyFilter,
-      setSelectedArtist: applyArtistFilter,
-      setSelectedDrillShape: applyDrillShapeFilter,
-      setSelectedYearFinished: applyYearFinishedFilter,
-      setIncludeMiniKits: applyIncludeMiniKitsFilter,
-      // Pass setters for client-side filters
-      setSearchTerm: applySearchTerm,
-      setSelectedTags, // Pass direct setter for string[]
-      // Pass setters for sorting and pagination
-      setSortField,
-      setSortDirection,
-      setCurrentPage,
-      setPageSize,
-      // Pass current values for reading from URL
-      activeStatus,
-      selectedCompany,
-      selectedArtist,
-      selectedDrillShape,
-      selectedYearFinished,
-      includeMiniKits,
-      searchTerm,
-      selectedTags,
-      sortField,
-      sortDirection,
-      currentPage,
-      pageSize,
-      // Metadata and loading states
-      artists: artistsOptions,
-      companies: companiesOptions,
-      allTagsContext: allTags,
-      isMetadataLoading:
-        userMetadata.isLoading.companies ||
-        userMetadata.isLoading.artists ||
-        userMetadata.isLoading.tags,
-      isLoadingProjects,
-    });
+    // Apply saved filters on initial load (only once) 
+    useEffect(() => {
+      if (!hasInitializedFromDatabase && savedFilters && !isLoadingFallback && user?.id) {
+        // Apply saved filter state without triggering auto-save (type-safe conversions)
+        setActiveStatus((savedFilters.filters.status as ProjectFilterStatus) || 'all');
+        setSelectedCompany(savedFilters.filters.company || 'all');
+        setSelectedArtist(savedFilters.filters.artist || 'all');
+        setSelectedDrillShape(savedFilters.filters.drillShape || 'all');
+        setSelectedYearFinished(savedFilters.filters.yearFinished || 'all');
+        setIncludeMiniKits(savedFilters.filters.includeMiniKits ?? true);
+        setSearchTerm(savedFilters.filters.searchTerm || '');
+        setSelectedTags(savedFilters.filters.selectedTags || []);
+        setSortField((savedFilters.sortField as DashboardValidSortField) || 'last_updated');
+        setSortDirection((savedFilters.sortDirection as SortDirectionType) || 'desc');
+        setCurrentPage(savedFilters.currentPage || 1);
+        setPageSize(savedFilters.pageSize || 25);
+        
+        setHasInitializedFromDatabase(true);
+      }
+    }, [savedFilters, isLoadingFallback, user?.id, hasInitializedFromDatabase]);
 
     const contextValue = useMemo(
       (): DashboardFiltersContextValue => ({

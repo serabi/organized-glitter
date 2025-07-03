@@ -27,13 +27,10 @@ export interface AvailableYear {
 }
 
 /**
- * Raw project data with only date fields for year extraction
+ * Raw project data with only completion date field for year extraction
  */
 interface ProjectDateFields {
   date_completed?: string | null;
-  date_started?: string | null;
-  date_received?: string | null;
-  date_purchased?: string | null;
 }
 
 /**
@@ -86,12 +83,12 @@ const fetchAvailableYears = async (userId: string): Promise<AvailableYearsResult
   const startTime = performance.now();
 
   try {
-    // Ultra-lightweight query: only fetch date fields
+    // Ultra-lightweight query: only fetch completion date field
     // Uses PocketBase field selection for optimal performance
     const result = await pb.collection('projects').getFullList({
       filter: pb.filter('user = {:userId}', { userId }),
-      // Only fetch date fields - massive performance improvement
-      fields: 'date_completed,date_started,date_received,date_purchased',
+      // Only fetch completion date field to match "Year Finished" semantics
+      fields: 'date_completed',
       // Enable request deduplication
       requestKey: `available-years-${userId}`,
     });
@@ -99,43 +96,29 @@ const fetchAvailableYears = async (userId: string): Promise<AvailableYearsResult
     const endTime = performance.now();
     logger.debug(`Year query completed in ${Math.round(endTime - startTime)}ms - ${result.length} projects`);
 
-    // Process years with metadata
-    const yearMetadata = new Map<number, AvailableYear>();
+    // Process completion years only
+    const completionYears = new Set<number>();
 
     (result as ProjectDateFields[]).forEach(project => {
-      // Extract years from all date fields
+      // Extract year only from completion date - matches "Year Finished" semantics
       const completedYear = extractYear(project.date_completed);
-      const startedYear = extractYear(project.date_started);
-      const receivedYear = extractYear(project.date_received);
-      const purchasedYear = extractYear(project.date_purchased);
-
-      // Track all unique years
-      [completedYear, startedYear, receivedYear, purchasedYear].forEach(year => {
-        if (year !== null) {
-          const existing = yearMetadata.get(year) || {
-            year,
-            hasCompleted: false,
-            hasStarted: false,
-            hasReceived: false,
-            hasPurchased: false,
-          };
-
-          // Update metadata flags
-          if (year === completedYear) existing.hasCompleted = true;
-          if (year === startedYear) existing.hasStarted = true;
-          if (year === receivedYear) existing.hasReceived = true;
-          if (year === purchasedYear) existing.hasPurchased = true;
-
-          yearMetadata.set(year, existing);
-        }
-      });
+      
+      if (completedYear !== null) {
+        completionYears.add(completedYear);
+      }
     });
 
     // Convert to arrays and sort (most recent first)
-    const yearsWithMetadata = Array.from(yearMetadata.values())
-      .sort((a, b) => b.year - a.year);
+    const years = Array.from(completionYears).sort((a, b) => b - a);
     
-    const years = yearsWithMetadata.map(y => y.year);
+    // Create simplified metadata for completed years only
+    const yearsWithMetadata = years.map(year => ({
+      year,
+      hasCompleted: true,
+      hasStarted: false,
+      hasReceived: false,
+      hasPurchased: false,
+    }));
 
     logger.info(`Available years fetched: ${years.length} unique years found`);
 
