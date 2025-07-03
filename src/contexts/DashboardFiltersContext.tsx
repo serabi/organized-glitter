@@ -33,7 +33,7 @@ import { useMetadata } from '@/contexts/MetadataContext';
 import { useProjects, ServerFilters } from '@/hooks/queries/useProjects';
 import { useDashboardStats } from '@/hooks/queries/useDashboardStats';
 import { useAvailableYearsAsStrings } from '@/hooks/queries/useAvailableYears';
-import { useSaveNavigationContext } from '@/hooks/mutations/useSaveNavigationContext';
+import { useSaveNavigationContext, DashboardFilterContext } from '@/hooks/mutations/useSaveNavigationContext';
 import { createLogger } from '@/utils/secureLogger';
 import { useToast } from '@/hooks/use-toast';
 import { Project, ProjectFilterStatus, Tag } from '@/types/project';
@@ -45,6 +45,22 @@ import {
 } from '@/features/dashboard/dashboard.constants';
 
 const logger = createLogger('DashboardFilters');
+
+// Recently Edited Context (moved from Dashboard.tsx for proper context stability)
+interface RecentlyEditedContextValue {
+  recentlyEditedProjectId: string | null;
+  setRecentlyEditedProjectId: (id: string | null) => void;
+}
+
+const RecentlyEditedContext = createContext<RecentlyEditedContextValue | undefined>(undefined);
+
+export const useRecentlyEdited = () => {
+  const context = useContext(RecentlyEditedContext);
+  if (context === undefined) {
+    throw new Error('useRecentlyEdited must be used within a DashboardFiltersProvider');
+  }
+  return context;
+};
 
 // Types
 export type SortDirectionType = 'asc' | 'desc';
@@ -194,6 +210,9 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
   const saveNavigationContext = useSaveNavigationContext();
   const searchInputRef = useRef<HTMLInputElement>(null);
   
+  // Recently edited project state (moved from Dashboard for context stability)
+  const [recentlyEditedProjectId, setRecentlyEditedProjectId] = useState<string | null>(null);
+  
   // Filter state - always start with valid defaults
   const [filters, setFilters] = useState<FilterState>(() => {
     try {
@@ -296,7 +315,7 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       return;
     }
     
-    const navigationContext = {
+    const navigationContext: DashboardFilterContext = {
       filters: {
         status: currentFilters.activeStatus,
         company: currentFilters.selectedCompany,
@@ -683,9 +702,21 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
     isMetadataLoading,
   ]);
   
+  // Prevent children from rendering until provider is fully initialized
+  // This prevents context timing issues that cause "useRecentlyEdited must be used within a Provider" errors
+  if (!isInitialized || isMetadataLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
     <DashboardFiltersContext.Provider value={contextValue}>
-      {children}
+      <RecentlyEditedContext.Provider value={{ recentlyEditedProjectId, setRecentlyEditedProjectId }}>
+        {children}
+      </RecentlyEditedContext.Provider>
     </DashboardFiltersContext.Provider>
   );
 };

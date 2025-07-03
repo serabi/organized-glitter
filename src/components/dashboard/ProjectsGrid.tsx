@@ -6,7 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { useDashboardFilters } from '@/contexts/DashboardFiltersContext';
 import ProjectPagination from '@/components/ui/ProjectPagination';
 import { useNavigateToProject } from '@/hooks/useNavigateToProject';
-import { useRecentlyEdited } from '@/pages/Dashboard';
+import { useRecentlyEdited } from '@/contexts/DashboardFiltersContext';
 
 // Interface ProjectsGridProps removed as it's no longer needed.
 // All data is sourced from DashboardFiltersContext.

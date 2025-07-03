@@ -1,23 +1,17 @@
 /**
- * @fileoverview Project detail view component with database-backed navigation
+ * @fileoverview Project detail view component
  * 
  * This component displays comprehensive project information including:
  * - Project images and details
  * - Notable dates (purchased, received, started, completed)
  * - Project notes and progress tracking
- * - Navigation arrows with smart fallback system
+ * - Back to Dashboard navigation
  * 
  * Key features:
- * - Smart navigation context resolution (router state → database fallback)
  * - Mobile-responsive layout with optimized button placement
  * - Integrated progress notes with real-time updates
  * - Archive and delete operations with confirmation dialogs
- * 
- * Navigation Context Resolution:
- * - Uses useUnifiedNavigationContext for integrated navigation and sibling analysis
- * - Supports both normal dashboard navigation and direct URL access
- * - Database fallback ensures navigation arrows work from bookmarked URLs
- * - Single hook provides both context resolution and sibling navigation data
+ * - Simple navigation back to dashboard
  * 
  * @author serabi
  * @since 2025-07-02
@@ -75,24 +69,14 @@ interface ProjectDetailViewProps {
  * Project detail view component with comprehensive project information display
  * 
  * This component provides a complete view of a project including images, details,
- * notable dates, notes, and progress tracking. It features a sophisticated 
- * navigation system with database-backed fallback for direct URL access.
+ * notable dates, notes, and progress tracking. It features simple navigation
+ * back to the dashboard.
  * 
  * Key Features:
- * - Smart navigation context resolution (router → database → null)
  * - Mobile-responsive layout with optimized controls
  * - Real-time progress notes integration
  * - Archive/delete operations with confirmation
- * - Navigation arrows that work from bookmarked URLs
- * 
- * Navigation Context:
- * Uses useUnifiedNavigationContext which implements a priority system:
- * 1. React Router state (normal dashboard navigation)
- * 2. Database fallback (direct URL access)
- * 3. Default context (fallback for new users)
- * 
- * The unified hook also provides integrated sibling navigation analysis,
- * eliminating the need for separate context resolution and sibling analysis.
+ * - Simple "Back to Dashboard" navigation
  * 
  * @param props - Component props
  * @returns Rendered project detail view

@@ -12,7 +12,27 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { pb } from '@/lib/pocketbase';
 import { createLogger } from '@/utils/secureLogger';
 import { queryKeys } from '@/hooks/queries/queryKeys';
-import type { NavigationContext } from '@/hooks/useNavigateToProject';
+// Dashboard filter context for persistence
+export interface DashboardFilterContext {
+  filters: {
+    status: string;
+    company: string;
+    artist: string;
+    drillShape: string;
+    yearFinished: string;
+    includeMiniKits: boolean;
+    searchTerm: string;
+    selectedTags: string[];
+  };
+  sortField: string;
+  sortDirection: string;
+  currentPage: number;
+  pageSize: number;
+  preservationContext: {
+    scrollPosition: number;
+    timestamp: number;
+  };
+}
 
 const logger = createLogger('useSaveNavigationContext');
 
@@ -21,7 +41,7 @@ const logger = createLogger('useSaveNavigationContext');
  */
 export interface SaveNavigationContextParams {
   userId: string;
-  navigationContext: NavigationContext;
+  navigationContext: DashboardFilterContext;
 }
 
 /**

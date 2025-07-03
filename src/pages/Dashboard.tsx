@@ -23,7 +23,7 @@
  * @version 3.0.0 - Database-only implementation (simplified)
  */
 
-import React, { useEffect, useState, createContext, useContext } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
@@ -31,26 +31,12 @@ import DashboardFilterSection from '@/components/dashboard/DashboardFilterSectio
 import ProjectsSection from '@/components/dashboard/ProjectsSection';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/hooks/useAuth';
-import { DashboardFiltersProvider, useDashboardFilters } from '@/contexts/DashboardFiltersContext';
+import { DashboardFiltersProvider, useDashboardFilters, useRecentlyEdited } from '@/contexts/DashboardFiltersContext';
 import { NavigationContext } from '@/hooks/useNavigateToProject';
 import { createLogger } from '@/utils/secureLogger';
 import { useToast } from '@/hooks/use-toast';
 
-// Context for tracking recently edited projects
-interface RecentlyEditedContextValue {
-  recentlyEditedProjectId: string | null;
-  setRecentlyEditedProjectId: (id: string | null) => void;
-}
-
-const RecentlyEditedContext = createContext<RecentlyEditedContextValue | undefined>(undefined);
-
-export const useRecentlyEdited = () => {
-  const context = useContext(RecentlyEditedContext);
-  if (context === undefined) {
-    throw new Error('useRecentlyEdited must be used within a RecentlyEditedProvider');
-  }
-  return context;
-};
+// RecentlyEdited context moved to DashboardFiltersContext for better architecture
 
 const logger = createLogger('Dashboard');
 
@@ -155,18 +141,15 @@ const DashboardInternal: React.FC = () => {
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  const [recentlyEditedProjectId, setRecentlyEditedProjectId] = useState<string | null>(null);
 
   if (!user) {
     return null;
   }
 
   return (
-    <RecentlyEditedContext.Provider value={{ recentlyEditedProjectId, setRecentlyEditedProjectId }}>
-      <DashboardFiltersProvider user={user}>
-        <DashboardInternal />
-      </DashboardFiltersProvider>
-    </RecentlyEditedContext.Provider>
+    <DashboardFiltersProvider user={user}>
+      <DashboardInternal />
+    </DashboardFiltersProvider>
   );
 };
 
