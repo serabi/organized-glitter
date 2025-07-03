@@ -335,29 +335,84 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
     );
 
     const applyCompanyFilter = useCallback((company: string | null) => {
-      setSelectedCompany(company ?? 'all');
+      const normalizedCompany = company ?? 'all';
+      setSelectedCompany(normalizedCompany);
       setCurrentPage(1);
-    }, []);
+
+      // Update URL to reflect the new company filter using React Router
+      setSearchParams(params => {
+        if (normalizedCompany === 'all') {
+          params.delete('company');
+        } else {
+          params.set('company', normalizedCompany);
+        }
+        return params;
+      });
+    }, [setSearchParams]);
 
     const applyArtistFilter = useCallback((artist: string | null) => {
-      setSelectedArtist(artist ?? 'all');
+      const normalizedArtist = artist ?? 'all';
+      setSelectedArtist(normalizedArtist);
       setCurrentPage(1);
-    }, []);
+
+      // Update URL to reflect the new artist filter using React Router
+      setSearchParams(params => {
+        if (normalizedArtist === 'all') {
+          params.delete('artist');
+        } else {
+          params.set('artist', normalizedArtist);
+        }
+        return params;
+      });
+    }, [setSearchParams]);
 
     const applyDrillShapeFilter = useCallback((shape: string | null) => {
-      setSelectedDrillShape(shape ?? 'all');
+      const normalizedShape = shape ?? 'all';
+      setSelectedDrillShape(normalizedShape);
       setCurrentPage(1);
-    }, []);
+
+      // Update URL to reflect the new drill shape filter using React Router
+      setSearchParams(params => {
+        if (normalizedShape === 'all') {
+          params.delete('drillShape');
+        } else {
+          params.set('drillShape', normalizedShape);
+        }
+        return params;
+      });
+    }, [setSearchParams]);
 
     const applyYearFinishedFilter = useCallback((year: string | null) => {
-      setSelectedYearFinished(year ?? 'all');
+      const normalizedYear = year ?? 'all';
+      setSelectedYearFinished(normalizedYear);
       setCurrentPage(1);
-    }, []);
+
+      // Update URL to reflect the new year finished filter using React Router
+      setSearchParams(params => {
+        if (normalizedYear === 'all') {
+          params.delete('yearFinished');
+        } else {
+          params.set('yearFinished', normalizedYear);
+        }
+        return params;
+      });
+    }, [setSearchParams]);
 
     const applyIncludeMiniKitsFilter = useCallback((include: boolean) => {
       setIncludeMiniKits(include);
       setCurrentPage(1);
-    }, []);
+
+      // Update URL to reflect the new include mini kits filter using React Router
+      setSearchParams(params => {
+        if (include === true) {
+          // Default is true, so remove parameter when true
+          params.delete('includeMiniKits');
+        } else {
+          params.set('includeMiniKits', 'false');
+        }
+        return params;
+      });
+    }, [setSearchParams]);
 
     const applySearchTerm = useCallback((term: string | null) => {
       setSearchTerm(term ?? '');

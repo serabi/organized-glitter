@@ -120,32 +120,53 @@ const useUrlFilterSync = ({
       setActiveStatus(statusParam as ProjectFilterStatus);
     }
 
+    // Handle artist filter - set to specific value or reset to "all" if not present
     if (artistParam) {
       const matchingArtist = artists.find(
         a => a && (a.label.toLowerCase() === artistParam.toLowerCase() || a.value === artistParam)
       );
       setSelectedArtist(matchingArtist?.value || 'all');
+    } else {
+      // No artist parameter in URL, reset to "all"
+      setSelectedArtist('all');
     }
 
+    // Handle company filter - set to specific value or reset to "all" if not present  
     if (companyParam) {
       const matchingCompany = companies.find(
         c => c && (c.label.toLowerCase() === companyParam.toLowerCase() || c.value === companyParam)
       );
       setSelectedCompany(matchingCompany?.value || 'all');
+    } else {
+      // No company parameter in URL, reset to "all"
+      setSelectedCompany('all');
     }
 
+    // Handle drill shape filter - set to specific value or reset to "all" if not present
     if (drillShapeParam) {
       setSelectedDrillShape(drillShapeParam);
+    } else {
+      // No drill shape parameter in URL, reset to "all"
+      setSelectedDrillShape('all');
     }
 
+    // Handle year finished filter - set to specific value or reset to "all" if not present
     if (yearFinishedParam) {
       setSelectedYearFinished(yearFinishedParam);
+    } else {
+      // No year finished parameter in URL, reset to "all"
+      setSelectedYearFinished('all');
     }
 
+    // Handle search term - set to specific value or reset to empty if not present
     if (searchParam) {
       setSearchTerm(searchParam);
+    } else {
+      // No search parameter in URL, reset to empty
+      setSearchTerm('');
     }
 
+    // Handle tags - set to specific values or reset to empty array if not present
     if (tagsParam) {
       const tagIdsToSet = tagsParam
         .split(',')
@@ -160,11 +181,21 @@ const useUrlFilterSync = ({
       );
       if (matchingTag) {
         setSelectedTags([matchingTag.id]);
+      } else {
+        // Tag not found, reset to empty
+        setSelectedTags([]);
       }
+    } else {
+      // No tag parameters in URL, reset to empty array
+      setSelectedTags([]);
     }
 
+    // Handle include mini kits - set to specific value or reset to default (true) if not present
     if (includeMiniKitsParam) {
       setIncludeMiniKits(includeMiniKitsParam === 'true');
+    } else {
+      // No includeMiniKits parameter in URL, reset to default (true)
+      setIncludeMiniKits(true);
     }
 
     if (pageParam && setCurrentPage) {

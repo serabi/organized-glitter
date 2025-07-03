@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { DashboardFiltersProvider } from '@/contexts/DashboardFiltersContext';
 import { useDashboardFiltersContext } from '@/hooks/useDashboardFiltersContext';
 import { NavigationContext } from '@/hooks/useNavigateToProject';
+import { useNavigationFallback } from '@/hooks/queries/useNavigationFallback';
 import { createLogger } from '@/utils/secureLogger';
 import { useToast } from '@/hooks/use-toast';
 
@@ -40,6 +41,12 @@ const DashboardInternal: React.FC = () => {
   const { toast } = useToast();
   const { errorProjects } = useDashboardFiltersContext();
   const { setRecentlyEditedProjectId } = useRecentlyEdited();
+  const { user } = useAuth();
+  
+  // Get fallback navigation context from database for filter restoration
+  const { navigationContext: fallbackContext, isLoadingFallback } = useNavigationFallback({ 
+    userId: user?.id 
+  });
 
   // Check for edit return state in location
   const editReturnState = location.state as {
@@ -50,6 +57,74 @@ const DashboardInternal: React.FC = () => {
     navigationContext?: NavigationContext;
     preservePosition?: boolean;
   } | null;
+
+  // Check if we need to restore filters from database (no router state)
+  useEffect(() => {
+    // Only apply fallback if:
+    // 1. No edit return state (not returning from project edit)
+    // 2. No search params in URL (fresh dashboard load)
+    // 3. We have fallback context from database
+    // 4. Not currently loading fallback data
+    const hasEditReturnState = location.state?.fromEdit;
+    const hasUrlParams = searchParams.toString().length > 0;
+    
+    if (!hasEditReturnState && !hasUrlParams && fallbackContext && !isLoadingFallback) {
+      logger.info('🔄 Restoring dashboard filters from database fallback');
+      
+      try {
+        const newSearchParams = new URLSearchParams();
+        
+        // Apply saved filter state
+        if (fallbackContext.filters.status !== 'all') {
+          newSearchParams.set('status', fallbackContext.filters.status);
+        }
+        if (fallbackContext.filters.company !== 'all') {
+          newSearchParams.set('company', fallbackContext.filters.company);
+        }
+        if (fallbackContext.filters.artist !== 'all') {
+          newSearchParams.set('artist', fallbackContext.filters.artist);
+        }
+        if (fallbackContext.filters.drillShape !== 'all') {
+          newSearchParams.set('drillShape', fallbackContext.filters.drillShape);
+        }
+        if (fallbackContext.filters.yearFinished !== 'all') {
+          newSearchParams.set('yearFinished', fallbackContext.filters.yearFinished);
+        }
+        if (!fallbackContext.filters.includeMiniKits) {
+          newSearchParams.set('includeMiniKits', 'false');
+        }
+        if (fallbackContext.filters.searchTerm) {
+          newSearchParams.set('search', fallbackContext.filters.searchTerm);
+        }
+        if (fallbackContext.filters.selectedTags?.length > 0) {
+          newSearchParams.set('tags', fallbackContext.filters.selectedTags.join(','));
+        }
+        
+        // Apply saved sort state
+        if (fallbackContext.sortField !== 'last_updated') {
+          newSearchParams.set('sort', fallbackContext.sortField);
+        }
+        if (fallbackContext.sortDirection !== 'desc') {
+          newSearchParams.set('sortDirection', fallbackContext.sortDirection);
+        }
+        
+        // Apply saved pagination
+        if (fallbackContext.currentPage !== 1) {
+          newSearchParams.set('page', fallbackContext.currentPage.toString());
+        }
+        if (fallbackContext.pageSize !== 25) {
+          newSearchParams.set('pageSize', fallbackContext.pageSize.toString());
+        }
+        
+        // Update URL to trigger filter restoration
+        setSearchParams(newSearchParams, { replace: true });
+        
+        logger.info('✅ Dashboard filters restored from database');
+      } catch (error) {
+        logger.error('❌ Error restoring dashboard filters from database:', error);
+      }
+    }
+  }, [location.state, searchParams, fallbackContext, isLoadingFallback, setSearchParams]);
 
   // Handle position restoration after edit return
   useEffect(() => {

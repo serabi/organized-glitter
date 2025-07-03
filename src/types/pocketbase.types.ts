@@ -19,6 +19,7 @@ export enum Collections {
 	Projects = "projects",
 	RandomizerSpins = "randomizer_spins",
 	Tags = "tags",
+	UserDashboardSettings = "user_dashboard_settings",
 	UserYearlyStats = "user_yearly_stats",
 	Users = "users",
 }
@@ -207,6 +208,14 @@ export type TagsRecord = {
 	user: RecordIdString
 }
 
+export type UserDashboardSettingsRecord<Tnavigation_context = unknown> = {
+	created?: IsoDateString
+	id: string
+	navigation_context?: null | Tnavigation_context
+	updated?: IsoDateString
+	user: RecordIdString
+}
+
 export enum UserYearlyStatsStatsTypeOptions {
 	"yearly" = "yearly",
 }
@@ -257,6 +266,7 @@ export type ProjectTagsResponse<Texpand = unknown> = Required<ProjectTagsRecord>
 export type ProjectsResponse<Texpand = unknown> = Required<ProjectsRecord> & BaseSystemFields<Texpand>
 export type RandomizerSpinsResponse<Tselected_projects = unknown, Texpand = unknown> = Required<RandomizerSpinsRecord<Tselected_projects>> & BaseSystemFields<Texpand>
 export type TagsResponse<Texpand = unknown> = Required<TagsRecord> & BaseSystemFields<Texpand>
+export type UserDashboardSettingsResponse<Tnavigation_context = unknown, Texpand = unknown> = Required<UserDashboardSettingsRecord<Tnavigation_context>> & BaseSystemFields<Texpand>
 export type UserYearlyStatsResponse<Tstatus_breakdown = unknown, Texpand = unknown> = Required<UserYearlyStatsRecord<Tstatus_breakdown>> & BaseSystemFields<Texpand>
 export type UsersResponse<Texpand = unknown> = Required<UsersRecord> & AuthSystemFields<Texpand>
 
@@ -276,6 +286,7 @@ export type CollectionRecords = {
 	projects: ProjectsRecord
 	randomizer_spins: RandomizerSpinsRecord
 	tags: TagsRecord
+	user_dashboard_settings: UserDashboardSettingsRecord
 	user_yearly_stats: UserYearlyStatsRecord
 	users: UsersRecord
 }
@@ -294,6 +305,7 @@ export type CollectionResponses = {
 	projects: ProjectsResponse
 	randomizer_spins: RandomizerSpinsResponse
 	tags: TagsResponse
+	user_dashboard_settings: UserDashboardSettingsResponse
 	user_yearly_stats: UserYearlyStatsResponse
 	users: UsersResponse
 }
@@ -315,6 +327,7 @@ export type TypedPocketBase = PocketBase & {
 	collection(idOrName: 'projects'): RecordService<ProjectsResponse>
 	collection(idOrName: 'randomizer_spins'): RecordService<RandomizerSpinsResponse>
 	collection(idOrName: 'tags'): RecordService<TagsResponse>
+	collection(idOrName: 'user_dashboard_settings'): RecordService<UserDashboardSettingsResponse>
 	collection(idOrName: 'user_yearly_stats'): RecordService<UserYearlyStatsResponse>
 	collection(idOrName: 'users'): RecordService<UsersResponse>
 }
