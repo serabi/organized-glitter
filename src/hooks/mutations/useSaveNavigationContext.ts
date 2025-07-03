@@ -140,10 +140,10 @@ export const useSaveNavigationContext = () => {
     onSuccess: (_, variables) => {
       const { userId } = variables;
       
-      // Invalidate the navigation fallback query to ensure fresh data
-      // on next direct URL access
+      // Invalidate the dashboard filter state cache to ensure fresh data
+      // on next dashboard load
       queryClient.invalidateQueries({
-        queryKey: queryKeys.projects.navigationContext(userId),
+        queryKey: queryKeys.dashboardFilters.state(userId),
       });
       
       logger.info(`✅ Successfully saved and invalidated navigation context for user ${userId}`);

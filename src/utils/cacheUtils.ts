@@ -75,12 +75,8 @@ export const updateProjectInCache = (
       }
     });
 
-    // Update advanced query cache if it exists
-    const advancedQueryKey = queryKeys.projects.advanced(userId);
-    const advancedData = queryClient.getQueryData(advancedQueryKey);
-    if (advancedData) {
-      queryClient.setQueryData(advancedQueryKey, advancedData);
-    }
+    // Advanced queries are invalidated by error handler and other mutations
+    // to ensure data freshness without complex optimistic updates
 
     logger.debug(`Successfully updated project ${projectId} in cache`);
   } catch (error) {

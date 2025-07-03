@@ -31,8 +31,8 @@ vi.mock('@/lib/pocketbase', () => ({
 // Mock query keys
 vi.mock('@/hooks/queries/queryKeys', () => ({
   queryKeys: {
-    projects: {
-      navigationContext: (userId: string) => ['projects', 'navigationContext', userId],
+    dashboardFilters: {
+      state: (userId: string) => ['dashboardFilters', 'state', userId],
     },
   },
 }));
@@ -135,7 +135,7 @@ describe('useSaveNavigationContext', () => {
       });
 
       expect(invalidateQueriesSpy).toHaveBeenCalledWith({
-        queryKey: ['projects', 'navigationContext', 'user123'],
+        queryKey: ['dashboardFilters', 'state', 'user123'],
       });
     });
 

@@ -336,17 +336,32 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       },
     };
     
-    currentSaveNavigationContext.mutate({
-      userId: currentUser.id,
-      navigationContext,
-    });
-    
-    logger.info('✅ Saved current filter state on navigation', { 
-      userId: currentUser.id, 
-      activeStatus: currentFilters.activeStatus,
-      searchTerm: currentFilters.searchTerm,
-      selectedCompany: currentFilters.selectedCompany
-    });
+    currentSaveNavigationContext.mutate(
+      {
+        userId: currentUser.id,
+        navigationContext,
+      },
+      {
+        onSuccess: () => {
+          logger.info('✅ Saved current filter state on navigation', { 
+            userId: currentUser.id, 
+            activeStatus: currentFilters.activeStatus,
+            searchTerm: currentFilters.searchTerm,
+            selectedCompany: currentFilters.selectedCompany
+          });
+        },
+        onError: (error) => {
+          logger.error('Failed to save dashboard filters on navigation:', error);
+          // Show subtle toast notification for user awareness
+          toast({
+            title: 'Save Issue',
+            description: 'Dashboard preferences may not be saved.',
+            variant: 'destructive',
+            duration: 3000,
+          });
+        }
+      }
+    );
   }, []); // Empty dependency array is safe now since we use ref
 
   // Save filters when navigating away from dashboard
