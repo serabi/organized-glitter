@@ -53,7 +53,10 @@ import useDebounce from '@/hooks/useDebounce'; // For search term
 import { useDashboardStats } from '@/hooks/queries/useDashboardStats';
 import { useAvailableYearsAsStrings } from '@/hooks/queries/useAvailableYears';
 import { useSaveNavigationContext } from '@/hooks/mutations/useSaveNavigationContext';
-import { useNavigationFallback } from '@/hooks/queries/useNavigationFallback';
+import { createLogger } from '@/utils/secureLogger';
+import { useToast } from '@/hooks/use-toast';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { pb } from '@/lib/pocketbase';
 
 export type SortDirectionType = 'asc' | 'desc';
 
@@ -163,7 +166,9 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
 
     const searchInputRef = useRef<HTMLInputElement>(null);
     const userMetadata = useMetadata();
-    // const { toast } = useToast(); // Removed as it's unused
+    const { toast } = useToast();
+    const location = useLocation();
+    const navigate = useNavigate();
     const userId = useMemo(() => user?.id, [user?.id]);
 
     // Server-side filter states
@@ -242,6 +247,41 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
     // This enables navigation arrows to work when users bookmark project URLs
     const saveNavigationContext = useSaveNavigationContext();
 
+    // Memoize navigation context to prevent unnecessary saves when data hasn't changed
+    const navigationContextToSave = useMemo(() => ({
+      filters: {
+        status: activeStatus,
+        company: selectedCompany,
+        artist: selectedArtist,
+        drillShape: selectedDrillShape,
+        yearFinished: selectedYearFinished,
+        includeMiniKits,
+        searchTerm: deferredSearchTerm,
+        selectedTags,
+      },
+      sortField,
+      sortDirection,
+      currentPage,
+      pageSize,
+      preservationContext: {
+        scrollPosition: 0, // Will be set during actual navigation
+        timestamp: Date.now(),
+      },
+    }), [
+      activeStatus,
+      selectedCompany,
+      selectedArtist,
+      selectedDrillShape,
+      selectedYearFinished,
+      includeMiniKits,
+      deferredSearchTerm,
+      selectedTags,
+      sortField,
+      sortDirection,
+      currentPage,
+      pageSize,
+    ]);
+
     // Extract data from React Query result
     const rawProjects = useMemo(() => projectsData?.projects || [], [projectsData?.projects]);
     const totalItems = projectsData?.totalItems || 0;
@@ -261,41 +301,31 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
     // Note: Refetch is handled automatically by React Query when dependencies change
     // No manual refetch useEffect needed since React Query already handles dependency changes
 
-    // Load saved filter state from database on component mount
-    const { navigationContext: savedFilters, isLoading: isLoadingFallback } = useNavigationFallback({ 
-      userId: user?.id 
-    });
+    // Note: Database filter restoration is now handled entirely within the consolidated restoration effect
+    // No separate hook needed since DashboardFiltersContext already manages database state
 
-    // Apply saved filters on initial load (only once)
-    const [hasInitializedFromDatabase, setHasInitializedFromDatabase] = useState(false);
+    // Restoration state tracking to prevent infinite loops during filter restoration
+    const [isRestoringFromDatabase, setIsRestoringFromDatabase] = useState(false);
+    
+    // Track if initial database restoration has completed to prevent multiple runs
+    const hasInitialized = useRef(false);
 
     /**
      * Immediately saves current filter state to database
      * This ensures all filter changes are persisted instantly for reliable state management
      */
     const saveCurrentStateToDatabase = useCallback(() => {
-      if (!userId || !hasInitializedFromDatabase) {
-        // Don't save during initial database load to prevent overriding saved state
+      if (!userId || isRestoringFromDatabase) {
+        // Don't save during restoration to prevent infinite loops or if no user is logged in
         return;
       }
 
+      // Use memoized navigation context to prevent unnecessary saves
+      // Update timestamp for current save operation
       const navigationContext = {
-        filters: {
-          status: activeStatus,
-          company: selectedCompany,
-          artist: selectedArtist,
-          drillShape: selectedDrillShape,
-          yearFinished: selectedYearFinished,
-          includeMiniKits,
-          searchTerm: deferredSearchTerm,
-          selectedTags,
-        },
-        sortField,
-        sortDirection,
-        currentPage,
-        pageSize,
+        ...navigationContextToSave,
         preservationContext: {
-          scrollPosition: 0, // Will be set during actual navigation
+          ...navigationContextToSave.preservationContext,
           timestamp: Date.now(),
         },
       };
@@ -307,20 +337,10 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       });
     }, [
       userId,
-      hasInitializedFromDatabase,
-      activeStatus,
-      selectedCompany,
-      selectedArtist,
-      selectedDrillShape,
-      selectedYearFinished,
-      includeMiniKits,
-      deferredSearchTerm,
-      selectedTags,
-      sortField,
-      sortDirection,
-      currentPage,
-      pageSize,
-      saveNavigationContext,
+      isRestoringFromDatabase,
+      navigationContextToSave,
+      // Note: saveNavigationContext removed from dependencies as React Query mutations
+      // are not stable references and would cause infinite re-renders
     ]);
 
     // --- Action Implementations ---
@@ -485,8 +505,9 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
 
     /**
      * Resets all filters to default values and immediately saves state to database
+     * @param skipDatabaseSave - If true, doesn't save to database (used during URL override)
      */
-    const resetAllFilters = useCallback(() => {
+    const resetAllFilters = useCallback((skipDatabaseSave = false) => {
       setActiveStatus('all');
       setSelectedCompany('all');
       setSelectedArtist('all');
@@ -503,9 +524,68 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
         searchInputRef.current.value = '';
       }
       
-      // Immediate database save for reliable state persistence
-      setTimeout(saveCurrentStateToDatabase, 0);
+      // Immediate database save for reliable state persistence (unless skipped)
+      if (!skipDatabaseSave) {
+        setTimeout(saveCurrentStateToDatabase, 0);
+      }
     }, [saveCurrentStateToDatabase]);
+
+    /**
+     * Applies URL parameters to filter state without saving to database
+     * Used during URL override to set filters based on navigation URLs
+     */
+    const applyUrlParameters = useCallback((searchParams: URLSearchParams) => {
+      const logger = createLogger('DashboardFiltersContext-URLOverride');
+      
+      // Apply status filter from URL
+      const urlStatus = searchParams.get('status');
+      if (urlStatus && ['wishlist', 'purchased', 'stash', 'progress', 'completed', 'destashed', 'archived'].includes(urlStatus)) {
+        logger.info('📌 Applying status from URL', { status: urlStatus });
+        setActiveStatus(urlStatus as ProjectFilterStatus);
+      }
+      
+      // Apply company filter from URL
+      const urlCompany = searchParams.get('company');
+      if (urlCompany) {
+        logger.info('📌 Applying company from URL', { company: urlCompany });
+        setSelectedCompany(urlCompany);
+      }
+      
+      // Apply artist filter from URL
+      const urlArtist = searchParams.get('artist');
+      if (urlArtist) {
+        logger.info('📌 Applying artist from URL', { artist: urlArtist });
+        setSelectedArtist(urlArtist);
+      }
+      
+      // Apply tag filter from URL
+      const urlTag = searchParams.get('tag');
+      if (urlTag) {
+        logger.info('📌 Applying tag from URL', { tag: urlTag });
+        // Find tag by name in metadata and use its ID
+        const matchingTag = userMetadata.tags.find(tag => tag.name === urlTag);
+        if (matchingTag) {
+          setSelectedTags([matchingTag.id]);
+        }
+      }
+      
+      // Apply year filter from URL
+      const urlYear = searchParams.get('year');
+      if (urlYear) {
+        logger.info('📌 Applying year from URL', { year: urlYear });
+        setSelectedYearFinished(urlYear);
+      }
+      
+      // Apply drill shape filter from URL
+      const urlDrillShape = searchParams.get('drillShape');
+      if (urlDrillShape) {
+        logger.info('📌 Applying drill shape from URL', { drillShape: urlDrillShape });
+        setSelectedDrillShape(urlDrillShape);
+      }
+      
+      // Reset page to 1 when applying URL filters
+      setCurrentPage(1);
+    }, [userMetadata.tags]);
 
     // --- Optimized: Server-Side Filtering ---
     // Since filtering is now server-side, we don't need client-side filtering
@@ -655,26 +735,135 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       [userMetadata.companies]
     );
 
-    // Apply saved filters on initial load (only once) 
+    // EFFECT 1: Initialize filters from database (runs once on mount)
     useEffect(() => {
-      if (!hasInitializedFromDatabase && savedFilters && !isLoadingFallback && user?.id) {
-        // Apply saved filter state without triggering auto-save (type-safe conversions)
-        setActiveStatus((savedFilters.filters.status as ProjectFilterStatus) || 'all');
-        setSelectedCompany(savedFilters.filters.company || 'all');
-        setSelectedArtist(savedFilters.filters.artist || 'all');
-        setSelectedDrillShape(savedFilters.filters.drillShape || 'all');
-        setSelectedYearFinished(savedFilters.filters.yearFinished || 'all');
-        setIncludeMiniKits(savedFilters.filters.includeMiniKits ?? true);
-        setSearchTerm(savedFilters.filters.searchTerm || '');
-        setSelectedTags(savedFilters.filters.selectedTags || []);
-        setSortField((savedFilters.sortField as DashboardValidSortField) || 'last_updated');
-        setSortDirection((savedFilters.sortDirection as SortDirectionType) || 'desc');
-        setCurrentPage(savedFilters.currentPage || 1);
-        setPageSize(savedFilters.pageSize || 25);
-        
-        setHasInitializedFromDatabase(true);
+      const logger = createLogger('DashboardFiltersContext-Init');
+      
+      // Only run once when user becomes available and metadata is loaded
+      if (!user?.id || hasInitialized.current || userMetadata.isLoading.tags || userMetadata.isLoading.companies || userMetadata.isLoading.artists) {
+        return;
       }
-    }, [savedFilters, isLoadingFallback, user?.id, hasInitializedFromDatabase]);
+      
+      logger.info('🔄 Initializing dashboard filters from database', {
+        userId: user.id,
+        timestamp: Date.now()
+      });
+      
+      hasInitialized.current = true;
+      setIsRestoringFromDatabase(true);
+      
+      // Fetch saved filters directly from database
+      const fetchSavedFilters = async () => {
+        try {
+          const record = await pb.collection('user_dashboard_settings')
+            .getFirstListItem(`user="${user.id}"`);
+          
+          if (record.navigation_context) {
+            logger.info('💾 Restoring saved filters from database', {
+              filters: record.navigation_context.filters,
+              sortField: record.navigation_context.sortField,
+              sortDirection: record.navigation_context.sortDirection,
+              currentPage: record.navigation_context.currentPage,
+              pageSize: record.navigation_context.pageSize
+            });
+            
+            const savedFilters = record.navigation_context;
+            
+            // Apply saved filter state (type-safe conversions)
+            setActiveStatus((savedFilters.filters.status as ProjectFilterStatus) || 'all');
+            setSelectedCompany(savedFilters.filters.company || 'all');
+            setSelectedArtist(savedFilters.filters.artist || 'all');
+            setSelectedDrillShape(savedFilters.filters.drillShape || 'all');
+            setSelectedYearFinished(savedFilters.filters.yearFinished || 'all');
+            setIncludeMiniKits(savedFilters.filters.includeMiniKits ?? true);
+            setSearchTerm(savedFilters.filters.searchTerm || '');
+            setSelectedTags(savedFilters.filters.selectedTags || []);
+            setSortField((savedFilters.sortField as DashboardValidSortField) || 'last_updated');
+            setSortDirection((savedFilters.sortDirection as SortDirectionType) || 'desc');
+            setCurrentPage(savedFilters.currentPage || 1);
+            setPageSize(savedFilters.pageSize || 25);
+            
+            // Show user feedback for successful restoration (only in development to avoid spam)
+            if (import.meta.env.DEV) {
+              toast({
+                title: 'Filters Restored',
+                description: 'Your previous dashboard filters have been restored.',
+                duration: 2000,
+              });
+            }
+          } else {
+            logger.info('🏠 No saved filters found, using defaults');
+          }
+        } catch (error) {
+          // If no record exists (404), that's okay - use defaults
+          if (error?.status === 404) {
+            logger.info('🏠 No dashboard settings record found, using defaults');
+          } else {
+            logger.error('Error fetching saved filters:', error);
+          }
+        }
+        
+        // Clear restoration flag after completion (success or failure)
+        setIsRestoringFromDatabase(false);
+        logger.info('✅ Database filter initialization completed');
+      };
+      
+      fetchSavedFilters();
+    }, [user?.id, userMetadata.isLoading.tags, userMetadata.isLoading.companies, userMetadata.isLoading.artists, toast]);
+
+    // EFFECT 2: Handle URL parameters (runs when URL changes)
+    useEffect(() => {
+      const logger = createLogger('DashboardFiltersContext-URLParams');
+      
+      // Only proceed if user is available and we've completed initialization
+      if (!user?.id || !hasInitialized.current) {
+        return;
+      }
+      
+      const searchParams = new URLSearchParams(location.search);
+      const hasUrlParams = searchParams.size > 0;
+      
+      // Only process URL parameters if they exist
+      if (!hasUrlParams) {
+        return;
+      }
+      
+      logger.info('🎯 Processing URL parameters', {
+        search: location.search,
+        params: Object.fromEntries(searchParams.entries()),
+        timestamp: Date.now()
+      });
+      
+      setIsRestoringFromDatabase(true);
+      
+      // Reset all filters to defaults first (without saving to database)
+      resetAllFilters(true);
+      
+      // Apply URL parameters to override defaults
+      applyUrlParameters(searchParams);
+      
+      // Clear restoration flag and save new state to database
+      setTimeout(() => {
+        setIsRestoringFromDatabase(false);
+        
+        // Save the new filter state to database
+        setTimeout(saveCurrentStateToDatabase, 0);
+        
+        // Clear URL parameters for clean browsing experience
+        navigate(location.pathname, { replace: true });
+        
+        logger.info('✅ URL parameters applied and state saved to database');
+        
+        // Show user feedback for URL override (only in development to avoid spam)
+        if (import.meta.env.DEV) {
+          toast({
+            title: 'Filters Applied',
+            description: 'Dashboard filters have been set based on your navigation.',
+            duration: 2000,
+          });
+        }
+      }, 0);
+    }, [location.search, user?.id, resetAllFilters, applyUrlParameters, saveCurrentStateToDatabase, navigate, toast]);
 
     const contextValue = useMemo(
       (): DashboardFiltersContextValue => ({

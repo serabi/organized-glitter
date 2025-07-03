@@ -72,7 +72,7 @@ const fetchNavigationFallback = async (userId: string): Promise<NavigationContex
  * 
  * Features:
  * - Router-safe (no dependencies on location/routing state)
- * - Long stale time (30 minutes) - user preferences don't change often
+ * - Responsive stale time (60 seconds) - enables reliable "Back to Dashboard" restoration
  * - Conservative refetch settings to avoid conflicts
  * - Resilient error handling (404 = no preferences saved yet)
  * 
@@ -90,14 +90,20 @@ const fetchNavigationFallback = async (userId: string): Promise<NavigationContex
  * ```
  */
 export const useNavigationFallback = ({ userId }: UseNavigationFallbackParams): NavigationFallbackResult => {
+  logger.info('🔍 useNavigationFallback hook called', {
+    userId,
+    enabled: !!userId,
+    timestamp: Date.now()
+  });
+
   const query = useQuery({
     queryKey: queryKeys.projects.navigationContext(userId || ''),
     queryFn: () => fetchNavigationFallback(userId!),
     enabled: !!userId,
     
-    // Long stale time - user preferences don't change frequently
-    // This prevents unnecessary refetches while still allowing fresh data
-    staleTime: 30 * 60 * 1000, // 30 minutes
+    // Reduced stale time for responsive "Back to Dashboard" filter restoration
+    // Ensures fresh filter state when navigating between dashboard and projects
+    staleTime: 60 * 1000, // 60 seconds
     gcTime: 60 * 60 * 1000, // 1 hour garbage collection
     
     // Conservative refetch settings to avoid router conflicts
@@ -135,10 +141,22 @@ export const useNavigationFallback = ({ userId }: UseNavigationFallbackParams): 
     select: (data) => data || null,
   });
 
-  return {
+  const result = {
     navigationContext: query.data || null,
     isLoading: query.isLoading,
     error: query.error as Error | null,
     refetch: query.refetch,
   };
+
+  logger.info('🔍 useNavigationFallback returning result', {
+    hasNavigationContext: !!result.navigationContext,
+    isLoading: result.isLoading,
+    hasError: !!result.error,
+    queryStatus: query.status,
+    fetchStatus: query.fetchStatus,
+    dataUpdatedAt: query.dataUpdatedAt,
+    timestamp: Date.now()
+  });
+
+  return result;
 };
