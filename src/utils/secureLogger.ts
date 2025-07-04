@@ -14,6 +14,10 @@ interface LoggerMethods {
   debug: (...args: unknown[]) => void;
   secureInfo: (...args: unknown[]) => void;
   criticalError: (...args: unknown[]) => void;
+  group: (...args: unknown[]) => void;
+  groupEnd: () => void;
+  groupCollapsed: (...args: unknown[]) => void;
+  table: (data: unknown) => void;
 }
 
 const noOp = () => {
@@ -147,6 +151,21 @@ const createLogger = (prefix?: string): LoggerMethods => {
         const visited = new WeakSet();
         console.info(getPrefix(), ...args.map(arg => redactSensitiveData(arg, visited)));
       },
+      group: (...args: unknown[]) => {
+        const visited = new WeakSet();
+        console.group(getPrefix(), ...args.map(arg => redactSensitiveData(arg, visited)));
+      },
+      groupEnd: () => {
+        console.groupEnd();
+      },
+      groupCollapsed: (...args: unknown[]) => {
+        const visited = new WeakSet();
+        console.groupCollapsed(getPrefix(), ...args.map(arg => redactSensitiveData(arg, visited)));
+      },
+      table: (data: unknown) => {
+        const visited = new WeakSet();
+        console.table(redactSensitiveData(data, visited));
+      },
       criticalError,
     };
   } else {
@@ -157,6 +176,10 @@ const createLogger = (prefix?: string): LoggerMethods => {
       error: noOp,
       debug: noOp,
       secureInfo: noOp,
+      group: noOp,
+      groupEnd: noOp,
+      groupCollapsed: noOp,
+      table: noOp,
       criticalError, // Still logs in production
     };
   }
