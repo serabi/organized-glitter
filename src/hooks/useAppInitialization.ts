@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { setupErrorHandler } from '@/utils/errorHandler';
 import { setupGlobalAuthClear } from '@/utils/auth';
+import { createLogger } from '@/utils/secureLogger';
 
 type ToastType = 'error' | 'warning' | 'success' | 'info';
 
@@ -11,6 +12,7 @@ type ToastType = 'error' | 'warning' | 'success' | 'info';
  */
 export const useAppInitialization = (): void => {
   const { toast } = useToast();
+  const logger = createLogger('AppInitialization');
 
   // Emergency failsafe for app-loaded event
   useEffect(() => {
@@ -73,8 +75,17 @@ export const useAppInitialization = (): void => {
         console.error('Unhandled rejection:', event.reason);
       }
 
+      // DIAGNOSTIC: Check for React Query queryKey errors
+      const reason = event.reason?.message || event.reason?.toString() || '';
+      if (reason.includes("Cannot read properties of undefined (reading 'queryKey')")) {
+        logger.criticalError('🚨 CRITICAL: React Query queryKey undefined error detected in production!', {
+          reason: event.reason,
+          stack: event.reason?.stack,
+          timestamp: new Date().toISOString()
+        });
+      }
+
       // For chunk loading errors, reload the page
-      const reason = event.reason?.message || '';
       if (reason.includes('text/html') || reason.includes('MIME type')) {
         if (import.meta.env.DEV) {
           console.log('Chunk loading error detected, reloading page...');
