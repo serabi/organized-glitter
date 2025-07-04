@@ -12,6 +12,70 @@ import { createLogger } from '@/utils/secureLogger';
 const logger = createLogger('DashboardStatsService');
 
 /**
+ * Valid project status types for counting
+ */
+type ValidProjectStatus = 'wishlist' | 'purchased' | 'stash' | 'progress' | 'completed' | 'destashed' | 'archived';
+
+/**
+ * Interface for project status counts
+ */
+interface ProjectStatusCounts {
+  all: number;
+  wishlist: number;
+  purchased: number;
+  stash: number;
+  progress: number;
+  completed: number;
+  destashed: number;
+  archived: number;
+  total_projects: number;
+}
+
+/**
+ * Count projects by status for a given user
+ * @param userId - The user ID to count projects for
+ * @returns Promise<ProjectStatusCounts> - Object with counts for each status
+ */
+async function countProjectsByStatus(userId: string): Promise<ProjectStatusCounts> {
+  logger.debug(`📊 Counting projects by status for user ${userId}`);
+
+  try {
+    // Get all projects for this user (only status field needed)
+    const projects = await pb.collection(Collections.Projects).getFullList({
+      filter: `user="${userId}"`,
+      fields: 'status',
+    });
+
+    // Initialize counts object
+    const counts: ProjectStatusCounts = {
+      all: projects.length,
+      wishlist: 0,
+      purchased: 0,
+      stash: 0,
+      progress: 0,
+      completed: 0,
+      destashed: 0,
+      archived: 0,
+      total_projects: projects.length,
+    };
+
+    // Count projects by status
+    for (const project of projects) {
+      const status = project.status;
+      if (isValidStatus(status)) {
+        counts[status]++;
+      }
+    }
+
+    logger.debug(`✅ Project counts calculated:`, counts);
+    return counts;
+  } catch (error) {
+    logger.error('❌ Failed to count projects by status:', error);
+    throw error;
+  }
+}
+
+/**
  * Update dashboard stats when a project status changes
  */
 export async function updateDashboardStats(event: ProjectStatusChangeEvent): Promise<void> {
@@ -113,7 +177,7 @@ function calculateStatsUpdate(
 /**
  * Check if a status is valid for counting
  */
-function isValidStatus(status: string): status is keyof UserDashboardStatsRecord {
+function isValidStatus(status: string): status is ValidProjectStatus {
   return [
     'wishlist',
     'purchased',
@@ -132,31 +196,8 @@ async function initializeUserStats(userId: string): Promise<void> {
   logger.info(`🔧 Initializing dashboard stats for user ${userId}`);
 
   try {
-    // Get all projects for this user
-    const projects = await pb.collection(Collections.Projects).getFullList({
-      filter: `user="${userId}"`,
-      fields: 'status',
-    });
-
-    // Count by status
-    const counts = {
-      all: projects.length,
-      wishlist: 0,
-      purchased: 0,
-      stash: 0,
-      progress: 0,
-      completed: 0,
-      destashed: 0,
-      archived: 0,
-      total_projects: projects.length,
-    };
-
-    for (const project of projects) {
-      const status = project.status;
-      if (isValidStatus(status)) {
-        counts[status]++;
-      }
-    }
+    // Get project counts using the helper function
+    const counts = await countProjectsByStatus(userId);
 
     // Create stats record
     await pb.collection(Collections.UserDashboardStats).create({
@@ -179,30 +220,8 @@ export async function recalculateDashboardStats(userId: string): Promise<void> {
   logger.info(`🔄 Recalculating dashboard stats for user ${userId}`);
 
   try {
-    // Calculate accurate counts from database
-    const projects = await pb.collection(Collections.Projects).getFullList({
-      filter: `user="${userId}"`,
-      fields: 'status',
-    });
-
-    const counts = {
-      all: projects.length,
-      wishlist: 0,
-      purchased: 0,
-      stash: 0,
-      progress: 0,
-      completed: 0,
-      destashed: 0,
-      archived: 0,
-      total_projects: projects.length,
-    };
-
-    for (const project of projects) {
-      const status = project.status;
-      if (isValidStatus(status)) {
-        counts[status]++;
-      }
-    }
+    // Get project counts using the helper function
+    const counts = await countProjectsByStatus(userId);
 
     // Update or create stats record
     try {
@@ -245,29 +264,8 @@ export async function validateAndFixStats(userId: string): Promise<boolean> {
       .collection(Collections.UserDashboardStats)
       .getFirstListItem<UserDashboardStatsRecord>(`user="${userId}"`);
 
-    // Calculate actual counts
-    const projects = await pb.collection(Collections.Projects).getFullList({
-      filter: `user="${userId}"`,
-      fields: 'status',
-    });
-
-    const actualCounts = {
-      all: projects.length,
-      wishlist: 0,
-      purchased: 0,
-      stash: 0,
-      progress: 0,
-      completed: 0,
-      destashed: 0,
-      archived: 0,
-    };
-
-    for (const project of projects) {
-      const status = project.status;
-      if (isValidStatus(status)) {
-        actualCounts[status]++;
-      }
-    }
+    // Calculate actual counts using the helper function
+    const actualCounts = await countProjectsByStatus(userId);
 
     // Check for discrepancies
     let hasDiscrepancies = false;
