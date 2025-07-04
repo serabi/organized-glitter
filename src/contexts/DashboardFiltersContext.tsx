@@ -274,6 +274,7 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
           drillShape: debouncedFilters.selectedDrillShape,
           yearFinished: debouncedFilters.selectedYearFinished,
           includeMiniKits: debouncedFilters.includeMiniKits,
+          includeDestashed: debouncedFilters.includeDestashed,
           searchTerm: debouncedFilters.searchTerm,
           selectedTags: debouncedFilters.selectedTags,
         },

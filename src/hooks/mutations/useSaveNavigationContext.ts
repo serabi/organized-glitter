@@ -21,6 +21,7 @@ export interface DashboardFilterContext {
     drillShape: string;
     yearFinished: string;
     includeMiniKits: boolean;
+    includeDestashed: boolean;
     searchTerm: string;
     selectedTags: string[];
   };

@@ -59,6 +59,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
     clearAllTags,
     updateYearFinished,
     updateIncludeMiniKits,
+    updateIncludeDestashed,
     updateViewType,
     companies,
     artists,
@@ -81,6 +82,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
   const selectedTags = filters.selectedTags;
   const selectedYearFinished = filters.selectedYearFinished;
   const includeMiniKits = filters.includeMiniKits;
+  const includeDestashed = filters.includeDestashed;
   const viewType = filters.viewType;
   const sortField = filters.sortField;
   const sortDirection = filters.sortDirection;
@@ -179,6 +181,18 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
           />
           <Label htmlFor="include-mini-kits" className="text-sm font-medium">
             Include Mini Kits?
+          </Label>
+        </div>
+
+        <div className="mt-4 flex items-center space-x-2">
+          <Checkbox
+            id="include-destashed-kits"
+            checked={includeDestashed}
+            onCheckedChange={checked => updateIncludeDestashed(Boolean(checked))}
+            data-testid="include-destashed-checkbox"
+          />
+          <Label htmlFor="include-destashed-kits" className="text-sm font-medium">
+            Include Destashed Kits?
           </Label>
         </div>
 
