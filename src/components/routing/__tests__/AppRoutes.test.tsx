@@ -5,8 +5,9 @@ import { MemoryRouter } from 'react-router-dom';
 import '@testing-library/jest-dom';
 
 // Mock all dependencies first
+const mockUseAuth = vi.fn();
 vi.mock('@/hooks/useAuth', () => ({
-  useAuth: vi.fn(),
+  useAuth: mockUseAuth,
 }));
 vi.mock('@/hooks/usePostHogPageTracking', () => ({
   usePostHogPageTracking: () => {},
@@ -120,10 +121,6 @@ vi.mock('@/pages/SupportSuccess', () => ({
 
 // Import the component under test AFTER mocking all dependencies
 import { AppRoutes } from '../AppRoutes';
-
-// Direct function declaration to avoid module resolution issues
-const useAuth = vi.fn();
-const mockUseAuth = useAuth;
 
 // Helper to render routes within a router
 const renderWithRouter = (initialEntries: string[] = ['/']) => {

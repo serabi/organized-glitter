@@ -122,6 +122,7 @@ export const queryKeys = {
     all: ['stats'] as const,
     overview: (userId: string) => [...queryKeys.stats.all, 'overview', userId] as const,
     analytics: (userId: string) => [...queryKeys.stats.all, 'analytics', userId] as const,
+    availableYears: (userId: string) => [...queryKeys.stats.all, 'availableYears', userId] as const,
   },
 
   // Dashboard filter state keys (for optimistic updates)

@@ -14,7 +14,7 @@ interface OptionType {
 
 interface FilterDropdownProps {
   label: string;
-  options: OptionType[] | string[]; // Can accept string array for backward compatibility
+  options: OptionType[] | string[] | undefined; // Can be undefined during loading
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
@@ -30,6 +30,9 @@ const FilterDropdown = React.memo(
     placeholder = 'Select...',
     showAllOption = true, // Default to true for existing filters
   }: FilterDropdownProps) => {
+    // Provide safe default for options to prevent undefined errors
+    const safeOptions = options || [];
+
     // Special cases for plural labels
     const getPluralLabel = (label: string) => {
       const lowerLabel = label.toLowerCase();
@@ -48,8 +51,9 @@ const FilterDropdown = React.memo(
     //   console.log(`FilterDropdown ${label} - Current value:`, value);
     // }, [options, value, label]);
 
-    const isOptionTypeArray = (opts: unknown[]): opts is OptionType[] => {
+    const isOptionTypeArray = (opts: unknown[] | undefined | null): opts is OptionType[] => {
       return (
+        Array.isArray(opts) &&
         opts.length > 0 &&
         typeof opts[0] === 'object' &&
         opts[0] !== null &&
@@ -74,13 +78,13 @@ const FilterDropdown = React.memo(
           </SelectTrigger>
           <SelectContent className="bg-popover dark:bg-gray-800 dark:text-gray-100">
             {showAllOption && <SelectItem value="all">All {getPluralLabel(label)}</SelectItem>}
-            {isOptionTypeArray(options)
-              ? options.map(option => (
+            {isOptionTypeArray(safeOptions)
+              ? safeOptions.map(option => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>
                 ))
-              : (options as string[]).map(option => (
+              : (safeOptions as string[]).map(option => (
                   <SelectItem key={option} value={option}>
                     {option}
                   </SelectItem>

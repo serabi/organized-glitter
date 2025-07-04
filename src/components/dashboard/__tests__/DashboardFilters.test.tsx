@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import DashboardFilters from '../DashboardFilters';
-import { DashboardValidSortField } from '@/features/dashboard/dashboard.constants';
+import { DashboardValidSortField } from '../../../features/dashboard/dashboard.constants';
 
 // Mock child components
 // Mock SearchProjects component
@@ -36,15 +36,25 @@ interface MockFilterDropdownProps {
 
 vi.mock('../FilterDropdown', () => ({
   default: ({ label, value, onChange, options, placeholder }: MockFilterDropdownProps) => (
-    <div data-testid={`filter-dropdown-${label.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}>
+    <div
+      data-testid={`filter-dropdown-${label
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '-')
+        .replace(/-+$/, '')}`}
+    >
       <label>{label}</label>
       <select value={value} onChange={e => onChange(e.target.value)}>
         <option value="all">{placeholder}</option>
-        {options?.map((option: { label: string; value: string } | string) => (
-          <option key={option.value || option} value={option.value || option}>
-            {option.label || option}
-          </option>
-        ))}
+        {options?.map(option => {
+          const isString = typeof option === 'string';
+          const key = isString ? option : option.value;
+          const displayValue = isString ? option : option.label;
+          return (
+            <option key={key} value={key}>
+              {displayValue}
+            </option>
+          );
+        })}
       </select>
     </div>
   ),
@@ -83,9 +93,10 @@ const mockFilters = {
   selectedCompany: 'all',
   selectedArtist: 'all',
   selectedDrillShape: 'all',
-  selectedTags: [],
+  selectedTags: [] as string[],
   selectedYearFinished: 'all',
   includeMiniKits: true,
+  includeDestashed: true,
   viewType: 'grid',
   sortField: 'last_updated' as DashboardValidSortField,
   sortDirection: 'desc' as const,
@@ -100,6 +111,7 @@ const mockToggleTag = vi.fn();
 const mockClearAllTags = vi.fn();
 const mockUpdateYearFinished = vi.fn();
 const mockUpdateIncludeMiniKits = vi.fn();
+const mockUpdateIncludeDestashed = vi.fn();
 const mockUpdateViewType = vi.fn();
 const mockUpdateSort = vi.fn();
 const mockResetAllFilters = vi.fn();
@@ -115,6 +127,7 @@ const mockContextValue = {
   clearAllTags: mockClearAllTags,
   updateYearFinished: mockUpdateYearFinished,
   updateIncludeMiniKits: mockUpdateIncludeMiniKits,
+  updateIncludeDestashed: mockUpdateIncludeDestashed,
   updateViewType: mockUpdateViewType,
   updateSort: mockUpdateSort,
   resetAllFilters: mockResetAllFilters,
@@ -156,6 +169,7 @@ describe('DashboardFilters', () => {
       selectedTags: [],
       selectedYearFinished: 'all',
       includeMiniKits: true,
+      includeDestashed: true,
       viewType: 'grid',
       sortField: 'last_updated',
       sortDirection: 'desc',
@@ -186,6 +200,12 @@ describe('DashboardFilters', () => {
       render(<DashboardFilters />);
 
       expect(screen.getByLabelText(/include mini kits/i)).toBeInTheDocument();
+    });
+
+    it('should render include destashed kits checkbox', () => {
+      render(<DashboardFilters />);
+
+      expect(screen.getByLabelText(/include destashed kits/i)).toBeInTheDocument();
     });
 
     it('should render reset filters button', () => {
@@ -383,6 +403,35 @@ describe('DashboardFilters', () => {
     });
   });
 
+  describe('destashed kits checkbox', () => {
+    it('should be checked when includeDestashed is true', () => {
+      mockFilters.includeDestashed = true;
+
+      render(<DashboardFilters />);
+
+      const checkbox = screen.getByTestId('include-destashed-checkbox');
+      expect(checkbox).toBeChecked();
+    });
+
+    it('should not be checked when includeDestashed is false', () => {
+      mockFilters.includeDestashed = false;
+
+      render(<DashboardFilters />);
+
+      const checkbox = screen.getByTestId('include-destashed-checkbox');
+      expect(checkbox).not.toBeChecked();
+    });
+
+    it('should call updateIncludeDestashed when toggled', () => {
+      render(<DashboardFilters />);
+
+      const checkbox = screen.getByTestId('include-destashed-checkbox');
+      fireEvent.click(checkbox);
+
+      expect(mockUpdateIncludeDestashed).toHaveBeenCalledWith(false);
+    });
+  });
+
   describe('view toggle', () => {
     it('should show current view type', () => {
       mockFilters.viewType = 'grid';
@@ -479,7 +528,8 @@ describe('DashboardFilters', () => {
       fireEvent.change(orderSelect!, { target: { value: 'invalid' } });
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Invalid sort direction value received: invalid')
+        '',
+        expect.stringContaining('DashboardFilters: Invalid sort direction value received:')
       );
       expect(mockUpdateSort).toHaveBeenCalledWith('last_updated', 'desc');
 
@@ -504,6 +554,7 @@ describe('DashboardFilters', () => {
 
       expect(screen.getByTestId('dashboard-filters')).toBeInTheDocument();
       expect(screen.getByTestId('include-mini-kits-checkbox')).toBeInTheDocument();
+      expect(screen.getByTestId('include-destashed-checkbox')).toBeInTheDocument();
       expect(screen.getByTestId('reset-filters-button')).toBeInTheDocument();
     });
 
@@ -511,6 +562,7 @@ describe('DashboardFilters', () => {
       render(<DashboardFilters />);
 
       expect(screen.getByLabelText(/include mini kits/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/include destashed kits/i)).toBeInTheDocument();
     });
   });
 

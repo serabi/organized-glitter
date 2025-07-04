@@ -148,7 +148,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
 
         <FilterDropdown
           label="Tag"
-          options={allTags.map(tag => ({ label: tag.name, value: tag.id }))}
+          options={allTags?.map(tag => ({ label: tag.name, value: tag.id })) || []}
           value={selectedTags.length > 0 ? selectedTags[0] : 'all'} // Show first selected tag or "all"
           onChange={value => {
             if (value === 'all') {

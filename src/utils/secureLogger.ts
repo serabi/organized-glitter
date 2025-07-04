@@ -188,10 +188,53 @@ const createLogger = (prefix?: string): LoggerMethods => {
 // Default logger instance
 const secureLogger = createLogger();
 
-export { createLogger, secureLogger, createSecureEnvSummary, redactSensitiveData };
+/**
+ * Performance logger to measure execution time of functions in development.
+ * Logs are styled for easy identification in the console.
+ */
+const performanceLogger = (() => {
+  const performanceTimers = new Map<string, number>();
+
+  const start = (id: string): string => {
+    if (!isDevelopment) return id;
+    performanceTimers.set(id, performance.now());
+    return id;
+  };
+
+  const end = (id: string, metadata?: Record<string, unknown>) => {
+    if (!isDevelopment || !performanceTimers.has(id)) return;
+
+    const startTime = performanceTimers.get(id)!;
+    const endTime = performance.now();
+    const duration = endTime - startTime;
+    performanceTimers.delete(id);
+
+    const color = duration < 50 ? '#4caf50' : duration < 200 ? '#ff9800' : '#f44336';
+    const formattedDuration = `${duration.toFixed(2)}ms`;
+
+    console.log(
+      `%cPERF%c %c${id}%c - ${formattedDuration}`,
+      'background-color: #607d8b; color: white; padding: 2px 4px; border-radius: 3px;',
+      '',
+      `color: ${color}; font-weight: bold;`,
+      'color: inherit;',
+      metadata || ''
+    );
+  };
+
+  return { start, end };
+})();
+
+export {
+  createLogger,
+  secureLogger,
+  createSecureEnvSummary,
+  redactSensitiveData,
+  performanceLogger,
+};
 
 // Example Usage:
-// import { secureLogger } from '@/utils/secureLogger';
+// import { secureLogger, performanceLogger } from '@/utils/secureLogger';
 // secureLogger.log('This will only appear in development');
 // secureLogger.error('This error will only appear in development', new Error('Test Error'));
 

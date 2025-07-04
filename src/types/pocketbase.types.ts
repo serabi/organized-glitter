@@ -218,20 +218,20 @@ export type UserDashboardSettingsRecord<Tnavigation_context = unknown> = {
 }
 
 export type UserDashboardStatsRecord = {
-	all: number
-	archived: number
-	completed: number
+	all?: number
+	archived?: number
+	completed?: number
 	created?: IsoDateString
-	destashed: number
+	destashed?: number
 	id: string
-	last_updated: IsoDateString
-	progress: number
-	purchased: number
-	stash: number
-	total_projects: number
+	last_updated?: IsoDateString
+	progress?: number
+	purchased?: number
+	stash?: number
+	total_projects?: number
 	updated?: IsoDateString
 	user: RecordIdString
-	wishlist: number
+	wishlist?: number
 }
 
 export enum UserYearlyStatsStatsTypeOptions {
@@ -349,6 +349,7 @@ export type TypedPocketBase = PocketBase & {
 	collection(idOrName: 'randomizer_spins'): RecordService<RandomizerSpinsResponse>
 	collection(idOrName: 'tags'): RecordService<TagsResponse>
 	collection(idOrName: 'user_dashboard_settings'): RecordService<UserDashboardSettingsResponse>
+	collection(idOrName: 'user_dashboard_stats'): RecordService<UserDashboardStatsResponse>
 	collection(idOrName: 'user_yearly_stats'): RecordService<UserYearlyStatsResponse>
 	collection(idOrName: 'users'): RecordService<UsersResponse>
 }

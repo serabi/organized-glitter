@@ -11,7 +11,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { pb } from '@/lib/pocketbase';
 import { createLogger } from '@/utils/secureLogger';
-import { queryKeys } from '@/hooks/queries/queryKeys';
 // Dashboard filter context for persistence
 export interface DashboardFilterContext {
   filters: {
@@ -136,17 +135,15 @@ export const useSaveNavigationContext = () => {
 
   return useMutation({
     mutationFn: saveNavigationContext,
+    // Add mutation key to prevent duplicate concurrent saves for the same user
+    mutationKey: ['saveNavigationContext'],
 
     onSuccess: (_, variables) => {
       const { userId } = variables;
 
-      // Invalidate the dashboard filter state cache to ensure fresh data
-      // on next dashboard load
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.dashboardFilters.state(userId),
-      });
-
-      logger.info(`✅ Successfully saved and invalidated navigation context for user ${userId}`);
+      // Note: Removed unnecessary query invalidation that was causing infinite loops
+      // Dashboard filters are managed in local state and don't need to be invalidated here
+      logger.info(`✅ Successfully saved navigation context for user ${userId}`);
     },
 
     onError: (error, variables) => {

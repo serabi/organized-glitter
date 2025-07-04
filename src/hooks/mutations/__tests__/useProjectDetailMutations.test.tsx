@@ -172,7 +172,7 @@ describe('useProjectDetailMutations', () => {
       });
 
       // Verify getList was called but no deletions occurred
-      expect(mockGetList).toHaveBeenCalledTimes(3); // Once for notes, once for tags, once for stats calculation
+      expect(mockGetList).toHaveBeenCalledTimes(2); // Once for notes, once for tags
       expect(mockDelete).toHaveBeenCalledTimes(0); // No related records to delete
       expect(mockCollectionDelete).toHaveBeenCalledTimes(1); // Only the project itself
     });

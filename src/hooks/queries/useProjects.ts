@@ -15,6 +15,7 @@ export interface ServerFilters {
   drillShape?: string;
   yearFinished?: string;
   includeMiniKits?: boolean;
+  includeDestashed?: boolean;
   searchTerm?: string;
   selectedTags?: string[];
 }
@@ -85,6 +86,11 @@ const buildFilterString = (userId: string, serverFilters: ServerFilters): string
   }
   if (serverFilters.includeMiniKits === false) {
     filterParts.push('kit_category != "mini"'); // Simple literal is fine here
+  }
+
+  // Include destashed filtering - exclude destashed projects unless specifically viewing destashed tab
+  if (serverFilters.includeDestashed === false && serverFilters.status !== 'destashed') {
+    filterParts.push('status != "destashed"');
   }
 
   // Add search term filtering using secure pb.filter() method

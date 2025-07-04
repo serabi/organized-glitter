@@ -1,22 +1,3 @@
-/**
- * @fileoverview Minimal Dashboard Filters Context - Clean, Simple, TypeSafe
- *
- * This context provides a clean, minimal implementation of dashboard filtering
- * with database persistence, URL parameter support, and pagination.
- *
- * Key Features:
- * - Simple useState-based state management
- * - Debounced database saves (300ms)
- * - URL parameter support for navigation
- * - Server-side filtering and pagination
- * - Clean separation of concerns
- * - Stable references to prevent infinite loops
- *
- * @author serabi
- * @since 2025-07-03
- * @version 1.0.0 - Minimal clean implementation
- */
-
 import React, {
   createContext,
   useContext,
@@ -26,28 +7,21 @@ import React, {
   useMemo,
   useRef,
   ReactNode,
+  useReducer,
 } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import useDebounce from '@/hooks/useDebounce';
 import { useMetadata } from '@/contexts/MetadataContext';
-import { useProjects, ServerFilters } from '@/hooks/queries/useProjects';
-import { useDashboardStats } from '@/hooks/queries/useDashboardStats';
-import { useDashboardStatsOptimized } from '@/hooks/queries/useDashboardStatsOptimized';
-import { useAvailableYearsOptimized } from '@/hooks/queries/useDashboardStats';
 import {
   useSaveNavigationContext,
   DashboardFilterContext,
 } from '@/hooks/mutations/useSaveNavigationContext';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger, performanceLogger } from '@/utils/secureLogger';
 import { useToast } from '@/hooks/use-toast';
-import { Project, ProjectFilterStatus, Tag } from '@/types/project';
+import { ProjectFilterStatus, Tag } from '@/types/project';
 import { useRealtimeProjectSync } from '@/hooks/useRealtimeProjectSync';
-import {
-  DashboardValidSortField,
-  DATE_SORT_FIELDS,
-  SORT_FIELD_TO_PROJECT_KEY,
-  SORT_FIELD_TO_FRIENDLY_NAME,
-} from '@/features/dashboard/dashboard.constants';
+import { DashboardValidSortField } from '@/features/dashboard/dashboard.constants';
+import { useDashboardStatsStable } from '@/hooks/queries/useDashboardStatsStable';
 
 const logger = createLogger('DashboardFilters');
 
@@ -71,6 +45,18 @@ export const useRecentlyEdited = () => {
 export type SortDirectionType = 'asc' | 'desc';
 export type ViewType = 'grid' | 'list';
 
+// Status counts interface for StatusTabs component
+export interface CountsForTabsType {
+  all: number;
+  wishlist: number;
+  purchased: number;
+  stash: number;
+  progress: number;
+  completed: number;
+  destashed: number;
+  archived: number;
+}
+
 export interface FilterState {
   // Server-side filters
   activeStatus: ProjectFilterStatus;
@@ -79,6 +65,7 @@ export interface FilterState {
   selectedDrillShape: string;
   selectedYearFinished: string;
   includeMiniKits: boolean;
+  includeDestashed: boolean;
   searchTerm: string;
   selectedTags: string[];
 
@@ -94,64 +81,43 @@ export interface FilterState {
   viewType: ViewType;
 }
 
-export interface CountsForTabsType {
-  all: number;
-  wishlist: number;
-  purchased: number;
-  stash: number;
-  progress: number;
-  completed: number;
-  destashed: number;
-  archived: number;
-}
-
-export interface DynamicSeparatorPropsType {
-  isCurrentSortDateBased: boolean;
-  currentSortDateFriendlyName?: string;
-  currentSortDatePropertyKey?: keyof Project;
-  countOfItemsWithoutCurrentSortDate: number;
-}
-
 export interface DashboardFiltersContextValue {
   // Current filter state
   filters: FilterState;
-
-  // Projects data
-  projects: Project[];
-  isLoadingProjects: boolean;
-  errorProjects: Error | null;
-  totalItems: number;
-  totalPages: number;
-  refetchProjects: () => Promise<void>;
+  debouncedSearchTerm: string; // Provide debounced search term for queries
 
   // Filter actions
-  updateStatus: (status: ProjectFilterStatus) => void;
-  updateCompany: (company: string | null) => void;
-  updateArtist: (artist: string | null) => void;
-  updateDrillShape: (shape: string | null) => void;
-  updateYearFinished: (year: string | null) => void;
-  updateIncludeMiniKits: (include: boolean) => void;
-  updateSearchTerm: (term: string) => void;
-  updateTags: (tags: string[]) => void;
-  toggleTag: (tagId: string) => void;
-  clearAllTags: () => void;
-  updateSort: (field: DashboardValidSortField, direction: SortDirectionType) => void;
-  updatePage: (page: number) => void;
-  updatePageSize: (size: number) => void;
-  updateViewType: (type: ViewType) => void;
-  resetAllFilters: () => void;
+  updateStatus: (status: ProjectFilterStatus, source?: ChangeSource) => void;
+  updateCompany: (company: string | null, source?: ChangeSource) => void;
+  updateArtist: (artist: string | null, source?: ChangeSource) => void;
+  updateDrillShape: (shape: string | null, source?: ChangeSource) => void;
+  updateYearFinished: (year: string | null, source?: ChangeSource) => void;
+  updateIncludeMiniKits: (include: boolean, source?: ChangeSource) => void;
+  updateIncludeDestashed: (include: boolean, source?: ChangeSource) => void;
+  updateSearchTerm: (term: string, source?: ChangeSource) => void;
+  updateTags: (tags: string[], source?: ChangeSource) => void;
+  toggleTag: (tagId: string, source?: ChangeSource) => void;
+  clearAllTags: (source?: ChangeSource) => void;
+  updateSort: (
+    field: DashboardValidSortField,
+    direction: SortDirectionType,
+    source?: ChangeSource
+  ) => void;
+  updatePage: (page: number, source?: ChangeSource) => void;
+  updatePageSize: (size: number, source?: ChangeSource) => void;
+  updateViewType: (type: ViewType, source?: ChangeSource) => void;
+  resetAllFilters: (source?: ChangeSource) => void;
+  batchUpdateFilters: (updates: Partial<FilterState>, source?: ChangeSource) => void;
 
   // Computed values
   getActiveFilterCount: () => number;
   getCountsForTabs: () => CountsForTabsType;
-  dynamicSeparatorProps: DynamicSeparatorPropsType;
 
   // Available options
   companies: { label: string; value: string }[];
   artists: { label: string; value: string }[];
   drillShapes: string[];
   allTags: Tag[];
-  yearFinishedOptions: string[];
 
   // UI state
   searchInputRef: React.RefObject<HTMLInputElement>;
@@ -169,6 +135,7 @@ const getDefaultFilters = (): FilterState => ({
   selectedDrillShape: 'all',
   selectedYearFinished: 'all',
   includeMiniKits: true,
+  includeDestashed: true,
   searchTerm: '',
   selectedTags: [],
   sortField: 'last_updated',
@@ -189,6 +156,7 @@ const validateAndSanitizeFilters = (filters: Partial<FilterState>): FilterState 
     selectedDrillShape: filters.selectedDrillShape ?? defaults.selectedDrillShape,
     selectedYearFinished: filters.selectedYearFinished ?? defaults.selectedYearFinished,
     includeMiniKits: filters.includeMiniKits ?? defaults.includeMiniKits,
+    includeDestashed: filters.includeDestashed ?? defaults.includeDestashed,
     searchTerm: filters.searchTerm ?? defaults.searchTerm,
     selectedTags: Array.isArray(filters.selectedTags)
       ? filters.selectedTags
@@ -199,6 +167,109 @@ const validateAndSanitizeFilters = (filters: Partial<FilterState>): FilterState 
     pageSize: filters.pageSize || defaults.pageSize,
     viewType: filters.viewType || defaults.viewType,
   };
+};
+
+// Define the source of a change for better state management
+export type ChangeSource = 'user' | 'system' | 'real-time' | 'initialization' | 'batch';
+
+// Reducer action types
+type FilterAction =
+  | { type: 'SET_STATUS'; payload: ProjectFilterStatus }
+  | { type: 'SET_COMPANY'; payload: string | null }
+  | { type: 'SET_ARTIST'; payload: string | null }
+  | { type: 'SET_DRILL_SHAPE'; payload: string | null }
+  | { type: 'SET_YEAR_FINISHED'; payload: string | null }
+  | { type: 'SET_INCLUDE_MINI_KITS'; payload: boolean }
+  | { type: 'SET_INCLUDE_DESTASHED'; payload: boolean }
+  | { type: 'SET_SEARCH_TERM'; payload: string }
+  | { type: 'SET_TAGS'; payload: string[] }
+  | { type: 'TOGGLE_TAG'; payload: string }
+  | { type: 'CLEAR_ALL_TAGS' }
+  | { type: 'SET_SORT'; payload: { field: DashboardValidSortField; direction: SortDirectionType } }
+  | { type: 'SET_PAGE'; payload: number }
+  | { type: 'SET_PAGE_SIZE'; payload: number }
+  | { type: 'SET_VIEW_TYPE'; payload: ViewType }
+  | { type: 'RESET_FILTERS' }
+  | { type: 'SET_INITIAL_STATE'; payload: FilterState }
+  | { type: 'BATCH_UPDATE_FILTERS'; payload: Partial<FilterState> };
+
+// Reducer function to manage filter state transitions
+const filtersReducer = (state: FilterState, action: FilterAction): FilterState => {
+  const perfId = performanceLogger.start(`reducer:${action.type}`);
+  let newState: FilterState;
+
+  switch (action.type) {
+    case 'SET_STATUS':
+      newState = { ...state, activeStatus: action.payload, currentPage: 1 };
+      break;
+    case 'SET_COMPANY':
+      newState = { ...state, selectedCompany: action.payload || 'all', currentPage: 1 };
+      break;
+    case 'SET_ARTIST':
+      newState = { ...state, selectedArtist: action.payload || 'all', currentPage: 1 };
+      break;
+    case 'SET_DRILL_SHAPE':
+      newState = { ...state, selectedDrillShape: action.payload || 'all', currentPage: 1 };
+      break;
+    case 'SET_YEAR_FINISHED':
+      newState = { ...state, selectedYearFinished: action.payload || 'all', currentPage: 1 };
+      break;
+    case 'SET_INCLUDE_MINI_KITS':
+      newState = { ...state, includeMiniKits: action.payload, currentPage: 1 };
+      break;
+    case 'SET_INCLUDE_DESTASHED':
+      newState = { ...state, includeDestashed: action.payload, currentPage: 1 };
+      break;
+    case 'SET_SEARCH_TERM':
+      newState = { ...state, searchTerm: action.payload, currentPage: 1 };
+      break;
+    case 'SET_TAGS':
+      newState = { ...state, selectedTags: action.payload, currentPage: 1 };
+      break;
+    case 'TOGGLE_TAG':
+      newState = {
+        ...state,
+        selectedTags: state.selectedTags.includes(action.payload)
+          ? state.selectedTags.filter(id => id !== action.payload)
+          : [...state.selectedTags, action.payload],
+        currentPage: 1,
+      };
+      break;
+    case 'CLEAR_ALL_TAGS':
+      newState = { ...state, selectedTags: [], currentPage: 1 };
+      break;
+    case 'SET_SORT':
+      newState = {
+        ...state,
+        sortField: action.payload.field,
+        sortDirection: action.payload.direction,
+        currentPage: 1,
+      };
+      break;
+    case 'SET_PAGE':
+      newState = { ...state, currentPage: action.payload };
+      break;
+    case 'SET_PAGE_SIZE':
+      newState = { ...state, pageSize: action.payload, currentPage: 1 };
+      break;
+    case 'SET_VIEW_TYPE':
+      newState = { ...state, viewType: action.payload };
+      break;
+    case 'RESET_FILTERS':
+      newState = getDefaultFilters();
+      break;
+    case 'SET_INITIAL_STATE':
+      newState = action.payload;
+      break;
+    case 'BATCH_UPDATE_FILTERS':
+      newState = { ...state, ...action.payload, currentPage: 1 };
+      break;
+    default:
+      newState = state;
+  }
+
+  performanceLogger.end(perfId);
+  return newState;
 };
 
 interface DashboardFiltersProviderProps {
@@ -218,52 +289,114 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Enable real-time project synchronization
-  const { isConnected: isRealtimeConnected } = useRealtimeProjectSync();
+  useRealtimeProjectSync();
+
+  // Dashboard stats for status counts
+  const dashboardStats = useDashboardStatsStable();
 
   // Recently edited project state (moved from Dashboard for context stability)
   const [recentlyEditedProjectId, setRecentlyEditedProjectId] = useState<string | null>(null);
 
-  // Filter state - always start with valid defaults
-  const [filters, setFilters] = useState<FilterState>(() => {
-    try {
-      return getDefaultFilters();
-    } catch (error) {
-      logger.error('Error initializing default filters:', error);
-      // Return minimal safe state
-      return {
-        activeStatus: 'all',
-        selectedCompany: 'all',
-        selectedArtist: 'all',
-        selectedDrillShape: 'all',
-        selectedYearFinished: 'all',
-        includeMiniKits: true,
-        searchTerm: '',
-        selectedTags: [],
-        sortField: 'last_updated',
-        sortDirection: 'desc',
-        currentPage: 1,
-        pageSize: 25,
-        viewType: 'grid',
-      } as FilterState;
-    }
-  });
+  // Centralized state management with useReducer
+  const [filters, dispatch] = useReducer(filtersReducer, getDefaultFilters());
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isAutoSaveEnabled, setIsAutoSaveEnabled] = useState(false);
+
+  // More granular initialization state tracking
+  const initializationStateRef = useRef<'pending' | 'initializing' | 'complete'>('pending');
+
+  // Track the source of filter changes to distinguish user actions from system updates
+  const changeSourceRef = useRef<ChangeSource>('initialization');
+  const lastSaveTimeRef = useRef(0);
+
+  // Track last saved state for content-based deduplication
+  const lastSavedFiltersRef = useRef<FilterState | null>(null);
+
+  // Infinite loop detection - track render cycles
+  const renderCountRef = useRef(0);
+  const lastRenderTimeRef = useRef(Date.now());
+
+  // Check for potential infinite loop (more than 50 renders in 5 seconds)
+  useEffect(() => {
+    renderCountRef.current += 1;
+    const now = Date.now();
+    const timeSinceLastRender = now - lastRenderTimeRef.current;
+
+    // Reset counter if more than 5 seconds have passed
+    if (timeSinceLastRender > 5000) {
+      renderCountRef.current = 1;
+    }
+
+    // Log warning if too many renders detected
+    if (renderCountRef.current > 50) {
+      logger.error('🚨 Infinite loop detected in DashboardFiltersContext', {
+        renderCount: renderCountRef.current,
+        timeWindow: timeSinceLastRender,
+        isInitialized,
+        userId: user?.id,
+      });
+      renderCountRef.current = 0; // Reset to prevent spam
+    }
+
+    lastRenderTimeRef.current = now;
+  });
 
   // Debounced search for better UX
   const debouncedSearchTerm = useDebounce(filters.searchTerm, 300);
   const isSearchPending = filters.searchTerm !== debouncedSearchTerm;
 
   // Debounced filter saving for immediate persistence
-  const debouncedFilters = useDebounce(filters, 300);
+  // Increased debounce time to prevent cascading invalidations
+  const debouncedFilters = useDebounce(filters, 1000);
 
   // Save filters to database when they change (debounced)
   useEffect(() => {
-    if (!isInitialized || !user?.id) return;
+    const perfId = performanceLogger.start('autoSaveEffect');
+
+    if (!isInitialized || !user?.id || !isAutoSaveEnabled) {
+      logger.debug('💾 Auto-save skipped', {
+        isInitialized,
+        hasUser: !!user?.id,
+        isAutoSaveEnabled,
+      });
+      performanceLogger.end(perfId, { skipped: true, reason: 'not_ready' });
+      return;
+    }
+
+    const source = changeSourceRef.current;
+    if (source !== 'user' && source !== 'batch') {
+      logger.debug(`💾 Auto-save skipped - change source is "${source}" not "user" or "batch"`);
+      performanceLogger.end(perfId, { skipped: true, reason: 'invalid_source', source });
+      return;
+    }
+
+    const now = Date.now();
+    if (now - lastSaveTimeRef.current < 1000) {
+      logger.debug('💾 Auto-save skipped - too soon since last save');
+      performanceLogger.end(perfId, { skipped: true, reason: 'rate_limited' });
+      return;
+    }
+
+    if (lastSavedFiltersRef.current) {
+      const hasContentChanged =
+        JSON.stringify(debouncedFilters) !== JSON.stringify(lastSavedFiltersRef.current);
+      if (!hasContentChanged) {
+        logger.debug('💾 Auto-save skipped - filter content unchanged');
+        changeSourceRef.current = 'system';
+        performanceLogger.end(perfId, { skipped: true, reason: 'no_content_change' });
+        return;
+      }
+    }
 
     const saveFilters = async () => {
-      logger.debug('💾 Auto-saving filter changes:', {
-        activeStatus: debouncedFilters.activeStatus,
-        searchTerm: debouncedFilters.searchTerm,
+      const savePerfId = performanceLogger.start('saveNavigationContext.mutate');
+      logger.info('💾 Auto-saving filter changes...', {
+        source,
+        changedKeys: Object.keys(debouncedFilters).filter(
+          key =>
+            lastSavedFiltersRef.current?.[key as keyof FilterState] !==
+            debouncedFilters[key as keyof FilterState]
+        ),
       });
 
       const navigationContext: DashboardFilterContext = {
@@ -295,98 +428,38 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
         },
         {
           onSuccess: () => {
-            logger.debug('✅ Filter changes auto-saved');
+            logger.info('✅ Filter changes auto-saved successfully');
+            lastSavedFiltersRef.current = { ...debouncedFilters };
+            changeSourceRef.current = 'system';
+            lastSaveTimeRef.current = Date.now();
+            performanceLogger.end(savePerfId);
           },
           onError: error => {
             logger.error('❌ Failed to auto-save filter changes:', error);
+            changeSourceRef.current = 'system';
+            performanceLogger.end(savePerfId, { error: true });
           },
         }
       );
     };
 
     saveFilters();
-  }, [debouncedFilters, isInitialized, user?.id, saveNavigationContext]);
-
-  // Server filters for useProjects
-  const serverFilters = useMemo(
-    (): ServerFilters => ({
-      status: filters.activeStatus,
-      company: filters.selectedCompany,
-      artist: filters.selectedArtist,
-      drillShape: filters.selectedDrillShape,
-      yearFinished: filters.selectedYearFinished,
-      includeMiniKits: filters.includeMiniKits,
-      searchTerm: debouncedSearchTerm,
-      selectedTags: filters.selectedTags,
-    }),
-    [
-      filters.activeStatus,
-      filters.selectedCompany,
-      filters.selectedArtist,
-      filters.selectedDrillShape,
-      filters.selectedYearFinished,
-      filters.includeMiniKits,
-      debouncedSearchTerm,
-      filters.selectedTags,
-    ]
-  );
-
-  // Projects query
-  const {
-    data: projectsData,
-    isLoading: isLoadingProjects,
-    error: queryError,
-    refetch: refetchProjects,
-  } = useProjects({
-    userId: user?.id,
-    filters: serverFilters,
-    sortField: filters.sortField,
-    sortDirection: filters.sortDirection,
-    currentPage: filters.currentPage,
-    pageSize: filters.pageSize,
-  });
-
-  // Dashboard stats - try optimized first, fallback to legacy
-  const optimizedStats = useDashboardStatsOptimized();
-  const legacyStats = useDashboardStats();
-
-  // Use optimized stats if available, otherwise fallback to legacy
-  const dashboardStats = optimizedStats.needsFallback ? legacyStats.stats : optimizedStats.stats;
-
-  logger.debug('📊 Dashboard stats source:', {
-    usingOptimized: !optimizedStats.needsFallback,
-    hasOptimizedData: !!optimizedStats.data,
-    hasLegacyData: !!legacyStats.stats,
-    optimizedError: optimizedStats.error?.message,
-  });
-
-  // Available options - get years from dashboard stats to eliminate redundant query
-  const { years: yearFinishedOptionsNumbers } = useAvailableYearsOptimized(user?.id);
-  const yearFinishedOptions = yearFinishedOptionsNumbers.map(year => year.toString());
-
-  // Extract projects data - rely entirely on server-side filtering
-  const projects = useMemo(() => {
-    const raw = projectsData?.projects || [];
-    logger.debug('📊 Projects loaded from server:', {
-      count: raw.length,
-      activeStatus: filters.activeStatus,
-      serverFiltered: true,
-      realtimeConnected: isRealtimeConnected,
-    });
-    return raw;
-  }, [projectsData?.projects, filters.activeStatus, isRealtimeConnected]);
-  const totalItems = projects.length;
-  const totalPages = projectsData?.totalPages || 0;
-  const errorProjects = queryError ? (queryError as Error) : null;
-
-  // Wrap refetch
-  const refetchProjectsAsync = useCallback(async () => {
-    await refetchProjects();
-  }, [refetchProjects]);
+    performanceLogger.end(perfId);
+  }, [debouncedFilters, isInitialized, user?.id, saveNavigationContext.mutate, isAutoSaveEnabled]);
 
   // Use ref to store latest state for save-on-navigation to avoid stale closures
-  const latestStateRef = useRef({ filters, user, isInitialized, saveNavigationContext });
-  latestStateRef.current = { filters, user, isInitialized, saveNavigationContext };
+  const latestStateRef = useRef({
+    filters,
+    user,
+    isInitialized,
+    saveNavigationContext: saveNavigationContext.mutate,
+  });
+  latestStateRef.current = {
+    filters,
+    user,
+    isInitialized,
+    saveNavigationContext: saveNavigationContext.mutate,
+  };
 
   // Save filters on navigation away from dashboard
   const saveFiltersToDatabase = useCallback(() => {
@@ -425,6 +498,7 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
         drillShape: currentFilters.selectedDrillShape,
         yearFinished: currentFilters.selectedYearFinished,
         includeMiniKits: currentFilters.includeMiniKits,
+        includeDestashed: currentFilters.includeDestashed,
         searchTerm: currentFilters.searchTerm,
         selectedTags: currentFilters.selectedTags,
       },
@@ -438,7 +512,7 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       },
     };
 
-    currentSaveNavigationContext.mutate(
+    currentSaveNavigationContext(
       {
         userId: currentUser.id,
         navigationContext,
@@ -482,7 +556,7 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
   useEffect(() => {
     if (
       !user?.id ||
-      isInitialized ||
+      initializationStateRef.current !== 'pending' ||
       userMetadata.isLoading.tags ||
       userMetadata.isLoading.companies ||
       userMetadata.isLoading.artists
@@ -490,8 +564,13 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       return;
     }
 
-    const initializeFromDatabase = async () => {
+    const initializeFilters = async () => {
+      initializationStateRef.current = 'initializing';
+      const perfId = performanceLogger.start('initializeFilters');
+      logger.info('🚀 Initializing dashboard filters...');
+
       let initialFilters = getDefaultFilters();
+      let sourceOfTruth = 'defaults';
 
       try {
         const { pb } = await import('@/lib/pocketbase');
@@ -500,24 +579,14 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
           .getFirstListItem(`user="${user.id}"`);
 
         if (record.navigation_context) {
-          const savedContext = record.navigation_context as Record<string, unknown>;
-          const savedTimestamp = savedContext.preservationContext?.timestamp;
-          const currentTime = Date.now();
-          const timeSinceLastVisit = savedTimestamp ? currentTime - savedTimestamp : Infinity;
-          const twentyFourHours = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+          const savedContext = record.navigation_context as DashboardFilterContext;
+          const savedTimestamp = savedContext.preservationContext?.timestamp ?? 0;
+          const timeSinceLastVisit = Date.now() - savedTimestamp;
+          const twentyFourHours = 24 * 60 * 60 * 1000;
 
-          logger.debug('🕒 Time-based navigation check:', {
-            savedTimestamp,
-            currentTime,
-            timeSinceLastVisit,
-            twentyFourHours,
-            shouldReset: timeSinceLastVisit > twentyFourHours,
-          });
-
-          // Reset to "All" if more than 24 hours since last visit
           if (timeSinceLastVisit > twentyFourHours) {
             logger.info('⏰ Resetting to "All" - more than 24 hours since last visit');
-            initialFilters = getDefaultFilters(); // This defaults to 'all'
+            sourceOfTruth = 'defaults (24h reset)';
           } else {
             const rawSavedFilters = {
               activeStatus: savedContext.filters?.status,
@@ -526,20 +595,18 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
               selectedDrillShape: savedContext.filters?.drillShape,
               selectedYearFinished: savedContext.filters?.yearFinished,
               includeMiniKits: savedContext.filters?.includeMiniKits,
+              includeDestashed: savedContext.filters?.includeDestashed,
               searchTerm: savedContext.filters?.searchTerm,
               selectedTags: savedContext.filters?.selectedTags,
               sortField: savedContext.sortField,
               sortDirection: savedContext.sortDirection,
               currentPage: savedContext.currentPage,
               pageSize: savedContext.pageSize,
-              viewType: 'grid', // Always default to grid
+              viewType: 'grid',
             };
-
-            // Validate and sanitize the loaded state
-            initialFilters = validateAndSanitizeFilters(rawSavedFilters);
-            logger.info('✅ Restored filters from database (recent visit)', {
-              userId: user.id,
-              initialFilters,
+            initialFilters = validateAndSanitizeFilters(rawSavedFilters as Partial<FilterState>);
+            sourceOfTruth = 'database';
+            logger.info('✅ Restored filters from database', {
               timeSinceLastVisit: `${Math.round(timeSinceLastVisit / 1000 / 60)} minutes`,
             });
           }
@@ -547,200 +614,236 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       } catch (error) {
         if (error?.status !== 404) {
           logger.error('Error loading saved filters:', error);
+        } else {
+          logger.info('No saved filter settings found for user. Using defaults.');
+          sourceOfTruth = 'defaults (no record)';
         }
       }
 
-      // 🚀 CRITICAL FIX: Process URL parameters IMMEDIATELY during initialization
-      // URL parameters have HIGHEST PRIORITY and should override:
-      // 1. Default filters
-      // 2. Stored navigation context
-      // 3. Time-based resets (24+ hour logic)
       const urlParams = new URLSearchParams(location.search);
       if (urlParams.toString().length > 0) {
-        logger.info('🔥 Processing URL parameters during initialization - HIGHEST PRIORITY', {
-          search: location.search,
-          beforeFilters: initialFilters,
-          willOverrideTimeBasedReset: true,
-        });
-
-        // Status filter - this is the key fix for the bug
-        const urlStatus = urlParams.get('status');
-        logger.debug('🔍 Processing URL status parameter:', {
-          urlStatus,
-          currentActiveStatus: initialFilters.activeStatus,
-          isValidStatus:
-            urlStatus &&
-            [
-              'wishlist',
-              'purchased',
-              'stash',
-              'progress',
-              'completed',
-              'destashed',
-              'archived',
-            ].includes(urlStatus),
-        });
-
-        if (
-          urlStatus &&
-          [
-            'wishlist',
-            'purchased',
-            'stash',
-            'progress',
-            'completed',
-            'destashed',
-            'archived',
-          ].includes(urlStatus)
-        ) {
-          const previousStatus = initialFilters.activeStatus;
-          initialFilters.activeStatus = urlStatus as ProjectFilterStatus;
-          logger.info('🎯 URL status applied during initialization - OVERRIDING previous value', {
-            urlStatus,
-            previousStatus,
-            finalStatus: initialFilters.activeStatus,
-            wasTimeBasedReset: previousStatus === 'all',
-          });
-        } else if (urlStatus) {
-          logger.warn('❌ Invalid URL status parameter ignored:', {
-            urlStatus,
-            validOptions: [
-              'wishlist',
-              'purchased',
-              'stash',
-              'progress',
-              'completed',
-              'destashed',
-              'archived',
-            ],
-          });
+        logger.info('🔥 Processing URL parameters, overriding existing state...');
+        sourceOfTruth = 'url_params';
+        const urlFilters: Partial<FilterState> = {};
+        const status = urlParams.get('status');
+        if (status) urlFilters.activeStatus = status as ProjectFilterStatus;
+        const company = urlParams.get('company');
+        if (company) urlFilters.selectedCompany = company;
+        const artist = urlParams.get('artist');
+        if (artist) urlFilters.selectedArtist = artist;
+        const tag = urlParams.get('tag');
+        if (tag) {
+          const matchingTag = userMetadata.tags.find(t => t.name === tag);
+          if (matchingTag) urlFilters.selectedTags = [matchingTag.id];
         }
+        const year = urlParams.get('year');
+        if (year) urlFilters.selectedYearFinished = year;
+        const drillShape = urlParams.get('drillShape');
+        if (drillShape) urlFilters.selectedDrillShape = drillShape;
 
-        // Apply other URL parameters
-        const urlCompany = urlParams.get('company');
-        if (urlCompany) {
-          initialFilters.selectedCompany = urlCompany;
-        }
-
-        const urlArtist = urlParams.get('artist');
-        if (urlArtist) {
-          initialFilters.selectedArtist = urlArtist;
-        }
-
-        const urlTag = urlParams.get('tag');
-        if (urlTag) {
-          const matchingTag = userMetadata.tags.find(tag => tag.name === urlTag);
-          if (matchingTag) {
-            initialFilters.selectedTags = [matchingTag.id];
-          }
-        }
-
-        const urlYear = urlParams.get('year');
-        if (urlYear) {
-          initialFilters.selectedYearFinished = urlYear;
-        }
-
-        const urlDrillShape = urlParams.get('drillShape');
-        if (urlDrillShape) {
-          initialFilters.selectedDrillShape = urlDrillShape;
-        }
-
-        // Clear URL parameters for clean URLs
+        initialFilters = { ...initialFilters, ...urlFilters };
+        logger.info('✅ URL parameters applied', { applied: urlFilters });
         navigate(location.pathname, { replace: true });
-
-        logger.info('✅ URL parameters processed during initialization', {
-          finalFilters: initialFilters,
-        });
       }
 
-      setFilters(initialFilters);
+      logger.info('🏁 Filter initialization complete', { sourceOfTruth });
+      dispatch({ type: 'SET_INITIAL_STATE', payload: initialFilters });
+      changeSourceRef.current = 'initialization';
       setIsInitialized(true);
+      initializationStateRef.current = 'complete';
+
+      // Enable auto-save after a short delay to prevent race conditions
+      setTimeout(() => {
+        setIsAutoSaveEnabled(true);
+        logger.info('✅ Auto-save mechanism enabled.');
+      }, 1500);
+
+      performanceLogger.end(perfId);
     };
 
-    initializeFromDatabase();
+    initializeFilters();
   }, [
     user?.id,
+    isInitialized,
     userMetadata.isLoading.tags,
     userMetadata.isLoading.companies,
     userMetadata.isLoading.artists,
     location.search,
     location.pathname,
     navigate,
-    userMetadata.tags, // Need this for tag name lookups
-    isInitialized, // Include this dependency
+    userMetadata.tags,
   ]);
 
   // NOTE: URL parameter processing moved to initialization for immediate application
 
-  // Filter update functions
-  const updateStatus = useCallback((status: ProjectFilterStatus) => {
-    setFilters(prev => ({ ...prev, activeStatus: status, currentPage: 1 }));
-  }, []);
+  // Wrapper for dispatch to track change source and log changes
+  const dispatchWithSource = useCallback(
+    (action: FilterAction, source: ChangeSource = 'user') => {
+      // Use latestStateRef to get current state without causing dependency changes
+      const prevState = latestStateRef.current.filters;
+      changeSourceRef.current = source;
 
-  const updateCompany = useCallback((company: string | null) => {
-    setFilters(prev => ({ ...prev, selectedCompany: company || 'all', currentPage: 1 }));
-  }, []);
+      const logPayload = 'payload' in action ? action.payload : 'No payload for this action type';
 
-  const updateArtist = useCallback((artist: string | null) => {
-    setFilters(prev => ({ ...prev, selectedArtist: artist || 'all', currentPage: 1 }));
-  }, []);
+      logger.debug(`🚀 Dispatching filter action: ${action.type}`, {
+        source,
+        payload: logPayload,
+      });
 
-  const updateDrillShape = useCallback((shape: string | null) => {
-    setFilters(prev => ({ ...prev, selectedDrillShape: shape || 'all', currentPage: 1 }));
-  }, []);
+      const perfId = performanceLogger.start(`dispatch:${action.type}`);
+      dispatch(action);
+      performanceLogger.end(perfId);
 
-  const updateYearFinished = useCallback((year: string | null) => {
-    setFilters(prev => ({ ...prev, selectedYearFinished: year || 'all', currentPage: 1 }));
-  }, []);
+      // Log state change after dispatch
+      // Use setTimeout to allow state to update before logging
+      setTimeout(() => {
+        const nextState = latestStateRef.current.filters;
+        const changedKeys = Object.keys(nextState).filter(
+          key => nextState[key as keyof FilterState] !== prevState[key as keyof FilterState]
+        );
+        if (changedKeys.length > 0) {
+          logger.info(`🔄 Filter state updated via ${action.type}`, {
+            source,
+            changedKeys,
+            changes: changedKeys.reduce(
+              (acc: Record<string, { from: unknown; to: unknown }>, key) => {
+                acc[key] = {
+                  from: prevState[key as keyof FilterState],
+                  to: nextState[key as keyof FilterState],
+                };
+                return acc;
+              },
+              {}
+            ),
+          });
+        }
+      }, 0);
+    },
+    [dispatch] // Remove filters dependency to stabilize callback reference
+  );
 
-  const updateIncludeMiniKits = useCallback((include: boolean) => {
-    setFilters(prev => ({ ...prev, includeMiniKits: include, currentPage: 1 }));
-  }, []);
+  // Filter update functions (now dispatching actions)
+  const updateStatus = useCallback(
+    (status: ProjectFilterStatus, source?: ChangeSource) => {
+      dispatchWithSource({ type: 'SET_STATUS', payload: status }, source);
+    },
+    [dispatchWithSource]
+  );
 
-  const updateSearchTerm = useCallback((term: string) => {
-    setFilters(prev => ({ ...prev, searchTerm: term, currentPage: 1 }));
-  }, []);
+  const updateCompany = useCallback(
+    (company: string | null, source?: ChangeSource) => {
+      dispatchWithSource({ type: 'SET_COMPANY', payload: company }, source);
+    },
+    [dispatchWithSource]
+  );
 
-  const updateTags = useCallback((tags: string[]) => {
-    setFilters(prev => ({ ...prev, selectedTags: tags, currentPage: 1 }));
-  }, []);
+  const updateArtist = useCallback(
+    (artist: string | null, source?: ChangeSource) => {
+      dispatchWithSource({ type: 'SET_ARTIST', payload: artist }, source);
+    },
+    [dispatchWithSource]
+  );
 
-  const toggleTag = useCallback((tagId: string) => {
-    setFilters(prev => ({
-      ...prev,
-      selectedTags: prev.selectedTags.includes(tagId)
-        ? prev.selectedTags.filter(id => id !== tagId)
-        : [...prev.selectedTags, tagId],
-      currentPage: 1,
-    }));
-  }, []);
+  const updateDrillShape = useCallback(
+    (shape: string | null, source?: ChangeSource) => {
+      dispatchWithSource({ type: 'SET_DRILL_SHAPE', payload: shape }, source);
+    },
+    [dispatchWithSource]
+  );
 
-  const clearAllTags = useCallback(() => {
-    setFilters(prev => ({ ...prev, selectedTags: [], currentPage: 1 }));
-  }, []);
+  const updateYearFinished = useCallback(
+    (year: string | null, source?: ChangeSource) => {
+      dispatchWithSource({ type: 'SET_YEAR_FINISHED', payload: year }, source);
+    },
+    [dispatchWithSource]
+  );
 
-  const updateSort = useCallback((field: DashboardValidSortField, direction: SortDirectionType) => {
-    setFilters(prev => ({ ...prev, sortField: field, sortDirection: direction, currentPage: 1 }));
-  }, []);
+  const updateIncludeMiniKits = useCallback(
+    (include: boolean, source?: ChangeSource) => {
+      dispatchWithSource({ type: 'SET_INCLUDE_MINI_KITS', payload: include }, source);
+    },
+    [dispatchWithSource]
+  );
 
-  const updatePage = useCallback((page: number) => {
-    setFilters(prev => ({ ...prev, currentPage: page }));
-  }, []);
+  const updateIncludeDestashed = useCallback(
+    (include: boolean, source?: ChangeSource) => {
+      dispatchWithSource({ type: 'SET_INCLUDE_DESTASHED', payload: include }, source);
+    },
+    [dispatchWithSource]
+  );
 
-  const updatePageSize = useCallback((size: number) => {
-    setFilters(prev => ({ ...prev, pageSize: size, currentPage: 1 }));
-  }, []);
+  const updateSearchTerm = useCallback(
+    (term: string, source?: ChangeSource) => {
+      dispatchWithSource({ type: 'SET_SEARCH_TERM', payload: term }, source);
+    },
+    [dispatchWithSource]
+  );
 
-  const updateViewType = useCallback((type: ViewType) => {
-    setFilters(prev => ({ ...prev, viewType: type }));
-  }, []);
+  const updateTags = useCallback(
+    (tags: string[], source?: ChangeSource) => {
+      dispatchWithSource({ type: 'SET_TAGS', payload: tags }, source);
+    },
+    [dispatchWithSource]
+  );
 
-  const resetAllFilters = useCallback(() => {
-    setFilters(getDefaultFilters());
-    if (searchInputRef.current) {
-      searchInputRef.current.value = '';
-    }
-  }, []);
+  const toggleTag = useCallback(
+    (tagId: string, source?: ChangeSource) => {
+      dispatchWithSource({ type: 'TOGGLE_TAG', payload: tagId }, source);
+    },
+    [dispatchWithSource]
+  );
+
+  const clearAllTags = useCallback(
+    (source?: ChangeSource) => {
+      dispatchWithSource({ type: 'CLEAR_ALL_TAGS' }, source);
+    },
+    [dispatchWithSource]
+  );
+
+  const updateSort = useCallback(
+    (field: DashboardValidSortField, direction: SortDirectionType, source?: ChangeSource) => {
+      dispatchWithSource({ type: 'SET_SORT', payload: { field, direction } }, source);
+    },
+    [dispatchWithSource]
+  );
+
+  const updatePage = useCallback(
+    (page: number, source: ChangeSource = 'system') => {
+      dispatchWithSource({ type: 'SET_PAGE', payload: page }, source);
+    },
+    [dispatchWithSource]
+  );
+
+  const updatePageSize = useCallback(
+    (size: number, source?: ChangeSource) => {
+      dispatchWithSource({ type: 'SET_PAGE_SIZE', payload: size }, source);
+    },
+    [dispatchWithSource]
+  );
+
+  const updateViewType = useCallback(
+    (type: ViewType, source: ChangeSource = 'system') => {
+      dispatchWithSource({ type: 'SET_VIEW_TYPE', payload: type }, source);
+    },
+    [dispatchWithSource]
+  );
+
+  const resetAllFilters = useCallback(
+    (source?: ChangeSource) => {
+      dispatchWithSource({ type: 'RESET_FILTERS' }, source);
+      if (searchInputRef.current) {
+        searchInputRef.current.value = '';
+      }
+    },
+    [dispatchWithSource]
+  );
+
+  const batchUpdateFilters = useCallback(
+    (updates: Partial<FilterState>, source: ChangeSource = 'batch') => {
+      dispatchWithSource({ type: 'BATCH_UPDATE_FILTERS', payload: updates }, source);
+    },
+    [dispatchWithSource]
+  );
 
   // Computed values
   const getActiveFilterCount = useCallback(() => {
@@ -751,66 +854,43 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
     if (filters.selectedDrillShape !== 'all') count++;
     if (filters.selectedYearFinished !== 'all') count++;
     if (!filters.includeMiniKits) count++;
+    if (!filters.includeDestashed) count++;
     if (filters.searchTerm) count++;
     if (filters.selectedTags.length > 0) count++;
     return count;
   }, [filters]);
 
   const getCountsForTabs = useCallback((): CountsForTabsType => {
-    const statusBreakdown = dashboardStats?.status_breakdown;
+    const statusBreakdown = dashboardStats.stats?.status_breakdown;
 
-    logger.debug('🔢 Getting counts for tabs:', {
-      hasDashboardStats: !!dashboardStats,
-      hasStatusBreakdown: !!statusBreakdown,
-      statusBreakdown,
-    });
-
-    const totalProjects = statusBreakdown
-      ? Object.values(statusBreakdown).reduce(
-          (sum: number, count: unknown) => sum + (typeof count === 'number' ? count : 0),
-          0
-        )
-      : 0;
-
-    const counts = {
-      all: totalProjects,
-      wishlist: typeof statusBreakdown?.wishlist === 'number' ? statusBreakdown.wishlist : 0,
-      purchased: typeof statusBreakdown?.purchased === 'number' ? statusBreakdown.purchased : 0,
-      stash: typeof statusBreakdown?.stash === 'number' ? statusBreakdown.stash : 0,
-      progress: typeof statusBreakdown?.progress === 'number' ? statusBreakdown.progress : 0,
-      completed: typeof statusBreakdown?.completed === 'number' ? statusBreakdown.completed : 0,
-      destashed: typeof statusBreakdown?.destashed === 'number' ? statusBreakdown.destashed : 0,
-      archived: typeof statusBreakdown?.archived === 'number' ? statusBreakdown.archived : 0,
-    };
-
-    logger.debug('🎯 Final tab counts:', counts);
-    return counts;
-  }, [dashboardStats]);
-
-  const dynamicSeparatorProps = useMemo((): DynamicSeparatorPropsType => {
-    const isCurrentSortDateBased = DATE_SORT_FIELDS.includes(filters.sortField);
-
-    if (!isCurrentSortDateBased) {
+    if (!statusBreakdown) {
+      // Return fallback counts when loading or no data
       return {
-        isCurrentSortDateBased: false,
-        countOfItemsWithoutCurrentSortDate: 0,
+        all: 0,
+        wishlist: 0,
+        purchased: 0,
+        stash: 0,
+        progress: 0,
+        completed: 0,
+        destashed: 0,
+        archived: 0,
       };
     }
 
-    const currentSortDatePropertyKey = SORT_FIELD_TO_PROJECT_KEY[filters.sortField];
-    const currentSortDateFriendlyName = SORT_FIELD_TO_FRIENDLY_NAME[filters.sortField];
-
-    const countOfItemsWithoutCurrentSortDate = projects.filter(
-      project => !project[currentSortDatePropertyKey]
-    ).length;
+    // Calculate total count for "all" tab
+    const all = Object.values(statusBreakdown).reduce((sum, count) => sum + count, 0);
 
     return {
-      isCurrentSortDateBased,
-      currentSortDateFriendlyName,
-      currentSortDatePropertyKey,
-      countOfItemsWithoutCurrentSortDate,
+      all,
+      wishlist: statusBreakdown.wishlist,
+      purchased: statusBreakdown.purchased,
+      stash: statusBreakdown.stash,
+      progress: statusBreakdown.progress,
+      completed: statusBreakdown.completed,
+      destashed: statusBreakdown.destashed,
+      archived: statusBreakdown.archived,
     };
-  }, [filters.sortField, projects]);
+  }, [dashboardStats.stats?.status_breakdown]);
 
   // Available options
   const companies = useMemo(
@@ -849,18 +929,14 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
   const contextValue: DashboardFiltersContextValue = useMemo(
     () => ({
       filters,
-      projects,
-      isLoadingProjects,
-      errorProjects,
-      totalItems,
-      totalPages,
-      refetchProjects: refetchProjectsAsync,
+      debouncedSearchTerm,
       updateStatus,
       updateCompany,
       updateArtist,
       updateDrillShape,
       updateYearFinished,
       updateIncludeMiniKits,
+      updateIncludeDestashed,
       updateSearchTerm,
       updateTags,
       toggleTag,
@@ -870,32 +946,27 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       updatePageSize,
       updateViewType,
       resetAllFilters,
+      batchUpdateFilters,
       getActiveFilterCount,
       getCountsForTabs,
-      dynamicSeparatorProps,
       companies,
       artists,
       drillShapes,
       allTags,
-      yearFinishedOptions,
       searchInputRef,
       isSearchPending,
       isMetadataLoading,
     }),
     [
       filters,
-      projects,
-      isLoadingProjects,
-      errorProjects,
-      totalItems,
-      totalPages,
-      refetchProjectsAsync,
+      debouncedSearchTerm,
       updateStatus,
       updateCompany,
       updateArtist,
       updateDrillShape,
       updateYearFinished,
       updateIncludeMiniKits,
+      updateIncludeDestashed,
       updateSearchTerm,
       updateTags,
       toggleTag,
@@ -905,14 +976,13 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       updatePageSize,
       updateViewType,
       resetAllFilters,
+      batchUpdateFilters,
       getActiveFilterCount,
       getCountsForTabs,
-      dynamicSeparatorProps,
       companies,
       artists,
       drillShapes,
       allTags,
-      yearFinishedOptions,
       searchInputRef,
       isSearchPending,
       isMetadataLoading,
