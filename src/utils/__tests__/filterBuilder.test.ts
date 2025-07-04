@@ -350,13 +350,13 @@ describe('Security: Field Name Validation', () => {
     
     beforeEach(() => {
       // Run these tests in production mode to avoid error throwing
-      (import.meta.env as any).DEV = false;
+      (import.meta.env as Record<string, unknown>).DEV = false;
     });
     
     afterEach(() => {
       consoleSpy.mockClear();
       // Restore original environment
-      (import.meta.env as any).DEV = originalEnv;
+      (import.meta.env as Record<string, unknown>).DEV = originalEnv;
     });
 
     it('should reject malicious field names in equals()', () => {
@@ -447,9 +447,9 @@ describe('Security: Field Name Validation', () => {
       const filter = createFilter()
         .userScope('user123')
         .equals('', 'test')
-        .equals(null as any, 'test')
-        .equals(undefined as any, 'test')
-        .equals(123 as any, 'test')
+        .equals(null as string, 'test')
+        .equals(undefined as string, 'test')
+        .equals(String(123), 'test')
         .build();
 
       // Should only contain the valid userScope filter
@@ -462,12 +462,12 @@ describe('Security: Field Name Validation', () => {
     
     afterEach(() => {
       // Restore original environment
-      (import.meta.env as any).DEV = originalEnv;
+      (import.meta.env as Record<string, unknown>).DEV = originalEnv;
     });
 
     it('should throw errors in development mode for invalid fields', () => {
       // Mock development environment
-      (import.meta.env as any).DEV = true;
+      (import.meta.env as Record<string, unknown>).DEV = true;
       
       expect(() => {
         createFilter().equals('malicious_field; DROP TABLE;--', 'test');
@@ -476,7 +476,7 @@ describe('Security: Field Name Validation', () => {
 
     it('should not throw errors in production mode for invalid fields', () => {
       // Mock production environment
-      (import.meta.env as any).DEV = false;
+      (import.meta.env as Record<string, unknown>).DEV = false;
       
       expect(() => {
         const filter = createFilter()
@@ -494,13 +494,13 @@ describe('Security: Field Name Validation', () => {
     
     beforeEach(() => {
       // Run these tests in production mode to avoid error throwing
-      (import.meta.env as any).DEV = false;
+      (import.meta.env as Record<string, unknown>).DEV = false;
     });
     
     afterEach(() => {
       consoleSpy.mockClear();
       // Restore original environment
-      (import.meta.env as any).DEV = originalEnv;
+      (import.meta.env as Record<string, unknown>).DEV = originalEnv;
     });
 
     it('should log security violations with context', () => {
@@ -533,12 +533,12 @@ describe('Security: Field Name Validation', () => {
     
     beforeEach(() => {
       // Run these tests in production mode to avoid error throwing
-      (import.meta.env as any).DEV = false;
+      (import.meta.env as Record<string, unknown>).DEV = false;
     });
     
     afterEach(() => {
       // Restore original environment
-      (import.meta.env as any).DEV = originalEnv;
+      (import.meta.env as Record<string, unknown>).DEV = originalEnv;
     });
     it('should handle complex SQL injection attempts', () => {
       const sqlInjectionAttempts = [

@@ -31,13 +31,12 @@ const invalidateProjectQueries = async (
   if (projectId) {
     if (isDeletion) {
       // For deletions, remove the project and related data completely from cache to prevent 404 refetch attempts
-      invalidations.push(
-        queryClient.removeQueries({ queryKey: queryKeys.projects.detail(projectId), exact: true }),
-        queryClient.removeQueries({
-          queryKey: queryKeys.progressNotes.list(projectId),
-          exact: true,
-        })
-      );
+      // removeQueries is synchronous in TanStack Query v5, so handle separately from async invalidations
+      queryClient.removeQueries({ queryKey: queryKeys.projects.detail(projectId), exact: true });
+      queryClient.removeQueries({
+        queryKey: queryKeys.progressNotes.list(projectId),
+        exact: true,
+      });
     } else {
       // For non-deletion operations, invalidate to trigger refetch with fresh data
       invalidations.push(
@@ -189,6 +188,24 @@ export const useUpdateProjectStatusMutation = () => {
           });
 
           // Mark dashboard stats as stale without immediate refetch
+          // CRITICAL FIX: Include all cache key segments for proper invalidation
+          const currentYear = new Date().getFullYear();
+          const statsQueryKey = [...queryKeys.stats.overview(user.id), 'dashboard', currentYear];
+          
+          logger.debug('🔄 Invalidating dashboard stats cache for status update:', {
+            projectId,
+            newStatus: status,
+            userId: user.id,
+            statsQueryKey,
+            cacheKeyBefore: queryKeys.stats.overview(user.id)
+          });
+          
+          queryClient.invalidateQueries({
+            queryKey: statsQueryKey,
+            refetchType: 'none',
+          });
+          
+          // Also invalidate the broader stats to catch any other year queries
           queryClient.invalidateQueries({
             queryKey: queryKeys.stats.overview(user.id),
             refetchType: 'none',

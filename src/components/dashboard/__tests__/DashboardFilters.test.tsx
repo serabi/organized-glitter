@@ -5,8 +5,15 @@ import DashboardFilters from '../DashboardFilters';
 import { DashboardValidSortField } from '@/features/dashboard/dashboard.constants';
 
 // Mock child components
+// Mock SearchProjects component
+interface MockSearchProjectsProps {
+  searchTerm: string;
+  onSearchChange: (term: string) => void;
+  isPending?: boolean;
+}
+
 vi.mock('../SearchProjects', () => ({
-  default: ({ searchTerm, onSearchChange, isPending }: any) => (
+  default: ({ searchTerm, onSearchChange, isPending }: MockSearchProjectsProps) => (
     <div data-testid="search-projects">
       <input 
         data-testid="search-input"
@@ -18,13 +25,22 @@ vi.mock('../SearchProjects', () => ({
   ),
 }));
 
+// Mock FilterDropdown component
+interface MockFilterDropdownProps {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options?: Array<{ label: string; value: string }> | string[];
+  placeholder?: string;
+}
+
 vi.mock('../FilterDropdown', () => ({
-  default: ({ label, value, onChange, options, placeholder }: any) => (
+  default: ({ label, value, onChange, options, placeholder }: MockFilterDropdownProps) => (
     <div data-testid={`filter-dropdown-${label.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}>
       <label>{label}</label>
       <select value={value} onChange={(e) => onChange(e.target.value)}>
         <option value="all">{placeholder}</option>
-        {options?.map((option: any) => (
+        {options?.map((option: { label: string; value: string } | string) => (
           <option key={option.value || option} value={option.value || option}>
             {option.label || option}
           </option>
@@ -34,8 +50,16 @@ vi.mock('../FilterDropdown', () => ({
   ),
 }));
 
+// Mock ViewToggle component
+type ViewType = 'grid' | 'list';
+
+interface MockViewToggleProps {
+  activeView: ViewType;
+  onViewChange: (view: ViewType) => void;
+}
+
 vi.mock('../ViewToggle', () => ({
-  default: ({ activeView, onViewChange }: any) => (
+  default: ({ activeView, onViewChange }: MockViewToggleProps) => (
     <div data-testid="view-toggle">
       <button 
         onClick={() => onViewChange('grid')}

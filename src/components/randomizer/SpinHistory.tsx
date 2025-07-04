@@ -125,6 +125,13 @@ export const SpinHistory: React.FC<SpinHistoryProps> = ({ userId, onClearHistory
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
+      
+      // Check if the date is invalid
+      if (isNaN(date.getTime())) {
+        logger.error('Invalid date string', { dateString });
+        return 'Unknown';
+      }
+      
       const now = new Date();
       const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
 
@@ -157,7 +164,7 @@ export const SpinHistory: React.FC<SpinHistoryProps> = ({ userId, onClearHistory
         </div>
         <div className="space-y-2">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="space-y-2 rounded-lg border p-3">
+            <div key={i} className="space-y-2 rounded-lg border p-3" data-testid="spin-skeleton">
               <div className="h-4 w-3/4 animate-pulse rounded bg-gray-200" />
               <div className="h-3 w-1/2 animate-pulse rounded bg-gray-100" />
             </div>
@@ -184,6 +191,7 @@ export const SpinHistory: React.FC<SpinHistoryProps> = ({ userId, onClearHistory
               onClearHistory();
             }}
             className="text-destructive hover:text-destructive"
+            aria-label="Clear spin history"
           >
             <Trash2 className="mr-1 h-4 w-4" />
             Clear
@@ -234,6 +242,7 @@ export const SpinHistory: React.FC<SpinHistoryProps> = ({ userId, onClearHistory
                             projectTitle: spin.project_title,
                           });
                         }}
+                        aria-label={`Go to project: ${spin.project_title}`}
                       >
                         <ExternalLink className="h-4 w-4" />
                       </Link>

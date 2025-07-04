@@ -286,8 +286,17 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
   const { years: yearFinishedOptions } = useAvailableYearsAsStrings({ userId: user?.id });
   
   // Extract projects data
-  const projects = useMemo(() => projectsData?.projects || [], [projectsData?.projects]);
-  const totalItems = projectsData?.totalItems || 0;
+  const projects = useMemo(() => {
+    const raw = projectsData?.projects || [];
+    // Strict client-side filter for Purchased section
+    if (filters.activeStatus === 'purchased') {
+      // eslint-disable-next-line no-console
+      console.debug('[Debug] Client-side strict filter for Purchased section applied');
+      return raw.filter(p => p.status === 'purchased');
+    }
+    return raw;
+  }, [projectsData?.projects, filters.activeStatus]);
+  const totalItems = projects.length;
   const totalPages = projectsData?.totalPages || 0;
   const errorProjects = queryError ? (queryError as Error) : null;
   

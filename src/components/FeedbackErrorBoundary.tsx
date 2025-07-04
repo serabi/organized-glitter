@@ -1,7 +1,7 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
 import { logger } from '@/utils/logger';
 import { captureException } from '@/utils/posthog';
-import { showUserReportDialog } from './FeedbackDialogProvider';
+import { showUserReportDialog } from './FeedbackDialogStore';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';

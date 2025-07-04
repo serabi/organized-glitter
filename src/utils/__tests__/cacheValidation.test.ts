@@ -34,9 +34,9 @@ describe('cacheValidation', () => {
     });
 
     it('should handle edge cases', () => {
-      expect(isValidPocketBaseId(null as any)).toBe(false);
-      expect(isValidPocketBaseId(undefined as any)).toBe(false);
-      expect(isValidPocketBaseId(123 as any)).toBe(false);
+      expect(isValidPocketBaseId(null as unknown as string)).toBe(false);
+      expect(isValidPocketBaseId(undefined as unknown as string)).toBe(false);
+      expect(isValidPocketBaseId(123 as unknown as string)).toBe(false);
     });
   });
 

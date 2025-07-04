@@ -173,7 +173,7 @@ const fetchProjects = async (
           })
           .filter((tag): tag is NonNullable<typeof tag> => tag !== null)
       : [];
-
+  
     return {
       id: projectRecord.id as string,
       userId: projectRecord.user as string,
@@ -212,6 +212,12 @@ const fetchProjects = async (
       updatedAt: projectRecord.updated || '',
     };
   });
+
+  // Log all project statuses returned from server for debugging
+  logger.debug(
+    '[Debug] Project statuses from server:',
+    projectsData.map(p => ({ id: p.id, status: p.status, title: p.title }))
+  );
 
   logger.info(`Projects fetched: ${projectsData.length} of ${resultList.totalItems}`);
 

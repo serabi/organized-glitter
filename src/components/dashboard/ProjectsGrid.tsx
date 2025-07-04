@@ -59,6 +59,17 @@ const ProjectsGridComponent = () => {
     updatePageSize,
   } = dashboardContext;
 
+  // Debug log: print all project statuses in the grid for the Purchased section
+  React.useEffect(() => {
+    if (filters.activeStatus === 'purchased' && !loading) {
+      // eslint-disable-next-line no-console
+      console.debug(
+        '[Debug] Projects rendered in Purchased section:',
+        projects.map(p => ({ id: p.id, status: p.status, title: p.title }))
+      );
+    }
+  }, [filters.activeStatus, loading, projects]);
+
   // Extract individual properties from filters
   const viewType = filters.viewType;
   const searchTerm = filters.searchTerm;

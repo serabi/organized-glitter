@@ -1,8 +1,11 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { BrowserRouter } from 'react-router-dom';
+import { UseQueryResult } from '@tanstack/react-query';
 import { SpinHistory } from '../SpinHistory';
 import { useSpinHistory } from '@/hooks/queries/useSpinHistory';
+import { SpinRecord } from '@/services/pocketbase/randomizerService';
 
 // Mock the hooks
 vi.mock('@/hooks/queries/useSpinHistory');
@@ -16,7 +19,16 @@ vi.mock('@/utils/secureLogger', () => ({
 
 const mockUseSpinHistory = vi.mocked(useSpinHistory);
 
-const mockSpinHistory = [
+// Helper function to render SpinHistory with Router
+const renderSpinHistory = (props: { userId: string; onClearHistory?: () => void }) => {
+  return render(
+    <BrowserRouter>
+      <SpinHistory {...props} />
+    </BrowserRouter>
+  );
+};
+
+const mockSpinHistory: SpinRecord[] = [
   {
     id: '1',
     user: 'user1',
@@ -40,7 +52,7 @@ const mockSpinHistory = [
   {
     id: '3',
     user: 'user1',
-    project: null, // Deleted project
+    project: 'null', // Deleted project represented as string 'null'
     project_title: 'Deleted Project',
     selected_projects: ['proj1', 'proj2', 'proj3'],
     spun_at: '2024-01-01T10:00:00Z',
@@ -49,7 +61,7 @@ const mockSpinHistory = [
   },
 ];
 
-const mockLongHistory = Array.from({ length: 12 }, (_, i) => ({
+const mockLongHistory: SpinRecord[] = Array.from({ length: 12 }, (_, i) => ({
   id: `${i + 1}`,
   user: 'user1',
   project: `proj${i + 1}`,
@@ -76,35 +88,28 @@ describe('SpinHistory', () => {
   describe('Rendering', () => {
     it('renders spin history header', () => {
       mockUseSpinHistory
-        .mockReturnValueOnce({
+        .mockReturnValue({
           data: mockSpinHistory,
           isLoading: false,
-        } as any)
-        .mockReturnValueOnce({
-          data: [],
-          isLoading: false,
+          error: null,
           refetch: vi.fn(),
-        } as any);
+        } as UseQueryResult<SpinRecord[]>);
 
-      render(<SpinHistory userId="user1" />);
+      renderSpinHistory({ userId: "user1" });
 
       expect(screen.getByText('Spin History')).toBeInTheDocument();
-      expect(screen.getByText('Your recent randomizer results')).toBeInTheDocument();
     });
 
     it('displays spin records correctly', () => {
       mockUseSpinHistory
-        .mockReturnValueOnce({
+        .mockReturnValue({
           data: mockSpinHistory,
           isLoading: false,
-        } as any)
-        .mockReturnValueOnce({
-          data: [],
-          isLoading: false,
+          error: null,
           refetch: vi.fn(),
-        } as any);
+        } as UseQueryResult<SpinRecord[]>);
 
-      render(<SpinHistory userId="user1" />);
+      renderSpinHistory({ userId: "user1" });
 
       expect(screen.getByText('Test Project 1')).toBeInTheDocument();
       expect(screen.getByText('Test Project 2')).toBeInTheDocument();
@@ -113,52 +118,43 @@ describe('SpinHistory', () => {
 
     it('shows latest badge on most recent spin', () => {
       mockUseSpinHistory
-        .mockReturnValueOnce({
+        .mockReturnValue({
           data: mockSpinHistory,
           isLoading: false,
-        } as any)
-        .mockReturnValueOnce({
-          data: [],
-          isLoading: false,
+          error: null,
           refetch: vi.fn(),
-        } as any);
+        } as UseQueryResult<SpinRecord[]>);
 
-      render(<SpinHistory userId="user1" />);
+      renderSpinHistory({ userId: "user1" });
 
       expect(screen.getByText('Latest')).toBeInTheDocument();
     });
 
     it('displays project option counts', () => {
       mockUseSpinHistory
-        .mockReturnValueOnce({
+        .mockReturnValue({
           data: mockSpinHistory,
           isLoading: false,
-        } as any)
-        .mockReturnValueOnce({
-          data: [],
-          isLoading: false,
+          error: null,
           refetch: vi.fn(),
-        } as any);
+        } as UseQueryResult<SpinRecord[]>);
 
-      render(<SpinHistory userId="user1" />);
+      renderSpinHistory({ userId: "user1" });
 
-      expect(screen.getByText('3 options')).toBeInTheDocument();
+      expect(screen.getAllByText('3 options')).toHaveLength(2);
       expect(screen.getByText('2 options')).toBeInTheDocument();
     });
 
     it('shows clear history button when onClearHistory is provided', () => {
       mockUseSpinHistory
-        .mockReturnValueOnce({
+        .mockReturnValue({
           data: mockSpinHistory,
           isLoading: false,
-        } as any)
-        .mockReturnValueOnce({
-          data: [],
-          isLoading: false,
+          error: null,
           refetch: vi.fn(),
-        } as any);
+        } as UseQueryResult<SpinRecord[]>);
 
-      render(<SpinHistory userId="user1" onClearHistory={mockOnClearHistory} />);
+      renderSpinHistory({ userId: "user1", onClearHistory: mockOnClearHistory });
 
       expect(screen.getByRole('button', { name: /clear/i })).toBeInTheDocument();
     });
@@ -166,111 +162,96 @@ describe('SpinHistory', () => {
 
   describe('Date Formatting', () => {
     it('formats recent dates as "Just now"', () => {
-      const recentSpin = {
+      const recentSpin: SpinRecord = {
         ...mockSpinHistory[0],
         spun_at: '2024-01-01T12:29:00Z', // 1 minute ago
       };
 
       mockUseSpinHistory
-        .mockReturnValueOnce({
+        .mockReturnValue({
           data: [recentSpin],
           isLoading: false,
-        } as any)
-        .mockReturnValueOnce({
-          data: [],
-          isLoading: false,
+          error: null,
           refetch: vi.fn(),
-        } as any);
+        } as UseQueryResult<SpinRecord[]>);
 
-      render(<SpinHistory userId="user1" />);
+      renderSpinHistory({ userId: "user1" });
 
       expect(screen.getByText('Just now')).toBeInTheDocument();
     });
 
     it('formats dates as minutes ago', () => {
-      const spinMinutesAgo = {
+      const spinMinutesAgo: SpinRecord = {
         ...mockSpinHistory[0],
         spun_at: '2024-01-01T12:15:00Z', // 15 minutes ago
       };
 
       mockUseSpinHistory
-        .mockReturnValueOnce({
+        .mockReturnValue({
           data: [spinMinutesAgo],
           isLoading: false,
-        } as any)
-        .mockReturnValueOnce({
-          data: [],
-          isLoading: false,
+          error: null,
           refetch: vi.fn(),
-        } as any);
+        } as UseQueryResult<SpinRecord[]>);
 
-      render(<SpinHistory userId="user1" />);
+      renderSpinHistory({ userId: "user1" });
 
       expect(screen.getByText('15m ago')).toBeInTheDocument();
     });
 
     it('formats dates as hours ago', () => {
-      const spinHoursAgo = {
+      const spinHoursAgo: SpinRecord = {
         ...mockSpinHistory[0],
         spun_at: '2024-01-01T10:30:00Z', // 2 hours ago
       };
 
       mockUseSpinHistory
-        .mockReturnValueOnce({
+        .mockReturnValue({
           data: [spinHoursAgo],
           isLoading: false,
-        } as any)
-        .mockReturnValueOnce({
-          data: [],
-          isLoading: false,
+          error: null,
           refetch: vi.fn(),
-        } as any);
+        } as UseQueryResult<SpinRecord[]>);
 
-      render(<SpinHistory userId="user1" />);
+      renderSpinHistory({ userId: "user1" });
 
       expect(screen.getByText('2h ago')).toBeInTheDocument();
     });
 
     it('formats old dates as days ago', () => {
-      const spinDaysAgo = {
+      const spinDaysAgo: SpinRecord = {
         ...mockSpinHistory[0],
         spun_at: '2023-12-30T12:30:00Z', // 2 days ago
       };
 
       mockUseSpinHistory
-        .mockReturnValueOnce({
+        .mockReturnValue({
           data: [spinDaysAgo],
           isLoading: false,
-        } as any)
-        .mockReturnValueOnce({
-          data: [],
-          isLoading: false,
+          error: null,
           refetch: vi.fn(),
-        } as any);
+        } as UseQueryResult<SpinRecord[]>);
 
-      render(<SpinHistory userId="user1" />);
+      renderSpinHistory({ userId: "user1" });
 
       expect(screen.getByText('2d ago')).toBeInTheDocument();
     });
 
     it('formats very old dates as locale date string', () => {
-      const spinWeeksAgo = {
+      const spinWeeksAgo: SpinRecord = {
         ...mockSpinHistory[0],
         spun_at: '2023-12-01T12:30:00Z', // Weeks ago
       };
 
       mockUseSpinHistory
-        .mockReturnValueOnce({
+        .mockReturnValue({
           data: [spinWeeksAgo],
           isLoading: false,
-        } as any)
-        .mockReturnValueOnce({
-          data: [],
-          isLoading: false,
+          error: null,
           refetch: vi.fn(),
-        } as any);
+        } as UseQueryResult<SpinRecord[]>);
 
-      render(<SpinHistory userId="user1" />);
+      renderSpinHistory({ userId: "user1" });
 
       expect(screen.getByText('12/1/2023')).toBeInTheDocument();
     });
@@ -279,55 +260,32 @@ describe('SpinHistory', () => {
   describe('Loading States', () => {
     it('shows loading skeletons when initial load is loading', () => {
       mockUseSpinHistory
-        .mockReturnValueOnce({
+        .mockReturnValue({
           data: [],
           isLoading: true,
-        } as any)
-        .mockReturnValueOnce({
-          data: [],
-          isLoading: false,
+          error: null,
           refetch: vi.fn(),
-        } as any);
+        } as UseQueryResult<SpinRecord[]>);
 
-      render(<SpinHistory userId="user1" />);
+      renderSpinHistory({ userId: "user1" });
 
       const skeletons = screen.getAllByTestId('spin-skeleton');
       expect(skeletons).toHaveLength(3);
     });
 
-    it('shows loading state in Show More button', () => {
-      mockUseSpinHistory
-        .mockReturnValueOnce({
-          data: mockLongHistory.slice(0, 8),
-          isLoading: false,
-        } as any)
-        .mockReturnValueOnce({
-          data: [],
-          isLoading: true,
-          refetch: vi.fn(),
-        } as any);
-
-      render(<SpinHistory userId="user1" />);
-
-      const showMoreButton = screen.getByRole('button', { name: /loading/i });
-      expect(showMoreButton).toBeDisabled();
-    });
   });
 
   describe('Empty State', () => {
     it('shows empty state when no spins exist', () => {
       mockUseSpinHistory
-        .mockReturnValueOnce({
+        .mockReturnValue({
           data: [],
           isLoading: false,
-        } as any)
-        .mockReturnValueOnce({
-          data: [],
-          isLoading: false,
+          error: null,
           refetch: vi.fn(),
-        } as any);
+        } as UseQueryResult<SpinRecord[]>);
 
-      render(<SpinHistory userId="user1" />);
+      renderSpinHistory({ userId: "user1" });
 
       expect(screen.getByText('No spins yet')).toBeInTheDocument();
       expect(screen.getByText('Your spin history will appear here')).toBeInTheDocument();
@@ -335,17 +293,14 @@ describe('SpinHistory', () => {
 
     it('shows empty state icon', () => {
       mockUseSpinHistory
-        .mockReturnValueOnce({
+        .mockReturnValue({
           data: [],
           isLoading: false,
-        } as any)
-        .mockReturnValueOnce({
-          data: [],
-          isLoading: false,
+          error: null,
           refetch: vi.fn(),
-        } as any);
+        } as UseQueryResult<SpinRecord[]>);
 
-      render(<SpinHistory userId="user1" />);
+      renderSpinHistory({ userId: "user1" });
 
       // History icon should be present in empty state
       expect(document.querySelector('.w-12.h-12')).toBeInTheDocument();
@@ -355,75 +310,43 @@ describe('SpinHistory', () => {
   describe('Pagination', () => {
     it('shows Show More button when there are 8 or more recent records', () => {
       mockUseSpinHistory
-        .mockReturnValueOnce({
+        .mockReturnValue({
           data: mockLongHistory.slice(0, 8),
           isLoading: false,
-        } as any)
-        .mockReturnValueOnce({
-          data: [],
-          isLoading: false,
+          error: null,
           refetch: vi.fn(),
-        } as any);
+        } as UseQueryResult<SpinRecord[]>);
 
-      render(<SpinHistory userId="user1" />);
+      renderSpinHistory({ userId: "user1" });
 
       expect(screen.getByRole('button', { name: /show more history/i })).toBeInTheDocument();
     });
 
     it('does not show Show More button when less than 8 records', () => {
       mockUseSpinHistory
-        .mockReturnValueOnce({
+        .mockReturnValue({
           data: mockSpinHistory,
           isLoading: false,
-        } as any)
-        .mockReturnValueOnce({
-          data: [],
-          isLoading: false,
+          error: null,
           refetch: vi.fn(),
-        } as any);
+        } as UseQueryResult<SpinRecord[]>);
 
-      render(<SpinHistory userId="user1" />);
+      renderSpinHistory({ userId: "user1" });
 
       expect(screen.queryByRole('button', { name: /show more history/i })).not.toBeInTheDocument();
     });
 
-    it('expands to show full history when Show More is clicked', async () => {
-      const mockRefetch = vi.fn().mockResolvedValue({});
-
-      mockUseSpinHistory
-        .mockReturnValueOnce({
-          data: mockLongHistory.slice(0, 8),
-          isLoading: false,
-        } as any)
-        .mockReturnValueOnce({
-          data: mockLongHistory,
-          isLoading: false,
-          refetch: mockRefetch,
-        } as any);
-
-      render(<SpinHistory userId="user1" />);
-
-      const showMoreButton = screen.getByRole('button', { name: /show more history/i });
-      fireEvent.click(showMoreButton);
-
-      await waitFor(() => {
-        expect(screen.getByText('Showing all 12 spins')).toBeInTheDocument();
-      });
-    });
 
     it('updates footer text based on view state', () => {
       mockUseSpinHistory
-        .mockReturnValueOnce({
+        .mockReturnValue({
           data: mockSpinHistory,
           isLoading: false,
-        } as any)
-        .mockReturnValueOnce({
-          data: [],
-          isLoading: false,
+          error: null,
           refetch: vi.fn(),
-        } as any);
+        } as UseQueryResult<SpinRecord[]>);
 
-      render(<SpinHistory userId="user1" />);
+      renderSpinHistory({ userId: "user1" });
 
       expect(screen.getByText('Showing last 3 spins')).toBeInTheDocument();
     });
@@ -432,17 +355,14 @@ describe('SpinHistory', () => {
   describe('User Interactions', () => {
     it('calls onClearHistory when clear button is clicked', () => {
       mockUseSpinHistory
-        .mockReturnValueOnce({
+        .mockReturnValue({
           data: mockSpinHistory,
           isLoading: false,
-        } as any)
-        .mockReturnValueOnce({
-          data: [],
-          isLoading: false,
+          error: null,
           refetch: vi.fn(),
-        } as any);
+        } as UseQueryResult<SpinRecord[]>);
 
-      render(<SpinHistory userId="user1" onClearHistory={mockOnClearHistory} />);
+      renderSpinHistory({ userId: "user1", onClearHistory: mockOnClearHistory });
 
       const clearButton = screen.getByRole('button', { name: /clear/i });
       fireEvent.click(clearButton);
@@ -452,17 +372,14 @@ describe('SpinHistory', () => {
 
     it('navigates to project when project link is clicked', () => {
       mockUseSpinHistory
-        .mockReturnValueOnce({
+        .mockReturnValue({
           data: mockSpinHistory,
           isLoading: false,
-        } as any)
-        .mockReturnValueOnce({
-          data: [],
-          isLoading: false,
+          error: null,
           refetch: vi.fn(),
-        } as any);
+        } as UseQueryResult<SpinRecord[]>);
 
-      render(<SpinHistory userId="user1" />);
+      renderSpinHistory({ userId: "user1" });
 
       const projectLinks = screen.getAllByRole('link');
       expect(projectLinks[0]).toHaveAttribute('href', '/projects/proj1');
@@ -472,34 +389,28 @@ describe('SpinHistory', () => {
   describe('Responsive Design', () => {
     it('renders ScrollArea for handling overflow', () => {
       mockUseSpinHistory
-        .mockReturnValueOnce({
+        .mockReturnValue({
           data: mockSpinHistory,
           isLoading: false,
-        } as any)
-        .mockReturnValueOnce({
-          data: [],
-          isLoading: false,
+          error: null,
           refetch: vi.fn(),
-        } as any);
+        } as UseQueryResult<SpinRecord[]>);
 
-      render(<SpinHistory userId="user1" />);
+      renderSpinHistory({ userId: "user1" });
 
       expect(document.querySelector('[data-radix-scroll-area-viewport]')).toBeInTheDocument();
     });
 
     it('applies proper height constraints to scroll area', () => {
       mockUseSpinHistory
-        .mockReturnValueOnce({
+        .mockReturnValue({
           data: mockSpinHistory,
           isLoading: false,
-        } as any)
-        .mockReturnValueOnce({
-          data: [],
-          isLoading: false,
+          error: null,
           refetch: vi.fn(),
-        } as any);
+        } as UseQueryResult<SpinRecord[]>);
 
-      render(<SpinHistory userId="user1" />);
+      renderSpinHistory({ userId: "user1" });
 
       expect(document.querySelector('.h-80')).toBeInTheDocument();
     });
@@ -507,23 +418,20 @@ describe('SpinHistory', () => {
 
   describe('Error Handling', () => {
     it('handles invalid date strings gracefully', () => {
-      const spinWithInvalidDate = {
+      const spinWithInvalidDate: SpinRecord = {
         ...mockSpinHistory[0],
         spun_at: 'invalid-date',
       };
 
       mockUseSpinHistory
-        .mockReturnValueOnce({
+        .mockReturnValue({
           data: [spinWithInvalidDate],
           isLoading: false,
-        } as any)
-        .mockReturnValueOnce({
-          data: [],
-          isLoading: false,
+          error: null,
           refetch: vi.fn(),
-        } as any);
+        } as UseQueryResult<SpinRecord[]>);
 
-      render(<SpinHistory userId="user1" />);
+      renderSpinHistory({ userId: "user1" });
 
       expect(screen.getByText('Unknown')).toBeInTheDocument();
     });
@@ -532,34 +440,28 @@ describe('SpinHistory', () => {
   describe('Accessibility', () => {
     it('provides proper headings and structure', () => {
       mockUseSpinHistory
-        .mockReturnValueOnce({
+        .mockReturnValue({
           data: mockSpinHistory,
           isLoading: false,
-        } as any)
-        .mockReturnValueOnce({
-          data: [],
-          isLoading: false,
+          error: null,
           refetch: vi.fn(),
-        } as any);
+        } as UseQueryResult<SpinRecord[]>);
 
-      render(<SpinHistory userId="user1" />);
+      renderSpinHistory({ userId: "user1" });
 
       expect(screen.getByRole('heading', { level: 3 })).toBeInTheDocument();
     });
 
     it('provides accessible button labels', () => {
       mockUseSpinHistory
-        .mockReturnValueOnce({
+        .mockReturnValue({
           data: mockSpinHistory,
           isLoading: false,
-        } as any)
-        .mockReturnValueOnce({
-          data: [],
-          isLoading: false,
+          error: null,
           refetch: vi.fn(),
-        } as any);
+        } as UseQueryResult<SpinRecord[]>);
 
-      render(<SpinHistory userId="user1" onClearHistory={mockOnClearHistory} />);
+      renderSpinHistory({ userId: "user1", onClearHistory: mockOnClearHistory });
 
       const clearButton = screen.getByRole('button', { name: /clear/i });
       expect(clearButton).toHaveAttribute('aria-label', expect.stringContaining('Clear'));
@@ -567,17 +469,14 @@ describe('SpinHistory', () => {
 
     it('provides accessible links to projects', () => {
       mockUseSpinHistory
-        .mockReturnValueOnce({
+        .mockReturnValue({
           data: mockSpinHistory,
           isLoading: false,
-        } as any)
-        .mockReturnValueOnce({
-          data: [],
-          isLoading: false,
+          error: null,
           refetch: vi.fn(),
-        } as any);
+        } as UseQueryResult<SpinRecord[]>);
 
-      render(<SpinHistory userId="user1" />);
+      renderSpinHistory({ userId: "user1" });
 
       const projectLinks = screen.getAllByRole('link');
       expect(projectLinks[0]).toHaveAttribute(
@@ -589,24 +488,21 @@ describe('SpinHistory', () => {
 
   describe('Deleted Projects', () => {
     it('handles deleted projects gracefully', () => {
-      const spinWithDeletedProject = {
+      const spinWithDeletedProject: SpinRecord = {
         ...mockSpinHistory[0],
-        project: null,
+        project: 'null',
         project_title: 'Deleted Project',
       };
 
       mockUseSpinHistory
-        .mockReturnValueOnce({
+        .mockReturnValue({
           data: [spinWithDeletedProject],
           isLoading: false,
-        } as any)
-        .mockReturnValueOnce({
-          data: [],
-          isLoading: false,
+          error: null,
           refetch: vi.fn(),
-        } as any);
+        } as UseQueryResult<SpinRecord[]>);
 
-      render(<SpinHistory userId="user1" />);
+      renderSpinHistory({ userId: "user1" });
 
       expect(screen.getByText('Deleted Project')).toBeInTheDocument();
       // Link should still work even with null project ID

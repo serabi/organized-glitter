@@ -22,7 +22,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { showUserReportDialog } from '@/components/FeedbackDialogProvider';
+import { showUserReportDialog } from '@/components/FeedbackDialogStore';
 
 interface NavbarProps {
   isAuthenticated?: boolean;

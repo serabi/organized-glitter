@@ -206,7 +206,7 @@ describe('RandomizerWheel', () => {
     });
 
     it('selects different projects with different random values', () => {
-      const calls: any[] = [];
+      const calls: Array<{ id: string; title: string }> = [];
 
       // First spin
       vi.spyOn(Math, 'random').mockReturnValue(0.1);

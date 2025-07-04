@@ -396,7 +396,7 @@ describe('CollapsibleDashboardFilters', () => {
     beforeEach(() => {
       // Mock window as undefined to simulate SSR
       const originalWindow = global.window;
-      // @ts-ignore
+      // @ts-expect-error - Intentionally deleting window for SSR test
       delete global.window;
       
       return () => {

@@ -126,12 +126,16 @@ export function AvatarManager({
 
   // Cleanup blob URLs when component unmounts using queue system
   useEffect(() => {
+    // Capture refs at effect time to avoid stale closure issues  
+    const currentBlobUrlRefCurrent = currentBlobUrlRef.current;
+    const validBlobUrlsRefCurrent = validBlobUrlsRef.current;
+    
     return () => {
       console.log('[AvatarManager] Component unmounting, starting cleanup...');
 
       // Copy ref values at cleanup time to avoid stale closure issues
-      const currentUrl = currentBlobUrlRef.current;
-      const validUrls = Array.from(validBlobUrlsRef.current);
+      const currentUrl = currentBlobUrlRefCurrent;
+      const validUrls = Array.from(validBlobUrlsRefCurrent);
 
       // Queue current blob URL for cleanup
       if (currentUrl) {
@@ -143,7 +147,7 @@ export function AvatarManager({
       validUrls.forEach(url => {
         queueBlobForCleanup(url);
       });
-      validBlobUrlsRef.current.clear();
+      validBlobUrlsRefCurrent.clear();
 
       // Process the cleanup queue
       processCleanupQueue();

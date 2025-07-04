@@ -157,14 +157,14 @@ export function setupAutomaticCacheCleaning(queryClient: QueryClient): () => voi
   };
   
   // Mark wrapper functions as wrapped for reliable detection
-  (wrappedPushState as any).__isWrapped = true;
-  (wrappedReplaceState as any).__isWrapped = true;
+  (wrappedPushState as unknown as { __isWrapped: boolean }).__isWrapped = true;
+  (wrappedReplaceState as unknown as { __isWrapped: boolean }).__isWrapped = true;
   
   // Only override if we haven't already wrapped these methods
-  if (!(history.pushState as any).__isWrapped) {
+  if (!(history.pushState as unknown as { __isWrapped: boolean }).__isWrapped) {
     history.pushState = wrappedPushState;
   }
-  if (!(history.replaceState as any).__isWrapped) {
+  if (!(history.replaceState as unknown as { __isWrapped: boolean }).__isWrapped) {
     history.replaceState = wrappedReplaceState;
   }
   
