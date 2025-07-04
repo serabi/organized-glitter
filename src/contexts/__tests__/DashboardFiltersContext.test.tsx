@@ -93,11 +93,8 @@ vi.mock('@/hooks/queries/useDashboardStats', () => ({
   useDashboardStats: () => ({
     stats: mockDashboardStats,
   }),
-}));
-
-vi.mock('@/hooks/queries/useAvailableYears', () => ({
-  useAvailableYearsAsStrings: () => ({
-    years: ['2023', '2022', '2021'],
+  useAvailableYearsOptimized: () => ({
+    years: [2023, 2022, 2021],
   }),
 }));
 

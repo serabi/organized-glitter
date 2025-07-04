@@ -35,24 +35,107 @@ interface DashboardStats {
 }
 
 /**
- * Calculate dashboard stats directly from PocketBase
+ * Calculate dashboard stats using count-based queries for optimal performance
+ * Uses countRecords() and targeted queries to minimize data transfer
  */
 async function calculateDashboardStats(userId: string, year: number): Promise<DashboardStats> {
   const yearStart = `${year}-01-01`;
   const yearEnd = `${year + 1}-01-01`;
 
-  logger.debug(`Calculating dashboard stats for user ${userId}, year ${year}`);
+  logger.debug(`Calculating dashboard stats for user ${userId}, year ${year} using count-based queries`);
 
   try {
-    // Get all projects for the user in a single query
-    const projects = await pb.collection(Collections.Projects).getFullList({
-      filter: pb.filter('user = {:userId}', { userId }),
-      fields: 'status,total_diamonds,date_started,date_completed',
-    });
+    // Status breakdown using parallel count queries - ultra fast!
+    const statusCountPromises = [
+      pb.collection(Collections.Projects).getList(1, 1, {
+        filter: pb.filter('user = {:userId} && status = "wishlist"', { userId }),
+        skipTotal: false,
+      }).then(result => ({ status: 'wishlist', count: result.totalItems })),
+      
+      pb.collection(Collections.Projects).getList(1, 1, {
+        filter: pb.filter('user = {:userId} && status = "purchased"', { userId }),
+        skipTotal: false,
+      }).then(result => ({ status: 'purchased', count: result.totalItems })),
+      
+      pb.collection(Collections.Projects).getList(1, 1, {
+        filter: pb.filter('user = {:userId} && status = "stash"', { userId }),
+        skipTotal: false,
+      }).then(result => ({ status: 'stash', count: result.totalItems })),
+      
+      pb.collection(Collections.Projects).getList(1, 1, {
+        filter: pb.filter('user = {:userId} && status = "progress"', { userId }),
+        skipTotal: false,
+      }).then(result => ({ status: 'progress', count: result.totalItems })),
+      
+      pb.collection(Collections.Projects).getList(1, 1, {
+        filter: pb.filter('user = {:userId} && status = "completed"', { userId }),
+        skipTotal: false,
+      }).then(result => ({ status: 'completed', count: result.totalItems })),
+      
+      pb.collection(Collections.Projects).getList(1, 1, {
+        filter: pb.filter('user = {:userId} && status = "archived"', { userId }),
+        skipTotal: false,
+      }).then(result => ({ status: 'archived', count: result.totalItems })),
+      
+      pb.collection(Collections.Projects).getList(1, 1, {
+        filter: pb.filter('user = {:userId} && status = "destashed"', { userId }),
+        skipTotal: false,
+      }).then(result => ({ status: 'destashed', count: result.totalItems })),
+    ];
 
-    logger.debug(`Processing ${projects.length} projects for dashboard stats`);
+    // Year-specific data queries - only fetch what we need
+    const yearSpecificPromises = [
+      // Completed this year count
+      pb.collection(Collections.Projects).getList(1, 1, {
+        filter: pb.filter(
+          'user = {:userId} && status = "completed" && date_completed >= {:yearStart} && date_completed < {:yearEnd}',
+          { userId, yearStart, yearEnd }
+        ),
+        skipTotal: false,
+      }).then(result => result.totalItems),
 
-    // Initialize counters
+      // Started this year count  
+      pb.collection(Collections.Projects).getList(1, 1, {
+        filter: pb.filter(
+          'user = {:userId} && date_started >= {:yearStart} && date_started < {:yearEnd}',
+          { userId, yearStart, yearEnd }
+        ),
+        skipTotal: false,
+      }).then(result => result.totalItems),
+
+      // Total diamonds for completed projects this year
+      pb.collection(Collections.Projects).getFullList({
+        filter: pb.filter(
+          'user = {:userId} && status = "completed" && date_completed >= {:yearStart} && date_completed < {:yearEnd}',
+          { userId, yearStart, yearEnd }
+        ),
+        fields: 'total_diamonds',
+        requestKey: `dashboard-diamonds-${userId}-${year}`,
+      }),
+
+      // Available years - only fetch date_completed field
+      pb.collection(Collections.Projects).getFullList({
+        filter: pb.filter('user = {:userId} && date_completed != ""', { userId }),
+        fields: 'date_completed',
+        requestKey: `dashboard-years-${userId}`,
+      }),
+    ];
+
+    // Execute all queries in parallel for maximum performance
+    const [statusCounts, yearSpecificResults] = await Promise.all([
+      Promise.all(statusCountPromises),
+      Promise.all(yearSpecificPromises),
+    ]);
+
+    // Extract year-specific results with proper typing
+    const completedThisYear = yearSpecificResults[0] as number;
+    const startedThisYear = yearSpecificResults[1] as number;
+    const completedProjectsThisYear = yearSpecificResults[2] as Array<{ total_diamonds?: number }>;
+    const projectsWithDates = yearSpecificResults[3] as Array<{ date_completed?: string }>;
+
+    logger.debug(`Count queries completed: ${statusCounts.length} status counts, ${completedProjectsThisYear.length} completed projects this year`);
+
+    // Build status breakdown from count results
     const statusBreakdown: StatusBreakdown = {
       wishlist: 0,
       purchased: 0,
@@ -63,31 +146,19 @@ async function calculateDashboardStats(userId: string, year: number): Promise<Da
       destashed: 0,
     };
 
-    let completedThisYear = 0;
-    let startedThisYear = 0;
-    let totalDiamonds = 0;
+    for (const { status, count } of statusCounts) {
+      statusBreakdown[status as keyof StatusBreakdown] = count;
+    }
+
+    // Calculate total diamonds from completed projects this year
+    const totalDiamonds = completedProjectsThisYear.reduce(
+      (sum, project) => sum + (project.total_diamonds || 0),
+      0
+    );
+
+    // Extract available years from minimal dataset
     const completionYears = new Set<number>();
-
-    // Process all projects
-    for (const project of projects) {
-      // Count status breakdown
-      const status = project.status as keyof StatusBreakdown;
-      if (status in statusBreakdown) {
-        statusBreakdown[status]++;
-      }
-
-      // Check if completed this year
-      if (
-        project.status === 'completed' &&
-        project.date_completed &&
-        project.date_completed >= yearStart &&
-        project.date_completed < yearEnd
-      ) {
-        completedThisYear++;
-        totalDiamonds += project.total_diamonds || 0;
-      }
-
-      // Extract completion years for available years
+    for (const project of projectsWithDates) {
       if (project.date_completed && project.date_completed.trim() !== '') {
         try {
           const completionYear = new Date(project.date_completed).getFullYear();
@@ -98,19 +169,8 @@ async function calculateDashboardStats(userId: string, year: number): Promise<Da
           // Invalid date, skip
         }
       }
-
-      // Check if started this year
-      if (
-        project.date_started &&
-        project.date_started.trim() !== '' &&
-        project.date_started >= yearStart &&
-        project.date_started < yearEnd
-      ) {
-        startedThisYear++;
-      }
     }
 
-    // Sort available years (most recent first)
     const availableYears = Array.from(completionYears).sort((a, b) => b - a);
 
     const stats: DashboardStats = {
@@ -123,10 +183,16 @@ async function calculateDashboardStats(userId: string, year: number): Promise<Da
       available_years: availableYears,
     };
 
-    logger.debug('Dashboard stats calculated:', stats);
+    logger.debug('Dashboard stats calculated using count-based queries:', {
+      ...stats,
+      performance: 'ultra-fast count queries + targeted data fetching',
+      statusQueryCount: statusCounts.length,
+      totalDataTransfer: `${completedProjectsThisYear.length} + ${projectsWithDates.length} records`
+    });
+    
     return stats;
   } catch (error) {
-    logger.error('Failed to calculate dashboard stats:', error);
+    logger.error('Failed to calculate dashboard stats with count-based queries:', error);
     throw error;
   }
 }
@@ -177,22 +243,6 @@ export const useDashboardStats = (year?: number) => {
   };
 };
 
-/**
- * Hook for legacy compatibility
- */
-export const useDashboardStatsLegacy = (year?: number) => {
-  const dashboardStats = useDashboardStats(year);
-
-  return {
-    data: dashboardStats.data ? { stats: dashboardStats.data } : undefined,
-    stats: dashboardStats.data,
-    availableYears: dashboardStats.availableYears,
-    isLoading: dashboardStats.isLoading,
-    isError: dashboardStats.isError,
-    error: dashboardStats.error,
-    refetch: dashboardStats.refetch,
-  };
-};
 
 /**
  * Optimized hook for available years - gets data from dashboard stats to eliminate redundant queries
