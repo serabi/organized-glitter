@@ -109,7 +109,7 @@ const logger = createLogger('StatusTabs');
 // Valid ProjectFilterStatus values for type validation
 const VALID_FILTER_STATUSES: readonly ProjectFilterStatus[] = [
   'all',
-  'wishlist', 
+  'wishlist',
   'purchased',
   'stash',
   'progress',
@@ -127,7 +127,7 @@ const StatusTabsComponent = () => {
   // Removed unused props
   const { getCountsForTabs, filters, updateStatus } = useDashboardFilters();
   const activeStatus = filters.activeStatus;
-  
+
   // Fallback counts object with all required properties
   const fallbackCounts: CountsForTabsType = {
     all: 0,
@@ -190,7 +190,10 @@ const StatusTabsComponent = () => {
         if (isValidProjectFilterStatus(value)) {
           updateStatus(value);
         } else {
-          logger.error('Invalid filter status value received:', { value, validValues: VALID_FILTER_STATUSES });
+          logger.error('Invalid filter status value received:', {
+            value,
+            validValues: VALID_FILTER_STATUSES,
+          });
         }
       }}
     >

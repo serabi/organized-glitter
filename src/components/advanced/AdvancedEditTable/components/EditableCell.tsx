@@ -4,7 +4,9 @@ import { Badge } from '@/components/ui/badge';
 import { TagBadge } from '@/components/tags/TagBadge';
 import { ProjectType } from '@/types/project';
 import { formatDate } from '@/lib/utils';
-import { secureLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/secureLogger';
+
+const logger = createLogger('EditableCell');
 import { SelectField } from './SelectField';
 import { TagSelector } from './TagSelector';
 import { EditCellProps } from '../types';
@@ -53,7 +55,7 @@ export const EditableCell: React.FC<EditCellProps> = ({
       if (newValue) {
         const company = availableCompanies?.find(c => c.name === newValue);
         if (!company) {
-          secureLogger.criticalError('Company not found in available options:', { newValue });
+          logger.criticalError('Company not found in available options:', { newValue });
           onCancelEdit();
           return;
         }
@@ -65,7 +67,7 @@ export const EditableCell: React.FC<EditCellProps> = ({
       if (newValue) {
         const artist = availableArtists?.find(a => a.name === newValue);
         if (!artist) {
-          secureLogger.criticalError('Artist not found in available options:', { newValue });
+          logger.criticalError('Artist not found in available options:', { newValue });
           onCancelEdit();
           return;
         }
@@ -84,7 +86,7 @@ export const EditableCell: React.FC<EditCellProps> = ({
       }
     }
 
-    console.log('SelectField update:', fieldName, 'displayValue:', newValue, 'updates:', updates);
+    logger.debug('SelectField update:', { fieldName, displayValue: newValue, updates });
     onProjectUpdate(project.id, updates);
     onCancelEdit();
   };
@@ -100,7 +102,7 @@ export const EditableCell: React.FC<EditCellProps> = ({
               if (isValidProjectStatus(newValue)) {
                 handleSelectChange(newValue, 'status');
               } else {
-                secureLogger.criticalError('Invalid project status:', { newValue });
+                logger.criticalError('Invalid project status:', { newValue });
                 onCancelEdit();
               }
             }}
@@ -116,7 +118,7 @@ export const EditableCell: React.FC<EditCellProps> = ({
               if (isValidKitCategory(newValue)) {
                 handleSelectChange(newValue, 'kit_category');
               } else {
-                secureLogger.criticalError('Invalid kit category:', { newValue });
+                logger.criticalError('Invalid kit category:', { newValue });
                 onCancelEdit();
               }
             }}
@@ -132,7 +134,7 @@ export const EditableCell: React.FC<EditCellProps> = ({
               if (isValidDrillShape(newValue)) {
                 handleSelectChange(newValue, 'drillShape');
               } else {
-                secureLogger.criticalError('Invalid drill shape:', { newValue });
+                logger.criticalError('Invalid drill shape:', { newValue });
                 onCancelEdit();
               }
             }}

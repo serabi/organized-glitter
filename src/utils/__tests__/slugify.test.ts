@@ -27,7 +27,6 @@ describe('generateSlug', () => {
   });
 
   it('should handle the problematic tag names from error logs', () => {
-<<<<<<< HEAD
     expect(
       generateSlug('Changed snowflakes using light purple pearl from shimmering canvases')
     ).toBe('changed-snowflakes-using-light-purple-pearl-from-shimmering-canvases');
@@ -41,7 +40,6 @@ describe('generateSlug', () => {
         'v2 Won from munimade event #mermaywithfemke2024! Completed diety of dawn for the event'
       )
     ).toBe('v2-won-from-munimade-event-mermaywithfemke2024-completed-diety-of-dawn-for-the-event');
-=======
     expect(generateSlug('Changed snowflakes using light purple pearl from shimmering canvases'))
       .toBe('changed-snowflakes-using-light-purple-pearl-from-shimmering-canvases');
     
@@ -50,7 +48,6 @@ describe('generateSlug', () => {
     
     expect(generateSlug('v2 Won from munimade event #mermaywithfemke2024! Completed diety of dawn for the event'))
       .toBe('v2-won-from-munimade-event-mermaywithfemke2024-completed-diety-of-dawn-for-the-event');
->>>>>>> main
   });
 
   it('should handle empty strings gracefully', () => {
@@ -69,13 +66,10 @@ describe('generateSlug', () => {
       'My Awesome Tag!',
       '  Special & Characters  ',
       'Gift from Natalie at crafters paradise retreat',
-<<<<<<< HEAD
       "#dakotathon - Won a tray from nyx's notions",
       'I hate color blocking. Gave to Jess for bday',
-=======
       '#dakotathon - Won a tray from nyx\'s notions',
       'I hate color blocking. Gave to Jess for bday'
->>>>>>> main
     ];
 
     testCases.forEach(testCase => {
@@ -86,11 +80,8 @@ describe('generateSlug', () => {
         .trim()
         .replace(/[^a-zA-Z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '');
-<<<<<<< HEAD
 
-=======
       
->>>>>>> main
       expect(generateSlug(testCase)).toBe(expectedSlug);
     });
   });
@@ -100,17 +91,13 @@ describe('generateUniqueSlug', () => {
   it('should return base slug if it does not exist', async () => {
     const mockCheckExists = vi.fn().mockResolvedValue(false);
     const result = await generateUniqueSlug('test tag', mockCheckExists);
-<<<<<<< HEAD
 
-=======
     
->>>>>>> main
     expect(result).toBe('test-tag');
     expect(mockCheckExists).toHaveBeenCalledWith('test-tag');
   });
 
   it('should append number if base slug exists', async () => {
-<<<<<<< HEAD
     const mockCheckExists = vi
       .fn()
       .mockResolvedValueOnce(true) // 'test-tag' exists
@@ -118,21 +105,18 @@ describe('generateUniqueSlug', () => {
 
     const result = await generateUniqueSlug('test tag', mockCheckExists);
 
-=======
     const mockCheckExists = vi.fn()
       .mockResolvedValueOnce(true)  // 'test-tag' exists
       .mockResolvedValueOnce(false); // 'test-tag-2' does not exist
     
     const result = await generateUniqueSlug('test tag', mockCheckExists);
     
->>>>>>> main
     expect(result).toBe('test-tag-2');
     expect(mockCheckExists).toHaveBeenCalledWith('test-tag');
     expect(mockCheckExists).toHaveBeenCalledWith('test-tag-2');
   });
 
   it('should keep incrementing until unique slug found', async () => {
-<<<<<<< HEAD
     const mockCheckExists = vi
       .fn()
       .mockResolvedValueOnce(true) // 'test-tag' exists
@@ -142,7 +126,6 @@ describe('generateUniqueSlug', () => {
 
     const result = await generateUniqueSlug('test tag', mockCheckExists);
 
-=======
     const mockCheckExists = vi.fn()
       .mockResolvedValueOnce(true)  // 'test-tag' exists
       .mockResolvedValueOnce(true)  // 'test-tag-2' exists
@@ -151,7 +134,6 @@ describe('generateUniqueSlug', () => {
     
     const result = await generateUniqueSlug('test tag', mockCheckExists);
     
->>>>>>> main
     expect(result).toBe('test-tag-4');
     expect(mockCheckExists).toHaveBeenCalledTimes(4);
   });
@@ -159,7 +141,6 @@ describe('generateUniqueSlug', () => {
   it('should fallback to timestamp if max attempts reached', async () => {
     const mockCheckExists = vi.fn().mockResolvedValue(true); // Always exists
     const mockTimestamp = 1234567890;
-<<<<<<< HEAD
 
     // Mock Date.now to return predictable timestamp
     const originalDateNow = Date.now;
@@ -170,7 +151,6 @@ describe('generateUniqueSlug', () => {
     expect(result).toBe(`test-tag-${mockTimestamp}`);
     expect(mockCheckExists).toHaveBeenCalledTimes(3); // Base + 2 attempts (maxAttempts=3 means 2 numbered attempts)
 
-=======
     
     // Mock Date.now to return predictable timestamp
     const originalDateNow = Date.now;
@@ -181,28 +161,23 @@ describe('generateUniqueSlug', () => {
     expect(result).toBe(`test-tag-${mockTimestamp}`);
     expect(mockCheckExists).toHaveBeenCalledTimes(3); // Base + 2 attempts (maxAttempts=3 means 2 numbered attempts)
     
->>>>>>> main
     // Restore Date.now
     Date.now = originalDateNow;
   });
 
   it('should handle empty slug by using fallback', async () => {
     const mockCheckExists = vi.fn().mockResolvedValue(false);
-<<<<<<< HEAD
 
     const result = await generateUniqueSlug('!!!', mockCheckExists);
 
-=======
     
     const result = await generateUniqueSlug('!!!', mockCheckExists);
     
->>>>>>> main
     expect(result).toBe('tag');
     expect(mockCheckExists).toHaveBeenCalledWith('tag');
   });
 
   it('should handle check function errors gracefully', async () => {
-<<<<<<< HEAD
     const mockCheckExists = vi
       .fn()
       .mockResolvedValueOnce(true) // 'test-tag' exists
@@ -214,7 +189,6 @@ describe('generateUniqueSlug', () => {
     expect(result).toBe('test-tag-2');
   });
 });
-=======
     const mockCheckExists = vi.fn()
       .mockResolvedValueOnce(true)  // 'test-tag' exists
       .mockResolvedValueOnce(false); // 'test-tag-2' does not exist
@@ -225,4 +199,3 @@ describe('generateUniqueSlug', () => {
     expect(result).toBe('test-tag-2');
   });
 });
->>>>>>> main

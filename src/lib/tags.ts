@@ -90,10 +90,6 @@ export class TagService {
     });
   }
 
-<<<<<<< HEAD
-=======
-
->>>>>>> main
   /**
    * Create new tag with secure validation
    */

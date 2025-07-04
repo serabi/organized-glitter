@@ -1,9 +1,14 @@
 /**
  * Utility for building FormData objects for PocketBase API calls
  * Handles proper type preservation and file uploads
+ * @author @serabi
+ * @created 2025-07-04
  */
 
 import type { ProjectUpdateData } from '@/types/file-upload';
+import { createLogger } from '@/utils/secureLogger';
+
+const logger = createLogger('FormDataBuilder');
 
 /**
  * Builds FormData for PocketBase update operations
@@ -85,17 +90,15 @@ export function validateFormDataForUpdate(
  */
 export function logFormData(formData: FormData, label: string = 'FormData'): void {
   if (import.meta.env.DEV) {
-    // console.group(`[Debug] ${label}`);
+    logger.debug(`[Debug] ${label} - FormData contents:`);
     for (const [key, value] of formData.entries()) {
       if (value instanceof File) {
-        // console.log(
-        //   `${key}:`,
-        //   `[File: ${value.name}, size: ${value.size} bytes, type: ${value.type}]`
-        // );
+        logger.debug(
+          `${key}: [File: ${value.name}, size: ${value.size} bytes, type: ${value.type}]`
+        );
       } else {
-        // console.log(`${key}:`, value);
+        logger.debug(`${key}: ${value}`);
       }
     }
-    // console.groupEnd();
   }
 }
