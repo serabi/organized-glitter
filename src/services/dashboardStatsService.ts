@@ -14,7 +14,14 @@ const logger = createLogger('DashboardStatsService');
 /**
  * Valid project status types for counting
  */
-type ValidProjectStatus = 'wishlist' | 'purchased' | 'stash' | 'progress' | 'completed' | 'destashed' | 'archived';
+type ValidProjectStatus =
+  | 'wishlist'
+  | 'purchased'
+  | 'stash'
+  | 'progress'
+  | 'completed'
+  | 'destashed'
+  | 'archived';
 
 /**
  * Interface for project status counts
