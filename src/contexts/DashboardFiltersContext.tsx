@@ -508,6 +508,7 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
         yearFinished: currentFilters.selectedYearFinished,
         includeMiniKits: currentFilters.includeMiniKits,
         includeDestashed: currentFilters.includeDestashed,
+        includeArchived: currentFilters.includeArchived,
         searchTerm: currentFilters.searchTerm,
         selectedTags: currentFilters.selectedTags,
       },

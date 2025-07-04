@@ -8,7 +8,7 @@
  * @since 2025-07-02
  */
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { pb } from '@/lib/pocketbase';
 import { createLogger } from '@/utils/secureLogger';
 // Dashboard filter context for persistence
@@ -65,7 +65,7 @@ const saveNavigationContext = async ({
 
   try {
     // Try to find existing record
-    let record;
+    let record: any;
     try {
       record = await pb.collection('user_dashboard_settings').getFirstListItem(`user="${userId}"`);
     } catch (error) {
@@ -132,8 +132,6 @@ const saveNavigationContext = async ({
  * ```
  */
 export const useSaveNavigationContext = () => {
-  const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: saveNavigationContext,
     // Add mutation key to prevent duplicate concurrent saves for the same user
