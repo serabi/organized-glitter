@@ -11,10 +11,9 @@ interface ProtectedRouteProps {
 const protectedRouteLogger = createLogger('ProtectedRoute');
 
 /**
- * Protected route wrapper that requires authentication
- * Redirects to login if user is not authenticated
+ * Inner component that handles the auth logic after hooks are called
  */
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+const ProtectedRouteInner: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { user, isLoading, initialCheckComplete } = useAuth();
   const location = useLocation();
 
@@ -78,4 +77,25 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   });
 
   return <>{children}</>;
+};
+
+/**
+ * Protected route wrapper that requires authentication
+ * Redirects to login if user is not authenticated
+ */
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+  try {
+    return <ProtectedRouteInner>{children}</ProtectedRouteInner>;
+  } catch (error) {
+    protectedRouteLogger.error('Failed to render protected route:', error);
+    // Fallback to loading state
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <LoadingSpinner className="h-12 w-12" />
+        <div className="ml-3">
+          <p className="text-muted-foreground">Initializing authentication...</p>
+        </div>
+      </div>
+    );
+  }
 };

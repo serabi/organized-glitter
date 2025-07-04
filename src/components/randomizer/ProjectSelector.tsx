@@ -197,23 +197,52 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
               >
                 <Checkbox
                   checked={isSelected}
-                  onChange={() => onProjectToggle(project.id)}
+                  onCheckedChange={() => onProjectToggle(project.id)}
+                  aria-label={`Select ${project.title}`}
                   className="data-[state=checked]:border-primary data-[state=checked]:bg-primary"
                 />
 
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    {project.imageUrl && (
-                      <img
-                        src={project.imageUrl}
-                        alt={project.title}
-                        className="h-8 w-8 flex-shrink-0 rounded object-cover"
-                        onError={e => {
-                          // Hide image on error
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                    )}
+                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded bg-gray-200">
+                      {project.imageUrl ? (
+                        <img
+                          src={project.imageUrl}
+                          alt={project.title}
+                          className="h-full w-full rounded object-cover"
+                          onError={e => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                            const parent = (e.target as HTMLImageElement).parentElement;
+                            if (parent) {
+                              const fallback = parent.querySelector(
+                                '[data-testid="image-fallback"]'
+                              );
+                              if (fallback) {
+                                (fallback as HTMLElement).style.display = 'flex';
+                              }
+                            }
+                          }}
+                        />
+                      ) : (
+                        <div
+                          data-testid="image-fallback"
+                          className="flex h-full w-full items-center justify-center"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5 text-gray-400"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium">{project.title}</p>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">

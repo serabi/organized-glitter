@@ -1,7 +1,7 @@
 /**
  * @fileoverview Tests for CSV column analysis utilities
  *
- * 
+ *
  * Tests the column detection, mapping, and validation functions used
  * to analyze CSV headers before import.
  */
@@ -14,7 +14,7 @@ import {
   generateColumnValidationMessage,
   analyzeCSVFile,
   EXPECTED_COLUMNS,
-  EXPECTED_COLUMNS
+  EXPECTED_COLUMNS,
 } from '../csvColumnAnalysis';
 
 describe('csvColumnAnalysis', () => {
@@ -23,13 +23,12 @@ describe('csvColumnAnalysis', () => {
       const headers = ['title', 'status', 'company', 'artist'];
       const result = analyzeCSVColumns(headers);
 
-      
       expect(result.detectedColumns).toHaveLength(4);
       expect(result.detectedColumns[0]).toEqual({
         csvHeader: 'title',
         mappedTo: 'title',
         confidence: 'exact',
-        confidence: 'exact'
+        confidence: 'exact',
       });
       expect(result.summary.hasAllRequired).toBe(true);
       expect(result.missingRequired).toHaveLength(0);
@@ -39,19 +38,18 @@ describe('csvColumnAnalysis', () => {
       const headers = ['project name', 'state', 'manufacturer', 'creator'];
       const result = analyzeCSVColumns(headers);
 
-      
       expect(result.detectedColumns).toHaveLength(4);
       expect(result.detectedColumns[0]).toEqual({
         csvHeader: 'project name',
         mappedTo: 'title',
         confidence: 'alias',
-        confidence: 'alias'
+        confidence: 'alias',
       });
       expect(result.detectedColumns[1]).toEqual({
         csvHeader: 'state',
         mappedTo: 'status',
         confidence: 'alias',
-        confidence: 'alias'
+        confidence: 'alias',
       });
     });
 
@@ -59,7 +57,6 @@ describe('csvColumnAnalysis', () => {
       const headers = ['TITLE', 'Status', 'cOMPANY'];
       const result = analyzeCSVColumns(headers);
 
-      
       expect(result.detectedColumns).toHaveLength(3);
       expect(result.detectedColumns[0].csvHeader).toBe('TITLE');
       expect(result.detectedColumns[0].mappedTo).toBe('title');
@@ -69,7 +66,6 @@ describe('csvColumnAnalysis', () => {
       const headers = ['status', 'company']; // Missing title
       const result = analyzeCSVColumns(headers);
 
-      
       expect(result.missingRequired).toHaveLength(1);
       expect(result.missingRequired[0].field).toBe('title');
       expect(result.summary.hasAllRequired).toBe(false);
@@ -79,7 +75,6 @@ describe('csvColumnAnalysis', () => {
       const headers = ['title']; // Only required field
       const result = analyzeCSVColumns(headers);
 
-      
       expect(result.missingRequired).toHaveLength(0);
       expect(result.missingOptional.length).toBeGreaterThan(0);
       expect(result.summary.hasAllRequired).toBe(true);
@@ -89,7 +84,6 @@ describe('csvColumnAnalysis', () => {
       const headers = ['title', 'custom_field', 'another_unknown_column'];
       const result = analyzeCSVColumns(headers);
 
-      
       expect(result.unmappedColumns).toContain('custom_field');
       expect(result.unmappedColumns).toContain('another_unknown_column');
       expect(result.unmappedColumns).not.toContain('title');
@@ -99,7 +93,6 @@ describe('csvColumnAnalysis', () => {
       const headers: string[] = [];
       const result = analyzeCSVColumns(headers);
 
-      
       expect(result.detectedColumns).toHaveLength(0);
       expect(result.missingRequired.length).toBeGreaterThan(0);
       expect(result.summary.hasAllRequired).toBe(false);
@@ -109,7 +102,7 @@ describe('csvColumnAnalysis', () => {
       const headers = [
         'Title',
         'Company',
-        'Company', 
+        'Company',
         'Artist',
         'Width',
         'Height',
@@ -127,7 +120,7 @@ describe('csvColumnAnalysis', () => {
       ];
 
       const result = analyzeCSVColumns(headers);
-      
+
       expect(result.summary.hasAllRequired).toBe(true);
       expect(result.detectedColumns.length).toBeGreaterThan(10);
       expect(result.unmappedColumns).toHaveLength(0);
@@ -139,7 +132,6 @@ describe('csvColumnAnalysis', () => {
       const analysis = analyzeCSVColumns(['status', 'company']); // No title
       const message = generateColumnValidationMessage(analysis);
 
-      
       expect(message.severity).toBe('error');
       expect(message.canProceed).toBe(false);
       expect(message.message).toContain('Cannot import');
@@ -171,7 +163,7 @@ describe('csvColumnAnalysis', () => {
       ];
       const analysis = analyzeCSVColumns(headers);
       const message = generateColumnValidationMessage(analysis);
-      
+
       expect(message.severity).toBe('success');
       expect(message.canProceed).toBe(true);
       expect(message.message).toContain('All expected columns found');
@@ -181,7 +173,6 @@ describe('csvColumnAnalysis', () => {
       const analysis = analyzeCSVColumns(['title']); // Only required field
       const message = generateColumnValidationMessage(analysis);
 
-      
       expect(message.severity).toBe('warning');
       expect(message.canProceed).toBe(true);
       expect(message.message).toContain('Ready to import');
@@ -192,7 +183,6 @@ describe('csvColumnAnalysis', () => {
       const analysis = analyzeCSVColumns(['title', 'company']); // Missing status (has default)
       const message = generateColumnValidationMessage(analysis);
 
-      
       expect(message.severity).toBe('warning');
       expect(message.canProceed).toBe(true);
       expect(message.message).toContain('default');
@@ -202,7 +192,6 @@ describe('csvColumnAnalysis', () => {
       const analysis = analyzeCSVColumns(['title', 'unknown_field']);
       const message = generateColumnValidationMessage(analysis);
 
-      
       expect(message.severity).toBe('warning');
       expect(message.canProceed).toBe(true);
       expect(message.message).toContain('unmapped columns will be ignored');
@@ -214,7 +203,6 @@ describe('csvColumnAnalysis', () => {
       const analysis = analyzeCSVColumns(['title', 'status', 'company']);
       const report = generateColumnReport(analysis);
 
-      
       expect(report.severity).toBe('warning'); // Some optional columns missing
       expect(report.title).toContain('Ready');
       expect(report.details.length).toBeGreaterThan(0);
@@ -224,7 +212,6 @@ describe('csvColumnAnalysis', () => {
       const analysis = analyzeCSVColumns(['status', 'company']); // No title
       const report = generateColumnReport(analysis);
 
-      
       expect(report.severity).toBe('error');
       expect(report.title).toContain('Missing Required');
       expect(report.details.some(d => d.includes('Missing required'))).toBe(true);
@@ -235,7 +222,6 @@ describe('csvColumnAnalysis', () => {
       const analysis = analyzeCSVColumns(['title']); // Only required field
       const report = generateColumnReport(analysis);
 
-      
       expect(report.severity).toBe('warning');
       expect(report.details.some(d => d.includes('Optional columns'))).toBe(true);
     });
@@ -244,7 +230,6 @@ describe('csvColumnAnalysis', () => {
       const analysis = analyzeCSVColumns(['title', 'unknown_field']);
       const report = generateColumnReport(analysis);
 
-      
       expect(report.details.some(d => d.includes('Unmapped columns'))).toBe(true);
       expect(report.suggestions.some(s => s.includes('unmapped columns'))).toBe(true);
     });
@@ -253,7 +238,6 @@ describe('csvColumnAnalysis', () => {
       const analysis = analyzeCSVColumns(['title']); // Missing fields with defaults
       const report = generateColumnReport(analysis);
 
-      
       expect(report.details.some(d => d.includes('default:'))).toBe(true);
     });
   });
@@ -262,7 +246,6 @@ describe('csvColumnAnalysis', () => {
     it('generates valid CSV template', () => {
       const template = generateCSVTemplate();
 
-      
       expect(template).toContain('title'); // Header row
       expect(template).toContain('My Diamond Painting Project'); // Example row
       expect(template.split('\n')).toHaveLength(2); // Header + example
@@ -272,7 +255,6 @@ describe('csvColumnAnalysis', () => {
       const template = generateCSVTemplate();
       const headers = template.split('\n')[0].split(',');
 
-      
       // Should have headers for all expected columns
       expect(headers.length).toBe(Object.keys(EXPECTED_COLUMNS).length);
     });
@@ -281,7 +263,6 @@ describe('csvColumnAnalysis', () => {
       const template = generateCSVTemplate();
       const exampleRow = template.split('\n')[1];
 
-      
       expect(exampleRow).toContain('completed'); // Status example
       expect(exampleRow).toContain('2024'); // Date examples
       expect(exampleRow).toContain('square'); // Drill shape example
@@ -295,9 +276,8 @@ describe('csvColumnAnalysis', () => {
 
       const result = await analyzeCSVFile(file);
 
-      
       const result = await analyzeCSVFile(file);
-      
+
       expect(result.detectedColumns).toHaveLength(3);
       expect(result.summary.hasAllRequired).toBe(true);
     });
@@ -309,11 +289,12 @@ describe('csvColumnAnalysis', () => {
 
       const result = await analyzeCSVFile(file);
 
-      const csvContent = '"Project Title","Project Status","Company Name"\n"Test","completed","TestCo"';
+      const csvContent =
+        '"Project Title","Project Status","Company Name"\n"Test","completed","TestCo"';
       const file = new File([csvContent], 'test.csv', { type: 'text/csv' });
-      
+
       const result = await analyzeCSVFile(file);
-      
+
       expect(result.detectedColumns.some(c => c.mappedTo === 'title')).toBe(true);
       expect(result.detectedColumns.some(c => c.mappedTo === 'status')).toBe(true);
     });
@@ -324,9 +305,8 @@ describe('csvColumnAnalysis', () => {
 
       const result = await analyzeCSVFile(file);
 
-      
       const result = await analyzeCSVFile(file);
-      
+
       expect(result.detectedColumns).toHaveLength(3);
       expect(result.summary.hasAllRequired).toBe(true);
     });
@@ -335,7 +315,6 @@ describe('csvColumnAnalysis', () => {
       const invalidContent = 'not,a,valid\ncsv\nfile';
       const file = new File([invalidContent], 'test.csv', { type: 'text/csv' });
 
-      
       // Should not throw, but may have unmapped columns
       const result = await analyzeCSVFile(file);
       expect(result).toBeDefined();
@@ -357,7 +336,7 @@ describe('csvColumnAnalysis', () => {
         ...result.detectedColumns.map(col => col.csvHeader),
         ...result.unmappedColumns,
       ];
-      
+
       expect(allHeaders).toContain('Project Title');
       expect(allHeaders).toContain('Status, Current');
       expect(allHeaders).toContain('Company Name');
@@ -369,7 +348,7 @@ describe('csvColumnAnalysis', () => {
       expect(result.detectedColumns[0]).toEqual({
         csvHeader: 'Project Title',
         mappedTo: 'title',
-        confidence: 'alias'
+        confidence: 'alias',
       });
       expect(result.summary.hasAllRequired).toBe(true);
       expect(result.unmappedColumns).toHaveLength(4);
@@ -395,7 +374,6 @@ describe('csvColumnAnalysis', () => {
     it('includes all necessary project fields', () => {
       const fields = Object.keys(EXPECTED_COLUMNS);
 
-      
       expect(fields).toContain('title');
       expect(fields).toContain('status');
       expect(fields).toContain('tags');

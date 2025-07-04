@@ -23,10 +23,8 @@ export type StatusBreakdown = z.infer<typeof StatusBreakdownSchema>;
 // Core yearly statistics
 export const YearlyStatsSchema = z.object({
   completed_count: z.number().min(0).int(),
-  started_count: z.number().min(0).int(),
   in_progress_count: z.number().min(0).int(),
   total_diamonds: z.number().min(0).int(),
-  estimated_drills: z.number().min(0).int(),
   status_breakdown: StatusBreakdownSchema,
 });
 
@@ -70,10 +68,8 @@ export const CreateStatsParamsSchema = z.object({
   year: z.number().min(2020).max(2050),
   stats_type: z.literal('yearly'),
   completed_count: z.number().min(0).int(),
-  started_count: z.number().min(0).int(),
   in_progress_count: z.number().min(0).int(),
   total_diamonds: z.number().min(0).int(),
-  estimated_drills: z.number().min(0).int(),
   status_breakdown: StatusBreakdownSchema,
   calculation_duration_ms: z.number().min(0),
   projects_included: z.number().min(0),
@@ -122,8 +118,6 @@ export const DEFAULT_STATS_CONFIG: StatsServiceConfig = {
 // Legacy interface compatibility (for gradual migration)
 export interface LegacyOverviewStats {
   completedCount: number;
-  estimatedDrills: number;
-  startedCount: number;
   inProgressCount: number;
   totalDiamonds: number;
 }
@@ -134,8 +128,6 @@ export interface LegacyOverviewStats {
 export function toLegacyStats(stats: YearlyStats): LegacyOverviewStats {
   return {
     completedCount: stats.completed_count,
-    estimatedDrills: stats.estimated_drills,
-    startedCount: stats.started_count,
     inProgressCount: stats.in_progress_count,
     totalDiamonds: stats.total_diamonds,
   };

@@ -36,6 +36,9 @@ import ProjectCard from '@/components/dashboard/ProjectCard';
 import { ProjectType } from '@/types/project'; // Still needed for ProjectCard and internal logic
 import { Separator } from '@/components/ui/separator';
 import { useDashboardFilters } from '@/contexts/DashboardFiltersContext';
+import { useDashboardData } from '@/hooks/useDashboardData';
+import { useDynamicSeparatorProps } from '@/hooks/useDynamicSeparatorProps';
+import { useAuth } from '@/hooks/useAuth';
 import ProjectPagination from '@/components/ui/ProjectPagination';
 import { useNavigateToProject } from '@/hooks/useNavigateToProject';
 import { useRecentlyEdited } from '@/contexts/DashboardFiltersContext';
@@ -46,19 +49,17 @@ import { secureLogger } from '@/utils/secureLogger';
 
 const ProjectsGridComponent = () => {
   const navigateToProject = useNavigateToProject();
-  const dashboardContext = useDashboardFilters();
+  const { user } = useAuth();
   const { recentlyEditedProjectId } = useRecentlyEdited();
-  const {
-    isLoadingProjects: loading,
-    projects,
-    filters,
-    resetAllFilters,
-    dynamicSeparatorProps,
-    totalItems,
-    totalPages,
-    updatePage,
-    updatePageSize,
-  } = dashboardContext;
+  const { filters, debouncedSearchTerm, resetAllFilters, updatePage, updatePageSize } =
+    useDashboardFilters();
+
+  // Get dashboard data using the new hook with debounced search term
+  const dashboardData = useDashboardData(user?.id || 'guest', filters, debouncedSearchTerm);
+  const { projects, isLoadingProjects: loading, totalItems, totalPages } = dashboardData;
+
+  // Compute dynamic separator props
+  const dynamicSeparatorProps = useDynamicSeparatorProps(filters.sortField, projects);
 
   // Debug log: print all project statuses in the grid for the Purchased section
   React.useEffect(() => {
