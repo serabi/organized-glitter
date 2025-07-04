@@ -398,7 +398,7 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
         },
       }
     );
-  }, []); // Empty dependency array is safe now since we use ref
+  }, [toast]); // Include toast dependency
 
   // Save filters when navigating away from dashboard
   useEffect(() => {
@@ -425,6 +425,8 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
     }
 
     const initializeFromDatabase = async () => {
+      let initialFilters = getDefaultFilters();
+
       try {
         const { pb } = await import('@/lib/pocketbase');
         const record = await pb
@@ -432,7 +434,7 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
           .getFirstListItem(`user="${user.id}"`);
 
         if (record.navigation_context) {
-          const savedContext = record.navigation_context as any;
+          const savedContext = record.navigation_context as Record<string, unknown>;
           const rawSavedFilters = {
             activeStatus: savedContext.filters?.status,
             selectedCompany: savedContext.filters?.company,
@@ -450,11 +452,10 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
           };
 
           // Validate and sanitize the loaded state
-          const validatedFilters = validateAndSanitizeFilters(rawSavedFilters);
-          setFilters(validatedFilters);
-          logger.info('Restored and validated filters from database', {
+          initialFilters = validateAndSanitizeFilters(rawSavedFilters);
+          logger.info('Restored filters from database', {
             userId: user.id,
-            validatedFilters,
+            initialFilters,
           });
         }
       } catch (error) {
@@ -463,6 +464,73 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
         }
       }
 
+      // 🚀 CRITICAL FIX: Process URL parameters IMMEDIATELY during initialization
+      const urlParams = new URLSearchParams(location.search);
+      if (urlParams.toString().length > 0) {
+        logger.info('🔥 Processing URL parameters during initialization', {
+          search: location.search,
+          beforeFilters: initialFilters,
+        });
+
+        // Status filter - this is the key fix for the bug
+        const urlStatus = urlParams.get('status');
+        if (
+          urlStatus &&
+          [
+            'wishlist',
+            'purchased',
+            'stash',
+            'progress',
+            'completed',
+            'destashed',
+            'archived',
+          ].includes(urlStatus)
+        ) {
+          initialFilters.activeStatus = urlStatus as ProjectFilterStatus;
+          logger.info('🎯 URL status applied during initialization', {
+            urlStatus,
+            finalStatus: initialFilters.activeStatus,
+          });
+        }
+
+        // Apply other URL parameters
+        const urlCompany = urlParams.get('company');
+        if (urlCompany) {
+          initialFilters.selectedCompany = urlCompany;
+        }
+
+        const urlArtist = urlParams.get('artist');
+        if (urlArtist) {
+          initialFilters.selectedArtist = urlArtist;
+        }
+
+        const urlTag = urlParams.get('tag');
+        if (urlTag) {
+          const matchingTag = userMetadata.tags.find(tag => tag.name === urlTag);
+          if (matchingTag) {
+            initialFilters.selectedTags = [matchingTag.id];
+          }
+        }
+
+        const urlYear = urlParams.get('year');
+        if (urlYear) {
+          initialFilters.selectedYearFinished = urlYear;
+        }
+
+        const urlDrillShape = urlParams.get('drillShape');
+        if (urlDrillShape) {
+          initialFilters.selectedDrillShape = urlDrillShape;
+        }
+
+        // Clear URL parameters for clean URLs
+        navigate(location.pathname, { replace: true });
+
+        logger.info('✅ URL parameters processed during initialization', {
+          finalFilters: initialFilters,
+        });
+      }
+
+      setFilters(initialFilters);
       setIsInitialized(true);
     };
 
@@ -472,87 +540,14 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
     userMetadata.isLoading.tags,
     userMetadata.isLoading.companies,
     userMetadata.isLoading.artists,
+    location.search,
+    location.pathname,
+    navigate,
+    userMetadata.tags, // Need this for tag name lookups
+    isInitialized, // Include this dependency
   ]);
 
-  // Handle URL parameters
-  useEffect(() => {
-    if (!isInitialized) return;
-
-    const urlParams = new URLSearchParams(location.search);
-    const hasUrlParams = urlParams.toString().length > 0;
-
-    if (hasUrlParams) {
-      logger.info('Processing URL parameters', { search: location.search });
-
-      const newFilters = { ...getDefaultFilters() };
-      let hasChanges = false;
-
-      // Status filter
-      const urlStatus = urlParams.get('status');
-      if (
-        urlStatus &&
-        [
-          'wishlist',
-          'purchased',
-          'stash',
-          'progress',
-          'completed',
-          'destashed',
-          'archived',
-        ].includes(urlStatus)
-      ) {
-        newFilters.activeStatus = urlStatus as ProjectFilterStatus;
-        hasChanges = true;
-      }
-
-      // Company filter
-      const urlCompany = urlParams.get('company');
-      if (urlCompany) {
-        newFilters.selectedCompany = urlCompany;
-        hasChanges = true;
-      }
-
-      // Artist filter
-      const urlArtist = urlParams.get('artist');
-      if (urlArtist) {
-        newFilters.selectedArtist = urlArtist;
-        hasChanges = true;
-      }
-
-      // Tag filter
-      const urlTag = urlParams.get('tag');
-      if (urlTag) {
-        const matchingTag = userMetadata.tags.find(tag => tag.name === urlTag);
-        if (matchingTag) {
-          newFilters.selectedTags = [matchingTag.id];
-          hasChanges = true;
-        }
-      }
-
-      // Year filter
-      const urlYear = urlParams.get('year');
-      if (urlYear) {
-        newFilters.selectedYearFinished = urlYear;
-        hasChanges = true;
-      }
-
-      // Drill shape filter
-      const urlDrillShape = urlParams.get('drillShape');
-      if (urlDrillShape) {
-        newFilters.selectedDrillShape = urlDrillShape;
-        hasChanges = true;
-      }
-
-      if (hasChanges) {
-        setFilters(newFilters);
-
-        // Clear URL parameters for clean URLs
-        navigate(location.pathname, { replace: true });
-
-        logger.info('Applied URL parameters to filters', { newFilters });
-      }
-    }
-  }, [location.search, isInitialized, navigate, location.pathname, userMetadata.tags]);
+  // NOTE: URL parameter processing moved to initialization for immediate application
 
   // Filter update functions
   const updateStatus = useCallback((status: ProjectFilterStatus) => {

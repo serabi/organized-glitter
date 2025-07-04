@@ -248,6 +248,14 @@ export const useProjects = ({
     [filters, sortField, sortDirection, currentPage, pageSize]
   );
 
+  // Debug logging to trace query execution
+  logger.debug('🔄 useProjects called', {
+    userId,
+    status: filters.status,
+    queryKey: queryKeys.projects.list(userId || '', queryParams),
+    enabled: !!userId,
+  });
+
   return useQuery({
     queryKey: queryKeys.projects.list(userId || '', queryParams),
     queryFn: () => fetchProjects({ userId: userId!, ...queryParams }),
