@@ -5,7 +5,7 @@
  * Features secure duplicate validation and URL validation with user-friendly
  * error handling. Uses FilterBuilder utility for secure PocketBase queries.
  * 
- * @author Generated with Claude Code
+ * @author serabi
  * @version 1.0.0
  * @since 2024-06-29
  */
@@ -27,6 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 import { pb } from '@/lib/pocketbase';
 import { createFilter } from '@/utils/filterBuilder';
 import FormField from '@/components/projects/form/FormField';
+import { logger } from '@/utils/logger';
 
 /**
  * Props interface for the AddCompanyDialog component
@@ -210,11 +211,12 @@ const AddCompanyDialog = ({ onCompanyAdded }: AddCompanyDialogProps) => {
       // Reset form
       setNewCompanyName('');
       setNewCompanyUrl('');
+      setNewCompanyUrl('');
       setUrlError('');
       setIsDialogOpen(false);
       onCompanyAdded();
     } catch (error) {
-      console.error('Error adding company:', error);
+      logger.error('Error adding company:', error);
       toast({
         title: 'Error',
         description: 'Could not add company',

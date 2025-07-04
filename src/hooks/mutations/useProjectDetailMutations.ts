@@ -1,5 +1,4 @@
-import { useMutation, useQueryClient, notifyManager } from '@tanstack/react-query';
-import { startTransition } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { pb } from '@/lib/pocketbase';
 import { Collections } from '@/types/pocketbase.types';
@@ -8,7 +7,6 @@ import { queryKeys } from '@/hooks/queries/queryKeys';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { createLogger } from '@/utils/secureLogger';
-import { DashboardStatsService } from '@/services/pocketbase/dashboardStatsService';
 import { dashboardSyncMonitor } from '@/utils/dashboardSyncMonitor';
 
 const logger = createLogger('useProjectDetailMutations');
@@ -23,7 +21,6 @@ const invalidateProjectQueries = async (
   queryClient: ReturnType<typeof useQueryClient>,
   projectId?: string,
   userId?: string,
-  updateStatsCache?: () => Promise<void>,
   isDeletion?: boolean
 ) => {
   const invalidations: Promise<void>[] = [];
@@ -86,33 +83,8 @@ const invalidateProjectQueries = async (
     })
   );
 
-  // Update overview stats cache when function is provided
-  if (updateStatsCache) {
-    invalidations.push(updateStatsCache());
-  }
-
   // Wait for all invalidations to complete
   await Promise.all(invalidations);
-
-  // Background stats cache update - no longer blocking
-  if (userId) {
-    startTransition(() => {
-      DashboardStatsService.updateCacheAfterProjectChange(userId)
-        .then(() => {
-          logger.info('Background stats cache updated successfully after project change:', {
-            projectId,
-          });
-        })
-        .catch(error => {
-          logger.error('Failed to update stats cache after project change:', error);
-          // Fallback: mark stats as stale for next access
-          queryClient.invalidateQueries({
-            queryKey: queryKeys.stats.overview(userId),
-            refetchType: 'none',
-          });
-        });
-    });
-  }
 };
 
 // Helper function to handle common error logging and toast
@@ -230,8 +202,7 @@ export const useUpdateProjectStatusMutation = () => {
       handleMutationError(err, 'update project status', toast);
     },
     onSuccess: async (_, { projectId, status }, context) => {
-      const endInvalidation = dashboardSyncMonitor.startTiming('cache-invalidation');
-      const endStatsUpdate = dashboardSyncMonitor.startTiming('stats-update');
+      const endTiming = dashboardSyncMonitor.startTiming('simple-invalidation');
       
       // Record successful mutation
       dashboardSyncMonitor.recordEvent({
@@ -243,88 +214,69 @@ export const useUpdateProjectStatusMutation = () => {
         metadata: { phase: 'onSuccess' },
       });
 
-      // Synchronous cache updates for immediate UI feedback
       if (user?.id) {
-        const currentYear = new Date().getFullYear();
-        const statsQueryKey = [...queryKeys.stats.overview(user.id), 'dashboard', currentYear];
-        
-        logger.debug('🔄 Processing successful status update cache invalidation:', {
+        logger.debug('🔄 Using simple invalidation approach for status update:', {
           projectId,
           newStatus: status,
           userId: user.id,
-          statsQueryKey,
         });
         
-        // Use atomic batch operations for consistency
-        await notifyManager.batch(async () => {
-          // Immediately invalidate and refetch all affected caches
+        try {
+          // Modern TanStack Query v5 best practice: Simple targeted invalidation
+          const currentYear = new Date().getFullYear();
+          
           await Promise.all([
-            // Invalidate project caches
+            // Invalidate project detail with immediate active refetch
             queryClient.invalidateQueries({
               queryKey: queryKeys.projects.detail(projectId),
               exact: true,
+              refetchType: 'active',
             }),
+            // Invalidate projects list with immediate active refetch
             queryClient.invalidateQueries({
               queryKey: queryKeys.projects.advanced(user.id),
               exact: true,
-            }),
-            queryClient.invalidateQueries({
-              queryKey: queryKeys.projects.lists(),
-              exact: false,
               refetchType: 'active',
             }),
-            // Invalidate dashboard stats with exact key structure
+            // Invalidate dashboard stats with immediate active refetch for instant tab updates
             queryClient.invalidateQueries({
-              queryKey: statsQueryKey,
+              queryKey: [...queryKeys.stats.overview(user.id), 'dashboard', currentYear],
               exact: true,
-            }),
-            // Also invalidate broader stats for other years
-            queryClient.invalidateQueries({
-              queryKey: queryKeys.stats.overview(user.id),
-              exact: false,
+              refetchType: 'active',
             }),
           ]);
           
-          endInvalidation();
+          endTiming();
           
-          // Synchronously update dashboard stats cache
-          try {
-            await DashboardStatsService.updateCacheAfterProjectChange(user.id, currentYear);
-            endStatsUpdate();
-            logger.info('✅ Dashboard stats cache updated successfully');
-            
-            dashboardSyncMonitor.recordEvent({
-              type: 'stats_update',
-              projectId,
-              userId: user.id,
-              success: true,
-              metadata: { currentYear },
-            });
-          } catch (error) {
-            endStatsUpdate();
-            logger.error('❌ Dashboard stats cache update failed:', error);
-            
-            dashboardSyncMonitor.recordEvent({
-              type: 'stats_update',
-              projectId,
-              userId: user.id,
-              success: false,
-              error: error instanceof Error ? error.message : 'Unknown error',
-              metadata: { currentYear },
-            });
-            
-            // Force invalidation as fallback
-            await queryClient.invalidateQueries({ 
-              queryKey: queryKeys.stats.overview(user.id),
-              refetchType: 'active',
-            });
-          }
-        });
-        
-        // End timing from context
-        if (context?.endTiming) {
-          context.endTiming();
+          dashboardSyncMonitor.recordEvent({
+            type: 'cache_invalidation',
+            projectId,
+            userId: user.id,
+            success: true,
+            metadata: { approach: 'simple-invalidation' },
+          });
+          
+          logger.info('✅ Simple cache invalidation completed successfully');
+          
+        } catch (error) {
+          logger.error('❌ Cache invalidation failed:', error);
+          
+          endTiming();
+          
+          dashboardSyncMonitor.recordEvent({
+            type: 'cache_invalidation',
+            projectId,
+            userId: user.id,
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
+            metadata: { approach: 'simple-invalidation' },
+          });
         }
+      }
+
+      // End timing from context
+      if (context?.endTiming) {
+        context.endTiming();
       }
 
       toast({
@@ -395,18 +347,16 @@ export const useAddProgressNoteMutation = () => {
       return await pb.collection(Collections.ProgressNotes).create(formData);
     },
     onSuccess: (_, { projectId }) => {
-      // Use batch for efficient cache updates
-      notifyManager.batch(() => {
-        // Precisely invalidate the specific project detail
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.projects.detail(projectId),
-          exact: true,
-        });
-        // Precisely invalidate progress notes for this project
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.progressNotes.list(projectId),
-          exact: true,
-        });
+      // Modern React 18+ handles batching automatically - no need for manual batching
+      // Precisely invalidate the specific project detail
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.projects.detail(projectId),
+        exact: true,
+      });
+      // Precisely invalidate progress notes for this project
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.progressNotes.list(projectId),
+        exact: true,
       });
 
       toast({
@@ -440,18 +390,16 @@ export const useUpdateProgressNoteMutation = () => {
       return await pb.collection(Collections.ProgressNotes).update(noteId, { content });
     },
     onSuccess: (_, { projectId }) => {
-      // Use batch for efficient cache updates
-      notifyManager.batch(() => {
-        // Precisely invalidate the specific project detail
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.projects.detail(projectId),
-          exact: true,
-        });
-        // Precisely invalidate progress notes for this project
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.progressNotes.list(projectId),
-          exact: true,
-        });
+      // Modern React 18+ handles batching automatically - no need for manual batching
+      // Precisely invalidate the specific project detail
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.projects.detail(projectId),
+        exact: true,
+      });
+      // Precisely invalidate progress notes for this project
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.progressNotes.list(projectId),
+        exact: true,
       });
 
       toast({
@@ -479,30 +427,28 @@ export const useDeleteProgressNoteMutation = () => {
       return await pb.collection(Collections.ProgressNotes).delete(noteId);
     },
     onSuccess: (_, { projectId }) => {
-      // Use batch for efficient cache updates
-      notifyManager.batch(() => {
-        if (projectId) {
-          // Precisely invalidate specific project queries
-          queryClient.invalidateQueries({
-            queryKey: queryKeys.projects.detail(projectId),
-            exact: true,
-          });
-          queryClient.invalidateQueries({
-            queryKey: queryKeys.progressNotes.list(projectId),
-            exact: true,
-          });
-        } else {
-          // Otherwise invalidate broader queries with exact matching where possible
-          queryClient.invalidateQueries({
-            queryKey: queryKeys.progressNotes.all,
-            exact: true,
-          });
-          queryClient.invalidateQueries({
-            queryKey: queryKeys.projects.details(),
-            exact: true,
-          });
-        }
-      });
+      // Modern React 18+ handles batching automatically - no need for manual batching
+      if (projectId) {
+        // Precisely invalidate specific project queries
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.projects.detail(projectId),
+          exact: true,
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.progressNotes.list(projectId),
+          exact: true,
+        });
+      } else {
+        // Otherwise invalidate broader queries with exact matching where possible
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.progressNotes.all,
+          exact: true,
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.projects.details(),
+          exact: true,
+        });
+      }
 
       toast({
         title: 'Success',
@@ -530,18 +476,16 @@ export const useDeleteProgressNoteImageMutation = () => {
       return await pb.collection(Collections.ProgressNotes).update(noteId, { image: null });
     },
     onSuccess: (_, { projectId }) => {
-      // Use batch for efficient cache updates
-      notifyManager.batch(() => {
-        // Precisely invalidate the specific project detail
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.projects.detail(projectId),
-          exact: true,
-        });
-        // Precisely invalidate progress notes for this project
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.progressNotes.list(projectId),
-          exact: true,
-        });
+      // Modern React 18+ handles batching automatically - no need for manual batching
+      // Precisely invalidate the specific project detail
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.projects.detail(projectId),
+        exact: true,
+      });
+      // Precisely invalidate progress notes for this project
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.progressNotes.list(projectId),
+        exact: true,
       });
 
       toast({
@@ -584,10 +528,25 @@ export const useArchiveProjectMutation = () => {
 
       // Optimistic cache updates - immediate UI feedback
       if (user?.id) {
-        notifyManager.batch(() => {
-          // Optimistically update project status in advanced projects list
-          queryClient.setQueryData(queryKeys.projects.advanced(user.id), (oldData: unknown) => {
-            if (!oldData || typeof oldData !== 'object' || !('projects' in oldData)) return oldData;
+        // Modern React 18+ handles batching automatically - no need for manual batching
+        // Optimistically update project status in advanced projects list
+        queryClient.setQueryData(queryKeys.projects.advanced(user.id), (oldData: unknown) => {
+          if (!oldData || typeof oldData !== 'object' || !('projects' in oldData)) return oldData;
+          const data = oldData as { projects: Array<{ id: string; [key: string]: unknown }> };
+          return {
+            ...data,
+            projects: data.projects.map(p =>
+              p.id === projectId ? { ...p, status: PROJECT_STATUS.ARCHIVED } : p
+            ),
+          };
+        });
+
+        // Optimistically update any paginated project lists
+        queryClient.setQueriesData(
+          { queryKey: queryKeys.projects.lists(), exact: false },
+          (oldData: unknown) => {
+            if (!oldData || typeof oldData !== 'object' || !('projects' in oldData))
+              return oldData;
             const data = oldData as { projects: Array<{ id: string; [key: string]: unknown }> };
             return {
               ...data,
@@ -595,58 +554,35 @@ export const useArchiveProjectMutation = () => {
                 p.id === projectId ? { ...p, status: PROJECT_STATUS.ARCHIVED } : p
               ),
             };
-          });
+          }
+        );
 
-          // Optimistically update any paginated project lists
-          queryClient.setQueriesData(
-            { queryKey: queryKeys.projects.lists(), exact: false },
-            (oldData: unknown) => {
-              if (!oldData || typeof oldData !== 'object' || !('projects' in oldData))
-                return oldData;
-              const data = oldData as { projects: Array<{ id: string; [key: string]: unknown }> };
-              return {
-                ...data,
-                projects: data.projects.map(p =>
-                  p.id === projectId ? { ...p, status: PROJECT_STATUS.ARCHIVED } : p
-                ),
-              };
-            }
-          );
+        // Update project detail cache if it exists
+        queryClient.setQueryData(queryKeys.projects.detail(projectId), (oldData: unknown) => {
+          if (!oldData || typeof oldData !== 'object') return oldData;
+          return { ...(oldData as Record<string, unknown>), status: PROJECT_STATUS.ARCHIVED };
+        });
 
-          // Update project detail cache if it exists
-          queryClient.setQueryData(queryKeys.projects.detail(projectId), (oldData: unknown) => {
-            if (!oldData || typeof oldData !== 'object') return oldData;
-            return { ...(oldData as Record<string, unknown>), status: PROJECT_STATUS.ARCHIVED };
-          });
-
-          // Mark dashboard stats as stale without immediate refetch
-          queryClient.invalidateQueries({
-            queryKey: queryKeys.stats.overview(user.id),
-            refetchType: 'none',
-          });
+        // Mark dashboard stats as stale without immediate refetch
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.stats.overview(user.id),
+          refetchType: 'none',
         });
       }
 
-      // Synchronously update dashboard stats before navigation
+      // Simple cache invalidation before navigation
       if (user?.id) {
-        const currentYear = new Date().getFullYear();
-        try {
-          await DashboardStatsService.updateCacheAfterProjectChange(user.id, currentYear);
-          logger.info('✅ Dashboard stats cache updated successfully before navigation');
-          
-          // Invalidate with exact key structure to match useDashboardStats
-          await queryClient.invalidateQueries({
-            queryKey: [...queryKeys.stats.overview(user.id), 'dashboard', currentYear],
-            exact: true,
-          });
-        } catch (error) {
-          logger.error('❌ Dashboard stats cache update failed:', error);
-          // Force invalidation as fallback
-          await queryClient.invalidateQueries({ 
-            queryKey: queryKeys.stats.overview(user.id),
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: ['projects'],
             refetchType: 'active',
-          });
-        }
+          }),
+          queryClient.invalidateQueries({
+            queryKey: ['stats'],
+            refetchType: 'active',
+          }),
+        ]);
+        logger.info('✅ Simple cache invalidation completed before navigation');
       }
 
       // Navigate using React Router for consistent routing
@@ -756,15 +692,32 @@ export const useDeleteProjectMutation = () => {
 
       // Optimistic cache updates - immediate UI feedback
       if (user?.id) {
-        notifyManager.batch(() => {
-          // Remove the deleted project completely from cache
-          queryClient.removeQueries({ queryKey: queryKeys.projects.detail(projectId) });
-          // Remove any progress notes for the deleted project
-          queryClient.removeQueries({ queryKey: queryKeys.progressNotes.list(projectId) });
+        // Modern React 18+ handles batching automatically - no need for manual batching
+        // Remove the deleted project completely from cache
+        queryClient.removeQueries({ queryKey: queryKeys.projects.detail(projectId) });
+        // Remove any progress notes for the deleted project
+        queryClient.removeQueries({ queryKey: queryKeys.progressNotes.list(projectId) });
 
-          // Optimistically update advanced projects list by removing the deleted project
-          queryClient.setQueryData(queryKeys.projects.advanced(user.id), (oldData: unknown) => {
-            if (!oldData || typeof oldData !== 'object' || !('projects' in oldData)) return oldData;
+        // Optimistically update advanced projects list by removing the deleted project
+        queryClient.setQueryData(queryKeys.projects.advanced(user.id), (oldData: unknown) => {
+          if (!oldData || typeof oldData !== 'object' || !('projects' in oldData)) return oldData;
+          const data = oldData as {
+            projects: Array<{ id: string; [key: string]: unknown }>;
+            totalItems: number;
+          };
+          return {
+            ...data,
+            projects: data.projects.filter(p => p.id !== projectId),
+            totalItems: Math.max(0, data.totalItems - 1),
+          };
+        });
+
+        // Optimistically update any paginated project lists by removing the deleted project
+        queryClient.setQueriesData(
+          { queryKey: queryKeys.projects.lists(), exact: false },
+          (oldData: unknown) => {
+            if (!oldData || typeof oldData !== 'object' || !('projects' in oldData))
+              return oldData;
             const data = oldData as {
               projects: Array<{ id: string; [key: string]: unknown }>;
               totalItems: number;
@@ -774,60 +727,35 @@ export const useDeleteProjectMutation = () => {
               projects: data.projects.filter(p => p.id !== projectId),
               totalItems: Math.max(0, data.totalItems - 1),
             };
-          });
+          }
+        );
 
-          // Optimistically update any paginated project lists by removing the deleted project
-          queryClient.setQueriesData(
-            { queryKey: queryKeys.projects.lists(), exact: false },
-            (oldData: unknown) => {
-              if (!oldData || typeof oldData !== 'object' || !('projects' in oldData))
-                return oldData;
-              const data = oldData as {
-                projects: Array<{ id: string; [key: string]: unknown }>;
-                totalItems: number;
-              };
-              return {
-                ...data,
-                projects: data.projects.filter(p => p.id !== projectId),
-                totalItems: Math.max(0, data.totalItems - 1),
-              };
-            }
-          );
+        // Mark dashboard stats as stale without immediate refetch (defer to background)
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.stats.overview(user.id),
+          refetchType: 'none',
+        });
 
-          // Mark dashboard stats as stale without immediate refetch (defer to background)
-          queryClient.invalidateQueries({
-            queryKey: queryKeys.stats.overview(user.id),
-            refetchType: 'none',
-          });
-
-          // Mark tag stats as stale without immediate refetch
-          queryClient.invalidateQueries({
-            queryKey: queryKeys.tags.stats(),
-            refetchType: 'none',
-          });
+        // Mark tag stats as stale without immediate refetch
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.tags.stats(),
+          refetchType: 'none',
         });
       }
 
-      // Synchronously update dashboard stats before navigation
+      // Simple cache invalidation before navigation
       if (user?.id) {
-        const currentYear = new Date().getFullYear();
-        try {
-          await DashboardStatsService.updateCacheAfterProjectChange(user.id, currentYear);
-          logger.info('✅ Dashboard stats cache updated successfully before navigation');
-          
-          // Invalidate with exact key structure to match useDashboardStats
-          await queryClient.invalidateQueries({
-            queryKey: [...queryKeys.stats.overview(user.id), 'dashboard', currentYear],
-            exact: true,
-          });
-        } catch (error) {
-          logger.error('❌ Dashboard stats cache update failed:', error);
-          // Force invalidation as fallback
-          await queryClient.invalidateQueries({ 
-            queryKey: queryKeys.stats.overview(user.id),
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: ['projects'],
             refetchType: 'active',
-          });
-        }
+          }),
+          queryClient.invalidateQueries({
+            queryKey: ['stats'],
+            refetchType: 'active',
+          }),
+        ]);
+        logger.info('✅ Simple cache invalidation completed before navigation');
       }
 
       // Navigate using React Router for consistent routing

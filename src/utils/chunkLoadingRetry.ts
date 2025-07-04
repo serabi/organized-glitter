@@ -1,3 +1,5 @@
+import { logger } from './logger';
+
 /**
  * Chunk Loading Error Handler
  * Uses Vite's official error handling with minimal fallback
@@ -18,7 +20,7 @@ export const initializeChunkLoadingRetry = (): void => {
   // Official Vite preload error handler (recommended approach)
   // This handles the vast majority of chunk loading failures
   window.addEventListener('vite:preloadError', () => {
-    console.warn('🔄 Vite chunk loading failed, reloading page...');
+    logger.warn('🔄 Vite chunk loading failed, reloading page...');
     window.location.reload();
   });
 
@@ -32,11 +34,11 @@ export const initializeChunkLoadingRetry = (): void => {
         error.message.includes('Loading failed for') ||
         error.message.includes('assets/'))
     ) {
-      console.warn('🔄 Chunk loading error detected, reloading page...', error.message);
+      logger.warn('🔄 Chunk loading error detected, reloading page...', error.message);
       event.preventDefault();
       window.location.reload();
     }
   });
 
-  console.log('🛠️ Chunk loading error handler initialized');
+  logger.log('🛠️ Chunk loading error handler initialized');
 };

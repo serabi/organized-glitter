@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { trackEvent, isPostHogAvailable } from '@/utils/posthog';
+import { logger } from '@/utils/logger';
 
 /**
  * Custom hook to track pageviews with PostHog
@@ -29,7 +30,7 @@ export function usePostHogPageTracking() {
 
     // Log in development for debugging
     if (import.meta.env.DEV) {
-      console.log('[PostHog] Pageview tracked:', {
+      logger.log('[PostHog] Pageview tracked:', {
         path: currentPath,
         href: window.location.href,
       });

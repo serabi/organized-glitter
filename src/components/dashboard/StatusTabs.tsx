@@ -27,7 +27,6 @@
  * @version 1.0.0 - Context-based status filtering
  */
 
-import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectFilterStatus } from '@/types/project';
 import { useDashboardFilters } from '@/contexts/DashboardFiltersContext';
@@ -109,4 +108,4 @@ const StatusTabsComponent = () => {
   );
 };
 
-export default React.memo(StatusTabsComponent);
+export default StatusTabsComponent;

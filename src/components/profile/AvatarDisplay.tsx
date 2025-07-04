@@ -1,5 +1,6 @@
 import React, { memo, useMemo } from 'react';
 import { AvatarDisplayProps, AVATAR_COLORS } from '@/types/avatar';
+import { logger } from '@/utils/logger';
 
 const AvatarDisplay: React.FC<AvatarDisplayProps> = memo(
   ({ config, size = 64, className = '', fallbackInitials = 'U' }) => {
@@ -27,7 +28,7 @@ const AvatarDisplay: React.FC<AvatarDisplayProps> = memo(
             className={`rounded-full object-cover ${className}`}
             style={sizeStyle}
             onError={e => {
-              console.log('[AvatarDisplay] Failed to load avatar image:', config.uploadUrl);
+              logger.log('[AvatarDisplay] Failed to load avatar image:', config.uploadUrl);
               // Fallback to initials avatar if upload fails to load
               const target = e.target as HTMLImageElement;
               target.style.display = 'none';
@@ -37,7 +38,7 @@ const AvatarDisplay: React.FC<AvatarDisplayProps> = memo(
               }
             }}
             onLoad={() => {
-              console.log('[AvatarDisplay] Successfully loaded avatar image:', config.uploadUrl);
+              logger.log('[AvatarDisplay] Successfully loaded avatar image:', config.uploadUrl);
             }}
           />
           {/* Fallback initials (initially hidden) */}

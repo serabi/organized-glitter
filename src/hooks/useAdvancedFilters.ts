@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { ProjectType, ProjectFilterStatus } from '@/types/project';
+import { logger } from '@/utils/logger';
 
 export type SortKey =
   | 'title'
@@ -231,7 +232,7 @@ export const useAdvancedFilters = (
     // Log filtered projects for debugging, especially for "Purchased" section
     if (filters.status === 'purchased') {
       // eslint-disable-next-line no-console
-      console.debug(
+      logger.debug(
         '[Debug] Filtered projects for Purchased section:',
         filtered.map(p => ({ id: p.id, status: p.status, title: p.title }))
       );

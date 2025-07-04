@@ -6,7 +6,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { createLogger } from '@/utils/secureLogger';
 import { ClientResponseError } from 'pocketbase';
-import { DashboardStatsService } from '@/services/pocketbase/dashboardStatsService';
 
 const logger = createLogger('useDeleteProject');
 
@@ -324,28 +323,13 @@ export const useDeleteProject = () => {
         refetchType: 'active', // Only refetch active queries
       });
 
-      // ⚡ PERFORMANCE OPTIMIZATION: Use incremental stats update instead of full recalculation
-      // This reduces update time from 4-5 seconds to ~1ms
-      if (user?.id && result?.deletedProject) {
-        startTransition(() => {
-          DashboardStatsService.updateStatsAfterProjectDeletion(user.id, result.deletedProject)
-            .then(() => {
-              logger.info('⚡ Incremental stats update completed in ~1ms (vs 4-5 seconds)');
-              // Invalidate stats queries to trigger UI refresh
-              queryClient.invalidateQueries({
-                queryKey: queryKeys.stats.overview(user.id),
-                refetchType: 'none', // Just mark stale, don't refetch immediately
-              });
-            })
-            .catch(error => {
-              logger.error(
-                'Incremental stats update failed, falling back to cache invalidation:',
-                error
-              );
-              // Fallback: invalidate stats cache for next access
-              queryClient.invalidateQueries({ queryKey: queryKeys.stats.overview(user.id) });
-            });
+      // Invalidate dashboard stats after deletion
+      if (user?.id) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.stats.overview(user.id),
+          refetchType: 'active',
         });
+        logger.info('Dashboard stats invalidated after project deletion');
       }
     },
 

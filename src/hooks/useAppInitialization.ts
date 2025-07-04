@@ -17,7 +17,7 @@ export const useAppInitialization = (): void => {
   // Emergency failsafe for app-loaded event
   useEffect(() => {
     const emergencyTimeout = setTimeout(() => {
-      console.warn('🚨 Emergency timeout: Dispatching app-loaded event after 20 seconds');
+      logger.warn('🚨 Emergency timeout: Dispatching app-loaded event after 20 seconds');
       window.dispatchEvent(new CustomEvent('app-loaded'));
     }, 20000);
 
@@ -72,7 +72,7 @@ export const useAppInitialization = (): void => {
     // Handle unhandled promise rejections (chunk loading errors)
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
       if (import.meta.env.DEV) {
-        console.error('Unhandled rejection:', event.reason);
+        logger.error('Unhandled rejection:', event.reason);
       }
 
       // DIAGNOSTIC: Check for React Query queryKey errors
@@ -88,7 +88,7 @@ export const useAppInitialization = (): void => {
       // For chunk loading errors, reload the page
       if (reason.includes('text/html') || reason.includes('MIME type')) {
         if (import.meta.env.DEV) {
-          console.log('Chunk loading error detected, reloading page...');
+          logger.log('Chunk loading error detected, reloading page...');
         }
         setTimeout(() => window.location.reload(), 1000);
       }

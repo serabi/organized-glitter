@@ -1,3 +1,5 @@
+import { logger } from './logger';
+
 export interface RateLimitInfo {
   isRateLimited: boolean;
   message: string;
@@ -161,7 +163,7 @@ export async function withRetry<T>(
       // Calculate delay with exponential backoff + jitter
       const jitter = Math.random() * 1000;
       const delayMs = initialDelay * Math.pow(2, attempt) + jitter;
-      console.warn(
+      logger.warn(
         `Request failed (attempt ${attempt + 1}/${maxRetries}). Retrying in ${Math.round(delayMs)}ms...`
       );
 

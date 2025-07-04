@@ -1,3 +1,5 @@
+import { logger } from './logger';
+
 /**
  * Resource Loading Error Tracking
  * Monitors and reports on resource loading failures for diagnostics
@@ -54,7 +56,7 @@ const trackResourceError = (url: string, type: ResourceError['type'], status?: n
     resourceErrors.shift();
   }
 
-  console.warn(`🚨 Resource loading failed: ${type} - ${url}`, { status });
+  logger.warn(`🚨 Resource loading failed: ${type} - ${url}`, { status });
 
   // Report to analytics if available
   if (typeof window !== 'undefined' && 'posthog' in window) {
@@ -74,7 +76,7 @@ const trackResourceError = (url: string, type: ResourceError['type'], status?: n
 
   // Special handling for PocketBase file errors
   if (url.includes('data.organizedglitter.app') && type === 'image') {
-    console.error('PocketBase image failed to load - this may indicate URL generation issues:', {
+    logger.error('PocketBase image failed to load - this may indicate URL generation issues:', {
       url,
       urlParts: {
         hostname: new URL(url).hostname,
@@ -126,7 +128,7 @@ export const initializeResourceErrorTracking = (): void => {
     }
   };
 
-  console.log('🛠️ Resource error tracking initialized');
+  logger.log('🛠️ Resource error tracking initialized');
 };
 
 /**

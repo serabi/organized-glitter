@@ -19,6 +19,7 @@ import { AvatarConfig, AvatarManagerProps } from '@/types/avatar';
 import ImageCropModal from './ImageCropModal';
 import { dataURLtoFile } from '@/utils/imageUtils';
 import { trackEvent, captureException } from '@/utils/posthog';
+import { logger } from '@/utils/logger';
 
 // Utility functions for iOS Safari detection and HEIC handling
 const isIOSSafari = (): boolean => {
@@ -63,7 +64,7 @@ export function AvatarManager({
   const queueBlobForCleanup = useCallback((url: string) => {
     if (url && url.startsWith('blob:')) {
       cleanupQueue.current.add(url);
-      console.log('[AvatarManager] Queued blob URL for cleanup:', url);
+      logger.log('[AvatarManager] Queued blob URL for cleanup:', url);
     }
   }, []);
 
@@ -78,9 +79,9 @@ export function AvatarManager({
           try {
             validBlobUrlsRef.current.delete(url);
             URL.revokeObjectURL(url);
-            console.log('[AvatarManager] Successfully cleaned up blob URL:', url);
+            logger.log('[AvatarManager] Successfully cleaned up blob URL:', url);
           } catch (error) {
-            console.warn('[AvatarManager] Failed to cleanup blob URL:', url, error);
+            logger.warn('[AvatarManager] Failed to cleanup blob URL:', url, error);
           }
         });
       });
@@ -89,15 +90,15 @@ export function AvatarManager({
 
   useEffect(() => {
     if (isOpen) {
-      console.log('[AvatarManager] Modal opened, initializing state');
+      logger.log('[AvatarManager] Modal opened, initializing state');
       // Initialize state from current config when opening
       if (currentConfig?.type === 'upload' && currentAvatar) {
-        console.log('[AvatarManager] Initializing with existing avatar:', currentAvatar);
+        logger.log('[AvatarManager] Initializing with existing avatar:', currentAvatar);
         setUploadState({
           previewUrl: currentAvatar,
         });
       } else {
-        console.log('[AvatarManager] Initializing with empty state');
+        logger.log('[AvatarManager] Initializing with empty state');
         setUploadState({});
       }
       setProcessingError(null);
@@ -107,7 +108,7 @@ export function AvatarManager({
       setFinalCompressedFile(null);
     } else {
       // Clean up when modal closes using the queue system
-      console.log('[AvatarManager] Modal closed, cleaning up state');
+      logger.log('[AvatarManager] Modal closed, cleaning up state');
       setUploadState(prev => {
         // Queue blob URLs for safe cleanup
         if (prev.previewUrl && prev.previewUrl.startsWith('blob:')) {
@@ -131,7 +132,7 @@ export function AvatarManager({
     const validBlobUrlsRefCurrent = validBlobUrlsRef.current;
     
     return () => {
-      console.log('[AvatarManager] Component unmounting, starting cleanup...');
+      logger.log('[AvatarManager] Component unmounting, starting cleanup...');
 
       // Copy ref values at cleanup time to avoid stale closure issues
       const currentUrl = currentBlobUrlRefCurrent;
@@ -152,27 +153,27 @@ export function AvatarManager({
       // Process the cleanup queue
       processCleanupQueue();
 
-      console.log('[AvatarManager] Cleanup queue processed on unmount');
+      logger.log('[AvatarManager] Cleanup queue processed on unmount');
     };
   }, [queueBlobForCleanup, processCleanupQueue]);
 
   const handleFileSelect = useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
-      console.log('[AvatarManager] File select triggered');
+      logger.log('[AvatarManager] File select triggered');
       const file = event.target.files?.[0];
       if (!file) {
-        console.log('[AvatarManager] No file selected');
+        logger.log('[AvatarManager] No file selected');
         return;
       }
 
       // Prevent duplicate processing if already processing (StrictMode guard)
       if (isProcessing || isProcessingRef.current) {
-        console.log('[AvatarManager] Already processing, ignoring duplicate file select');
+        logger.log('[AvatarManager] Already processing, ignoring duplicate file select');
         return;
       }
       isProcessingRef.current = true;
 
-      console.log('[AvatarManager] File selected:', {
+      logger.log('[AvatarManager] File selected:', {
         name: file.name,
         size: file.size,
         type: file.type,
@@ -208,7 +209,7 @@ export function AvatarManager({
           file.name.toLowerCase().includes('.heic') ||
           file.name.toLowerCase().includes('.heif');
         if (isHEIC) {
-          console.log('[AvatarManager] Processing HEIC file, converting to JPEG...');
+          logger.log('[AvatarManager] Processing HEIC file, converting to JPEG...');
         }
 
         const compressedFile = await imageCompression(file, options);
@@ -233,7 +234,7 @@ export function AvatarManager({
           type: compressedFile.type ?? file.type,
         });
 
-        console.log('[AvatarManager] Initial compression completed:', {
+        logger.log('[AvatarManager] Initial compression completed:', {
           originalName: file.name,
           compressedName: compressedFile.name,
           preservedName: fileWithCorrectName.name,
@@ -246,7 +247,7 @@ export function AvatarManager({
         const newBlobUrl = URL.createObjectURL(fileWithCorrectName);
         currentBlobUrlRef.current = newBlobUrl;
         validBlobUrlsRef.current.add(newBlobUrl);
-        console.log('[AvatarManager] Created new preview blob URL:', newBlobUrl);
+        logger.log('[AvatarManager] Created new preview blob URL:', newBlobUrl);
 
         // Update state in a single batch using queue system
         React.startTransition(() => {
@@ -269,7 +270,7 @@ export function AvatarManager({
           setShowCropModal(true);
         });
       } catch (error) {
-        console.error('Error during initial image processing:', error);
+        logger.error('Error during initial image processing:', error);
         const errorMessage = error instanceof Error ? error.message : 'Failed to process image.';
 
         // Track compression failure for analytics
@@ -335,10 +336,10 @@ export function AvatarManager({
 
   const handleCropComplete = useCallback(
     async (croppedImageBase64: string): Promise<void> => {
-      console.log('[AvatarManager] Crop completed, processing...');
+      logger.log('[AvatarManager] Crop completed, processing...');
       setShowCropModal(false);
       if (!uploadFile) {
-        console.error('[AvatarManager] No upload file available for cropping');
+        logger.error('[AvatarManager] No upload file available for cropping');
         setProcessingError('Original file context lost for cropping.');
         return;
       }
@@ -369,7 +370,7 @@ export function AvatarManager({
           type: compressedCroppedFile.type ?? 'image/jpeg',
         });
 
-        console.log('[AvatarManager] Crop and compression completed:', {
+        logger.log('[AvatarManager] Crop and compression completed:', {
           uploadFileName: uploadFile.name,
           croppedFileName: croppedFile.name,
           compressedFileName: compressedCroppedFile.name,
@@ -382,7 +383,7 @@ export function AvatarManager({
         const newBlobUrl = URL.createObjectURL(finalFile);
         currentBlobUrlRef.current = newBlobUrl;
         validBlobUrlsRef.current.add(newBlobUrl);
-        console.log('[AvatarManager] Created new cropped blob URL:', newBlobUrl);
+        logger.log('[AvatarManager] Created new cropped blob URL:', newBlobUrl);
 
         // Update state in a single batch using queue system
         React.startTransition(() => {
@@ -416,7 +417,7 @@ export function AvatarManager({
           description: 'Ready to save.',
         });
       } catch (error) {
-        console.error('Error during final image processing:', error);
+        logger.error('Error during final image processing:', error);
         const errorMessage =
           error instanceof Error ? error.message : 'Failed to process cropped image.';
 
@@ -458,13 +459,13 @@ export function AvatarManager({
   );
 
   const handleSave = useCallback(async (): Promise<void> => {
-    console.log('[AvatarManager] Starting avatar save process');
+    logger.log('[AvatarManager] Starting avatar save process');
     setIsProcessing(true);
     setProcessingError(null);
 
     try {
       if (!finalCompressedFile) {
-        console.error('[AvatarManager] No compressed file available');
+        logger.error('[AvatarManager] No compressed file available');
         setProcessingError('No image file is ready for upload.');
         toast({
           title: 'Upload Error',
@@ -474,7 +475,7 @@ export function AvatarManager({
         return;
       }
 
-      console.log('[AvatarManager] Uploading file directly to PocketBase:', {
+      logger.log('[AvatarManager] Uploading file directly to PocketBase:', {
         name: finalCompressedFile.name,
         size: finalCompressedFile.size,
         type: finalCompressedFile.type,
@@ -491,7 +492,7 @@ export function AvatarManager({
       formData.append('avatar', finalCompressedFile);
 
       const updatedUser = await pb.collection('users').update(userId, formData);
-      console.log('[AvatarManager] Upload completed successfully');
+      logger.log('[AvatarManager] Upload completed successfully');
 
       // Create the avatar URL from the updated user record
       const uploadedUrl = updatedUser.avatar
@@ -507,7 +508,7 @@ export function AvatarManager({
         uploadUrl: uploadedUrl,
       };
 
-      console.log('[AvatarManager] Calling onAvatarUpdate with config:', avatarConfig);
+      logger.log('[AvatarManager] Calling onAvatarUpdate with config:', avatarConfig);
 
       // Track successful upload
       trackEvent('avatar_upload_success', {
@@ -519,7 +520,7 @@ export function AvatarManager({
       await onAvatarUpdate(avatarConfig);
       onClose();
     } catch (error) {
-      console.error('Upload error:', error);
+      logger.error('Upload error:', error);
       const errorMessage =
         error instanceof Error ? error.message : 'An unknown error occurred during upload.';
 
@@ -589,7 +590,7 @@ export function AvatarManager({
                     alt="Avatar preview"
                     className="h-full w-full object-cover"
                     onLoad={() =>
-                      console.log(
+                      logger.log(
                         '[AvatarManager] Preview image loaded successfully:',
                         uploadState.previewUrl
                       )
@@ -597,8 +598,8 @@ export function AvatarManager({
                     onError={e => {
                       const img = e.target as HTMLImageElement;
                       const failedUrl = img.src;
-                      console.error('[AvatarManager] Preview image failed to load:', failedUrl);
-                      console.error('[AvatarManager] Failed image element:', {
+                      logger.error('[AvatarManager] Preview image failed to load:', failedUrl);
+                      logger.error('[AvatarManager] Failed image element:', {
                         src: img.src,
                         currentSrc: img.currentSrc,
                         naturalWidth: img.naturalWidth,
@@ -715,8 +716,8 @@ export function AvatarManager({
           </DialogClose>
           <Button
             onClick={() => {
-              console.log('[AvatarManager] Save button clicked');
-              console.log('[AvatarManager] Button state:', {
+              logger.log('[AvatarManager] Save button clicked');
+              logger.log('[AvatarManager] Button state:', {
                 isProcessing,
                 hasFinalFile: !!finalCompressedFile,
                 hasError: !!processingError,

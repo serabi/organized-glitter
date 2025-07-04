@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { pb } from '@/lib/pocketbase';
+import { logger } from '@/utils/logger';
 
 // Check if PocketBase is properly initialized
 const checkPocketBaseInitialization = () => {
@@ -15,7 +16,7 @@ const checkPocketBaseInitialization = () => {
 
     return true;
   } catch (error) {
-    console.error('PocketBase initialization check failed:', error);
+    logger.error('PocketBase initialization check failed:', error);
     return false;
   }
 };
@@ -27,7 +28,7 @@ export const InitializationCheck = ({ children }: { children: React.ReactNode })
   useEffect(() => {
     // Add timeout protection for initialization
     const initTimeout = setTimeout(() => {
-      console.warn('InitializationCheck: Initialization timed out after 10 seconds');
+      logger.warn('InitializationCheck: Initialization timed out after 10 seconds');
       setIsInitialized(true); // Proceed anyway to prevent infinite loading
     }, 10000);
 
@@ -38,19 +39,19 @@ export const InitializationCheck = ({ children }: { children: React.ReactNode })
 
         const isReady = checkPocketBaseInitialization();
         if (!isReady) {
-          console.warn('PocketBase initialization failed, but proceeding anyway');
+          logger.warn('PocketBase initialization failed, but proceeding anyway');
           // Don't throw error, just log warning and proceed
         }
 
-        console.log('✅ Application initialized successfully');
+        logger.log('✅ Application initialized successfully');
         clearTimeout(initTimeout);
         setIsInitialized(true);
       } catch (err) {
-        console.error('❌ Initialization error:', err);
+        logger.error('❌ Initialization error:', err);
         clearTimeout(initTimeout);
         // Instead of setting error, just proceed with initialization
         // This prevents the app from getting stuck on initialization errors
-        console.warn('Proceeding despite initialization error');
+        logger.warn('Proceeding despite initialization error');
         setIsInitialized(true);
       }
     };

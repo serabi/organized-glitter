@@ -11,7 +11,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { createLogger } from '@/utils/secureLogger';
 import { ClientResponseError } from 'pocketbase';
-import { DashboardStatsService } from '@/services/pocketbase/dashboardStatsService';
 import type { ProjectUpdatePayload, ProjectFormWithFile } from '@/types/file-upload';
 import { mapFormDataToPocketBase } from '@/utils/field-mapping';
 import {
@@ -166,22 +165,13 @@ export const useProjectUpdateUnified = () => {
         });
       }
 
-      // Proactively update stats cache when project is updated
+      // Invalidate dashboard stats cache when project is updated
       if (user?.id) {
-        try {
-          await DashboardStatsService.updateCacheAfterProjectChange(user.id);
-
-          // Invalidate React Query cache for dashboard stats
-          const currentYear = new Date().getFullYear();
-          queryClient.invalidateQueries({
-            queryKey: [...queryKeys.stats.overview(user.id), 'dashboard', currentYear],
-          });
-
-          logger.info('Stats cache updated successfully after project update');
-        } catch (error) {
-          logger.error('Failed to update stats cache after project update:', error);
-          // Don't throw error to avoid breaking the UI
-        }
+        const currentYear = new Date().getFullYear();
+        queryClient.invalidateQueries({
+          queryKey: [...queryKeys.stats.overview(user.id), 'dashboard', currentYear],
+        });
+        logger.info('Dashboard stats cache invalidated after project update');
       }
 
       toast({

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { logger } from '@/utils/logger';
 
 interface LocationSyncProviderProps {
   children: React.ReactNode;
@@ -23,7 +24,7 @@ export const LocationSyncProvider: React.FC<LocationSyncProviderProps> = ({ chil
 
       // Only log if there's a mismatch (should be rare now)
       if (currentBrowserPath !== currentRouterPath) {
-        console.warn('[LocationSync] Location mismatch detected:', {
+        logger.warn('[LocationSync] Location mismatch detected:', {
           browserPath: currentBrowserPath,
           routerPath: currentRouterPath,
           timestamp: new Date().toISOString(),

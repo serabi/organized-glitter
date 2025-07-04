@@ -193,7 +193,7 @@ export class FeedbackErrorBoundary extends Component<
     });
 
     // Report error and store the event ID
-    console.error('FeedbackErrorBoundary caught an error:', error, {
+    logger.error('FeedbackErrorBoundary caught an error:', error, {
       extra: { componentStack: errorInfo?.componentStack, ...this.props.errorContext },
     });
     const eventId = null;

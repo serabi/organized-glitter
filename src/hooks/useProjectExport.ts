@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { ProjectStatus } from '@/types/shared';
 import type { ProjectsResponse } from '@/types/pocketbase.types';
 import { projectsToCsv, downloadCsv } from '@/utils/csvExport';
+import { logger } from '@/utils/logger';
 
 /**
  * Validate and normalize the kit category field
@@ -24,7 +25,7 @@ const validateKitCategory = (
   }
 
   // If the value doesn't match expected patterns, log a warning and return undefined
-  console.warn(`Invalid kit_category value: "${categoryValue}". Expected 'full' or 'mini'.`);
+  logger.warn(`Invalid kit_category value: "${categoryValue}". Expected 'full' or 'mini'.`);
   return undefined;
 };
 
@@ -142,7 +143,7 @@ export const useProjectExport = () => {
 
       return { success: true, filename };
     } catch (error) {
-      console.error('Error exporting projects:', error);
+      logger.error('Error exporting projects:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to export projects';
       toast({
         title: 'Export failed',

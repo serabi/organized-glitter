@@ -32,7 +32,7 @@ import useDebounce from '@/hooks/useDebounce';
 import { useMetadata } from '@/contexts/MetadataContext';
 import { useProjects, ServerFilters } from '@/hooks/queries/useProjects';
 import { useDashboardStats } from '@/hooks/queries/useDashboardStats';
-import { useAvailableYearsAsStrings } from '@/hooks/queries/useAvailableYears';
+import { useAvailableYearsOptimized } from '@/hooks/queries/useDashboardStats';
 import { useSaveNavigationContext, DashboardFilterContext } from '@/hooks/mutations/useSaveNavigationContext';
 import { createLogger } from '@/utils/secureLogger';
 import { useToast } from '@/hooks/use-toast';
@@ -286,8 +286,9 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
   // Dashboard stats
   const { stats: dashboardStats } = useDashboardStats();
   
-  // Available options
-  const { years: yearFinishedOptions } = useAvailableYearsAsStrings({ userId: user?.id });
+  // Available options - get years from dashboard stats to eliminate redundant query
+  const { years: yearFinishedOptionsNumbers } = useAvailableYearsOptimized(user?.id);
+  const yearFinishedOptions = yearFinishedOptionsNumbers.map(year => year.toString());
   
   // Extract projects data - rely entirely on server-side filtering
   const projects = useMemo(() => {

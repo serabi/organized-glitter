@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { compressProjectImage } from '@/utils/projectImageCompression';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/utils/logger';
 
 /**
  * @interface CompressionProgress
@@ -46,7 +47,7 @@ export const useProjectImageCompression = () => {
 
     // Return original file if its size is at or below the 5MB compression threshold
     if (file.size <= compressionThreshold) {
-      console.log(
+      logger.log(
         `[useProjectImageCompression] File size (${(file.size / (1024 * 1024)).toFixed(2)}MB) is under threshold, using original`
       );
       return file;
@@ -55,7 +56,7 @@ export const useProjectImageCompression = () => {
     // Compress the image
     try {
       setIsCompressing(true);
-      console.log(`[useProjectImageCompression] Starting compression for ${file.name}`);
+      logger.log(`[useProjectImageCompression] Starting compression for ${file.name}`);
 
       const compressedFile = await compressProjectImage(file, (progress: number) => {
         setCompressionProgress({
@@ -74,7 +75,7 @@ export const useProjectImageCompression = () => {
       const compressedSizeMB = Math.round((compressedFile.size / (1024 * 1024)) * 100) / 100;
       const compressionRatio = Math.round((1 - compressedFile.size / file.size) * 100);
 
-      console.log(`[useProjectImageCompression] Compression successful:`, {
+      logger.log(`[useProjectImageCompression] Compression successful:`, {
         original: `${originalSizeMB}MB`,
         compressed: `${compressedSizeMB}MB`,
         ratio: `${compressionRatio}%`,
@@ -88,7 +89,7 @@ export const useProjectImageCompression = () => {
 
       return compressedFile;
     } catch (error) {
-      console.error('[useProjectImageCompression] Compression failed:', error);
+      logger.error('[useProjectImageCompression] Compression failed:', error);
 
       toast({
         title: 'Compression Failed',
@@ -99,7 +100,7 @@ export const useProjectImageCompression = () => {
       // Fall back to original file if compression fails and it's under the Supabase limit
       if (file.size <= 6 * 1024 * 1024) {
         // 6MB fallback limit
-        console.log('[useProjectImageCompression] Using original file as fallback (under 6MB)');
+        logger.log('[useProjectImageCompression] Using original file as fallback (under 6MB)');
         return file;
       }
 

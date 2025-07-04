@@ -1,3 +1,5 @@
+import { logger } from './logger';
+
 // A helper file for browser-safe environment access
 export const safeEnv = {
   get NODE_ENV() {
@@ -17,7 +19,7 @@ export const safeEnv = {
   // Log helper - only logs in development
   log(...args: unknown[]) {
     if (this.isDev) {
-      console.log(...args);
+      logger.log(...args);
     }
   },
 };

@@ -1,4 +1,5 @@
 import imageCompression from 'browser-image-compression';
+import { logger } from './logger';
 
 // Type definitions for better type safety
 export interface ValidationResult {
@@ -69,7 +70,7 @@ export async function compressAvatarImage(
       lastModified: Date.now(),
     });
   } catch (error) {
-    console.error('Error compressing image:', error);
+    logger.error('Error compressing image:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown compression error';
     throw new Error(`Failed to compress image: ${errorMessage}`);
   }
@@ -365,7 +366,7 @@ export function revokePreviewUrl(url: string): void {
     try {
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.warn('Failed to revoke object URL:', error);
+      logger.warn('Failed to revoke object URL:', error);
     }
   }
 }
@@ -404,7 +405,7 @@ export async function handleImageLoadError(
   }
 
   if (typeof refreshUrl !== 'function') {
-    console.error('refreshUrl must be a function');
+    logger.error('refreshUrl must be a function');
     return null;
   }
 
@@ -416,7 +417,7 @@ export async function handleImageLoadError(
     // The actual URL refresh happens in the useImage hook
     return authenticatedUrl;
   } catch (error) {
-    console.error('Failed to refresh image URL:', error);
+    logger.error('Failed to refresh image URL:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     throw new Error(`Image URL refresh failed: ${errorMessage}`);
   }

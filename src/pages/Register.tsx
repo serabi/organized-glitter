@@ -6,6 +6,7 @@ import SocialLogin from '@/components/auth/SocialLogin';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { registerWithPassword, loginWithOAuth2 } from '@/services/auth';
+import { logger } from '@/utils/logger';
 
 const Register = () => {
   const [loading, setLoading] = useState(false);
@@ -61,7 +62,7 @@ const Register = () => {
       // Navigate to email confirmation page
       navigate('/email-confirmation', { state: { email: data.email }, replace: true });
     } catch (err) {
-      console.error('Registration error:', err);
+      logger.error('Registration error:', err);
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
@@ -88,7 +89,7 @@ const Register = () => {
       // Navigate immediately after successful OAuth registration
       navigate('/overview', { replace: true });
     } catch (err) {
-      console.error('Google signup error:', err);
+      logger.error('Google signup error:', err);
       setError('Failed to sign up with Google. Please try again.');
     } finally {
       setLoading(false);
@@ -115,7 +116,7 @@ const Register = () => {
       // Navigate immediately after successful OAuth registration
       navigate('/overview', { replace: true });
     } catch (err) {
-      console.error('Discord signup error:', err);
+      logger.error('Discord signup error:', err);
       setError('Failed to sign up with Discord. Please try again.');
     } finally {
       setLoading(false);

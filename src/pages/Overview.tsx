@@ -28,7 +28,7 @@ const Overview = () => {
     logger.debug(`[Overview] Overview mounted at: ${mountTime}`, { component: 'Overview' });
 
     if (import.meta.env.DEV) {
-      console.log(
+      logger.log(
         '[Overview] Simplified overview page loaded - Welcome section and in-progress projects only'
       );
     }
@@ -87,7 +87,7 @@ const Overview = () => {
         const timerId = setTimeout(logPerformanceReport, 100);
 
         if (loadTime < 200) {
-          console.log('🎉 [Overview] Excellent performance! Projects loaded in <200ms');
+          logger.log('🎉 [Overview] Excellent performance! Projects loaded in <200ms');
         }
 
         // Cleanup timeout on component unmount or dependency change

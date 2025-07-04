@@ -1,5 +1,6 @@
 import { handleRateLimitError as checkRateLimit, RateLimitInfo } from './rateLimit';
 import { captureException, trackEvent } from './posthog';
+import { logger } from './logger';
 
 type NotificationHandler = (
   message: string,
@@ -83,7 +84,7 @@ function showNotification(rateLimitInfo: RateLimitInfo) {
   if (notificationHandler) {
     notificationHandler(rateLimitInfo.message, 'warning');
   } else {
-    console.warn('Rate limited:', rateLimitInfo.message);
+    logger.warn('Rate limited:', rateLimitInfo.message);
   }
 }
 

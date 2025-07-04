@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { pb } from '@/lib/pocketbase';
+import { logger } from '@/utils/logger';
 
 /**
  * Created 2025-05-26 while refactoring Profile.tsx
@@ -25,7 +26,7 @@ export function useBetaTesterStatus(userId: string | undefined) {
         const betaTesterValue = Boolean(userRecord.beta_tester);
         setIsBetaTester(betaTesterValue);
       } catch (error) {
-        console.error('Error fetching beta tester status:', error);
+        logger.error('Error fetching beta tester status:', error);
         // If user not found or other error, assume not a beta tester
         setIsBetaTester(false);
       } finally {

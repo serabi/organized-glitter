@@ -85,17 +85,17 @@ export function validateFormDataForUpdate(
  */
 export function logFormData(formData: FormData, label: string = 'FormData'): void {
   if (import.meta.env.DEV) {
-    console.group(`[Debug] ${label}`);
+    // console.group(`[Debug] ${label}`);
     for (const [key, value] of formData.entries()) {
       if (value instanceof File) {
-        console.log(
-          `${key}:`,
-          `[File: ${value.name}, size: ${value.size} bytes, type: ${value.type}]`
-        );
+        // console.log(
+        //   `${key}:`,
+        //   `[File: ${value.name}, size: ${value.size} bytes, type: ${value.type}]`
+        // );
       } else {
-        console.log(`${key}:`, value);
+        // console.log(`${key}:`, value);
       }
     }
-    console.groupEnd();
+    // console.groupEnd();
   }
 }

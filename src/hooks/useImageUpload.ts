@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { useProjectImageCompression } from '@/hooks/useProjectImageCompression';
 import { uploadImage } from '@/utils/imageUpload'; // Assuming this utility handles the actual upload
+import { logger } from '@/utils/logger';
 import {
   PROJECT_IMAGE_CONSTANTS,
   PROGRESS_NOTE_CONSTANTS,
@@ -135,8 +136,8 @@ export const useImageUpload = (
 
   const handleImageChange = useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>): Promise<File | null> => {
-      console.log('handleImageChange called in useImageUpload hook - VERSION: 2025-05-26-v2');
-      console.log(`[useImageUpload] Upload context: ${uploadContext}, folder: ${folder}`);
+      logger.log('handleImageChange called in useImageUpload hook - VERSION: 2025-05-26-v2');
+      logger.log(`[useImageUpload] Upload context: ${uploadContext}, folder: ${folder}`);
 
       // Clear input value after handling to ensure onChange fires even if same file is selected
       const input = event.target;
@@ -144,7 +145,7 @@ export const useImageUpload = (
       let returnFile: File | null = null;
 
       if (file) {
-        console.log('File selected:', { name: file.name, type: file.type, size: file.size });
+        logger.log('File selected:', { name: file.name, type: file.type, size: file.size });
 
         // Clear any previous errors when a new file is selected
         setState(prev => ({ ...prev, error: null }));
@@ -162,7 +163,7 @@ export const useImageUpload = (
           !validTypes.includes(file.type.toLowerCase()) &&
           !file.name.match(/\.(jpg|jpeg|png|gif|webp|heic|heif)$/i)
         ) {
-          console.error('Invalid file type:', file.type);
+          logger.error('Invalid file type:', file.type);
           const errorMsg = `Invalid file type "${file.type || 'unknown'}". Please select a JPG, PNG, GIF, WebP, or HEIC image.`;
           setState(prev => ({
             ...prev,
@@ -202,7 +203,7 @@ export const useImageUpload = (
         }
 
         // Check file size with specific limits based on upload context
-        console.log(
+        logger.log(
           `[useImageUpload] File size validation - uploadContext: ${uploadContext}, file size: ${file.size}, max allowed: ${currentMaxFileSize}`
         );
 
@@ -215,7 +216,7 @@ export const useImageUpload = (
 
         if (file.size > currentMaxFileSize) {
           const fileSizeMB = Math.round((file.size / (1024 * 1024)) * 100) / 100; // Round to 2 decimal places
-          console.error('File too large:', file.size, 'bytes (', fileSizeMB, 'MB)');
+          logger.error('File too large:', file.size, 'bytes (', fileSizeMB, 'MB)');
           const errorMsg = `File size is ${fileSizeMB}MB, which exceeds the ${maxSizeMB}MB upload limit for ${imageType} images.`;
           setState(prev => ({
             ...prev,
@@ -251,12 +252,12 @@ export const useImageUpload = (
             type: file.type,
             lastModified: file.lastModified,
           });
-          console.log('Filename sanitized:', { original: file.name, sanitized: sanitizedName });
+          logger.log('Filename sanitized:', { original: file.name, sanitized: sanitizedName });
         }
 
         // Handle avatar resizing and validation
         if (uploadContext === 'avatar') {
-          console.log('[useImageUpload] Avatar selected, processing and resizing...');
+          logger.log('[useImageUpload] Avatar selected, processing and resizing...');
 
           // Set initial state with the original file
           const preview = URL.createObjectURL(file);
@@ -285,7 +286,7 @@ export const useImageUpload = (
               const processedSizeMB = Math.round((resizedFile.size / (1024 * 1024)) * 100) / 100;
               const maxProcessedSizeMB = Math.round(AVATAR_CONSTANTS.MAX_FILE_SIZE / (1024 * 1024));
 
-              console.error(
+              logger.error(
                 `Processed avatar too large: ${processedSizeMB}MB exceeds ${maxProcessedSizeMB}MB limit`
               );
 
@@ -335,7 +336,7 @@ export const useImageUpload = (
 
             returnFile = finalFile;
           } catch (resizeError) {
-            console.error('[useImageUpload] Avatar resize failed:', resizeError);
+            logger.error('[useImageUpload] Avatar resize failed:', resizeError);
 
             setState(prev => ({
               ...prev,
@@ -355,7 +356,7 @@ export const useImageUpload = (
         }
         // Handle compression for project images
         else if (uploadContext === 'project-image') {
-          console.log('[useImageUpload] Project image selected, checking if compression needed');
+          logger.log('[useImageUpload] Project image selected, checking if compression needed');
 
           // Set initial state with the original file
           const preview = URL.createObjectURL(file);
@@ -373,11 +374,11 @@ export const useImageUpload = (
 
           // Compress in background if needed (> 5MB)
           if (file.size > 5 * 1024 * 1024) {
-            console.log('[useImageUpload] File size over 5MB, compressing...');
+            logger.log('[useImageUpload] File size over 5MB, compressing...');
 
             try {
               const compressedFile = await compressImage(file);
-              console.log('[useImageUpload] Compression completed, updating processed file');
+              logger.log('[useImageUpload] Compression completed, updating processed file');
 
               // Create new file with sanitized name if needed
               const finalFile =
@@ -395,7 +396,7 @@ export const useImageUpload = (
 
               returnFile = finalFile;
             } catch (compressionError) {
-              console.error('[useImageUpload] Compression failed:', compressionError);
+              logger.error('[useImageUpload] Compression failed:', compressionError);
 
               setState(prev => ({
                 ...prev,
@@ -414,14 +415,14 @@ export const useImageUpload = (
               return null;
             }
           } else {
-            console.log('[useImageUpload] File size under 5MB, no compression needed');
+            logger.log('[useImageUpload] File size under 5MB, no compression needed');
             returnFile = processedFile;
           }
         } else {
           // For non-project images, use existing logic
           const preview = URL.createObjectURL(file);
-          console.log('Preview URL created:', preview);
-          console.log('Setting isReplacement flag to true for image change');
+          logger.log('Preview URL created:', preview);
+          logger.log('Setting isReplacement flag to true for image change');
           setState(prev => ({
             ...prev,
             file,
@@ -434,7 +435,7 @@ export const useImageUpload = (
           returnFile = processedFile;
         }
       } else {
-        console.log('No file selected from input');
+        logger.log('No file selected from input');
       }
 
       // Reset input so the same file can be selected again
@@ -447,7 +448,7 @@ export const useImageUpload = (
   ); // Updated dependencies
 
   const handleImageRemove = useCallback(() => {
-    console.log('Image removed - setting isReplacement flag to true');
+    logger.log('Image removed - setting isReplacement flag to true');
     setState(prev => ({
       ...prev,
       file: null,
@@ -461,21 +462,21 @@ export const useImageUpload = (
 
   const upload = useCallback(
     async (recordId?: string, fileToUploadOverride?: File | null): Promise<string | undefined> => {
-      console.log('===== UPLOAD FUNCTION CALLED IN useImageUpload HOOK =====');
+      logger.log('===== UPLOAD FUNCTION CALLED IN useImageUpload HOOK =====');
 
       const fileToUpload = fileToUploadOverride || state.processedFile || state.file;
 
       // If we're explicitly replacing with nothing (isReplacement is true but no file)
       // or if image was explicitly removed (wasRemoved is true)
       if ((state.isReplacement && !fileToUpload) || state.wasRemoved) {
-        console.log(
+        logger.log(
           '[useImageUpload] Image removal detected - returning empty string to clear image'
         );
         return '';
       }
 
       if (!fileToUpload) {
-        console.error('[useImageUpload] No file to upload - state:', {
+        logger.error('[useImageUpload] No file to upload - state:', {
           hasFile: !!state.file,
           hasProcessedFile: !!state.processedFile,
           isReplacement: state.isReplacement,
@@ -485,7 +486,7 @@ export const useImageUpload = (
         return;
       }
 
-      console.log('[useImageUpload] Starting upload process with:', {
+      logger.log('[useImageUpload] Starting upload process with:', {
         file: fileToUpload.name,
         type: fileToUpload.type,
         size: `${(fileToUpload.size / 1024).toFixed(2)} KB`,
@@ -499,16 +500,16 @@ export const useImageUpload = (
       try {
         const reader = new FileReader();
         reader.onload = () => {
-          console.log(
+          logger.log(
             `[useImageUpload] File read test successful. Data size: ${reader.result?.toString().length || 0} bytes`
           );
         };
         reader.onerror = e => {
-          console.error('[useImageUpload] Error reading file:', e);
+          logger.error('[useImageUpload] Error reading file:', e);
         };
         reader.readAsDataURL(fileToUpload);
       } catch (readError) {
-        console.error('[useImageUpload] Error testing file readability:', readError);
+        logger.error('[useImageUpload] Error testing file readability:', readError);
       }
 
       setState(prev => ({ ...prev, uploading: true, error: null }));
@@ -542,25 +543,25 @@ export const useImageUpload = (
           throw new Error('Invalid file type. Please upload a JPG, PNG, GIF, WebP, or HEIC image.');
         }
 
-        console.log('[useImageUpload] Calling uploadImage function with folder:', folder);
+        logger.log('[useImageUpload] Calling uploadImage function with folder:', folder);
         try {
           const url = await uploadImage(fileToUpload, folder, uploadContext, recordId);
-          console.log('[useImageUpload] Upload successful!');
-          console.log('[useImageUpload] Received URL:', url);
+          logger.log('[useImageUpload] Upload successful!');
+          logger.log('[useImageUpload] Received URL:', url);
 
           if (!url) {
-            console.error('[useImageUpload] Upload completed but returned empty URL');
+            logger.error('[useImageUpload] Upload completed but returned empty URL');
             throw new Error('Upload completed but no URL was returned');
           }
 
           setState(prev => ({ ...prev, uploading: false }));
           return url;
         } catch (uploadError) {
-          console.error('[useImageUpload] Error in uploadImage function:', uploadError);
+          logger.error('[useImageUpload] Error in uploadImage function:', uploadError);
           throw uploadError; // Re-throw to be caught by the outer try/catch
         }
       } catch (error) {
-        console.error('[useImageUpload] Upload failed:', error);
+        logger.error('[useImageUpload] Upload failed:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error during upload';
 
         setState(prev => ({ ...prev, uploading: false, error: errorMessage }));

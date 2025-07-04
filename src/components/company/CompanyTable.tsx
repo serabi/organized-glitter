@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Trash2, Link2, Loader2, FileText } from 'lucide-react';
 import { pb } from '@/lib/pocketbase';
 import { createFilter } from '@/utils/filterBuilder';
+import { logger } from '@/utils/logger';
 import EditCompanyDialog from './EditCompanyDialog';
 import { Link } from 'react-router-dom';
 import { CompaniesResponse } from '@/types/pocketbase.types';
@@ -142,7 +143,7 @@ const CompanyTable = ({ companies, loading, onCompanyUpdated }: CompanyTableProp
               });
               counts[company.id] = result.totalItems;
             } catch (error) {
-              console.error(`Error fetching count for company ${company.id}:`, error);
+              logger.error(`Error fetching count for company ${company.id}:`, error);
               counts[company.id] = 0;
             }
           })
@@ -150,7 +151,7 @@ const CompanyTable = ({ companies, loading, onCompanyUpdated }: CompanyTableProp
 
         setProjectCounts(counts);
       } catch (error) {
-        console.error('Error fetching project counts:', error);
+        logger.error('Error fetching project counts:', error);
       } finally {
         setLoadingCounts(false);
       }

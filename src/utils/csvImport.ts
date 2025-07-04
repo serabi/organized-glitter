@@ -1,5 +1,6 @@
 import { ProjectType, ProjectStatus } from '@/types/project';
 import Papa from 'papaparse';
+import { logger } from './logger';
 
 export interface ParsedCsvData {
   projects: Partial<ProjectType>[];
@@ -149,9 +150,9 @@ const parseProjectFromRow = (row: Record<string, string>): Partial<ProjectType> 
   const tagsString = getFieldValue(row, ['tags', 'tag', 'labels']);
   if (tagsString) {
     // Debug: Log original tag string
-    console.log(`[CSV IMPORT] Original tag string for "${project.title}":`, tagsString);
-    console.log(`[CSV IMPORT] Raw tag string type:`, typeof tagsString);
-    console.log(`[CSV IMPORT] Raw tag string value (JSON):`, JSON.stringify(tagsString));
+    logger.log(`[CSV IMPORT] Original tag string for "${project.title}":`, tagsString);
+    logger.log(`[CSV IMPORT] Raw tag string type:`, typeof tagsString);
+    logger.log(`[CSV IMPORT] Raw tag string value (JSON):`, JSON.stringify(tagsString));
 
     // Split by comma and clean up tag names
     const tagNames = tagsString
@@ -160,9 +161,9 @@ const parseProjectFromRow = (row: Record<string, string>): Partial<ProjectType> 
       .filter(tag => tag.length > 0);
 
     // Debug: Log parsed tag names
-    console.log(`[CSV IMPORT] After split by semicolon:`, tagsString.split(';'));
-    console.log(`[CSV IMPORT] After trim and filter:`, tagNames);
-    console.log(`[CSV IMPORT] Final tagNames array:`, JSON.stringify(tagNames));
+    logger.log(`[CSV IMPORT] After split by semicolon:`, tagsString.split(';'));
+    logger.log(`[CSV IMPORT] After trim and filter:`, tagNames);
+    logger.log(`[CSV IMPORT] Final tagNames array:`, JSON.stringify(tagNames));
 
     // Always set tagNames as array (empty if no valid tags found)
     // The actual tag creation/linking will be handled by the import service
@@ -205,7 +206,7 @@ export const parseCsvToProjects = (
       complete: results => {
         try {
           if (results.errors.length > 0) {
-            console.warn('CSV parsing warnings:', results.errors);
+            logger.warn('CSV parsing warnings:', results.errors);
           }
 
           const projects: Partial<ProjectType>[] = [];
@@ -270,7 +271,7 @@ export const parseCsvFileToProjects = (
             onProgress(Math.min(progress, 99)); // Cap at 99% until complete
           }
         } catch (error) {
-          console.warn('Error processing CSV row:', error, row);
+          logger.warn('Error processing CSV row:', error, row);
         }
       },
       complete: () => {
@@ -305,7 +306,7 @@ export const parseCSV = (csvContent: string): ParsedCsvData => {
     transformHeader: (header: string) => header.toLowerCase().trim(),
     complete: results => {
       if (results.errors.length > 0) {
-        console.warn('CSV parsing warnings:', results.errors);
+        logger.warn('CSV parsing warnings:', results.errors);
       }
 
       if (results.data.length === 0) {

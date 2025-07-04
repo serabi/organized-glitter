@@ -4,6 +4,7 @@
  */
 
 import { captureException } from './posthog';
+import { logger } from './logger';
 
 interface ErrorDisplayOptions {
   title?: string;
@@ -20,7 +21,7 @@ export const handleFatalError = (
   context: string,
   options: ErrorDisplayOptions = {}
 ): void => {
-  console.error(`❌ Fatal error in ${context}:`, error);
+  logger.error(`❌ Fatal error in ${context}:`, error);
 
   // Capture exception in PostHog for analytics
   captureException(error, {
@@ -33,7 +34,7 @@ export const handleFatalError = (
 
   const rootElement = document.getElementById('root');
   if (!rootElement) {
-    console.error('Root element not found, cannot display error UI');
+    logger.error('Root element not found, cannot display error UI');
     return;
   }
 
@@ -68,7 +69,7 @@ export const handleFatalError = (
 export const dispatchAppLoadedEvent = (): void => {
   const event = new CustomEvent('app-loaded');
   window.dispatchEvent(event);
-  console.log('✅ App loaded event dispatched');
+  logger.log('✅ App loaded event dispatched');
 };
 
 /**

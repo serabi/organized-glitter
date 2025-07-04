@@ -104,12 +104,12 @@ export const useProjectImport = () => {
 
     try {
       // Step 1: Analyze CSV columns before parsing
-      logger.csvImport('Analyzing CSV column structure...');
+      logger.debug('Analyzing CSV column structure...');
       const columnAnalysis = await analyzeCSVFile(file);
       const validationMessage = generateColumnValidationMessage(columnAnalysis);
       
       // Log column analysis results
-      logger.csvImport('CSV column analysis complete', {
+      logger.debug('CSV column analysis complete', {
         detectedColumns: columnAnalysis.detectedColumns.length,
         missingRequired: columnAnalysis.missingRequired.length,
         missingOptional: columnAnalysis.missingOptional.length,
@@ -148,7 +148,7 @@ export const useProjectImport = () => {
       setImportStats(prev => ({ ...prev, columnAnalysis }));
 
       // Debug CSV tag parsing (ORG-36)
-      logger.csvImport('Running CSV tag debug analysis...');
+      logger.debug('Running CSV tag debug analysis...');
       // logCSVTagDebugInfo removed for PocketBase migration
 
       // Step 2: Parse CSV file directly using Papa Parse with progress callback
@@ -170,7 +170,7 @@ export const useProjectImport = () => {
       }
 
       // --- BEGIN BATCH TAG PROCESSING ---
-      logger.csvImport('Starting batch tag processing...', {
+      logger.debug('Starting batch tag processing...', {
         allUniqueTagNamesCount: allUniqueTagNames.length,
       });
       
@@ -194,7 +194,7 @@ export const useProjectImport = () => {
         existingUserTags.forEach(tag => {
           tagNameMap[tag.name] = tag.id;
         });
-        logger.csvImport('Fetched existing user tags and built initial map.', {
+        logger.debug('Fetched existing user tags and built initial map.', {
           count: existingUserTags.length,
         });
 
@@ -206,7 +206,7 @@ export const useProjectImport = () => {
             newTagNamesToCreate.push(normalizedName);
           }
         });
-        logger.csvImport('Identified new tags to create.', {
+        logger.debug('Identified new tags to create.', {
           count: newTagNamesToCreate.length,
           newTagNamesToCreate,
         });
@@ -246,9 +246,9 @@ export const useProjectImport = () => {
             const createdTag = await pb.collection('tags').create(newTagData);
             tagNameMap[tagName] = createdTag.id;
             createdTagsCount++;
-            logger.csvImport(`Successfully created new tag: ${tagName}`, { 
-              id: createdTag.id, 
-              slug: uniqueSlug 
+            logger.debug(`Successfully created new tag: ${tagName}`, {
+              id: createdTag.id,
+              slug: uniqueSlug
             });
           } catch (tagCreateError) {
             logger.error(`Failed to pre-create new tag: ${tagName}`, tagCreateError);
@@ -259,7 +259,7 @@ export const useProjectImport = () => {
           // Update progress during new tag creation (e.g., 15% to 25%)
           setProgress(Math.round(15 + (createdTagsCount / (newTagNamesToCreate.length || 1)) * 10));
         }
-        logger.csvImport('Finished creating new tags and updated map.', {
+        logger.debug('Finished creating new tags and updated map.', {
           finalMapSize: Object.keys(tagNameMap).length,
           createdCount: createdTagsCount,
         });
@@ -357,7 +357,7 @@ export const useProjectImport = () => {
             });
           }
         } catch (error) {
-          console.error(`Error importing project at index ${i}:`, error);
+          logger.error(`Error importing project at index ${i}:`, error);
           failedCount++;
 
           const errorMessage =
@@ -431,7 +431,7 @@ export const useProjectImport = () => {
 
       return true;
     } catch (error) {
-      console.error('Import error:', error);
+      logger.error('Import error:', error);
 
       toast({
         title: 'Import failed',

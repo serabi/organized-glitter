@@ -1,130 +1,175 @@
 /**
- * Dashboard Stats React Query Hook
+ * Dashboard Stats React Query Hook - Simplified Direct Approach
  *
- * Type-safe React Query hook for the new consolidated dashboard stats service.
- * Provides intelligent caching, error handling, and performance monitoring.
+ * Uses direct PocketBase queries with TanStack Query v5 for optimal performance.
+ * Removes complex multi-layer caching in favor of modern Query v5 patterns.
  */
 
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { DashboardStatsService } from '@/services/pocketbase/dashboardStatsService';
-import type { LegacyOverviewStats } from '@/types/dashboard-stats';
-import { toLegacyStats } from '@/types/dashboard-stats';
+import { useQuery } from '@tanstack/react-query';
+import { pb } from '@/lib/pocketbase';
+import { Collections } from '@/types/pocketbase.types';
 import { queryKeys } from './queryKeys';
 import { useAuth } from '@/hooks/useAuth';
+import { createLogger } from '@/utils/secureLogger';
+
+const logger = createLogger('useDashboardStats');
+
+interface StatusBreakdown {
+  wishlist: number;
+  purchased: number;
+  stash: number;
+  progress: number;
+  completed: number;
+  archived: number;
+  destashed: number;
+}
+
+interface DashboardStats {
+  completed_count: number;
+  started_count: number;
+  in_progress_count: number;
+  total_diamonds: number;
+  estimated_drills: number;
+  status_breakdown: StatusBreakdown;
+  available_years: number[];
+}
 
 /**
- * Main hook for dashboard statistics
+ * Calculate dashboard stats directly from PocketBase
+ */
+async function calculateDashboardStats(userId: string, year: number): Promise<DashboardStats> {
+  const yearStart = `${year}-01-01`;
+  const yearEnd = `${year + 1}-01-01`;
+
+  logger.debug(`Calculating dashboard stats for user ${userId}, year ${year}`);
+
+  try {
+    // Get all projects for the user in a single query
+    const projects = await pb.collection(Collections.Projects).getFullList({
+      filter: pb.filter('user = {:userId}', { userId }),
+      fields: 'status,total_diamonds,date_started,date_completed',
+    });
+
+    logger.debug(`Processing ${projects.length} projects for dashboard stats`);
+
+    // Initialize counters
+    const statusBreakdown: StatusBreakdown = {
+      wishlist: 0,
+      purchased: 0,
+      stash: 0,
+      progress: 0,
+      completed: 0,
+      archived: 0,
+      destashed: 0,
+    };
+
+    let completedThisYear = 0;
+    let startedThisYear = 0;
+    let totalDiamonds = 0;
+    const completionYears = new Set<number>();
+
+    // Process all projects
+    for (const project of projects) {
+      // Count status breakdown
+      const status = project.status as keyof StatusBreakdown;
+      if (status in statusBreakdown) {
+        statusBreakdown[status]++;
+      }
+
+      // Check if completed this year
+      if (
+        project.status === 'completed' &&
+        project.date_completed &&
+        project.date_completed >= yearStart &&
+        project.date_completed < yearEnd
+      ) {
+        completedThisYear++;
+        totalDiamonds += project.total_diamonds || 0;
+      }
+
+      // Extract completion years for available years
+      if (project.date_completed && project.date_completed.trim() !== '') {
+        try {
+          const completionYear = new Date(project.date_completed).getFullYear();
+          if (completionYear >= 1900 && completionYear <= 2100) {
+            completionYears.add(completionYear);
+          }
+        } catch {
+          // Invalid date, skip
+        }
+      }
+
+      // Check if started this year
+      if (
+        project.date_started &&
+        project.date_started.trim() !== '' &&
+        project.date_started >= yearStart &&
+        project.date_started < yearEnd
+      ) {
+        startedThisYear++;
+      }
+    }
+
+    // Sort available years (most recent first)
+    const availableYears = Array.from(completionYears).sort((a, b) => b - a);
+
+    const stats: DashboardStats = {
+      completed_count: completedThisYear,
+      started_count: startedThisYear,
+      in_progress_count: statusBreakdown.progress,
+      total_diamonds: totalDiamonds,
+      estimated_drills: totalDiamonds,
+      status_breakdown: statusBreakdown,
+      available_years: availableYears,
+    };
+
+    logger.debug('Dashboard stats calculated:', stats);
+    return stats;
+  } catch (error) {
+    logger.error('Failed to calculate dashboard stats:', error);
+    throw error;
+  }
+}
+
+/**
+ * Main hook for dashboard statistics using direct PocketBase queries
  *
  * Features:
- * - Intelligent caching with database + React Query layers
- * - Automatic error recovery with stale cache fallback
- * - Performance monitoring and logging
- * - Type-safe with runtime validation
+ * - Direct PocketBase queries for maximum simplicity
+ * - TanStack Query v5 built-in caching and deduplication
+ * - Modern query patterns with optimal performance
  */
 export const useDashboardStats = (year?: number) => {
   const { user } = useAuth();
   const userId = user?.id;
   const targetYear = year || new Date().getFullYear();
-  const queryClient = useQueryClient();
 
   const query = useQuery({
     queryKey: [...queryKeys.stats.overview(userId || 'anonymous'), 'dashboard', targetYear],
-    queryFn: async () => {
-      try {
-        return await DashboardStatsService.getYearlyStats(userId!, targetYear);
-      } catch (error) {
-        // Handle 404 errors gracefully - they're expected for new users/years
-        // Instead of treating as error, return undefined so UI can handle gracefully
-        if (error && typeof error === 'object' && 'status' in error && 
-            (error as { status: number }).status === 404) {
-          return undefined;
-        }
-        throw error;
-      }
-    },
+    queryFn: () => calculateDashboardStats(userId!, targetYear),
     enabled: !!userId,
-    // Optimized cache settings for dashboard use
-    staleTime: 5 * 60 * 1000, // 5 minutes - data doesn't change frequently
-    gcTime: 30 * 60 * 1000, // 30 minutes garbage collection
-    // Conservative refetch settings since we have database caching
-    refetchInterval: false,
-    refetchIntervalInBackground: false,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: true,
-    // Simplified retry with exponential backoff
-    retry: (failureCount, error) => {
-      // Don't retry on validation errors
-      if (error && error instanceof Error && error.name === 'StatsServiceError') {
-        return false;
-      }
-      // Don't retry on 404 errors (cache misses are expected for new users/years)
-      if (error && typeof error === 'object' && 'status' in error && 
-          (error as { status: number }).status === 404) {
-        return false;
-      }
-      return failureCount < 2;
-    },
-    retryDelay: attemptIndex => Math.min(1000 * Math.pow(2, attemptIndex), 5000),
+    // TanStack Query v5 defaults provide excellent performance:
+    // - 5 minute staleTime prevents unnecessary refetches
+    // - 5 minute gcTime for cache cleanup
+    // - Automatic request deduplication
+    // - Background refetching for active queries
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 5 * 60 * 1000, // 5 minutes
+    retry: 2, // Retry failed requests twice
   });
-
-  // Manual cache invalidation
-  const invalidateCache = async () => {
-    if (userId) {
-      // Invalidate both database cache and React Query cache in parallel
-      await Promise.all([
-        DashboardStatsService.invalidateCache(userId, targetYear),
-        queryClient.invalidateQueries({
-          queryKey: [...queryKeys.stats.overview(userId), 'dashboard', targetYear],
-        }),
-      ]);
-    }
-  };
-
-  // Proactive cache update after project changes
-  const updateAfterProjectChange = async () => {
-    if (userId) {
-      // Update database cache proactively, then invalidate React Query in parallel
-      await DashboardStatsService.updateCacheAfterProjectChange(userId, targetYear);
-      await queryClient.invalidateQueries({
-        queryKey: [...queryKeys.stats.overview(userId), 'dashboard', targetYear],
-      });
-    }
-  };
-
-  // Pre-warm cache for better UX
-  const preWarmCache = async () => {
-    if (userId) {
-      await DashboardStatsService.preWarmCache(userId);
-    }
-  };
-
-  // Get cache status for debugging
-  const getCacheStatus = async () => {
-    if (userId) {
-      return await DashboardStatsService.getCacheStatus(userId, targetYear);
-    }
-    return null;
-  };
 
   return {
     // Core query data
     data: query.data,
-    stats: query.data?.stats,
+    stats: query.data,
+    dashboardStats: query.data, // Alias for backward compatibility
+    availableYears: query.data?.available_years || [],
     isLoading: query.isFetching && !query.data,
     isError: query.isError,
     error: query.error,
 
-    // Cache source information
-    cacheSource: query.data?.source,
-    cachedAt: query.data?.cached_at,
-    calculationTime: query.data?.calculation_time_ms,
-
     // Actions
     refetch: query.refetch,
-    invalidateCache,
-    updateAfterProjectChange,
-    preWarmCache,
-    getCacheStatus,
 
     // React Query status
     queryStatus: query.status,
@@ -134,76 +179,41 @@ export const useDashboardStats = (year?: number) => {
 
 /**
  * Hook for legacy compatibility
- *
- * Provides the same interface as the old useOverviewStatsOptimized
- * for components that haven't been migrated yet.
  */
 export const useDashboardStatsLegacy = (year?: number) => {
   const dashboardStats = useDashboardStats(year);
 
-  // Convert to legacy format
-  const legacyStats: LegacyOverviewStats | undefined = dashboardStats.stats
-    ? toLegacyStats(dashboardStats.stats)
-    : undefined;
-
   return {
-    // Legacy format
-    data: legacyStats ? { stats: legacyStats } : undefined,
-    stats: legacyStats,
-
-    // Pass through loading/error states
+    data: dashboardStats.data ? { stats: dashboardStats.data } : undefined,
+    stats: dashboardStats.data,
+    availableYears: dashboardStats.availableYears,
     isLoading: dashboardStats.isLoading,
     isError: dashboardStats.isError,
     error: dashboardStats.error,
-
-    // Actions (keep same names for compatibility)
-    invalidateCache: dashboardStats.invalidateCache,
-    updateAfterProjectChange: dashboardStats.updateAfterProjectChange,
+    refetch: dashboardStats.refetch,
   };
 };
 
 /**
- * Hook for prefetching dashboard stats
+ * Optimized hook for available years - gets data from dashboard stats to eliminate redundant queries
+ * 
+ * This replaces the separate useAvailableYears hook with a more efficient approach that
+ * extracts available years from the same data used for dashboard statistics.
  */
-export const usePrefetchDashboardStats = () => {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
+export const useAvailableYearsOptimized = (userId?: string) => {
+  const dashboardStats = useDashboardStats();
 
-  return async (year?: number) => {
-    if (user?.id) {
-      const targetYear = year || new Date().getFullYear();
-      await queryClient.prefetchQuery({
-        queryKey: [...queryKeys.stats.overview(user.id), 'dashboard', targetYear],
-        queryFn: () => DashboardStatsService.getYearlyStats(user.id, targetYear),
-        staleTime: 5 * 60 * 1000,
-      });
-    }
+  return {
+    years: dashboardStats.availableYears,
+    yearsWithMetadata: dashboardStats.availableYears.map(year => ({
+      year,
+      hasCompleted: true,
+      hasStarted: false,
+      hasReceived: false,
+      hasPurchased: false,
+    })),
+    isLoading: dashboardStats.isLoading,
+    error: dashboardStats.error,
+    refetch: dashboardStats.refetch,
   };
-};
-
-/**
- * Hook for multiple years (dashboard historical view)
- */
-export const useDashboardStatsMultiYear = (years: number[]) => {
-  const { user } = useAuth();
-  const userId = user?.id;
-
-  return useQuery({
-    queryKey: userId ? [...queryKeys.stats.overview(userId), 'dashboard', 'multi-year', years] : [],
-    queryFn: async () => {
-      if (!userId) return [];
-
-      const results = await Promise.all(
-        years.map(year => DashboardStatsService.getYearlyStats(userId, year))
-      );
-
-      return results.map((result, index) => ({
-        year: years[index],
-        ...result,
-      }));
-    },
-    enabled: !!userId && years.length > 0,
-    staleTime: 10 * 60 * 1000, // 10 minutes for historical data
-    gcTime: 60 * 60 * 1000, // 1 hour
-  });
 };

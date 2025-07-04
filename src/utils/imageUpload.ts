@@ -87,14 +87,14 @@ export async function uploadImage(
 
   // Validate file name
   if (file.name.includes('#') || file.name.includes('?') || file.name.includes('%')) {
-    console.warn('File name contains special characters that might cause issues with storage');
+    imageUploadLogger.warn('File name contains special characters that might cause issues with storage');
   }
 
   // Initialize variables for retry logic
   const maxAttempts = 3;
 
   try {
-    console.log('Uploading image to PocketBase Storage...');
+    imageUploadLogger.log('Uploading image to PocketBase Storage...');
 
     // Check authentication
     if (!isAuthenticated()) {
@@ -107,11 +107,11 @@ export async function uploadImage(
 
     while (attempts < maxAttempts) {
       attempts++;
-      console.log(`Upload attempt ${attempts}/${maxAttempts}...`);
+      imageUploadLogger.log(`Upload attempt ${attempts}/${maxAttempts}...`);
 
       try {
         // Enhanced metadata for debugging
-        console.log('File details:', {
+        imageUploadLogger.log('File details:', {
           name: file.name,
           type: file.type,
           size: `${(file.size / 1024).toFixed(2)} KB`,
@@ -124,7 +124,7 @@ export async function uploadImage(
           file.name.includes('.') && (file.name.split('.').pop()?.length || 0) > 0;
 
         if (!hasExtension) {
-          console.warn(
+          imageUploadLogger.warn(
             `[imageUpload] File "${file.name}" has no extension, adding based on MIME type`
           );
           // Determine extension from MIME type
@@ -137,11 +137,11 @@ export async function uploadImage(
 
           const newFileName = `${file.name}.${extension}`;
           fileToUpload = new File([file], newFileName, { type: file.type });
-          console.log(`[imageUpload] Renamed file to: ${newFileName}`);
+          imageUploadLogger.log(`[imageUpload] Renamed file to: ${newFileName}`);
         }
 
         // Call the storage service upload function
-        console.log(
+        imageUploadLogger.log(
           `[imageUpload] Calling uploadFile with file: ${fileToUpload.name}, bucket: ${bucketFolder}`
         );
 
@@ -151,7 +151,7 @@ export async function uploadImage(
         imageUploadLogger.debug(`Current user ID: ${userId}`);
 
         try {
-          console.log(`[imageUpload] About to call uploadFile with bucket: ${bucketFolder}`);
+          imageUploadLogger.log(`[imageUpload] About to call uploadFile with bucket: ${bucketFolder}`);
 
           // For PocketBase, we need a record ID for file uploads
           if (!recordId) {
@@ -176,15 +176,15 @@ export async function uploadImage(
             fieldName = 'image';
           }
 
-          console.log(
+          imageUploadLogger.log(
             `[imageUpload] Upload context: ${uploadContext}, collection: ${collection}, recordId: ${recordId}, fieldName: ${fieldName}`
           );
 
           const fileUrl = await uploadFile(fileToUpload, collection, recordId, fieldName);
 
           if (!fileUrl) {
-            console.error('[imageUpload] uploadFile returned empty URL');
-            console.error('[imageUpload] Upload parameters:', {
+            imageUploadLogger.error('[imageUpload] uploadFile returned empty URL');
+            imageUploadLogger.error('[imageUpload] Upload parameters:', {
               collection,
               recordId,
               fieldName,
@@ -193,13 +193,13 @@ export async function uploadImage(
             throw new Error('Storage upload completed but no URL was returned');
           }
 
-          console.log(`[imageUpload] Image upload successful! URL length: ${fileUrl.length}`);
-          console.log(`[imageUpload] URL: ${fileUrl}`);
+          imageUploadLogger.log(`[imageUpload] Image upload successful! URL length: ${fileUrl.length}`);
+          imageUploadLogger.log(`[imageUpload] URL: ${fileUrl}`);
 
           return fileUrl;
         } catch (storageError) {
-          console.error('[imageUpload] Error in uploadFile:', storageError);
-          console.error('[imageUpload] Storage error details:', {
+          imageUploadLogger.error('[imageUpload] Error in uploadFile:', storageError);
+          imageUploadLogger.error('[imageUpload] Storage error details:', {
             name: storageError instanceof Error ? storageError.name : 'Unknown',
             message: storageError instanceof Error ? storageError.message : String(storageError),
             stack: storageError instanceof Error ? storageError.stack : undefined,
@@ -208,10 +208,10 @@ export async function uploadImage(
         }
       } catch (attemptError) {
         lastError = attemptError instanceof Error ? attemptError : new Error(String(attemptError));
-        console.error(`Error in attempt ${attempts}:`, lastError);
+        imageUploadLogger.error(`Error in attempt ${attempts}:`, lastError);
 
         // More detailed logging of the error
-        console.error('Upload error details:', {
+        imageUploadLogger.error('Upload error details:', {
           attempt: attempts,
           fileName: file.name,
           fileType: file.type,
@@ -222,7 +222,7 @@ export async function uploadImage(
 
         if (attemptError instanceof Error && attemptError.message.includes('Unauthorized')) {
           // Check authentication status
-          console.log('Authentication failed, checking PocketBase auth status...');
+          imageUploadLogger.log('Authentication failed, checking PocketBase auth status...');
           if (!isAuthenticated()) {
             throw new Error('Authentication failed. Please log in and try again.');
           }
@@ -232,7 +232,7 @@ export async function uploadImage(
 
         // Exponential backoff for retries
         const delay = Math.min(1000 * attempts, 10000); // Cap at 10 seconds
-        console.log(`Retrying in ${delay}ms...`);
+        imageUploadLogger.log(`Retrying in ${delay}ms...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
@@ -242,7 +242,7 @@ export async function uploadImage(
       ? `Upload failed after ${maxAttempts} attempts: ${lastError.message}`
       : `Upload failed after ${maxAttempts} attempts`;
 
-    console.error('Final upload error details:', {
+    imageUploadLogger.error('Final upload error details:', {
       error: lastError,
       attempts,
       maxAttempts,
@@ -257,21 +257,21 @@ export async function uploadImage(
     try {
       const reader = new FileReader();
       reader.onload = () => {
-        console.log(
+        imageUploadLogger.log(
           `File read successful. Data size: ${reader.result?.toString().length || 0} bytes`
         );
       };
       reader.onerror = e => {
-        console.error('Error reading file:', e);
+        imageUploadLogger.error('Error reading file:', e);
       };
       reader.readAsDataURL(file);
     } catch (readError) {
-      console.error('Error setting up file reader:', readError);
+      imageUploadLogger.error('Error setting up file reader:', readError);
     }
 
     // Try fallback for development environments
     if (isDevelopment) {
-      console.log('In development environment, using placeholder image as fallback...');
+      imageUploadLogger.log('In development environment, using placeholder image as fallback...');
       try {
         // Generate a placeholder image URL (not authenticated - for development only)
         const timestamp = new Date().getTime();
@@ -306,10 +306,10 @@ export async function uploadImage(
           placeholderUrl = `https://placehold.co/400x400/png?text=${encodeURIComponent(shortName)}-${timestamp}`;
         }
 
-        console.log('Created placeholder image:', placeholderUrl);
+        imageUploadLogger.log('Created placeholder image:', placeholderUrl);
         return `${placeholderUrl}#fallback=true`;
       } catch (fallbackError) {
-        console.error('Fallback placeholder creation failed:', fallbackError);
+        imageUploadLogger.error('Fallback placeholder creation failed:', fallbackError);
       }
     }
 
@@ -320,7 +320,7 @@ export async function uploadImage(
         ? `Image upload failed: ${error.message}`
         : 'An unknown error occurred during image upload';
 
-    console.error('Upload error:', {
+    imageUploadLogger.error('Upload error:', {
       message: errorMessage,
       error:
         error instanceof Error

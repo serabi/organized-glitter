@@ -5,8 +5,8 @@ const logger = createLogger('QueryClient');
 
 // DIAGNOSTIC: Global error interceptor to catch React Query internal errors
 if (typeof window !== 'undefined') {
-  const originalConsoleError = console.error;
-  console.error = (...args: any[]) => {
+  const originalConsoleError = logger.error;
+  logger.error = (...args: any[]) => {
     // Check for the specific queryKey error
     const errorMessage = args.join(' ');
     if (errorMessage.includes("Cannot read properties of undefined (reading 'queryKey')")) {
@@ -16,7 +16,7 @@ if (typeof window !== 'undefined') {
         timestamp: new Date().toISOString()
       });
     }
-    originalConsoleError.apply(console, args);
+    originalConsoleError.apply(logger, args);
   };
 }
 

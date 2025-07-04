@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { logger } from '@/utils/logger';
 
 /**
  * Props interface for the AccountSettings component
@@ -179,7 +180,7 @@ const AccountSettings = ({
         description: 'Your username has been updated',
       });
     } catch (error) {
-      console.error('Error updating username:', error);
+      logger.error('Error updating username:', error);
 
       toast({
         title: 'Error',

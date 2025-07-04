@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { compressProgressImage } from '@/utils/progressImageCompression';
 import { useToast } from '@/hooks/use-toast';
 import { useProgressNoteFormTracking } from './useProgressNoteFormTracking';
+import { logger } from '@/utils/logger';
 
 /**
  * @interface CompressionProgress
@@ -86,7 +87,7 @@ export const useProgressImageCompression = () => {
 
       return compressedFile;
     } catch (error) {
-      console.error('Compression failed:', error);
+      logger.error('Compression failed:', error);
 
       trackCompressionFailure(error, file.size);
 

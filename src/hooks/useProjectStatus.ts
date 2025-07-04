@@ -84,7 +84,7 @@ export const useProjectStatus = (project?: ProjectType | null): StatusUtils => {
     async (newStatus: ProjectStatus): Promise<boolean> => {
       if (!project) return false;
       if (!project.id) {
-        console.error('Error: Project ID is undefined');
+        logger.error('Error: Project ID is undefined');
         toastHandlers.showError?.('Invalid project ID. Please try refreshing the page.');
         return false;
       }

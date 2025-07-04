@@ -14,7 +14,7 @@ const withAuthentication = <P extends object>(
     const navigate = useNavigate();
     const { toast } = useToast();
 
-    console.log('🔐 withAuthentication: Auth state:', {
+    logger.log('🔐 withAuthentication: Auth state:', {
       hasUser: !!user,
       userId: user?.id,
       authLoading,
@@ -23,7 +23,7 @@ const withAuthentication = <P extends object>(
 
     useEffect(() => {
       if (!authLoading && !user) {
-        console.log('withAuthentication: No authenticated user found, redirecting to login');
+        logger.log('withAuthentication: No authenticated user found, redirecting to login');
         toast({
           title: 'Authentication required',
           description: 'Please sign in to continue.',
@@ -34,12 +34,12 @@ const withAuthentication = <P extends object>(
     }, [user, authLoading, navigate, toast]);
 
     if (authLoading) {
-      console.log('withAuthentication: Showing loading state while checking authentication');
+      logger.log('withAuthentication: Showing loading state while checking authentication');
       return <DashboardLoadingState />; // Or a more generic loading component
     }
 
     if (!user && !authLoading) {
-      console.log(
+      logger.log(
         'withAuthentication: No authenticated user after auth check complete, navigation initiated.'
       );
       // Navigation is handled by the useEffect, so return null to prevent rendering the wrapped component.

@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useProjectExport } from '@/hooks/useProjectExport';
 import { FileText, FileInput, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { logger } from '@/utils/logger';
 
 interface DataImportExportSettingsProps {
   profileLoading: boolean;
@@ -26,7 +27,7 @@ const DataImportExportSettings = ({ profileLoading }: DataImportExportSettingsPr
       // Track successful export
       // addBreadcrumb removed
     } catch (error) {
-      console.error('Export failed:', error);
+      logger.error('Export failed:', error);
       // Error toast notification is already handled by useProjectExport hook
       // Track export failure
       // addBreadcrumb removed

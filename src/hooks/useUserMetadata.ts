@@ -79,14 +79,14 @@ async function fetchArtistNames(toastHandlers?: ToastHandler): Promise<ServiceRe
       requestKey: `artists-${userId}`,
     });
 
-    console.log('fetchArtistNames: raw response:', records);
+    metadataLogger.log('fetchArtistNames: raw response:', records);
 
     const artistNames = records.items.map(artist => artist.name);
-    console.log('fetchArtistNames: processed names:', artistNames);
+    metadataLogger.debug('fetchArtistNames: processed names:', artistNames);
 
     return createSuccessResponse(artistNames);
   } catch (error) {
-    console.error('fetchArtistNames: error caught:', error);
+    metadataLogger.error('fetchArtistNames: error caught:', error);
     if (toastHandlers?.toast) {
       toastHandlers.toast({
         title: 'Failed to load artists',
@@ -95,7 +95,7 @@ async function fetchArtistNames(toastHandlers?: ToastHandler): Promise<ServiceRe
       });
     }
 
-    console.error('Error fetching artist names:', error);
+    metadataLogger.error('Error fetching artist names:', error);
     return createErrorResponse(
       error instanceof Error ? error : new Error('Failed to fetch artists')
     );
@@ -118,17 +118,17 @@ export const useUserMetadata = () => {
     async function fetchUserData() {
       // Prevent duplicate concurrent requests
       if (fetchingRef.current) {
-        console.log('useUserMetadata: Already fetching, skipping duplicate request');
+        metadataLogger.debug('useUserMetadata: Already fetching, skipping duplicate request');
         return;
       }
 
       try {
         fetchingRef.current = true;
-        console.log('useUserMetadata: Starting data fetch...');
+        metadataLogger.debug('useUserMetadata: Starting data fetch...');
 
         // First check if user is authenticated with PocketBase
         if (!pb.authStore.isValid) {
-          console.log('useUserMetadata: No authenticated user found');
+          metadataLogger.debug('useUserMetadata: No authenticated user found');
           if (isMounted) {
             setLoading(false);
             setAuthChecked(true);
@@ -138,7 +138,7 @@ export const useUserMetadata = () => {
 
         const userId = pb.authStore.model?.id;
         if (!userId) {
-          console.log('useUserMetadata: No user ID found');
+          metadataLogger.debug('useUserMetadata: No user ID found');
           if (isMounted) {
             setLoading(false);
             setAuthChecked(true);
@@ -169,7 +169,7 @@ export const useUserMetadata = () => {
         } catch (error) {
           // Handle cancellation gracefully
           if (error && typeof error === 'object' && 'status' in error && error.status === 0) {
-            console.log('useUserMetadata: Request was cancelled, component likely unmounted');
+            metadataLogger.debug('useUserMetadata: Request was cancelled, component likely unmounted');
             return;
           }
           throw error;
@@ -177,7 +177,7 @@ export const useUserMetadata = () => {
 
         // Handle companies response
         if (companiesResponse.status === 'success' && companiesResponse.data) {
-          console.log(
+          metadataLogger.debug(
             'useUserMetadata: Companies fetched successfully:',
             companiesResponse.data.length,
             companiesResponse.data
@@ -185,7 +185,7 @@ export const useUserMetadata = () => {
           if (!isMounted) return;
           setCompanies(companiesResponse.data);
         } else if (companiesResponse.error) {
-          console.error('useUserMetadata: Error fetching companies:', companiesResponse.error);
+          metadataLogger.error('useUserMetadata: Error fetching companies:', companiesResponse.error);
           // Only show toast for actual errors, not empty data
           if (
             !companiesResponse.error.message?.includes('not authenticated') &&
@@ -201,7 +201,7 @@ export const useUserMetadata = () => {
 
         // Handle artists response
         if (artistsResponse.status === 'success' && artistsResponse.data) {
-          console.log(
+          metadataLogger.debug(
             'useUserMetadata: Artists fetched successfully:',
             artistsResponse.data.length,
             artistsResponse.data
@@ -209,7 +209,7 @@ export const useUserMetadata = () => {
           if (!isMounted) return;
           setArtists(artistsResponse.data);
         } else if (artistsResponse.error) {
-          console.error('useUserMetadata: Error fetching artists:', artistsResponse.error);
+          metadataLogger.error('useUserMetadata: Error fetching artists:', artistsResponse.error);
           // Only show toast for actual errors, not empty data
           if (
             !artistsResponse.error.message?.includes('not authenticated') &&
@@ -225,10 +225,10 @@ export const useUserMetadata = () => {
 
         setAuthChecked(true);
       } catch (error) {
-        console.error('Error in fetchUserData:', error);
+        metadataLogger.error('Error in fetchUserData:', error);
         // Don't show toast for cancellation errors
         if (error && typeof error === 'object' && 'status' in error && error.status === 0) {
-          console.log('useUserMetadata: Request cancelled during fetch');
+          metadataLogger.debug('useUserMetadata: Request cancelled during fetch');
           return;
         }
         toast({
@@ -255,7 +255,7 @@ export const useUserMetadata = () => {
   // Function to refresh metadata
   const refreshMetadata = async () => {
     if (fetchingRef.current) {
-      console.log('useUserMetadata: Already refreshing, skipping');
+      metadataLogger.debug('useUserMetadata: Already refreshing, skipping');
       return;
     }
 

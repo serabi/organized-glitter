@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ArrowLeft, Save, Archive, Trash2, X } from 'lucide-react';
 import { ProjectMainTabSimple } from '@/components/projects/tabs/ProjectMainTabSimple';
 import { ProjectStatsTabSimple } from '@/components/projects/tabs/ProjectStatsTabSimple';
+import { logger } from '@/utils/logger';
 // Debug component removed for PocketBase migration
 
 const EditProject = () => {
@@ -155,7 +156,7 @@ const EditProject = () => {
                     try {
                       await handleSubmit(formData);
                     } catch (error) {
-                      console.error('Error submitting form:', error);
+                      logger.error('Error submitting form:', error);
                     }
                   }
                 }}

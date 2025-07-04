@@ -11,7 +11,6 @@ import { pb } from '@/lib/pocketbase';
 import { useAuth } from '@/hooks/useAuth';
 import { queryKeys } from '@/hooks/queries/queryKeys';
 import { createLogger } from '@/utils/secureLogger';
-import { DashboardStatsService } from '@/services/pocketbase/dashboardStatsService';
 
 const logger = createLogger('useRealtimeProjectSync');
 
@@ -83,19 +82,13 @@ export const useRealtimeProjectSync = () => {
           }),
         ]);
 
-        // Update dashboard stats cache for real-time events
+        // Invalidate dashboard stats cache for real-time events
         if (e.action === 'update' || e.action === 'delete' || e.action === 'create') {
-          try {
-            await DashboardStatsService.updateCacheAfterProjectChange(user.id, currentYear);
-            logger.info('✅ Dashboard stats updated after real-time event');
-          } catch (error) {
-            logger.error('❌ Failed to update dashboard stats after real-time event:', error);
-            // Force broader invalidation as fallback
-            await queryClient.invalidateQueries({
-              queryKey: queryKeys.stats.overview(user.id),
-              refetchType: 'active',
-            });
-          }
+          await queryClient.invalidateQueries({
+            queryKey: queryKeys.stats.overview(user.id),
+            refetchType: 'active',
+          });
+          logger.info('✅ Dashboard stats invalidated after real-time event');
         }
 
         logger.info(`✅ Cache invalidated for real-time ${e.action} event:`, e.record.id);

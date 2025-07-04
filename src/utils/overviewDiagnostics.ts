@@ -8,6 +8,7 @@
 import { pb } from '@/lib/pocketbase';
 import { Collections } from '@/types/pocketbase.types';
 import { createFilter } from '@/utils/filterBuilder';
+import { logger } from './logger';
 
 export interface DiagnosticResult {
   totalProjects: number;
@@ -51,7 +52,7 @@ export async function runOverviewDiagnostics(userId: string): Promise<Diagnostic
     recommendations: [],
   };
 
-  console.log('[Diagnostics] Starting comprehensive Overview performance analysis...');
+  logger.log('[Diagnostics] Starting comprehensive Overview performance analysis...');
 
   let allProjects: Array<{
     id: string;
@@ -63,7 +64,7 @@ export async function runOverviewDiagnostics(userId: string): Promise<Diagnostic
 
   try {
     // Test 1: Basic user query timing with full pagination
-    console.log('[Diagnostics] Test 1: Basic user query with pagination...');
+    logger.log('[Diagnostics] Test 1: Basic user query with pagination...');
     const basicStart = performance.now();
 
     // First, get the total count and first batch
@@ -80,7 +81,7 @@ export async function runOverviewDiagnostics(userId: string): Promise<Diagnostic
     // If there are more projects, fetch them in batches
     if (firstBatch.totalItems > 500) {
       const totalPages = Math.ceil(firstBatch.totalItems / 500);
-      console.log(
+      logger.log(
         `[Diagnostics] Fetching ${firstBatch.totalItems} projects across ${totalPages} pages...`
       );
 
@@ -97,13 +98,13 @@ export async function runOverviewDiagnostics(userId: string): Promise<Diagnostic
 
     diagnostics.queryTiming.basicUserQuery = performance.now() - basicStart;
 
-    console.log(
+    logger.log(
       `[Diagnostics] Found ${diagnostics.totalProjects} total projects (retrieved ${allProjects.length}) in ${diagnostics.queryTiming.basicUserQuery.toFixed(0)}ms`
     );
 
     // Verify data integrity
     if (allProjects.length !== diagnostics.totalProjects) {
-      console.warn(
+      logger.warn(
         `[Diagnostics] Warning: Retrieved ${allProjects.length} projects but totalItems was ${diagnostics.totalProjects}`
       );
       diagnostics.recommendations.push(
@@ -112,7 +113,7 @@ export async function runOverviewDiagnostics(userId: string): Promise<Diagnostic
     }
 
     // Test 2: Analyze date data quality
-    console.log('[Diagnostics] Test 2: Analyzing date data quality...');
+    logger.log('[Diagnostics] Test 2: Analyzing date data quality...');
     const projects = allProjects;
 
     projects.forEach(project => {
@@ -143,7 +144,7 @@ export async function runOverviewDiagnostics(userId: string): Promise<Diagnostic
     diagnostics.projectsWithDates = diagnostics.dateDataQuality.validDates;
 
     // Test 3: Date-filtered query timing (the problematic one)
-    console.log('[Diagnostics] Test 3: Date-filtered query timing...');
+    logger.log('[Diagnostics] Test 3: Date-filtered query timing...');
     const dateStart = performance.now();
     const dateFiltered = await pb.collection(Collections.Projects).getList(1, 1, {
       filter: createFilter()
@@ -156,12 +157,12 @@ export async function runOverviewDiagnostics(userId: string): Promise<Diagnostic
     });
     diagnostics.queryTiming.dateFilteredQuery = performance.now() - dateStart;
 
-    console.log(
+    logger.log(
       `[Diagnostics] Date-filtered query found ${dateFiltered.totalItems} projects in ${diagnostics.queryTiming.dateFilteredQuery.toFixed(0)}ms`
     );
 
     // Test 4: Optimized query timing
-    console.log('[Diagnostics] Test 4: Optimized query timing...');
+    logger.log('[Diagnostics] Test 4: Optimized query timing...');
     const optStart = performance.now();
     const optimized = await pb.collection(Collections.Projects).getList(1, 1, {
       filter: createFilter()
@@ -176,12 +177,12 @@ export async function runOverviewDiagnostics(userId: string): Promise<Diagnostic
     });
     diagnostics.queryTiming.optimizedQuery = performance.now() - optStart;
 
-    console.log(
+    logger.log(
       `[Diagnostics] Optimized query found ${optimized.totalItems} projects in ${diagnostics.queryTiming.optimizedQuery.toFixed(0)}ms`
     );
 
     // Generate recommendations
-    console.log('[Diagnostics] Generating recommendations...');
+    logger.log('[Diagnostics] Generating recommendations...');
 
     if (diagnostics.totalProjects === 0) {
       diagnostics.recommendations.push('✅ User has no projects - Overview should be instant');
@@ -226,8 +227,8 @@ export async function runOverviewDiagnostics(userId: string): Promise<Diagnostic
       );
     }
 
-    console.log('[Diagnostics] Analysis complete!');
-    console.table({
+    logger.log('[Diagnostics] Analysis complete!');
+    logger.log({
       'Total Projects (Reported)': diagnostics.totalProjects,
       'Total Projects (Retrieved)': retrievedCount,
       'Projects with Valid Dates': diagnostics.dateDataQuality.validDates,
@@ -239,9 +240,9 @@ export async function runOverviewDiagnostics(userId: string): Promise<Diagnostic
       'Optimized Query Time': `${diagnostics.queryTiming.optimizedQuery.toFixed(0)}ms`,
     });
 
-    console.log('[Diagnostics] Recommendations:', diagnostics.recommendations);
+    logger.log('[Diagnostics] Recommendations:', diagnostics.recommendations);
   } catch (error) {
-    console.error('[Diagnostics] Error during analysis:', error);
+    logger.error('[Diagnostics] Error during analysis:', error);
     diagnostics.recommendations.push('❌ Diagnostic analysis failed - check console for errors');
   }
 
@@ -261,11 +262,11 @@ export function enableDiagnosticConsoleAccess() {
     ).runOverviewDiagnostics = async (userId?: string) => {
       const currentUserId = userId || pb.authStore.record?.id;
       if (!currentUserId) {
-        console.error('No user ID provided and no authenticated user found');
+        logger.error('No user ID provided and no authenticated user found');
         return;
       }
       return await runOverviewDiagnostics(currentUserId);
     };
-    console.log('🔍 Diagnostics enabled! Run: window.runOverviewDiagnostics()');
+    logger.log('🔍 Diagnostics enabled! Run: window.runOverviewDiagnostics()');
   }
 }
