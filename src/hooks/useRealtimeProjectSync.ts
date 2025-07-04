@@ -12,6 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { queryKeys } from '@/hooks/queries/queryKeys';
 import { createLogger } from '@/utils/secureLogger';
 import { RecordModel } from 'pocketbase';
+import { Collections } from '@/types/pocketbase.types';
 
 const logger = createLogger('useRealtimeProjectSync');
 
@@ -19,6 +20,13 @@ interface ProjectRealtimeEvent {
   action: 'create' | 'update' | 'delete';
   record: RecordModel & {
     status: string;
+    user: string;
+  };
+}
+
+interface StatsRealtimeEvent {
+  action: 'create' | 'update' | 'delete';
+  record: RecordModel & {
     user: string;
   };
 }
@@ -96,12 +104,49 @@ export const useRealtimeProjectSync = () => {
       }
     });
 
+    // Subscribe to dashboard stats collection changes for live count updates
+    pb.collection(Collections.UserDashboardStats).subscribe('*', async (e: StatsRealtimeEvent) => {
+      logger.debug('📊 Received real-time stats event:', {
+        action: e.action,
+        statsId: e.record?.id,
+        statsUser: e.record?.user,
+        currentUser: user.id,
+      });
+
+      // Only process events for the current user's stats
+      if (e.record?.user !== user.id) {
+        logger.debug("⏭️ Skipping stats event - not current user's data");
+        return;
+      }
+
+      try {
+        // Invalidate optimized dashboard stats cache for instant updates
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: [...queryKeys.stats.overview(user.id), 'optimized'],
+            exact: true,
+            refetchType: 'active',
+          }),
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.stats.overview(user.id),
+            exact: false,
+            refetchType: 'active',
+          }),
+        ]);
+
+        logger.info(`✅ Live stats updated for ${e.action} event`);
+      } catch (error) {
+        logger.error('❌ Error processing real-time stats event:', error);
+      }
+    });
+
     // Cleanup function
     return () => {
       logger.info('🔌 Disconnecting real-time project sync');
       try {
         pb.collection('projects').unsubscribe('*');
-        logger.debug('✅ Successfully unsubscribed from project changes');
+        pb.collection(Collections.UserDashboardStats).unsubscribe('*');
+        logger.debug('✅ Successfully unsubscribed from project and stats changes');
       } catch (error) {
         logger.error('❌ Error during real-time sync cleanup:', error);
       }

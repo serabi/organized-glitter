@@ -73,10 +73,17 @@ function calculateStatsUpdate(
   switch (operation) {
     case 'create':
       // Increment new status and total
-      if (newStatus && isValidStatus(newStatus)) {
+      if (!newStatus || newStatus === null || newStatus === undefined) {
+        logger.error('❌ Create operation requires valid newStatus');
+        return {};
+      }
+      if (isValidStatus(newStatus)) {
         updates[newStatus] = currentStats[newStatus] + 1;
         updates.all = currentStats.all + 1;
         updates.total_projects = currentStats.total_projects + 1;
+      } else {
+        logger.error('❌ Invalid status provided for create operation:', newStatus);
+        return {};
       }
       break;
 
