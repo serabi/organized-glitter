@@ -37,6 +37,7 @@ import { useSaveNavigationContext, DashboardFilterContext } from '@/hooks/mutati
 import { createLogger } from '@/utils/secureLogger';
 import { useToast } from '@/hooks/use-toast';
 import { Project, ProjectFilterStatus, Tag } from '@/types/project';
+import { useRealtimeProjectSync } from '@/hooks/useRealtimeProjectSync';
 import {
   DashboardValidSortField,
   DATE_SORT_FIELDS,
@@ -210,6 +211,9 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
   const saveNavigationContext = useSaveNavigationContext();
   const searchInputRef = useRef<HTMLInputElement>(null);
   
+  // Enable real-time project synchronization
+  const { isConnected: isRealtimeConnected } = useRealtimeProjectSync();
+  
   // Recently edited project state (moved from Dashboard for context stability)
   const [recentlyEditedProjectId, setRecentlyEditedProjectId] = useState<string | null>(null);
   
@@ -285,17 +289,17 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
   // Available options
   const { years: yearFinishedOptions } = useAvailableYearsAsStrings({ userId: user?.id });
   
-  // Extract projects data
+  // Extract projects data - rely entirely on server-side filtering
   const projects = useMemo(() => {
     const raw = projectsData?.projects || [];
-    // Strict client-side filter for Purchased section
-    if (filters.activeStatus === 'purchased') {
-      // eslint-disable-next-line no-console
-      console.debug('[Debug] Client-side strict filter for Purchased section applied');
-      return raw.filter(p => p.status === 'purchased');
-    }
+    logger.debug('📊 Projects loaded from server:', { 
+      count: raw.length, 
+      activeStatus: filters.activeStatus,
+      serverFiltered: true,
+      realtimeConnected: isRealtimeConnected,
+    });
     return raw;
-  }, [projectsData?.projects, filters.activeStatus]);
+  }, [projectsData?.projects, filters.activeStatus, isRealtimeConnected]);
   const totalItems = projects.length;
   const totalPages = projectsData?.totalPages || 0;
   const errorProjects = queryError ? (queryError as Error) : null;

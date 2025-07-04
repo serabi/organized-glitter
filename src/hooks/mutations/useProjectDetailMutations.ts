@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { createLogger } from '@/utils/secureLogger';
 import { DashboardStatsService } from '@/services/pocketbase/dashboardStatsService';
+import { dashboardSyncMonitor } from '@/utils/dashboardSyncMonitor';
 
 const logger = createLogger('useProjectDetailMutations');
 
@@ -153,64 +154,177 @@ export const useUpdateProjectStatusMutation = () => {
 
       return await pb.collection(Collections.Projects).update(projectId, updateData);
     },
-    onSuccess: async (_, { projectId, status }) => {
-      // Optimistic cache updates for immediate UI feedback
+    onMutate: async ({ projectId, status }) => {
+      const endTiming = dashboardSyncMonitor.startTiming('status-update-mutation');
+      
+      // Record the mutation start
+      dashboardSyncMonitor.recordEvent({
+        type: 'status_update',
+        projectId,
+        status,
+        userId: user?.id,
+        success: true,
+        metadata: { phase: 'onMutate' },
+      });
+
+      // Cancel any outgoing refetches to prevent race conditions
       if (user?.id) {
-        notifyManager.batch(() => {
-          // Optimistically update project status in advanced projects list
-          queryClient.setQueryData(queryKeys.projects.advanced(user.id), (oldData: unknown) => {
-            if (!oldData || typeof oldData !== 'object' || !('projects' in oldData)) return oldData;
-            const data = oldData as { projects: Array<{ id: string; [key: string]: unknown }> };
-            return {
-              ...data,
-              projects: data.projects.map(p => (p.id === projectId ? { ...p, status } : p)),
-            };
-          });
+        await Promise.all([
+          queryClient.cancelQueries({ queryKey: queryKeys.projects.detail(projectId) }),
+          queryClient.cancelQueries({ queryKey: queryKeys.projects.advanced(user.id) }),
+          queryClient.cancelQueries({ queryKey: queryKeys.projects.lists() }),
+          queryClient.cancelQueries({ queryKey: queryKeys.stats.overview(user.id) }),
+        ]);
+      }
 
-          // Optimistically update any paginated project lists
-          queryClient.setQueriesData(
-            { queryKey: queryKeys.projects.lists(), exact: false },
-            (oldData: unknown) => {
-              if (!oldData || typeof oldData !== 'object' || !('projects' in oldData))
-                return oldData;
-              const data = oldData as { projects: Array<{ id: string; [key: string]: unknown }> };
-              return {
-                ...data,
-                projects: data.projects.map(p => (p.id === projectId ? { ...p, status } : p)),
-              };
-            }
-          );
+      // Snapshot the previous values for rollback
+      const previousProjectDetail = queryClient.getQueryData(queryKeys.projects.detail(projectId));
+      const previousAdvancedProjects = user?.id 
+        ? queryClient.getQueryData(queryKeys.projects.advanced(user.id))
+        : undefined;
+      const previousDashboardStats = user?.id 
+        ? queryClient.getQueryData([...queryKeys.stats.overview(user.id), 'dashboard', new Date().getFullYear()])
+        : undefined;
 
-          // Update project detail cache
-          queryClient.setQueryData(queryKeys.projects.detail(projectId), (oldData: unknown) => {
-            if (!oldData || typeof oldData !== 'object') return oldData;
-            return { ...(oldData as Record<string, unknown>), status };
-          });
+      // Return context object for rollback
+      return {
+        previousProjectDetail,
+        previousAdvancedProjects, 
+        previousDashboardStats,
+        projectId,
+        status,
+        endTiming,
+      };
+    },
+    onError: (err, variables, context) => {
+      // Record the error
+      dashboardSyncMonitor.recordEvent({
+        type: 'status_update',
+        projectId: variables.projectId,
+        status: variables.status,
+        userId: user?.id,
+        success: false,
+        error: err instanceof Error ? err.message : 'Unknown error',
+        metadata: { phase: 'onError' },
+      });
 
-          // Mark dashboard stats as stale without immediate refetch
-          // CRITICAL FIX: Include all cache key segments for proper invalidation
+      // Roll back the optimistic updates using snapshots
+      if (context) {
+        if (context.previousProjectDetail) {
+          queryClient.setQueryData(queryKeys.projects.detail(context.projectId), context.previousProjectDetail);
+        }
+        if (context.previousAdvancedProjects && user?.id) {
+          queryClient.setQueryData(queryKeys.projects.advanced(user.id), context.previousAdvancedProjects);
+        }
+        if (context.previousDashboardStats && user?.id) {
           const currentYear = new Date().getFullYear();
-          const statsQueryKey = [...queryKeys.stats.overview(user.id), 'dashboard', currentYear];
-          
-          logger.debug('🔄 Invalidating dashboard stats cache for status update:', {
-            projectId,
-            newStatus: status,
-            userId: user.id,
-            statsQueryKey,
-            cacheKeyBefore: queryKeys.stats.overview(user.id)
-          });
-          
-          queryClient.invalidateQueries({
-            queryKey: statsQueryKey,
-            refetchType: 'none',
-          });
-          
-          // Also invalidate the broader stats to catch any other year queries
-          queryClient.invalidateQueries({
-            queryKey: queryKeys.stats.overview(user.id),
-            refetchType: 'none',
-          });
+          queryClient.setQueryData([...queryKeys.stats.overview(user.id), 'dashboard', currentYear], context.previousDashboardStats);
+        }
+        
+        // End timing
+        if (context.endTiming) {
+          context.endTiming();
+        }
+      }
+      
+      handleMutationError(err, 'update project status', toast);
+    },
+    onSuccess: async (_, { projectId, status }, context) => {
+      const endInvalidation = dashboardSyncMonitor.startTiming('cache-invalidation');
+      const endStatsUpdate = dashboardSyncMonitor.startTiming('stats-update');
+      
+      // Record successful mutation
+      dashboardSyncMonitor.recordEvent({
+        type: 'status_update',
+        projectId,
+        status,
+        userId: user?.id,
+        success: true,
+        metadata: { phase: 'onSuccess' },
+      });
+
+      // Synchronous cache updates for immediate UI feedback
+      if (user?.id) {
+        const currentYear = new Date().getFullYear();
+        const statsQueryKey = [...queryKeys.stats.overview(user.id), 'dashboard', currentYear];
+        
+        logger.debug('🔄 Processing successful status update cache invalidation:', {
+          projectId,
+          newStatus: status,
+          userId: user.id,
+          statsQueryKey,
         });
+        
+        // Use atomic batch operations for consistency
+        await notifyManager.batch(async () => {
+          // Immediately invalidate and refetch all affected caches
+          await Promise.all([
+            // Invalidate project caches
+            queryClient.invalidateQueries({
+              queryKey: queryKeys.projects.detail(projectId),
+              exact: true,
+            }),
+            queryClient.invalidateQueries({
+              queryKey: queryKeys.projects.advanced(user.id),
+              exact: true,
+            }),
+            queryClient.invalidateQueries({
+              queryKey: queryKeys.projects.lists(),
+              exact: false,
+              refetchType: 'active',
+            }),
+            // Invalidate dashboard stats with exact key structure
+            queryClient.invalidateQueries({
+              queryKey: statsQueryKey,
+              exact: true,
+            }),
+            // Also invalidate broader stats for other years
+            queryClient.invalidateQueries({
+              queryKey: queryKeys.stats.overview(user.id),
+              exact: false,
+            }),
+          ]);
+          
+          endInvalidation();
+          
+          // Synchronously update dashboard stats cache
+          try {
+            await DashboardStatsService.updateCacheAfterProjectChange(user.id, currentYear);
+            endStatsUpdate();
+            logger.info('✅ Dashboard stats cache updated successfully');
+            
+            dashboardSyncMonitor.recordEvent({
+              type: 'stats_update',
+              projectId,
+              userId: user.id,
+              success: true,
+              metadata: { currentYear },
+            });
+          } catch (error) {
+            endStatsUpdate();
+            logger.error('❌ Dashboard stats cache update failed:', error);
+            
+            dashboardSyncMonitor.recordEvent({
+              type: 'stats_update',
+              projectId,
+              userId: user.id,
+              success: false,
+              error: error instanceof Error ? error.message : 'Unknown error',
+              metadata: { currentYear },
+            });
+            
+            // Force invalidation as fallback
+            await queryClient.invalidateQueries({ 
+              queryKey: queryKeys.stats.overview(user.id),
+              refetchType: 'active',
+            });
+          }
+        });
+        
+        // End timing from context
+        if (context?.endTiming) {
+          context.endTiming();
+        }
       }
 
       toast({
@@ -220,19 +334,6 @@ export const useUpdateProjectStatusMutation = () => {
       });
 
       logger.info('Project status updated successfully:', { projectId, status });
-
-      // Background stats update
-      startTransition(() => {
-        if (user?.id) {
-          DashboardStatsService.updateCacheAfterProjectChange(user.id).catch(error => {
-            logger.error('Background stats cache update failed:', error);
-            queryClient.invalidateQueries({ queryKey: queryKeys.stats.overview(user.id) });
-          });
-        }
-      });
-    },
-    onError: error => {
-      handleMutationError(error, 'update project status', toast);
     },
   });
 };
@@ -526,21 +627,31 @@ export const useArchiveProjectMutation = () => {
         });
       }
 
+      // Synchronously update dashboard stats before navigation
+      if (user?.id) {
+        const currentYear = new Date().getFullYear();
+        try {
+          await DashboardStatsService.updateCacheAfterProjectChange(user.id, currentYear);
+          logger.info('✅ Dashboard stats cache updated successfully before navigation');
+          
+          // Invalidate with exact key structure to match useDashboardStats
+          await queryClient.invalidateQueries({
+            queryKey: [...queryKeys.stats.overview(user.id), 'dashboard', currentYear],
+            exact: true,
+          });
+        } catch (error) {
+          logger.error('❌ Dashboard stats cache update failed:', error);
+          // Force invalidation as fallback
+          await queryClient.invalidateQueries({ 
+            queryKey: queryKeys.stats.overview(user.id),
+            refetchType: 'active',
+          });
+        }
+      }
+
       // Navigate using React Router for consistent routing
       logger.info('🚀 Navigating to dashboard');
       navigate('/dashboard', { replace: true });
-
-      // Defer non-critical stats updates to background
-      startTransition(() => {
-        if (user?.id) {
-          DashboardStatsService.updateCacheAfterProjectChange(user.id)
-            .then(() => logger.info('Background stats cache update completed'))
-            .catch(error => {
-              logger.error('Background stats cache update failed:', error);
-              queryClient.invalidateQueries({ queryKey: queryKeys.stats.overview(user.id) });
-            });
-        }
-      });
     },
     onError: error => {
       handleMutationError(error, 'archive project', toast);
@@ -697,25 +808,31 @@ export const useDeleteProjectMutation = () => {
         });
       }
 
+      // Synchronously update dashboard stats before navigation
+      if (user?.id) {
+        const currentYear = new Date().getFullYear();
+        try {
+          await DashboardStatsService.updateCacheAfterProjectChange(user.id, currentYear);
+          logger.info('✅ Dashboard stats cache updated successfully before navigation');
+          
+          // Invalidate with exact key structure to match useDashboardStats
+          await queryClient.invalidateQueries({
+            queryKey: [...queryKeys.stats.overview(user.id), 'dashboard', currentYear],
+            exact: true,
+          });
+        } catch (error) {
+          logger.error('❌ Dashboard stats cache update failed:', error);
+          // Force invalidation as fallback
+          await queryClient.invalidateQueries({ 
+            queryKey: queryKeys.stats.overview(user.id),
+            refetchType: 'active',
+          });
+        }
+      }
+
       // Navigate using React Router for consistent routing
       logger.info('🚀 Navigating to dashboard');
       navigate('/dashboard', { replace: true });
-
-      // Defer non-critical stats updates to background using startTransition
-      startTransition(() => {
-        if (user?.id) {
-          // Background stats cache update - no longer blocks UI
-          DashboardStatsService.updateCacheAfterProjectChange(user.id)
-            .then(() => {
-              logger.info('Background stats cache update completed');
-            })
-            .catch(error => {
-              logger.error('Background stats cache update failed:', error);
-              // Fallback: just invalidate the cache to refetch on next access
-              queryClient.invalidateQueries({ queryKey: queryKeys.stats.overview(user.id) });
-            });
-        }
-      });
     },
     onError: error => {
       handleMutationError(error, 'delete project', toast);
