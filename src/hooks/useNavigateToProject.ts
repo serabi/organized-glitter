@@ -84,9 +84,11 @@ export const useNavigateToProjectEdit = () => {
 
   return useCallback(
     (projectId: string, options: NavigateToProjectEditOptions = {}) => {
-      logger.debug('Navigating to project edit', { projectId });
+      const { replace = false, state } = options;
 
-      navigate(`/projects/${projectId}/edit`);
+      logger.debug('Navigating to project edit', { projectId, replace, state });
+
+      navigate(`/projects/${projectId}/edit`, { replace, state });
     },
     [navigate]
   );

@@ -43,6 +43,7 @@ import ResponsiveTabText, {
 } from '@/components/ui/responsive-tab-text';
 import { ProjectFilterStatus } from '@/types/project';
 import { useDashboardFilters, CountsForTabsType } from '@/contexts/DashboardFiltersContext';
+import { createLogger } from '@/utils/secureLogger';
 
 // Tab configuration for dynamic rendering
 interface TabConfig {
@@ -103,11 +104,52 @@ const TAB_CONFIG: TabConfig[] = [
   },
 ];
 
+const logger = createLogger('StatusTabs');
+
+// Valid ProjectFilterStatus values for type validation
+const VALID_FILTER_STATUSES: readonly ProjectFilterStatus[] = [
+  'all',
+  'wishlist', 
+  'purchased',
+  'stash',
+  'progress',
+  'completed',
+  'destashed',
+  'archived',
+] as const;
+
+// Type guard to validate ProjectFilterStatus
+const isValidProjectFilterStatus = (value: string): value is ProjectFilterStatus => {
+  return VALID_FILTER_STATUSES.includes(value as ProjectFilterStatus);
+};
+
 const StatusTabsComponent = () => {
   // Removed unused props
   const { getCountsForTabs, filters, updateStatus } = useDashboardFilters();
   const activeStatus = filters.activeStatus;
-  const counts = getCountsForTabs();
+  
+  // Fallback counts object with all required properties
+  const fallbackCounts: CountsForTabsType = {
+    all: 0,
+    wishlist: 0,
+    purchased: 0,
+    stash: 0,
+    progress: 0,
+    completed: 0,
+    destashed: 0,
+    archived: 0,
+  };
+
+  // Get counts with error handling
+  const counts = (() => {
+    try {
+      const result = getCountsForTabs();
+      return result || fallbackCounts;
+    } catch (error) {
+      logger.error('Error getting counts for tabs:', error);
+      return fallbackCounts;
+    }
+  })();
   const { width } = useWindowDimensions();
 
   // Responsive layout logic
@@ -144,7 +186,13 @@ const StatusTabsComponent = () => {
       value={activeStatus}
       defaultValue={activeStatus}
       className="w-full"
-      onValueChange={value => updateStatus(value as ProjectFilterStatus)}
+      onValueChange={value => {
+        if (isValidProjectFilterStatus(value)) {
+          updateStatus(value);
+        } else {
+          logger.error('Invalid filter status value received:', { value, validValues: VALID_FILTER_STATUSES });
+        }
+      }}
     >
       <TabsList
         className={`h-auto w-full rounded-lg border border-border/50 bg-card/50 p-2 shadow-sm backdrop-blur-sm ${
