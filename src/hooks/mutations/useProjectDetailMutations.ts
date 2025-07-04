@@ -245,10 +245,9 @@ export const useUpdateProjectStatusMutation = () => {
               exact: true,
               refetchType: 'active',
             }),
-            // Invalidate projects list with immediate active refetch
+            // Invalidate all project list queries (dashboard + advanced) using prefix matching
             queryClient.invalidateQueries({
-              queryKey: queryKeys.projects.advanced(user.id),
-              exact: true,
+              queryKey: queryKeys.projects.lists(),
               refetchType: 'active',
             }),
             // Invalidate dashboard stats with immediate active refetch for instant tab updates
