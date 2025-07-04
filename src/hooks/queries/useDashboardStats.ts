@@ -43,7 +43,7 @@ async function calculateDashboardStats(userId: string, year: number): Promise<Da
   const yearEnd = `${year + 1}-01-01`;
 
   logger.debug(
-    `Calculating dashboard stats for user ${userId}, year ${year} using count-based queries`
+    `🔍 Starting dashboard stats calculation for user ${userId}, year ${year} using count-based queries`
   );
 
   try {
@@ -179,6 +179,7 @@ async function calculateDashboardStats(userId: string, year: number): Promise<Da
 
     for (const { status, count } of statusCounts) {
       statusBreakdown[status as keyof StatusBreakdown] = count;
+      logger.debug(`📊 Status count for ${status}: ${count}`);
     }
 
     // Calculate total diamonds from completed projects this year
@@ -214,11 +215,12 @@ async function calculateDashboardStats(userId: string, year: number): Promise<Da
       available_years: availableYears,
     };
 
-    logger.debug('Dashboard stats calculated using count-based queries:', {
+    logger.debug('📈 Dashboard stats calculated using count-based queries:', {
       ...stats,
       performance: 'ultra-fast count queries + targeted data fetching',
       statusQueryCount: statusCounts.length,
       totalDataTransfer: `${completedProjectsThisYear.length} + ${projectsWithDates.length} records`,
+      statusBreakdownDetails: statusBreakdown,
     });
 
     return stats;

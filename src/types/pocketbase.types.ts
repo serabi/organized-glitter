@@ -20,6 +20,7 @@ export enum Collections {
 	RandomizerSpins = "randomizer_spins",
 	Tags = "tags",
 	UserDashboardSettings = "user_dashboard_settings",
+	UserDashboardStats = "user_dashboard_stats",
 	UserYearlyStats = "user_yearly_stats",
 	Users = "users",
 }
@@ -216,6 +217,23 @@ export type UserDashboardSettingsRecord<Tnavigation_context = unknown> = {
 	user: RecordIdString
 }
 
+export type UserDashboardStatsRecord = {
+	all: number
+	archived: number
+	completed: number
+	created?: IsoDateString
+	destashed: number
+	id: string
+	last_updated: IsoDateString
+	progress: number
+	purchased: number
+	stash: number
+	total_projects: number
+	updated?: IsoDateString
+	user: RecordIdString
+	wishlist: number
+}
+
 export enum UserYearlyStatsStatsTypeOptions {
 	"yearly" = "yearly",
 }
@@ -267,6 +285,7 @@ export type ProjectsResponse<Texpand = unknown> = Required<ProjectsRecord> & Bas
 export type RandomizerSpinsResponse<Tselected_projects = unknown, Texpand = unknown> = Required<RandomizerSpinsRecord<Tselected_projects>> & BaseSystemFields<Texpand>
 export type TagsResponse<Texpand = unknown> = Required<TagsRecord> & BaseSystemFields<Texpand>
 export type UserDashboardSettingsResponse<Tnavigation_context = unknown, Texpand = unknown> = Required<UserDashboardSettingsRecord<Tnavigation_context>> & BaseSystemFields<Texpand>
+export type UserDashboardStatsResponse<Texpand = unknown> = Required<UserDashboardStatsRecord> & BaseSystemFields<Texpand>
 export type UserYearlyStatsResponse<Tstatus_breakdown = unknown, Texpand = unknown> = Required<UserYearlyStatsRecord<Tstatus_breakdown>> & BaseSystemFields<Texpand>
 export type UsersResponse<Texpand = unknown> = Required<UsersRecord> & AuthSystemFields<Texpand>
 
@@ -287,6 +306,7 @@ export type CollectionRecords = {
 	randomizer_spins: RandomizerSpinsRecord
 	tags: TagsRecord
 	user_dashboard_settings: UserDashboardSettingsRecord
+	user_dashboard_stats: UserDashboardStatsRecord
 	user_yearly_stats: UserYearlyStatsRecord
 	users: UsersRecord
 }
@@ -306,6 +326,7 @@ export type CollectionResponses = {
 	randomizer_spins: RandomizerSpinsResponse
 	tags: TagsResponse
 	user_dashboard_settings: UserDashboardSettingsResponse
+	user_dashboard_stats: UserDashboardStatsResponse
 	user_yearly_stats: UserYearlyStatsResponse
 	users: UsersResponse
 }

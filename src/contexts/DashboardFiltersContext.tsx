@@ -32,6 +32,7 @@ import useDebounce from '@/hooks/useDebounce';
 import { useMetadata } from '@/contexts/MetadataContext';
 import { useProjects, ServerFilters } from '@/hooks/queries/useProjects';
 import { useDashboardStats } from '@/hooks/queries/useDashboardStats';
+import { useDashboardStatsOptimized } from '@/hooks/queries/useDashboardStatsOptimized';
 import { useAvailableYearsOptimized } from '@/hooks/queries/useDashboardStats';
 import {
   useSaveNavigationContext,
@@ -252,6 +253,59 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
   const debouncedSearchTerm = useDebounce(filters.searchTerm, 300);
   const isSearchPending = filters.searchTerm !== debouncedSearchTerm;
 
+  // Debounced filter saving for immediate persistence
+  const debouncedFilters = useDebounce(filters, 300);
+
+  // Save filters to database when they change (debounced)
+  useEffect(() => {
+    if (!isInitialized || !user?.id) return;
+
+    const saveFilters = async () => {
+      logger.debug('💾 Auto-saving filter changes:', {
+        activeStatus: debouncedFilters.activeStatus,
+        searchTerm: debouncedFilters.searchTerm,
+      });
+
+      const navigationContext: DashboardFilterContext = {
+        filters: {
+          status: debouncedFilters.activeStatus,
+          company: debouncedFilters.selectedCompany,
+          artist: debouncedFilters.selectedArtist,
+          drillShape: debouncedFilters.selectedDrillShape,
+          yearFinished: debouncedFilters.selectedYearFinished,
+          includeMiniKits: debouncedFilters.includeMiniKits,
+          searchTerm: debouncedFilters.searchTerm,
+          selectedTags: debouncedFilters.selectedTags,
+        },
+        sortField: debouncedFilters.sortField,
+        sortDirection: debouncedFilters.sortDirection,
+        currentPage: debouncedFilters.currentPage,
+        pageSize: debouncedFilters.pageSize,
+        preservationContext: {
+          scrollPosition: window.scrollY || 0,
+          timestamp: Date.now(),
+        },
+      };
+
+      saveNavigationContext.mutate(
+        {
+          userId: user.id,
+          navigationContext,
+        },
+        {
+          onSuccess: () => {
+            logger.debug('✅ Filter changes auto-saved');
+          },
+          onError: error => {
+            logger.error('❌ Failed to auto-save filter changes:', error);
+          },
+        }
+      );
+    };
+
+    saveFilters();
+  }, [debouncedFilters, isInitialized, user?.id, saveNavigationContext]);
+
   // Server filters for useProjects
   const serverFilters = useMemo(
     (): ServerFilters => ({
@@ -291,8 +345,19 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
     pageSize: filters.pageSize,
   });
 
-  // Dashboard stats
-  const { stats: dashboardStats } = useDashboardStats();
+  // Dashboard stats - try optimized first, fallback to legacy
+  const optimizedStats = useDashboardStatsOptimized();
+  const legacyStats = useDashboardStats();
+
+  // Use optimized stats if available, otherwise fallback to legacy
+  const dashboardStats = optimizedStats.needsFallback ? legacyStats.stats : optimizedStats.stats;
+
+  logger.debug('📊 Dashboard stats source:', {
+    usingOptimized: !optimizedStats.needsFallback,
+    hasOptimizedData: !!optimizedStats.data,
+    hasLegacyData: !!legacyStats.stats,
+    optimizedError: optimizedStats.error?.message,
+  });
 
   // Available options - get years from dashboard stats to eliminate redundant query
   const { years: yearFinishedOptionsNumbers } = useAvailableYearsOptimized(user?.id);
@@ -435,28 +500,48 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
 
         if (record.navigation_context) {
           const savedContext = record.navigation_context as Record<string, unknown>;
-          const rawSavedFilters = {
-            activeStatus: savedContext.filters?.status,
-            selectedCompany: savedContext.filters?.company,
-            selectedArtist: savedContext.filters?.artist,
-            selectedDrillShape: savedContext.filters?.drillShape,
-            selectedYearFinished: savedContext.filters?.yearFinished,
-            includeMiniKits: savedContext.filters?.includeMiniKits,
-            searchTerm: savedContext.filters?.searchTerm,
-            selectedTags: savedContext.filters?.selectedTags,
-            sortField: savedContext.sortField,
-            sortDirection: savedContext.sortDirection,
-            currentPage: savedContext.currentPage,
-            pageSize: savedContext.pageSize,
-            viewType: 'grid', // Always default to grid
-          };
+          const savedTimestamp = savedContext.preservationContext?.timestamp;
+          const currentTime = Date.now();
+          const timeSinceLastVisit = savedTimestamp ? currentTime - savedTimestamp : Infinity;
+          const twentyFourHours = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
-          // Validate and sanitize the loaded state
-          initialFilters = validateAndSanitizeFilters(rawSavedFilters);
-          logger.info('Restored filters from database', {
-            userId: user.id,
-            initialFilters,
+          logger.debug('🕒 Time-based navigation check:', {
+            savedTimestamp,
+            currentTime,
+            timeSinceLastVisit,
+            twentyFourHours,
+            shouldReset: timeSinceLastVisit > twentyFourHours,
           });
+
+          // Reset to "All" if more than 24 hours since last visit
+          if (timeSinceLastVisit > twentyFourHours) {
+            logger.info('⏰ Resetting to "All" - more than 24 hours since last visit');
+            initialFilters = getDefaultFilters(); // This defaults to 'all'
+          } else {
+            const rawSavedFilters = {
+              activeStatus: savedContext.filters?.status,
+              selectedCompany: savedContext.filters?.company,
+              selectedArtist: savedContext.filters?.artist,
+              selectedDrillShape: savedContext.filters?.drillShape,
+              selectedYearFinished: savedContext.filters?.yearFinished,
+              includeMiniKits: savedContext.filters?.includeMiniKits,
+              searchTerm: savedContext.filters?.searchTerm,
+              selectedTags: savedContext.filters?.selectedTags,
+              sortField: savedContext.sortField,
+              sortDirection: savedContext.sortDirection,
+              currentPage: savedContext.currentPage,
+              pageSize: savedContext.pageSize,
+              viewType: 'grid', // Always default to grid
+            };
+
+            // Validate and sanitize the loaded state
+            initialFilters = validateAndSanitizeFilters(rawSavedFilters);
+            logger.info('✅ Restored filters from database (recent visit)', {
+              userId: user.id,
+              initialFilters,
+              timeSinceLastVisit: `${Math.round(timeSinceLastVisit / 1000 / 60)} minutes`,
+            });
+          }
         }
       } catch (error) {
         if (error?.status !== 404) {
@@ -635,6 +720,13 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
 
   const getCountsForTabs = useCallback((): CountsForTabsType => {
     const statusBreakdown = dashboardStats?.status_breakdown;
+
+    logger.debug('🔢 Getting counts for tabs:', {
+      hasDashboardStats: !!dashboardStats,
+      hasStatusBreakdown: !!statusBreakdown,
+      statusBreakdown,
+    });
+
     const totalProjects = statusBreakdown
       ? Object.values(statusBreakdown).reduce(
           (sum: number, count: unknown) => sum + (typeof count === 'number' ? count : 0),
@@ -642,7 +734,7 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
         )
       : 0;
 
-    return {
+    const counts = {
       all: totalProjects,
       wishlist: typeof statusBreakdown?.wishlist === 'number' ? statusBreakdown.wishlist : 0,
       purchased: typeof statusBreakdown?.purchased === 'number' ? statusBreakdown.purchased : 0,
@@ -652,6 +744,9 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       destashed: typeof statusBreakdown?.destashed === 'number' ? statusBreakdown.destashed : 0,
       archived: typeof statusBreakdown?.archived === 'number' ? statusBreakdown.archived : 0,
     };
+
+    logger.debug('🎯 Final tab counts:', counts);
+    return counts;
   }, [dashboardStats]);
 
   const dynamicSeparatorProps = useMemo((): DynamicSeparatorPropsType => {
