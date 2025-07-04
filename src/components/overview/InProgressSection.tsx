@@ -1,12 +1,15 @@
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, memo } from 'react';
+import { createLogger } from '@/utils/secureLogger';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar } from 'lucide-react';
 import { ProjectType } from '@/types/project';
 import ProjectCardLite from '@/components/dashboard/ProjectCardLite';
 import { queryKeys } from '@/hooks/queries/queryKeys';
+
+const logger = createLogger('InProgressSection');
 
 interface InProgressSectionProps {
   inProgressProjects: ProjectType[];
@@ -84,7 +87,14 @@ const InProgressSectionComponent = ({ inProgressProjects, isLoading }: InProgres
             <div className="mt-6 text-center">
               <Button
                 variant="outline"
-                onClick={() => navigate('/dashboard?status=in-progress')}
+                onClick={() => {
+                  logger.info('🚀 Navigating to In Progress tab from overview', {
+                    targetUrl: '/dashboard?status=progress',
+                    projectCount: inProgressProjects.length,
+                    timestamp: new Date().toISOString(),
+                  });
+                  navigate('/dashboard?status=progress');
+                }}
                 onMouseEnter={handleDashboardHover}
                 onFocus={handleDashboardHover}
               >

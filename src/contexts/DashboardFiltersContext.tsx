@@ -550,15 +550,36 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       }
 
       // 🚀 CRITICAL FIX: Process URL parameters IMMEDIATELY during initialization
+      // URL parameters have HIGHEST PRIORITY and should override:
+      // 1. Default filters
+      // 2. Stored navigation context
+      // 3. Time-based resets (24+ hour logic)
       const urlParams = new URLSearchParams(location.search);
       if (urlParams.toString().length > 0) {
-        logger.info('🔥 Processing URL parameters during initialization', {
+        logger.info('🔥 Processing URL parameters during initialization - HIGHEST PRIORITY', {
           search: location.search,
           beforeFilters: initialFilters,
+          willOverrideTimeBasedReset: true,
         });
 
         // Status filter - this is the key fix for the bug
         const urlStatus = urlParams.get('status');
+        logger.debug('🔍 Processing URL status parameter:', {
+          urlStatus,
+          currentActiveStatus: initialFilters.activeStatus,
+          isValidStatus:
+            urlStatus &&
+            [
+              'wishlist',
+              'purchased',
+              'stash',
+              'progress',
+              'completed',
+              'destashed',
+              'archived',
+            ].includes(urlStatus),
+        });
+
         if (
           urlStatus &&
           [
@@ -571,10 +592,26 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
             'archived',
           ].includes(urlStatus)
         ) {
+          const previousStatus = initialFilters.activeStatus;
           initialFilters.activeStatus = urlStatus as ProjectFilterStatus;
-          logger.info('🎯 URL status applied during initialization', {
+          logger.info('🎯 URL status applied during initialization - OVERRIDING previous value', {
             urlStatus,
+            previousStatus,
             finalStatus: initialFilters.activeStatus,
+            wasTimeBasedReset: previousStatus === 'all',
+          });
+        } else if (urlStatus) {
+          logger.warn('❌ Invalid URL status parameter ignored:', {
+            urlStatus,
+            validOptions: [
+              'wishlist',
+              'purchased',
+              'stash',
+              'progress',
+              'completed',
+              'destashed',
+              'archived',
+            ],
           });
         }
 
