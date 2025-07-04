@@ -279,7 +279,8 @@ export async function validateAndFixStats(userId: string): Promise<boolean> {
     const discrepancies: Record<string, { expected: number; actual: number }> = {};
 
     for (const [key, actualCount] of Object.entries(actualCounts)) {
-      const storedCount = statsRecord[key as keyof UserDashboardStatsRecord] as number;
+      const storedValue = statsRecord[key as keyof UserDashboardStatsRecord];
+      const storedCount = typeof storedValue === 'number' ? storedValue : 0;
       if (storedCount !== actualCount) {
         hasDiscrepancies = true;
         discrepancies[key] = { expected: actualCount, actual: storedCount };
