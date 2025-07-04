@@ -25,6 +25,8 @@ const ProjectStatus = ({ status, onStatusChange }: ProjectStatusProps) => {
           <SelectItem value="stash">In Stash</SelectItem>
           <SelectItem value="progress">In Progress</SelectItem>
           <SelectItem value="completed">Completed</SelectItem>
+          <SelectItem value="archived">Archived</SelectItem>
+          <SelectItem value="destashed">Destashed</SelectItem>
         </SelectContent>
       </Select>
     </FormField>
