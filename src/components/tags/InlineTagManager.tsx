@@ -15,6 +15,7 @@ import { TagService } from '@/lib/tags';
 import { Tag } from '@/types/tag';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { secureLogger } from '@/utils/secureLogger';
 
 interface InlineTagManagerProps {
   projectId?: string | null | undefined;
@@ -57,7 +58,7 @@ export function InlineTagManager({
       }
     } catch (error) {
       // Handle unexpected errors (network issues, etc.)
-      console.error('Error loading available tags:', error);
+      secureLogger.error('Error loading available tags:', { error });
       toast({
         title: 'Error',
         description: 'Failed to load tags. Please try again.',
@@ -138,7 +139,7 @@ export function InlineTagManager({
         }
       } catch (error) {
         // Handle unexpected errors (network issues, service exceptions, etc.)
-        console.error('Error adding tag to project:', error);
+        secureLogger.error('Error adding tag to project:', { error });
         // Revert optimistic update if service call threw an exception
         setProjectTags(originalTagsSnapshot);
         // onTagsChange for revert will be called by the useEffect hook
@@ -260,7 +261,7 @@ export function InlineTagManager({
           // Tag synchronization on save provides additional safety
         }
       } catch (error) {
-        console.error('Error removing tag from project:', error);
+        secureLogger.error('Error removing tag from project:', { error });
         // Revert optimistic update if service call threw an exception
         setProjectTags(originalTagsSnapshot);
         // onTagsChange for revert will be called by the useEffect hook

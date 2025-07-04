@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { ProjectType } from '@/types/project';
+import { secureLogger } from '@/utils/secureLogger';
 
 interface OverviewStats {
   completedCount: number;
@@ -102,7 +103,7 @@ export function useOverviewStats(projects: ProjectType[]) {
         inProgressProjects: (inProgressProjects || []).slice(0, 3), // Safely limit to 3 projects
       };
     } catch (error) {
-      console.error('Error calculating stats:', error);
+      secureLogger.error('Error calculating stats:', error);
       return { stats: defaultStats, inProgressProjects: [] };
     }
   }, [projects]); // Only depend on projects array

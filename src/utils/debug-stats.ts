@@ -146,11 +146,11 @@ export async function forceRecalculateStats(userId: string, year = 2025): Promis
  * Compare cached vs real-time stats
  */
 export async function compareStats(userId: string, year = 2025) {
-  logger.log(`🔍 Comparing cached vs real-time stats for user ${userId}`);
+  secureLogger.log(`🔍 Comparing cached vs real-time stats for user ${userId}`);
 
   // Get current stats (may be cached)
   const currentStats = await DashboardStatsService.getYearlyStats(userId, year);
-  logger.log(
+  secureLogger.log(
     '📋 Current stats (may be cached):',
     currentStats.stats,
     'Source:',
@@ -160,7 +160,7 @@ export async function compareStats(userId: string, year = 2025) {
   // Force fresh calculation
   await DashboardStatsService.invalidateCache(userId, year);
   const freshStats = await DashboardStatsService.getYearlyStats(userId, year);
-  logger.log('🆕 Fresh stats:', freshStats.stats, 'Source:', freshStats.source);
+  secureLogger.log('🆕 Fresh stats:', freshStats.stats, 'Source:', freshStats.source);
 
   // Compare
   const differences: Array<{
@@ -187,12 +187,12 @@ export async function compareStats(userId: string, year = 2025) {
   });
 
   if (differences.length > 0) {
-    logger.log('⚠️  Found differences:');
+    secureLogger.log('⚠️  Found differences:');
     differences.forEach(diff => {
-      logger.log(`  ${diff.field}: ${diff.cached} (cached) vs ${diff.fresh} (fresh)`);
+      secureLogger.log(`  ${diff.field}: ${diff.cached} (cached) vs ${diff.fresh} (fresh)`);
     });
   } else {
-    logger.log('✅ No differences found');
+    secureLogger.log('✅ No differences found');
   }
 
   return { currentStats, freshStats, differences };
@@ -204,35 +204,35 @@ export async function compareStats(userId: string, year = 2025) {
 export function showCacheMetrics(): void {
   const metrics = DashboardStatsService.getMetrics();
 
-  logger.log('📊 Dashboard Stats Cache Metrics:');
-  logger.log(`  Total Requests: ${metrics.totalRequests}`);
-  logger.log(`  Cache Hits: ${metrics.hits} (${(metrics.hitRate * 100).toFixed(1)}%)`);
-  logger.log(`  Cache Misses: ${metrics.misses}`);
-  logger.log(`  Errors: ${metrics.errors} (${(metrics.errorRate * 100).toFixed(1)}%)`);
-  logger.log(`  Background Refreshes: ${metrics.backgroundRefreshes}`);
-  logger.log(`  Pending Requests: ${metrics.pendingRequestsCount}`);
-  logger.log(`  Active Background Refreshes: ${metrics.backgroundRefreshesActive}`);
+  secureLogger.log('📊 Dashboard Stats Cache Metrics:');
+  secureLogger.log(`  Total Requests: ${metrics.totalRequests}`);
+  secureLogger.log(`  Cache Hits: ${metrics.hits} (${(metrics.hitRate * 100).toFixed(1)}%)`);
+  secureLogger.log(`  Cache Misses: ${metrics.misses}`);
+  secureLogger.log(`  Errors: ${metrics.errors} (${(metrics.errorRate * 100).toFixed(1)}%)`);
+  secureLogger.log(`  Background Refreshes: ${metrics.backgroundRefreshes}`);
+  secureLogger.log(`  Pending Requests: ${metrics.pendingRequestsCount}`);
+  secureLogger.log(`  Active Background Refreshes: ${metrics.backgroundRefreshesActive}`);
 }
 
 /**
  * Show detailed cache status for a user
  */
 export async function showCacheStatus(userId: string, year = 2025) {
-  logger.log(`🕰️  Cache status for user ${userId}, year ${year}:`);
+  secureLogger.log(`🕰️  Cache status for user ${userId}, year ${year}:`);
 
   const status = await DashboardStatsService.getCacheStatus(userId, year);
 
   if (!status.exists) {
-    logger.log('  ❌ No cache exists');
+    secureLogger.log('  ❌ No cache exists');
     return status;
   }
 
-  logger.log(`  ✅ Cache exists: ${status.fresh ? 'Fresh' : 'Stale'}`);
-  logger.log(`  🕐 Cached at: ${status.cached_at}`);
-  logger.log(`  ⏱️  Age: ${((status.age_ms || 0) / 1000 / 60).toFixed(1)} minutes`);
+  secureLogger.log(`  ✅ Cache exists: ${status.fresh ? 'Fresh' : 'Stale'}`);
+  secureLogger.log(`  🕐 Cached at: ${status.cached_at}`);
+  secureLogger.log(`  ⏱️  Age: ${((status.age_ms || 0) / 1000 / 60).toFixed(1)} minutes`);
 
   if (status.needsBackgroundRefresh) {
-    logger.log('  🔄 Scheduled for background refresh');
+    secureLogger.log('  🔄 Scheduled for background refresh');
   }
 
   return status;
@@ -243,7 +243,7 @@ export async function showCacheStatus(userId: string, year = 2025) {
  */
 export function resetCacheMetrics(): void {
   DashboardStatsService.resetMetrics();
-  logger.log('🔄 Cache metrics reset');
+  secureLogger.log('🔄 Cache metrics reset');
 }
 
 // Type for debug functions
@@ -279,17 +279,17 @@ export function enableDebugMode() {
       resetCacheMetrics,
     };
 
-    logger.log('🛠️  Debug mode enabled. Available functions:');
-    logger.log('  organizedGlitterDebug.debugUserStats("email") - Analyze user stats');
-    logger.log('  organizedGlitterDebug.forceRecalculateStats(userId) - Force recalculation');
-    logger.log('  organizedGlitterDebug.compareStats(userId) - Compare cached vs fresh');
-    logger.log('  organizedGlitterDebug.showCacheMetrics() - Display cache performance metrics');
-    logger.log('  organizedGlitterDebug.showCacheStatus(userId) - Show cache status for user');
-    logger.log('  organizedGlitterDebug.resetCacheMetrics() - Reset performance metrics');
-    logger.log('');
-    logger.log('📋 Quick start:');
-    logger.log('  const debug = organizedGlitterDebug;');
-    logger.log('  debug.debugUserStats("test@tonks.cloud").then(console.log);');
-    logger.log('  debug.showCacheMetrics(); // Show performance metrics');
+    secureLogger.log('🛠️  Debug mode enabled. Available functions:');
+    secureLogger.log('  organizedGlitterDebug.debugUserStats("email") - Analyze user stats');
+    secureLogger.log('  organizedGlitterDebug.forceRecalculateStats(userId) - Force recalculation');
+    secureLogger.log('  organizedGlitterDebug.compareStats(userId) - Compare cached vs fresh');
+    secureLogger.log('  organizedGlitterDebug.showCacheMetrics() - Display cache performance metrics');
+    secureLogger.log('  organizedGlitterDebug.showCacheStatus(userId) - Show cache status for user');
+    secureLogger.log('  organizedGlitterDebug.resetCacheMetrics() - Reset performance metrics');
+    secureLogger.log('');
+    secureLogger.log('📋 Quick start:');
+    secureLogger.log('  const debug = organizedGlitterDebug;');
+    secureLogger.log('  debug.debugUserStats("test@tonks.cloud").then(console.log);');
+    secureLogger.log('  debug.showCacheMetrics(); // Show performance metrics');
   }
 }

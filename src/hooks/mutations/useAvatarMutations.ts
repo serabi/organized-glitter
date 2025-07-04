@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { pb } from '@/lib/pocketbase';
 import { Collections } from '@/types/pocketbase.types';
 import { queryKeys } from '@/hooks/queries/queryKeys';
+import { secureLogger } from '@/utils/secureLogger';
 /**
  * Mutation hook for uploading a new avatar
  */
@@ -56,7 +57,7 @@ export const useUploadAvatarMutation = () => {
         URL.revokeObjectURL(context.optimisticAvatarUrl);
       }
 
-      console.error('Error uploading avatar:', error);
+      secureLogger.error('Error uploading avatar:', error);
     },
     onSettled: (_, __, { userId }, context) => {
       // Clean up optimistic URL
@@ -111,7 +112,7 @@ export const useRemoveAvatarMutation = () => {
         );
       }
 
-      console.error('Error removing avatar:', error);
+      secureLogger.error('Error removing avatar:', error);
     },
     onSettled: (_, __, { userId }) => {
       // Always refetch to ensure consistency

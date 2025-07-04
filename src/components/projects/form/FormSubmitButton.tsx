@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
+import { secureLogger } from '@/utils/secureLogger';
 
 interface FormSubmitButtonProps {
   isUploading: boolean;
@@ -15,7 +16,7 @@ const FormSubmitButton = ({
 }: FormSubmitButtonProps) => {
   // Debug log for isEdit value
   useEffect(() => {
-    console.log('FormSubmitButton - isEdit value:', isEdit);
+    secureLogger.debug('FormSubmitButton - isEdit value:', isEdit);
   }, [isEdit]);
 
   // Force it to be a boolean

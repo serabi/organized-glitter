@@ -5,6 +5,7 @@ import { queryKeys } from '../queries/queryKeys';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { requireAuthenticatedUser } from '@/utils/authGuards';
+import { secureLogger } from '@/utils/secureLogger';
 import { FilterBuilder } from '@/utils/filterBuilder';
 
 interface UpdateArtistData {
@@ -71,7 +72,7 @@ export function useUpdateArtist() {
       });
     },
     onError: (error: unknown) => {
-      console.error('Error updating artist:', error);
+      secureLogger.error('Error updating artist:', error);
 
       // Handle specific error cases
       const errorMessage = error instanceof Error ? error.message : String(error);

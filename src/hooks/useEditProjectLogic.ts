@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ProjectFormValues, ProjectType } from '@/types/project';
 import { useEditProject } from '@/hooks/useEditProject';
+import { secureLogger } from '@/utils/secureLogger';
 
 interface UseEditProjectLogicProps {
   projectId: string | undefined;
@@ -103,13 +104,13 @@ export const useEditProjectLogic = ({ projectId }: UseEditProjectLogicProps) => 
       // Call the original handleUpdateProject with success callback to reset form state
       await handleUpdateProject(dataToSubmit, {
         onSuccess: () => {
-          console.log('Resetting form dirty state after successful update');
+          secureLogger.debug('Resetting form dirty state after successful update');
           setIsDirty(false);
           setHasSelectedNewImage(false);
         },
       });
     } catch (error) {
-      console.error('Error submitting form:', error);
+      secureLogger.error('Error submitting form:', error);
       throw error;
     }
   };

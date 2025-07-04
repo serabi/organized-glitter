@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dialog';
 import { Plus, Loader2 } from 'lucide-react';
 import { useCreateCompany } from '@/hooks/mutations/useCreateCompany';
+import { secureLogger } from '@/utils/secureLogger';
 import FormField from './FormField';
 
 interface CompanySelectProps {
@@ -45,7 +46,7 @@ const CompanySelect = React.memo(
     // Memoize companies array to avoid unnecessary re-renders
     const normalizedCompanies = useMemo(() => {
       if (!Array.isArray(companies)) {
-        console.warn('CompanySelect received invalid companies list:', companies);
+        secureLogger.warn('CompanySelect received invalid companies list:', { companies });
         return [];
       }
       // Additional safety check for each company item

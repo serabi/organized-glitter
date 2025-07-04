@@ -21,6 +21,7 @@ import { StrictMode, lazy, Suspense } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { InitializationCheck } from './components/InitializationCheck';
 import { queryClient } from './lib/queryClient';
+import { secureLogger } from './utils/secureLogger';
 import { initializeAnalytics, logStartupInfo } from './utils/analyticsInitialization';
 import { initializeUser } from './utils/userInitialization';
 import {
@@ -67,7 +68,7 @@ const getRootElement = (): HTMLElement => {
 // Render the React application
 const renderApp = async (): Promise<void> => {
   try {
-    console.log('🚀 Starting Organized Glitter application...');
+    secureLogger.info('🚀 Starting Organized Glitter application...');
 
     const rootElement = getRootElement();
     const root = createRoot(rootElement);
@@ -99,12 +100,12 @@ const renderApp = async (): Promise<void> => {
       </StrictMode>
     );
 
-    console.log('✅ React app rendered successfully');
+    secureLogger.info('✅ React app rendered successfully');
 
     // Dispatch app loaded after a short delay to ensure DOM is updated
     requestAnimationFrame(() => {
       setTimeout(() => {
-        console.log('📱 Dispatching app-loaded event from main.tsx');
+        secureLogger.info('📱 Dispatching app-loaded event from main.tsx');
         dispatchAppLoadedEvent();
       }, 150);
     });

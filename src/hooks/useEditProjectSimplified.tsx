@@ -300,7 +300,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
           setArtists(artistsResponse.items.map((a: { name: string }) => a.name));
         }
       } catch (error) {
-        console.error('Error loading project data:', error);
+        logger.error('Error loading project data:', { error });
         toast({
           title: 'Error',
           description: 'Failed to load project details',
@@ -567,8 +567,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
           removeBeforeUnloadListener();
 
           // Check if we should return to dashboard with preserved position
-          const shouldReturnToDashboard = locationState?.navigationContext && 
-                                        locationState.navigationContext.preservationContext?.isEditNavigation;
+          const shouldReturnToDashboard = locationState?.navigationContext;
 
           if (shouldReturnToDashboard) {
             logger.info('🚀 Returning to dashboard with preserved position after edit');
@@ -589,7 +588,6 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
             // Navigate back to project detail page using React Router
             logger.info('🚀 Navigating back to project detail page');
             await navigateToProject(projectId, {
-              projectData: updatedProject as ProjectsResponse,
               replace: true, // Replace current history entry since we're coming from edit
             });
           }
@@ -666,7 +664,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
 
       unsafeNavigate('/dashboard');
     } catch (error) {
-      console.error('Error archiving project:', error);
+      logger.error('Error archiving project:', { error });
       toast({
         title: 'Error archiving project',
         description: error instanceof Error ? error.message : 'An unknown error occurred',
@@ -709,7 +707,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
       // Navigation and cache invalidation are handled by the mutation
       unsafeNavigate('/dashboard');
     } catch (error) {
-      console.error('Error deleting project:', error);
+      logger.error('Error deleting project:', { error });
       toast({
         title: 'Error deleting project',
         description: error instanceof Error ? error.message : 'An unknown error occurred',
@@ -754,7 +752,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
         setArtists(artistsResponse.items.map((a: { name: string }) => a.name));
       }
     } catch (error) {
-      console.error('Error refreshing lists:', error);
+      logger.error('Error refreshing lists:', { error });
     }
   }, [user?.id]);
 

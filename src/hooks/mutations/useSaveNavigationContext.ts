@@ -127,7 +127,7 @@ const saveNavigationContext = async ({
  * 
  * // Handle errors gracefully
  * if (saveNavigation.error) {
- *   console.warn('Failed to save navigation preferences');
+ *   logger.warn('Failed to save navigation preferences');
  * }
  * ```
  */

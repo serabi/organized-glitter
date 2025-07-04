@@ -5,6 +5,7 @@ import { queryKeys } from '../queries/queryKeys';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { requireAuthenticatedUser } from '@/utils/authGuards';
+import { secureLogger } from '@/utils/secureLogger';
 
 interface CreateCompanyData {
   name: string;
@@ -43,7 +44,7 @@ export function useCreateCompany() {
       });
     },
     onError: (error: unknown) => {
-      console.error('Error creating company:', error);
+      secureLogger.error('Error creating company:', error);
 
       // Handle specific error cases
       if (error && typeof error === 'object' && 'status' in error && error.status === 400) {

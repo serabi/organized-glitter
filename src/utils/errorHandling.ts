@@ -1,3 +1,5 @@
+import { secureLogger } from './secureLogger';
+
 /**
  * Global error handlers for unhandled promise rejections and JavaScript errors
  * This helps prevent console spam and provides better error tracking
@@ -16,7 +18,7 @@ export function initializeErrorHandling(): void {
 
     // Check if this is an image loading error that we can safely ignore
     if (error instanceof Error && error.message.includes('Failed to load image:')) {
-      console.warn('Image loading failed (handled):', error.message);
+      secureLogger.warn('Image loading failed (handled):', { message: error.message });
       event.preventDefault(); // Prevent the error from being logged as unhandled
       return;
     }
@@ -26,13 +28,13 @@ export function initializeErrorHandling(): void {
       error instanceof Error &&
       (error.message.includes('tunnel') || error.message.includes('500'))
     ) {
-      console.warn('Tunnel error (handled):', error.message);
+      secureLogger.warn('Tunnel error (handled):', { message: error.message });
       event.preventDefault();
       return;
     }
 
     // Log other unhandled rejections for debugging
-    console.error('Unhandled promise rejection:', error);
+    secureLogger.criticalError('Unhandled promise rejection:', error);
 
     // You can report to your error tracking service here
     // For now, we'll just prevent the browser's default handling
@@ -49,16 +51,16 @@ export function initializeErrorHandling(): void {
       filename?.includes('image') ||
       error?.message?.includes('Failed to load image:')
     ) {
-      console.warn('Image error handled:', { message, filename, lineno, colno });
+      secureLogger.warn('Image error handled:', { message, filename, lineno, colno });
       return;
     }
 
     // Log other errors
-    console.error('JavaScript error:', { message, filename, lineno, colno, error });
+    secureLogger.error('JavaScript error:', { message, filename, lineno, colno, error });
   });
 
   errorReportingInitialized = true;
-  console.log('Global error handling initialized');
+  secureLogger.info('Global error handling initialized');
 }
 
 /**
@@ -66,7 +68,7 @@ export function initializeErrorHandling(): void {
  */
 export function safeAsync<T>(promise: Promise<T>, fallback?: T): Promise<T | undefined> {
   return promise.catch(error => {
-    console.warn('Async operation failed safely:', error);
+    secureLogger.warn('Async operation failed safely:', error);
     return fallback;
   });
 }
@@ -82,9 +84,9 @@ export function safeImageLoad(src: string): Promise<{ success: boolean; error?: 
       resolve({ success: true });
     };
 
-    img.onerror = event => {
+    img.onerror = () => {
       const error = new Error(`Failed to load image: ${src}`);
-      console.warn('Safe image load failed:', { src, event });
+      secureLogger.warn('Safe image load failed:', { src, event: 'error' });
       resolve({ success: false, error });
     };
 

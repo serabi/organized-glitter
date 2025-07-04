@@ -17,6 +17,7 @@ import { AdvancedEditSummary } from '@/components/advanced/AdvancedEditSummary';
 import { useAdvancedEditSelection } from '@/hooks/useAdvancedEditSelection';
 import { useAdvancedEditPagination } from '@/hooks/useAdvancedEditPagination';
 import { useAdvancedEditActions } from '@/hooks/useAdvancedEditActions';
+import { secureLogger } from '../utils/secureLogger';
 
 const AdvancedEdit = () => {
   // Hooks
@@ -63,7 +64,7 @@ const AdvancedEdit = () => {
   // Handle React Query error state
   useEffect(() => {
     if (error) {
-      console.error('AdvancedEdit: Error loading projects:', error);
+      secureLogger.error('AdvancedEdit: Error loading projects', error);
       toast({
         title: 'Error loading projects',
         description: 'Please try refreshing the page',

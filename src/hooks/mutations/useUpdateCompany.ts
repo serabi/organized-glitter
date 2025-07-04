@@ -5,6 +5,7 @@ import { queryKeys } from '../queries/queryKeys';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { requireAuthenticatedUser } from '@/utils/authGuards';
+import { secureLogger } from '@/utils/secureLogger';
 import { FilterBuilder } from '@/utils/filterBuilder';
 
 interface UpdateCompanyData {
@@ -73,7 +74,7 @@ export function useUpdateCompany() {
       });
     },
     onError: (error: unknown) => {
-      console.error('Error updating company:', error);
+      secureLogger.error('Error updating company:', error);
 
       // Handle specific error cases
       const errorMessage = error instanceof Error ? error.message : String(error);

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { secureLogger } from '@/utils/secureLogger';
 import { ExternalLink, Copy, Link, Check } from 'lucide-react';
 
 interface RichUrlComponentProps {
@@ -68,7 +69,7 @@ const RichUrlComponent: React.FC<RichUrlComponentProps> = ({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error('Failed to copy URL:', error);
+      secureLogger.error('Failed to copy URL:', error);
     }
   };
 

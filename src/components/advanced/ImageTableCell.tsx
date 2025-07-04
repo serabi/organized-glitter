@@ -2,6 +2,7 @@ import React from 'react';
 import { useImageLoader } from '@/hooks/useImageLoader';
 import { useLazyLoad } from '@/hooks/useLazyLoad';
 import { Loader2, RefreshCw, Image as ImageIcon, Palette } from 'lucide-react';
+import { secureLogger } from '@/utils/secureLogger';
 
 interface ImageTableCellProps {
   imageUrl?: string;
@@ -87,7 +88,7 @@ const ImageTableCell: React.FC<ImageTableCellProps> = ({ imageUrl, alt, size = '
         className="h-full w-full object-cover"
         loading="lazy"
         onError={() => {
-          console.error('Table image render error:', processedImageUrl);
+          secureLogger.error('Table image render error:', { processedImageUrl });
         }}
       />
     </div>

@@ -63,7 +63,7 @@ const ProjectsGridComponent = () => {
   React.useEffect(() => {
     if (filters.activeStatus === 'purchased' && !loading) {
       // eslint-disable-next-line no-console
-      console.debug(
+      secureLogger.debug(
         '[Debug] Projects rendered in Purchased section:',
         projects.map(p => ({ id: p.id, status: p.status, title: p.title }))
       );

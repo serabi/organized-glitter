@@ -21,6 +21,7 @@ import { ArrowLeft, Save, X } from 'lucide-react';
 import { ProjectFormValues } from '@/types/project';
 import { NewProjectMainTab } from '@/components/projects/tabs/NewProjectMainTab';
 import { NewProjectStatsTab } from '@/components/projects/tabs/NewProjectStatsTab';
+import { secureLogger } from '../utils/secureLogger';
 
 const NewProject = () => {
   const { user, isLoading: authLoading } = useAuth();
@@ -161,7 +162,7 @@ const NewProject = () => {
       // Success toast and navigation are handled by the mutation hook
       // No manual navigation needed - the hook handles redirect before cache invalidation
     } catch (error) {
-      console.error('Failed to create project:', error);
+      secureLogger.error('Failed to create project', error);
       setError('Failed to create project. Please try again.');
       toast({
         title: 'Error',

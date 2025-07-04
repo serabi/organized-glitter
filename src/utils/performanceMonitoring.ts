@@ -1,3 +1,5 @@
+import { secureLogger } from '@/utils/secureLogger';
+
 /**
  * Performance monitoring utilities for development environment
  */
@@ -17,14 +19,14 @@ export const initializePerformanceMonitoring = (): void => {
       const observer = new PerformanceObserver(list => {
         list.getEntries().forEach(entry => {
           if (entry.duration > 50) {
-            console.warn(`Long task detected: ${entry.duration}ms`);
+            secureLogger.warn(`Long task detected: ${entry.duration}ms`);
           }
         });
       });
       observer.observe({ entryTypes: ['longtask'] });
     } catch (e) {
       // PerformanceObserver might not be supported in some browsers
-      console.debug('PerformanceObserver not supported or failed to initialize');
+      secureLogger.debug('PerformanceObserver not supported or failed to initialize');
     }
   }
 
@@ -54,7 +56,7 @@ const logMemoryUsage = (): void => {
     return;
   }
 
-  console.log('Memory usage:', {
+  secureLogger.debug('Memory usage:', {
     used: Math.round(memoryInfo.usedJSHeapSize / 1048576) + ' MB',
     total: Math.round(memoryInfo.totalJSHeapSize / 1048576) + ' MB',
     limit: Math.round(memoryInfo.jsHeapSizeLimit / 1048576) + ' MB',

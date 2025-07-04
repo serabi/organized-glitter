@@ -78,7 +78,7 @@ export function calculateOverviewStats(projects: ProjectType[] | null | undefine
   const projectsStartedThisYear = filterProjectsByStartedYear(projects, currentYear);
 
   // Debug log for completed projects
-  console.log(
+  secureLogger.debug(
     'Completed projects this year:',
     projectsCompletedThisYear.map(p => ({
       id: p.id,
@@ -108,7 +108,7 @@ export function calculateOverviewStats(projects: ProjectType[] | null | undefine
       inProgressProjects: (inProgressProjects || []).slice(0, 3), // Safely limit to 3 projects
     };
   } catch (error) {
-    console.error('Error calculating stats:', error);
+    secureLogger.error('Error calculating stats:', error);
     return { stats: defaultStats, inProgressProjects: [] };
   }
 }

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { secureLogger } from '@/utils/secureLogger';
 import {
   useProgressNotesQuery,
   useAddProgressNoteMutation,
@@ -36,7 +37,7 @@ const ProjectProgressNotes: React.FC<ProjectProgressNotesProps> = ({ project }) 
       // Switch to notes tab to show the new note
       setActiveTab('notes');
     } catch (error) {
-      console.error('Error adding progress note:', error);
+      secureLogger.error('Error adding progress note:', error);
     }
   };
 
@@ -52,7 +53,7 @@ const ProjectProgressNotes: React.FC<ProjectProgressNotesProps> = ({ project }) 
     try {
       await updateProgressNoteMutation.mutateAsync({ noteId, newContent: content });
     } catch (error) {
-      console.error('Error updating progress note:', error);
+      secureLogger.error('Error updating progress note:', error);
     }
   };
 
@@ -63,7 +64,7 @@ const ProjectProgressNotes: React.FC<ProjectProgressNotesProps> = ({ project }) 
     try {
       await deleteProgressNoteMutation.mutateAsync({ noteId });
     } catch (error) {
-      console.error('Error deleting progress note:', error);
+      secureLogger.error('Error deleting progress note:', error);
     }
   };
 
@@ -74,7 +75,7 @@ const ProjectProgressNotes: React.FC<ProjectProgressNotesProps> = ({ project }) 
     try {
       await deleteProgressNoteImageMutation.mutateAsync({ noteId });
     } catch (error) {
-      console.error('Error deleting progress note image:', error);
+      secureLogger.error('Error deleting progress note image:', error);
     }
   };
 

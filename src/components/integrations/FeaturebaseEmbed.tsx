@@ -1,4 +1,5 @@
 import { useEffect } from 'react'; // Removed unused React import
+import { secureLogger } from '@/utils/secureLogger';
 
 // Extend the Window interface to include Featurebase
 type FeaturebaseCallback = (err: Error | null, data: unknown) => void;
@@ -65,7 +66,7 @@ export function FeaturebaseEmbed({
       // The init_embed_widget call below will handle the actual widget rendering
     };
     script.onerror = () => {
-      console.error('Featurebase SDK failed to load.');
+      secureLogger.error('Featurebase SDK failed to load.');
     };
     document.head.appendChild(script);
 

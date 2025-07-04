@@ -1,4 +1,5 @@
 import React from 'react';
+import { secureLogger } from '@/utils/secureLogger';
 import { ProjectType } from '@/types/project';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -71,7 +72,7 @@ const ProjectListItem: React.FC<ProjectListItemProps> = ({ project, onClick }) =
         className="h-full w-full object-cover"
         loading="lazy"
         onError={() => {
-          console.error('Image render error:', processedImageUrl);
+          secureLogger.error('Image render error:', { processedImageUrl });
         }}
       />
     );

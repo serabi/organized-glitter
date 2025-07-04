@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import FallbackImage from './FallbackImage';
+import { secureLogger } from '@/utils/secureLogger';
 
 interface SafeImageProps {
   src?: string;
@@ -62,7 +63,7 @@ const SafeImage: React.FC<SafeImageProps> = ({
     async (event: React.SyntheticEvent<HTMLImageElement>) => {
       const loadError = new Error(`Failed to load image: ${currentSrc}`);
 
-      console.warn('SafeImage: Image load failed', {
+      secureLogger.warn('SafeImage: Image load failed', {
         src: currentSrc,
         alt,
         retryCount: currentRetryCount,
@@ -91,9 +92,9 @@ const SafeImage: React.FC<SafeImageProps> = ({
             console.log('SafeImage: Attempting to refresh signed URL');
             try {
               nextSrc = await refreshSignedUrl();
-              console.log('SafeImage: Successfully refreshed signed URL');
+              secureLogger.log('SafeImage: Successfully refreshed signed URL');
             } catch (refreshError) {
-              console.warn(
+              secureLogger.warn(
                 'SafeImage: Failed to refresh signed URL, using cache-busting instead:',
                 refreshError
               );
@@ -122,7 +123,7 @@ const SafeImage: React.FC<SafeImageProps> = ({
 
           return;
         } catch (retryError) {
-          console.error('SafeImage: Error during retry setup:', retryError);
+          secureLogger.error('SafeImage: Error during retry setup:', { retryError });
         }
       }
 
@@ -134,7 +135,7 @@ const SafeImage: React.FC<SafeImageProps> = ({
       try {
         onError?.(loadError);
       } catch (callbackError) {
-        console.error('SafeImage: Error in onError callback:', callbackError);
+        secureLogger.error('SafeImage: Error in onError callback:', { callbackError });
       }
     },
     [currentSrc, alt, currentRetryCount, maxRetries, onError, refreshSignedUrl]

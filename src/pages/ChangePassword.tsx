@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { pb } from '@/lib/pocketbase';
 import { ClientResponseError } from 'pocketbase';
+import { secureLogger } from '../utils/secureLogger';
 import { Lock, ArrowLeft, CheckCircle, Shield, Eye, EyeOff } from 'lucide-react';
 
 const ChangePassword = () => {
@@ -144,7 +145,7 @@ const ChangePassword = () => {
         navigate('/login');
       }, 3000);
     } catch (err: unknown) {
-      console.error('Password change error:', err);
+      secureLogger.criticalError('Password change error', err);
 
       let errorMessage = 'Failed to change password. Please try again.';
 

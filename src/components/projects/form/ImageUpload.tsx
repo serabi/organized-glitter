@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { secureLogger } from '@/utils/secureLogger';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Upload } from 'lucide-react';
@@ -115,7 +116,7 @@ const ImageUpload = ({
 
         img.onerror = () => {
           // This happens when CSP blocks blob: URLs or other load issues
-          console.error(
+          secureLogger.error(
             'Failed to load image for preview. This might be due to Content Security Policy restrictions.'
           );
           reject(new Error('Failed to load image'));
@@ -126,12 +127,12 @@ const ImageUpload = ({
           // Load the image from the file
           img.src = URL.createObjectURL(file);
         } catch (urlError) {
-          console.error('Error creating object URL:', urlError);
+          secureLogger.error('Error creating object URL:', urlError);
           reject(new Error('Failed to create image preview'));
         }
       });
     } catch (error) {
-      console.error('Error resizing image:', error);
+      secureLogger.error('Error resizing image:', error);
       return file; // Return original file if resizing fails
     } finally {
       setResizing(false);
@@ -145,7 +146,7 @@ const ImageUpload = ({
       let file = e.target.files[0];
       const fileSizeMB = Math.round((file.size / (1024 * 1024)) * 100) / 100; // Round to 2 decimal places
 
-      console.log(`File selected: ${file.name} (${fileSizeMB}MB, type: ${file.type})`);
+      secureLogger.debug(`File selected: ${file.name} (${fileSizeMB}MB, type: ${file.type})`);
 
       const isHeic =
         file.name.toLowerCase().endsWith('.heic') ||
@@ -155,7 +156,7 @@ const ImageUpload = ({
 
       // Check if file is HEIC/HEIF and reject it
       if (isHeic) {
-        console.error('HEIC/HEIF images are not supported');
+        secureLogger.error('HEIC/HEIF images are not supported');
         e.target.value = '';
         toast({
           title: 'Unsupported Image Format',
@@ -173,7 +174,7 @@ const ImageUpload = ({
 
       if (uploadContext !== 'avatar' && file.size > MAX_ORIGINAL_SIZE) {
         const maxSizeText = getMaxFileSizeText(uploadContext);
-        console.error(`File too large: ${fileSizeMB}MB exceeds ${maxSizeText} limit`);
+        secureLogger.error(`File too large: ${fileSizeMB}MB exceeds ${maxSizeText} limit`);
         e.target.value = '';
         toast({
           title: 'File Too Large',
@@ -186,7 +187,7 @@ const ImageUpload = ({
       // For avatars, check against the higher original file size limit
       if (uploadContext === 'avatar' && file.size > MAX_ORIGINAL_SIZE) {
         const maxOriginalSizeMB = Math.round(MAX_ORIGINAL_SIZE / (1024 * 1024));
-        console.error(
+        secureLogger.error(
           `File too large: ${fileSizeMB}MB exceeds ${maxOriginalSizeMB}MB original file limit`
         );
         e.target.value = '';
@@ -201,7 +202,7 @@ const ImageUpload = ({
       // Validate supported image types with better messaging
       const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
       if (!file.type.startsWith('image/') || !validTypes.includes(file.type)) {
-        console.error(`Unsupported file type: ${file.type}`);
+        secureLogger.error(`Unsupported file type: ${file.type}`);
         e.target.value = '';
         toast({
           title: 'Unsupported File Type',
@@ -242,7 +243,7 @@ const ImageUpload = ({
 
               if (file.size > MAX_PROCESSED_SIZE) {
                 const maxProcessedSizeMB = Math.round(MAX_PROCESSED_SIZE / (1024 * 1024));
-                console.error(
+                secureLogger.criticalError(
                   `Processed file too large: ${processedSizeMB}MB exceeds ${maxProcessedSizeMB}MB limit`
                 );
                 e.target.value = '';
@@ -255,10 +256,10 @@ const ImageUpload = ({
               }
             }
           } else {
-            console.log(`Resizing skipped for ${uploadContext}`);
+            secureLogger.debug(`Resizing skipped for ${uploadContext}`);
           }
         } catch (resizeError) {
-          console.error('Error resizing image:', resizeError);
+          secureLogger.error('Error resizing image:', resizeError);
           // Continue with original file if resize fails
           toast({
             title: 'Image Preview Issue',
@@ -284,7 +285,7 @@ const ImageUpload = ({
 
       onImageChange(newEvent);
     } catch (error) {
-      console.error('Error processing image:', error);
+      secureLogger.criticalError('Error processing image:', error);
       toast({
         title: 'Image Processing Error',
         description:
