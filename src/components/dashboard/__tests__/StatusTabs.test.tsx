@@ -23,7 +23,7 @@ vi.mock('@/contexts/DashboardFiltersContext', () => ({
 describe('StatusTabs', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Setup default counts
     mockGetCountsForTabs.mockReturnValue({
       all: 15,
@@ -66,7 +66,7 @@ describe('StatusTabs', () => {
 
     it('should mark the active status tab as selected', () => {
       mockContextValue.filters.activeStatus = 'wishlist';
-      
+
       render(<StatusTabs />);
 
       const wishlistTab = screen.getByRole('tab', { name: /wishlist/i });
@@ -77,7 +77,14 @@ describe('StatusTabs', () => {
       render(<StatusTabs />);
 
       const tabsList = screen.getByRole('tablist');
-      expect(tabsList).toHaveClass('grid', 'h-auto', 'grid-cols-2', 'gap-2', 'md:grid-cols-4', 'lg:grid-cols-8');
+      expect(tabsList).toHaveClass(
+        'grid',
+        'h-auto',
+        'grid-cols-2',
+        'gap-2',
+        'md:grid-cols-4',
+        'lg:grid-cols-8'
+      );
     });
   });
 
@@ -118,7 +125,7 @@ describe('StatusTabs', () => {
       render(<StatusTabs />);
 
       const wishlistTab = screen.getByRole('tab', { name: /wishlist/i });
-      
+
       // Focus the tab
       wishlistTab.focus();
       expect(wishlistTab).toHaveFocus();
@@ -133,7 +140,7 @@ describe('StatusTabs', () => {
 
       const allTab = screen.getByRole('tab', { name: /all/i });
       const wishlistTab = screen.getByRole('tab', { name: /wishlist/i });
-      
+
       // Focus first tab
       allTab.focus();
       expect(allTab).toHaveFocus();
@@ -250,13 +257,13 @@ describe('StatusTabs', () => {
   describe('memoization', () => {
     it('should be memoized to prevent unnecessary re-renders', () => {
       const { rerender } = render(<StatusTabs />);
-      
+
       // Component should be wrapped with React.memo
       expect(StatusTabs.displayName).toBe('StatusTabsComponent');
-      
+
       // Re-render with same props should not cause issues
       rerender(<StatusTabs />);
-      
+
       // Context should only be called once per render
       expect(mockGetCountsForTabs).toHaveBeenCalled();
     });

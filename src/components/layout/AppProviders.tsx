@@ -24,7 +24,7 @@ const CacheCleanupHandler: React.FC = () => {
     const cleanup = setupAutomaticCacheCleaning(queryClient);
     return cleanup;
   }, []);
-  
+
   return null;
 };
 

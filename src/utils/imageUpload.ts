@@ -87,7 +87,9 @@ export async function uploadImage(
 
   // Validate file name
   if (file.name.includes('#') || file.name.includes('?') || file.name.includes('%')) {
-    imageUploadLogger.warn('File name contains special characters that might cause issues with storage');
+    imageUploadLogger.warn(
+      'File name contains special characters that might cause issues with storage'
+    );
   }
 
   // Initialize variables for retry logic
@@ -151,7 +153,9 @@ export async function uploadImage(
         imageUploadLogger.debug(`Current user ID: ${userId}`);
 
         try {
-          imageUploadLogger.log(`[imageUpload] About to call uploadFile with bucket: ${bucketFolder}`);
+          imageUploadLogger.log(
+            `[imageUpload] About to call uploadFile with bucket: ${bucketFolder}`
+          );
 
           // For PocketBase, we need a record ID for file uploads
           if (!recordId) {
@@ -193,7 +197,9 @@ export async function uploadImage(
             throw new Error('Storage upload completed but no URL was returned');
           }
 
-          imageUploadLogger.log(`[imageUpload] Image upload successful! URL length: ${fileUrl.length}`);
+          imageUploadLogger.log(
+            `[imageUpload] Image upload successful! URL length: ${fileUrl.length}`
+          );
           imageUploadLogger.log(`[imageUpload] URL: ${fileUrl}`);
 
           return fileUrl;

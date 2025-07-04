@@ -1,10 +1,10 @@
 /**
  * @fileoverview Main Dashboard Filters Component
- * 
+ *
  * This component provides a comprehensive filtering interface for the dashboard projects view.
  * It includes search, multiple filter dropdowns, view toggles, sorting controls, and a reset
  * option. All state management is handled through the DashboardFiltersContext.
- * 
+ *
  * Key Features:
  * - Real-time search with debounced input
  * - Company, artist, drill shape, tag, and year filters
@@ -14,13 +14,13 @@
  * - Active filter count badge
  * - Reset all filters functionality
  * - Responsive design with sticky positioning
- * 
+ *
  * Filter Behavior:
  * - All filters are applied server-side for performance
  * - Tag filtering supports single selection via dropdown
  * - Sort direction labels change based on selected field
  * - Filter state persists to database on navigation
- * 
+ *
  * @author serabi
  * @since 2025-07-03
  * @version 1.0.0 - Context-based filtering system
@@ -84,7 +84,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
   const viewType = filters.viewType;
   const sortField = filters.sortField;
   const sortDirection = filters.sortDirection;
-  
+
   // Use sortField, providing a default if it's undefined, as FilterDropdown expects a non-undefined value for `value`
   const currentSortField = sortField;
 
@@ -193,10 +193,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
 
         <div className="mt-6">
           <h3 className="mb-2 text-sm font-medium">View</h3>
-          <ViewToggle
-            activeView={viewType}
-            onViewChange={updateViewType}
-          />
+          <ViewToggle activeView={viewType} onViewChange={updateViewType} />
         </div>
 
         <div className="mt-6">

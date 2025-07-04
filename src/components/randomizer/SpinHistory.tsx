@@ -125,13 +125,13 @@ export const SpinHistory: React.FC<SpinHistoryProps> = ({ userId, onClearHistory
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
-      
+
       // Check if the date is invalid
       if (isNaN(date.getTime())) {
         logger.error('Invalid date string', { dateString });
         return 'Unknown';
       }
-      
+
       const now = new Date();
       const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
 

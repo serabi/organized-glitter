@@ -1,10 +1,10 @@
 /**
  * @fileoverview Project Detail Page Component
- * 
+ *
  * Main page component for displaying individual project details. Handles authentication,
  * navigation state management, and project data fetching with comprehensive error handling.
  * Integrates with the simplified navigation system for smooth user experience.
- * 
+ *
  * Key Features:
  * - URL parameter-based project identification
  * - Authentication state verification
@@ -12,19 +12,19 @@
  * - Comprehensive error boundary protection
  * - Mobile-responsive layout integration
  * - Navigation context preservation for edit workflows
- * 
+ *
  * Navigation Integration:
  * - Handles navigation state from dashboard
  * - Preserves context for edit page transitions
  * - Supports optimistic navigation with cached data
  * - Back navigation with position restoration
- * 
+ *
  * Error Handling:
  * - Project not found scenarios
  * - Authentication failures
  * - Network and loading errors
  * - Graceful degradation with user feedback
- * 
+ *
  * @author serabi
  * @since 2025-07-03
  * @version 1.0.0 - Simplified navigation integration
@@ -49,18 +49,18 @@ const logger = createLogger('ProjectDetail');
 
 /**
  * ProjectDetail Component
- * 
+ *
  * Main component for rendering individual project detail pages. Orchestrates
  * authentication checks, project data fetching, navigation state handling,
  * and error boundaries for a robust user experience.
- * 
+ *
  * Features:
  * - Automatic authentication verification with redirects
  * - Project data fetching with React Query integration
  * - Navigation state preservation for edit workflows
  * - Comprehensive error handling and loading states
  * - Mobile-responsive layout integration
- * 
+ *
  * @returns JSX.Element The complete project detail page
  */
 const ProjectDetail = () => {
@@ -144,7 +144,7 @@ const ProjectDetail = () => {
 
     // Create enhanced navigation context with edit tracking
     let enhancedNavigationContext = navigationState?.navigationContext;
-    
+
     if (enhancedNavigationContext) {
       // Enhance existing context with edit tracking information
       enhancedNavigationContext = {
@@ -163,7 +163,7 @@ const ProjectDetail = () => {
           },
         },
       };
-      
+
       logger.debug('Enhanced navigation context for edit:', enhancedNavigationContext);
     }
 

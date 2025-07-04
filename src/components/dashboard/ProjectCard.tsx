@@ -14,7 +14,12 @@ interface ProjectCardProps {
   isRecentlyEdited?: boolean; // Whether this project was recently edited
 }
 
-const ProjectCardComponent = ({ project, onClick, skipImageLoading = false, isRecentlyEdited = false }: ProjectCardProps) => {
+const ProjectCardComponent = ({
+  project,
+  onClick,
+  skipImageLoading = false,
+  isRecentlyEdited = false,
+}: ProjectCardProps) => {
   const { getStatusColor, getStatusLabel } = useProjectStatus();
   const [isImageLoaded, setIsImageLoaded] = useState(false);
 
@@ -85,10 +90,10 @@ const ProjectCardComponent = ({ project, onClick, skipImageLoading = false, isRe
     <div
       ref={ref}
       className={cn(
-        "flex flex-col overflow-hidden rounded-lg border text-diamond-900 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-lg dark:text-gray-100",
-        isRecentlyEdited 
-          ? "border-green-500 bg-green-50 ring-2 ring-green-500 ring-opacity-50 dark:bg-green-950 dark:border-green-400" 
-          : "border-border bg-diamond-100 dark:bg-gray-800"
+        'flex flex-col overflow-hidden rounded-lg border text-diamond-900 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-lg dark:text-gray-100',
+        isRecentlyEdited
+          ? 'border-green-500 bg-green-50 ring-2 ring-green-500 ring-opacity-50 dark:border-green-400 dark:bg-green-950'
+          : 'border-border bg-diamond-100 dark:bg-gray-800'
       )}
     >
       <div className="relative h-48 w-full bg-gray-200 dark:bg-gray-700 sm:h-56 md:h-64">

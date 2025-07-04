@@ -19,7 +19,7 @@ All user data is strictly scoped to the authenticated user:
 
 - Users can only access their own projects, notes, tags, artists, and companies
 - Cross-user data access is prevented at the database level
-- Admin access is separate from the user access and is not accessible from the actual application - it's only accessible from the actual database, and only @serabi has access to this. 
+- Admin access is separate from the user access and is not accessible from the actual application - it's only accessible from the actual database, and only @serabi has access to this.
 
 ## Core Collections
 
@@ -298,21 +298,25 @@ The following collections are managed by PocketBase for authentication and secur
 ### Date Field Performance Indexes
 
 **Single Date Field Indexes:**
+
 - `idx_projects_date_completed` - Completed date filtering (most common)
-- `idx_projects_date_started` - Started date filtering  
+- `idx_projects_date_started` - Started date filtering
 - `idx_projects_date_received` - Received date filtering
 - `idx_projects_date_purchased` - Purchased date filtering
 
 **Composite User + Date Indexes:**
+
 - `idx_projects_user_date_completed` - User-scoped completed date queries
 - `idx_projects_user_date_started` - User-scoped started date queries
 - `idx_projects_user_date_received` - User-scoped received date queries
 - `idx_projects_user_date_purchased` - User-scoped purchased date queries
 
 **Year Extraction Optimization:**
+
 - `idx_projects_year_completed` - Optimized year filtering using `strftime('%Y', date_completed)`
 
 These indexes specifically support:
+
 - useAvailableYears hook
 - Year dropdown filtering across all date fields
 - Dashboard date-based sorting and filtering
@@ -324,15 +328,17 @@ These indexes specifically support:
 - Cache invalidation on relevant data changes
 - Performance monitoring with calculation duration tracking
 
-### React Query Optimization 
+### React Query Optimization
 
 **Modern Cache Management:**
+
 - Optimistic updates replace broad cache invalidation for sort order preservation
 - Targeted cache updates using `updateProjectInCache` utility
 - 30-minute stale time for metadata queries
 - Ultra-lightweight queries using PocketBase field selection
 
 **Query Patterns:**
+
 - `useAvailableYears` hook with field selection optimization
 - Request deduplication for repeated metadata queries
 - Conservative refetch settings for stable data

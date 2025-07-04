@@ -1,23 +1,23 @@
 /**
  * @fileoverview Dashboard page with database-only state management
- * 
+ *
  * Main dashboard page that displays user projects with comprehensive filtering,
  * sorting, and search capabilities. Uses database as the single source of truth
  * for all filter state, eliminating URL parameter synchronization complexity.
- * 
+ *
  * Key Features:
  * - Database-first filter state management (no URL dependencies)
  * - Automatic state restoration from database on page load
  * - Smooth position restoration after project editing
  * - Recently edited project visual highlighting
  * - Mobile-responsive layout with adaptive filter sections
- * 
+ *
  * State Management:
  * - All filter/sort/search state handled by DashboardFiltersContext
  * - Immediate auto-save to database prevents state loss
  * - Navigation context preserved for project detail arrows
  * - Edit return handling with scroll position restoration
- * 
+ *
  * @author serabi
  * @since 2025-07-02
  * @version 3.0.0 - Database-only implementation (simplified)
@@ -31,7 +31,11 @@ import DashboardFilterSection from '@/components/dashboard/DashboardFilterSectio
 import ProjectsSection from '@/components/dashboard/ProjectsSection';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/hooks/useAuth';
-import { DashboardFiltersProvider, useDashboardFilters, useRecentlyEdited } from '@/contexts/DashboardFiltersContext';
+import {
+  DashboardFiltersProvider,
+  useDashboardFilters,
+  useRecentlyEdited,
+} from '@/contexts/DashboardFiltersContext';
 import { NavigationContext } from '@/hooks/useNavigateToProject';
 import { createLogger } from '@/utils/secureLogger';
 import { useToast } from '@/hooks/use-toast';
@@ -60,14 +64,17 @@ const DashboardInternal: React.FC = () => {
     preservePosition?: boolean;
   } | null;
 
-
   // Handle position restoration after edit return (database-only approach)
   useEffect(() => {
-    if (editReturnState?.fromEdit && editReturnState?.preservePosition && editReturnState?.navigationContext) {
+    if (
+      editReturnState?.fromEdit &&
+      editReturnState?.preservePosition &&
+      editReturnState?.navigationContext
+    ) {
       logger.info('🔄 Processing edit return with position restoration');
-      
+
       const { navigationContext } = editReturnState;
-      
+
       try {
         // 1. Schedule scroll position restoration after React renders
         // Filter state restoration is handled automatically by DashboardFiltersContext from database
@@ -76,29 +83,29 @@ const DashboardInternal: React.FC = () => {
           window.scrollTo({ top: scrollPosition, behavior: 'smooth' });
           logger.debug('Scroll position restored to:', scrollPosition);
         }, 100);
-        
+
         // 2. Mark recently edited project for visual highlighting
         if (editReturnState.editedProjectId) {
           setRecentlyEditedProjectId(editReturnState.editedProjectId);
-          
+
           // Clear the highlight after 3 seconds
           setTimeout(() => {
             setRecentlyEditedProjectId(null);
           }, 3000);
         }
-        
+
         // 3. Show user feedback
         toast({
           title: 'Position Restored',
           description: 'Returned to your previous location after editing.',
         });
-        
+
         // 4. Clear location state to prevent re-triggering
-        navigate(location.pathname, { 
-          replace: true, 
-          state: null 
+        navigate(location.pathname, {
+          replace: true,
+          state: null,
         });
-        
+
         logger.info('✅ Position restoration completed successfully');
       } catch (error) {
         logger.error('❌ Error during position restoration:', error);

@@ -5,14 +5,14 @@
 
 Organized Glitter is a modern web application for diamond painters! Allows for tracking projects, managing your "stash", and documenting progress.
 
-Currently built with React, TypeScript, and PocketBase. I'll be adding WordPress in to manage the feedback and changelogs in the future. 
+Currently built with React, TypeScript, and PocketBase. I'll be adding WordPress in to manage the feedback and changelogs in the future.
 
 ## Core Features
 
 - **Responsive Design**: Goal: works seamlessly on desktop, tablet, and mobile devices
-- **Secure Authentication**: Email/password authentication with PocketBase Auth - everything should be fully secure, with data only available to the person who adds the data. 
+- **Secure Authentication**: Email/password authentication with PocketBase Auth - everything should be fully secure, with data only available to the person who adds the data.
 - **Modern UI**: dark/light theme support
-- **Cloud Storage**: Secure image and data storage with PocketBase, backed up to Cloudflare 
+- **Cloud Storage**: Secure image and data storage with PocketBase, backed up to Cloudflare
 - **User-Centric**: Designed specifically for diamond painters by a diamond painter
 
 ## Project Management Features
@@ -43,7 +43,7 @@ Currently built with React, TypeScript, and PocketBase. I'll be adding WordPress
   - Company and artist management
   - Advanced filtering and sorting
   - Search functionality
-  - Import/export capabilities - currently text based, looking to add image export in the future! 
+  - Import/export capabilities - currently text based, looking to add image export in the future!
 
 - **User Management**:
   - Individual user profiles with customizable avatars

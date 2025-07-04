@@ -3,7 +3,11 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { DashboardFiltersProvider, useDashboardFilters, useRecentlyEdited } from '../DashboardFiltersContext';
+import {
+  DashboardFiltersProvider,
+  useDashboardFilters,
+  useRecentlyEdited,
+} from '../DashboardFiltersContext';
 
 // Mock dependencies
 const mockNavigate = vi.fn();
@@ -150,7 +154,7 @@ const TestConsumer = () => {
       <div data-testid="active-filters">{getActiveFilterCount()}</div>
       <div data-testid="tab-counts">{JSON.stringify(getCountsForTabs())}</div>
       <div data-testid="recently-edited">{recentlyEditedProjectId || 'none'}</div>
-      
+
       <button onClick={() => updateStatus('wishlist')} data-testid="update-status">
         Update Status
       </button>
@@ -163,7 +167,10 @@ const TestConsumer = () => {
       <button onClick={() => resetAllFilters()} data-testid="reset-filters">
         Reset Filters
       </button>
-      <button onClick={() => setRecentlyEditedProjectId('project1')} data-testid="set-recently-edited">
+      <button
+        onClick={() => setRecentlyEditedProjectId('project1')}
+        data-testid="set-recently-edited"
+      >
         Set Recently Edited
       </button>
     </div>
@@ -182,9 +189,7 @@ const createWrapper = (user = { id: 'user123', email: 'test@example.com' }) => {
   return ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <DashboardFiltersProvider user={user}>
-          {children}
-        </DashboardFiltersProvider>
+        <DashboardFiltersProvider user={user}>{children}</DashboardFiltersProvider>
       </BrowserRouter>
     </QueryClientProvider>
   );
@@ -201,7 +206,7 @@ describe('DashboardFiltersContext', () => {
       },
     });
     vi.clearAllMocks();
-    
+
     // Reset mocks
     mockGetFirstListItem.mockRejectedValue({ status: 404 });
     mockLocation.pathname = '/dashboard';
@@ -215,7 +220,7 @@ describe('DashboardFiltersContext', () => {
   describe('Provider Initialization', () => {
     it('should render children with default filter state', async () => {
       const Wrapper = createWrapper();
-      
+
       render(
         <Wrapper>
           <TestConsumer />
@@ -240,7 +245,7 @@ describe('DashboardFiltersContext', () => {
       };
 
       const Wrapper = createWrapper();
-      
+
       render(
         <Wrapper>
           <TestConsumer />
@@ -248,7 +253,7 @@ describe('DashboardFiltersContext', () => {
       );
 
       expect(document.querySelector('.animate-spin')).toBeInTheDocument();
-      
+
       // Reset after test
       mockMetadataContext.isLoading = {
         tags: false,
@@ -280,7 +285,7 @@ describe('DashboardFiltersContext', () => {
       });
 
       const Wrapper = createWrapper();
-      
+
       render(
         <Wrapper>
           <TestConsumer />
@@ -298,7 +303,7 @@ describe('DashboardFiltersContext', () => {
   describe('Filter Updates', () => {
     it('should update status filter', async () => {
       const Wrapper = createWrapper();
-      
+
       render(
         <Wrapper>
           <TestConsumer />
@@ -319,7 +324,7 @@ describe('DashboardFiltersContext', () => {
 
     it('should update company filter', async () => {
       const Wrapper = createWrapper();
-      
+
       render(
         <Wrapper>
           <TestConsumer />
@@ -340,7 +345,7 @@ describe('DashboardFiltersContext', () => {
 
     it('should update search term', async () => {
       const Wrapper = createWrapper();
-      
+
       render(
         <Wrapper>
           <TestConsumer />
@@ -361,7 +366,7 @@ describe('DashboardFiltersContext', () => {
 
     it('should reset all filters', async () => {
       const Wrapper = createWrapper();
-      
+
       render(
         <Wrapper>
           <TestConsumer />
@@ -397,7 +402,7 @@ describe('DashboardFiltersContext', () => {
   describe('Recently Edited Context', () => {
     it('should manage recently edited project state', async () => {
       const Wrapper = createWrapper();
-      
+
       render(
         <Wrapper>
           <TestConsumer />
@@ -419,7 +424,7 @@ describe('DashboardFiltersContext', () => {
   describe('Computed Values', () => {
     it('should calculate active filter count correctly', async () => {
       const Wrapper = createWrapper();
-      
+
       render(
         <Wrapper>
           <TestConsumer />
@@ -442,7 +447,7 @@ describe('DashboardFiltersContext', () => {
 
     it('should provide correct tab counts', async () => {
       const Wrapper = createWrapper();
-      
+
       render(
         <Wrapper>
           <TestConsumer />
@@ -467,7 +472,7 @@ describe('DashboardFiltersContext', () => {
       mockLocation.search = '?status=wishlist&company=company1&tag=Tag 1';
 
       const Wrapper = createWrapper();
-      
+
       render(
         <Wrapper>
           <TestConsumer />
@@ -488,7 +493,7 @@ describe('DashboardFiltersContext', () => {
     it('should have navigation context save functionality available', async () => {
       const user = { id: 'user123', email: 'test@example.com' };
       const Wrapper = createWrapper(user);
-      
+
       render(
         <Wrapper>
           <TestConsumer />
@@ -511,7 +516,7 @@ describe('DashboardFiltersContext', () => {
 
       // Verify that the save navigation context mutation is available
       expect(mockSaveNavigationContext).toBeDefined();
-      
+
       // Note: Testing the actual useEffect cleanup that triggers on navigation
       // is complex in the test environment. The save mechanism is thoroughly
       // tested in the useSaveNavigationContext.test.tsx file.
@@ -521,7 +526,7 @@ describe('DashboardFiltersContext', () => {
   describe('Error Handling', () => {
     it('should handle missing user gracefully', () => {
       const Wrapper = createWrapper(null);
-      
+
       expect(() => {
         render(
           <Wrapper>
@@ -535,7 +540,7 @@ describe('DashboardFiltersContext', () => {
       mockGetFirstListItem.mockRejectedValue(new Error('Database error'));
 
       const Wrapper = createWrapper();
-      
+
       render(
         <Wrapper>
           <TestConsumer />

@@ -42,66 +42,95 @@ async function calculateDashboardStats(userId: string, year: number): Promise<Da
   const yearStart = `${year}-01-01`;
   const yearEnd = `${year + 1}-01-01`;
 
-  logger.debug(`Calculating dashboard stats for user ${userId}, year ${year} using count-based queries`);
+  logger.debug(
+    `Calculating dashboard stats for user ${userId}, year ${year} using count-based queries`
+  );
 
   try {
     // Status breakdown using parallel count queries - ultra fast!
     const statusCountPromises = [
-      pb.collection(Collections.Projects).getList(1, 1, {
-        filter: pb.filter('user = {:userId} && status = "wishlist"', { userId }),
-        skipTotal: false,
-      }).then(result => ({ status: 'wishlist', count: result.totalItems })),
-      
-      pb.collection(Collections.Projects).getList(1, 1, {
-        filter: pb.filter('user = {:userId} && status = "purchased"', { userId }),
-        skipTotal: false,
-      }).then(result => ({ status: 'purchased', count: result.totalItems })),
-      
-      pb.collection(Collections.Projects).getList(1, 1, {
-        filter: pb.filter('user = {:userId} && status = "stash"', { userId }),
-        skipTotal: false,
-      }).then(result => ({ status: 'stash', count: result.totalItems })),
-      
-      pb.collection(Collections.Projects).getList(1, 1, {
-        filter: pb.filter('user = {:userId} && status = "progress"', { userId }),
-        skipTotal: false,
-      }).then(result => ({ status: 'progress', count: result.totalItems })),
-      
-      pb.collection(Collections.Projects).getList(1, 1, {
-        filter: pb.filter('user = {:userId} && status = "completed"', { userId }),
-        skipTotal: false,
-      }).then(result => ({ status: 'completed', count: result.totalItems })),
-      
-      pb.collection(Collections.Projects).getList(1, 1, {
-        filter: pb.filter('user = {:userId} && status = "archived"', { userId }),
-        skipTotal: false,
-      }).then(result => ({ status: 'archived', count: result.totalItems })),
-      
-      pb.collection(Collections.Projects).getList(1, 1, {
-        filter: pb.filter('user = {:userId} && status = "destashed"', { userId }),
-        skipTotal: false,
-      }).then(result => ({ status: 'destashed', count: result.totalItems })),
+      pb
+        .collection(Collections.Projects)
+        .getList(1, 1, {
+          filter: pb.filter('user = {:userId} && status = "wishlist"', { userId }),
+          skipTotal: false,
+        })
+        .then(result => ({ status: 'wishlist', count: result.totalItems })),
+
+      pb
+        .collection(Collections.Projects)
+        .getList(1, 1, {
+          filter: pb.filter('user = {:userId} && status = "purchased"', { userId }),
+          skipTotal: false,
+        })
+        .then(result => ({ status: 'purchased', count: result.totalItems })),
+
+      pb
+        .collection(Collections.Projects)
+        .getList(1, 1, {
+          filter: pb.filter('user = {:userId} && status = "stash"', { userId }),
+          skipTotal: false,
+        })
+        .then(result => ({ status: 'stash', count: result.totalItems })),
+
+      pb
+        .collection(Collections.Projects)
+        .getList(1, 1, {
+          filter: pb.filter('user = {:userId} && status = "progress"', { userId }),
+          skipTotal: false,
+        })
+        .then(result => ({ status: 'progress', count: result.totalItems })),
+
+      pb
+        .collection(Collections.Projects)
+        .getList(1, 1, {
+          filter: pb.filter('user = {:userId} && status = "completed"', { userId }),
+          skipTotal: false,
+        })
+        .then(result => ({ status: 'completed', count: result.totalItems })),
+
+      pb
+        .collection(Collections.Projects)
+        .getList(1, 1, {
+          filter: pb.filter('user = {:userId} && status = "archived"', { userId }),
+          skipTotal: false,
+        })
+        .then(result => ({ status: 'archived', count: result.totalItems })),
+
+      pb
+        .collection(Collections.Projects)
+        .getList(1, 1, {
+          filter: pb.filter('user = {:userId} && status = "destashed"', { userId }),
+          skipTotal: false,
+        })
+        .then(result => ({ status: 'destashed', count: result.totalItems })),
     ];
 
     // Year-specific data queries - only fetch what we need
     const yearSpecificPromises = [
       // Completed this year count
-      pb.collection(Collections.Projects).getList(1, 1, {
-        filter: pb.filter(
-          'user = {:userId} && status = "completed" && date_completed >= {:yearStart} && date_completed < {:yearEnd}',
-          { userId, yearStart, yearEnd }
-        ),
-        skipTotal: false,
-      }).then(result => result.totalItems),
+      pb
+        .collection(Collections.Projects)
+        .getList(1, 1, {
+          filter: pb.filter(
+            'user = {:userId} && status = "completed" && date_completed >= {:yearStart} && date_completed < {:yearEnd}',
+            { userId, yearStart, yearEnd }
+          ),
+          skipTotal: false,
+        })
+        .then(result => result.totalItems),
 
-      // Started this year count  
-      pb.collection(Collections.Projects).getList(1, 1, {
-        filter: pb.filter(
-          'user = {:userId} && date_started >= {:yearStart} && date_started < {:yearEnd}',
-          { userId, yearStart, yearEnd }
-        ),
-        skipTotal: false,
-      }).then(result => result.totalItems),
+      // Started this year count
+      pb
+        .collection(Collections.Projects)
+        .getList(1, 1, {
+          filter: pb.filter(
+            'user = {:userId} && date_started >= {:yearStart} && date_started < {:yearEnd}',
+            { userId, yearStart, yearEnd }
+          ),
+          skipTotal: false,
+        })
+        .then(result => result.totalItems),
 
       // Total diamonds for completed projects this year
       pb.collection(Collections.Projects).getFullList({
@@ -133,7 +162,9 @@ async function calculateDashboardStats(userId: string, year: number): Promise<Da
     const completedProjectsThisYear = yearSpecificResults[2] as Array<{ total_diamonds?: number }>;
     const projectsWithDates = yearSpecificResults[3] as Array<{ date_completed?: string }>;
 
-    logger.debug(`Count queries completed: ${statusCounts.length} status counts, ${completedProjectsThisYear.length} completed projects this year`);
+    logger.debug(
+      `Count queries completed: ${statusCounts.length} status counts, ${completedProjectsThisYear.length} completed projects this year`
+    );
 
     // Build status breakdown from count results
     const statusBreakdown: StatusBreakdown = {
@@ -187,9 +218,9 @@ async function calculateDashboardStats(userId: string, year: number): Promise<Da
       ...stats,
       performance: 'ultra-fast count queries + targeted data fetching',
       statusQueryCount: statusCounts.length,
-      totalDataTransfer: `${completedProjectsThisYear.length} + ${projectsWithDates.length} records`
+      totalDataTransfer: `${completedProjectsThisYear.length} + ${projectsWithDates.length} records`,
     });
-    
+
     return stats;
   } catch (error) {
     logger.error('Failed to calculate dashboard stats with count-based queries:', error);
@@ -243,10 +274,9 @@ export const useDashboardStats = (year?: number) => {
   };
 };
 
-
 /**
  * Optimized hook for available years - gets data from dashboard stats to eliminate redundant queries
- * 
+ *
  * This replaces the separate useAvailableYears hook with a more efficient approach that
  * extracts available years from the same data used for dashboard statistics.
  */

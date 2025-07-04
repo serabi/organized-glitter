@@ -1,17 +1,17 @@
 /**
  * @fileoverview Project Status Filter Tabs Component
- * 
+ *
  * This component provides a tabbed interface for filtering projects by their status.
  * It displays dynamic counts for each status category and handles status filter changes.
  * The tabs are responsive and adapt to different screen sizes.
- * 
+ *
  * Key Features:
  * - Dynamic status counts from dashboard statistics
  * - Responsive grid layout (2 cols mobile, 4 tablet, 8 desktop)
  * - Real-time count updates when projects change
  * - Integrated with DashboardFiltersContext for state management
  * - Keyboard accessible tab navigation
- * 
+ *
  * Status Categories:
  * - All: Shows total project count
  * - Wishlist: Projects user wants to purchase
@@ -21,7 +21,7 @@
  * - Completed: Finished projects
  * - Destashed: Projects removed from collection
  * - Archived: Projects no longer actively managed
- * 
+ *
  * @author serabi
  * @since 2025-07-03
  * @version 1.0.0 - Context-based status filtering

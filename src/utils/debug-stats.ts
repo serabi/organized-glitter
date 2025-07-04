@@ -41,9 +41,9 @@ export async function debugUserStats(userIdOrEmail: string): Promise<DebugStats>
   // If it looks like an email, find the user first
   if (userIdOrEmail.includes('@')) {
     try {
-      const user = await pb.collection('users').getFirstListItem(
-        createFilter().equals('email', userIdOrEmail).build()
-      );
+      const user = await pb
+        .collection('users')
+        .getFirstListItem(createFilter().equals('email', userIdOrEmail).build());
       userId = user.id;
       email = user.email;
     } catch (error) {
@@ -283,8 +283,12 @@ export function enableDebugMode() {
     secureLogger.log('  organizedGlitterDebug.debugUserStats("email") - Analyze user stats');
     secureLogger.log('  organizedGlitterDebug.forceRecalculateStats(userId) - Force recalculation');
     secureLogger.log('  organizedGlitterDebug.compareStats(userId) - Compare cached vs fresh');
-    secureLogger.log('  organizedGlitterDebug.showCacheMetrics() - Display cache performance metrics');
-    secureLogger.log('  organizedGlitterDebug.showCacheStatus(userId) - Show cache status for user');
+    secureLogger.log(
+      '  organizedGlitterDebug.showCacheMetrics() - Display cache performance metrics'
+    );
+    secureLogger.log(
+      '  organizedGlitterDebug.showCacheStatus(userId) - Show cache status for user'
+    );
     secureLogger.log('  organizedGlitterDebug.resetCacheMetrics() - Reset performance metrics');
     secureLogger.log('');
     secureLogger.log('📋 Quick start:');

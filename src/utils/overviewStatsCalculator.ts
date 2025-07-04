@@ -1,4 +1,5 @@
 import { ProjectType } from '@/types/project';
+import { secureLogger } from '@/utils/secureLogger';
 
 interface OverviewStats {
   completedCount: number;

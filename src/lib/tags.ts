@@ -1,16 +1,16 @@
 /**
  * @fileoverview Tag Service for PocketBase Integration
- * 
+ *
  * Comprehensive service layer for managing tags and project-tag relationships.
  * Uses secure FilterBuilder utility for all PocketBase queries to prevent SQL injection.
  * Features user-scoped data access, tag creation, project association, and bulk operations.
- * 
+ *
  * Security Features:
  * - All queries use secure parameterized filtering
  * - User-scoped data access ensures isolation
  * - Authentication validation for all operations
  * - SQL injection prevention through FilterBuilder utility
- * 
+ *
  * @author Generated with Claude Code
  * @version 1.0.0
  * @since 2024-06-29
@@ -35,11 +35,11 @@ const TAG_COLORS = TAG_COLOR_PALETTE.map(color => color.hex);
 
 /**
  * Transform PocketBase tag record to frontend Tag format
- * 
+ *
  * Converts a PocketBase TagsResponse record to the standardized Tag interface
  * used throughout the frontend application. Normalizes field names and ensures
  * consistent data structure for UI components.
- * 
+ *
  * @function
  * @param {TagsResponse} pbTag - Raw tag record from PocketBase
  * @returns {Tag} Normalized tag object for frontend use
@@ -56,11 +56,11 @@ const transformPbTagToTag = (pbTag: TagsResponse): Tag => ({
 
 /**
  * TagService - Comprehensive tag management for PocketBase
- * 
+ *
  * Provides secure, user-scoped tag operations including CRUD operations,
  * project associations, and bulk statistics. All methods use authenticated
  * requests and secure parameter injection to prevent security vulnerabilities.
- * 
+ *
  * @class TagService
  */
 export class TagService {
@@ -89,7 +89,6 @@ export class TagService {
       }
     });
   }
-
 
   /**
    * Create new tag with secure validation
@@ -190,7 +189,10 @@ export class TagService {
           }
         });
 
-        logger.debug('Successfully fetched tags for project:', { projectId, tagCount: tags.length });
+        logger.debug('Successfully fetched tags for project:', {
+          projectId,
+          tagCount: tags.length,
+        });
         return createSuccessResponse(tags);
       } catch (error) {
         logger.error('Error fetching project tags:', error);
@@ -495,7 +497,10 @@ export class TagService {
               const result = await this.getTagStats(tagId);
               if (result.status === 'success') {
                 counts[tagId] = result.data.projectCount;
-                logger.debug('Fallback: Tag stats retrieved:', { tagId, projectCount: counts[tagId] });
+                logger.debug('Fallback: Tag stats retrieved:', {
+                  tagId,
+                  projectCount: counts[tagId],
+                });
               }
             } catch (individualError) {
               logger.warn('Error counting projects for tag:', { tagId, error: individualError });

@@ -1,10 +1,10 @@
 /**
  * @fileoverview Collapsible Dashboard Filters Component for Mobile View
- * 
+ *
  * This component provides a mobile-optimized collapsible interface for dashboard filters.
  * It wraps the main DashboardFilters component and provides toggle functionality with
  * persistent state management through localStorage.
- * 
+ *
  * Key Features:
  * - Mobile-only visibility (renders nothing on desktop)
  * - Collapsible interface with smooth transitions
@@ -12,10 +12,10 @@
  * - Active filter count display in header
  * - Keyboard accessibility support
  * - Proper ARIA attributes for screen readers
- * 
+ *
  * The component automatically consumes filter state from DashboardFiltersContext
  * and displays the active filter count in the collapsible header.
- * 
+ *
  * @author serabi
  * @since 2025-07-03
  * @version 1.0.0 - Mobile-optimized collapsible filters

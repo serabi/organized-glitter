@@ -1,10 +1,10 @@
 /**
  * @fileoverview Add Company Dialog Component
- * 
+ *
  * Modal dialog for adding new companies to the user's collection.
  * Features secure duplicate validation and URL validation with user-friendly
  * error handling. Uses FilterBuilder utility for secure PocketBase queries.
- * 
+ *
  * @author serabi
  * @version 1.0.0
  * @since 2024-06-29
@@ -31,7 +31,7 @@ import { logger } from '@/utils/logger';
 
 /**
  * Props interface for the AddCompanyDialog component
- * 
+ *
  * @interface AddCompanyDialogProps
  * @property {() => void} onCompanyAdded - Callback function triggered when a company is successfully added
  */
@@ -41,26 +41,26 @@ interface AddCompanyDialogProps {
 
 /**
  * AddCompanyDialog Component
- * 
+ *
  * Modal dialog component for adding new companies to the user's account.
  * Provides form validation, duplicate checking, and secure data submission.
- * 
+ *
  * Key Features:
  * - Company name and optional URL input fields
  * - Real-time URL validation with user feedback
  * - Secure duplicate company name validation
  * - User-friendly error handling and loading states
  * - Automatic dialog closure on successful submission
- * 
+ *
  * Security Features:
  * - Uses FilterBuilder utility for secure PocketBase queries
  * - Prevents SQL injection through parameterized filtering
  * - User-scoped duplicate validation (only checks user's companies)
- * 
+ *
  * @component
  * @param {AddCompanyDialogProps} props - Component properties
  * @returns {JSX.Element} Rendered add company modal dialog
- * 
+ *
  * @example
  * ```tsx
  * <AddCompanyDialog
@@ -101,11 +101,11 @@ const AddCompanyDialog = ({ onCompanyAdded }: AddCompanyDialogProps) => {
 
   /**
    * Handles company creation with secure validation and duplicate checking
-   * 
+   *
    * Validates form data, checks for duplicate company names, and creates
    * a new company record in PocketBase. Uses FilterBuilder utility for
    * secure duplicate validation queries.
-   * 
+   *
    * Validation Steps:
    * 1. Prevents duplicate form submissions
    * 2. Validates required company name field
@@ -113,20 +113,20 @@ const AddCompanyDialog = ({ onCompanyAdded }: AddCompanyDialogProps) => {
    * 4. Checks user authentication status
    * 5. Performs secure duplicate name validation
    * 6. Creates company record and provides user feedback
-   * 
+   *
    * Security Features:
    * - Uses FilterBuilder utility for secure PocketBase queries
    * - Prevents SQL injection through parameterized filtering
    * - User-scoped duplicate validation (only checks user's companies)
    * - Authentication validation before data operations
-   * 
+   *
    * @async
    * @function
    * @param {React.FormEvent} e - Form submission event
    * @returns {Promise<void>} Resolves when company creation is complete
-   * 
+   *
    * @throws {Error} Logs errors to console and shows user-friendly toast messages
-   * 
+   *
    * @example
    * ```tsx
    * // Triggered by form submission
@@ -181,10 +181,7 @@ const AddCompanyDialog = ({ onCompanyAdded }: AddCompanyDialogProps) => {
 
       // Check if company already exists
       const existingCompanies = await pb.collection('companies').getList(1, 1, {
-        filter: createFilter()
-          .userScope(user.id)
-          .equals('name', newCompanyName.trim())
-          .build(),
+        filter: createFilter().userScope(user.id).equals('name', newCompanyName.trim()).build(),
       });
 
       if (existingCompanies.items.length > 0) {

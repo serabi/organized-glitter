@@ -1,9 +1,9 @@
 /**
  * @fileoverview Auto-save mutation for navigation context preferences
- * 
+ *
  * This hook provides automatic saving of dashboard filter state to the database
  * for use as navigation context fallback on direct URL access.
- * 
+ *
  * @author serabi
  * @since 2025-07-02
  */
@@ -47,9 +47,9 @@ export interface SaveNavigationContextParams {
 /**
  * Saves navigation context to database (upsert operation)
  */
-const saveNavigationContext = async ({ 
-  userId, 
-  navigationContext 
+const saveNavigationContext = async ({
+  userId,
+  navigationContext,
 }: SaveNavigationContextParams): Promise<void> => {
   if (!userId) {
     throw new Error('User ID is required');
@@ -66,8 +66,7 @@ const saveNavigationContext = async ({
     // Try to find existing record
     let record;
     try {
-      record = await pb.collection('user_dashboard_settings')
-        .getFirstListItem(`user="${userId}"`);
+      record = await pb.collection('user_dashboard_settings').getFirstListItem(`user="${userId}"`);
     } catch (error) {
       // Record doesn't exist yet, we'll create it
       if (error?.status !== 404) {
@@ -100,31 +99,31 @@ const saveNavigationContext = async ({
 
 /**
  * React Query mutation hook for saving navigation context to database
- * 
+ *
  * Features:
  * - Upsert operation (create or update as needed)
  * - Automatic query invalidation to ensure fresh fallback data
  * - Error handling with logging
  * - Performance monitoring
- * 
+ *
  * Usage patterns:
  * - Call when dashboard filters change (debounced)
  * - Call before navigation to project detail
  * - Graceful error handling (save failures don't break navigation)
- * 
+ *
  * @returns Mutation object with mutate function and state
- * 
+ *
  * @example
  * ```tsx
  * const saveNavigation = useSaveNavigationContext();
- * 
+ *
  * // Auto-save when filters change
  * useEffect(() => {
  *   if (userId && hasFiltersChanged) {
  *     saveNavigation.mutate({ userId, navigationContext: currentContext });
  *   }
  * }, [userId, currentContext]);
- * 
+ *
  * // Handle errors gracefully
  * if (saveNavigation.error) {
  *   logger.warn('Failed to save navigation preferences');
@@ -136,40 +135,41 @@ export const useSaveNavigationContext = () => {
 
   return useMutation({
     mutationFn: saveNavigationContext,
-    
+
     onSuccess: (_, variables) => {
       const { userId } = variables;
-      
+
       // Invalidate the dashboard filter state cache to ensure fresh data
       // on next dashboard load
       queryClient.invalidateQueries({
         queryKey: queryKeys.dashboardFilters.state(userId),
       });
-      
+
       logger.info(`✅ Successfully saved and invalidated navigation context for user ${userId}`);
     },
-    
+
     onError: (error, variables) => {
       const { userId } = variables;
-      
+
       // Log error but don't throw - auto-save failures shouldn't break the UI
       logger.error(`❌ Failed to save navigation context for user ${userId}:`, error);
       logger.error('Save failure details:', {
         userId,
         errorMessage: error?.message,
-        errorStatus: error && typeof error === 'object' && 'status' in error 
-          ? (error as { status: unknown }).status 
-          : undefined,
-        timestamp: Date.now()
+        errorStatus:
+          error && typeof error === 'object' && 'status' in error
+            ? (error as { status: unknown }).status
+            : undefined,
+        timestamp: Date.now(),
       });
-      
+
       // Could add toast notification here if desired
       // toast.error('Failed to save dashboard preferences');
     },
-    
+
     // Don't retry auto-save operations to avoid spamming the database
     retry: false,
-    
+
     // Use a shorter timeout for auto-save operations
     meta: {
       timeout: 5000, // 5 seconds

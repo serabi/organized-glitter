@@ -24,10 +24,7 @@ async function updateCompany(data: UpdateCompanyData, userId: string): Promise<C
 
   // Check if company name already exists (if name changed)
   if (data.name.trim() !== currentCompany.name) {
-    const filter = new FilterBuilder()
-      .userScope(userId)
-      .equals('name', data.name.trim())
-      .build();
+    const filter = new FilterBuilder().userScope(userId).equals('name', data.name.trim()).build();
 
     const existing = await pb
       .collection(Collections.Companies)

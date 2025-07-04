@@ -571,7 +571,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
 
           if (shouldReturnToDashboard) {
             logger.info('🚀 Returning to dashboard with preserved position after edit');
-            
+
             // Navigate back to dashboard with preserved context
             navigate('/dashboard', {
               replace: true,
@@ -582,7 +582,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
                 timestamp: Date.now(),
                 navigationContext: locationState.navigationContext,
                 preservePosition: true,
-              }
+              },
             });
           } else {
             // Navigate back to project detail page using React Router

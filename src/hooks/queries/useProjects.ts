@@ -173,7 +173,7 @@ const fetchProjects = async (
           })
           .filter((tag): tag is NonNullable<typeof tag> => tag !== null)
       : [];
-  
+
     return {
       id: projectRecord.id as string,
       userId: projectRecord.user as string,

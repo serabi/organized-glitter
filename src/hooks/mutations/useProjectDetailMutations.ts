@@ -128,7 +128,7 @@ export const useUpdateProjectStatusMutation = () => {
     },
     onMutate: async ({ projectId, status }) => {
       const endTiming = dashboardSyncMonitor.startTiming('status-update-mutation');
-      
+
       // Record the mutation start
       dashboardSyncMonitor.recordEvent({
         type: 'status_update',
@@ -151,17 +151,21 @@ export const useUpdateProjectStatusMutation = () => {
 
       // Snapshot the previous values for rollback
       const previousProjectDetail = queryClient.getQueryData(queryKeys.projects.detail(projectId));
-      const previousAdvancedProjects = user?.id 
+      const previousAdvancedProjects = user?.id
         ? queryClient.getQueryData(queryKeys.projects.advanced(user.id))
         : undefined;
-      const previousDashboardStats = user?.id 
-        ? queryClient.getQueryData([...queryKeys.stats.overview(user.id), 'dashboard', new Date().getFullYear()])
+      const previousDashboardStats = user?.id
+        ? queryClient.getQueryData([
+            ...queryKeys.stats.overview(user.id),
+            'dashboard',
+            new Date().getFullYear(),
+          ])
         : undefined;
 
       // Return context object for rollback
       return {
         previousProjectDetail,
-        previousAdvancedProjects, 
+        previousAdvancedProjects,
         previousDashboardStats,
         projectId,
         status,
@@ -183,27 +187,36 @@ export const useUpdateProjectStatusMutation = () => {
       // Roll back the optimistic updates using snapshots
       if (context) {
         if (context.previousProjectDetail) {
-          queryClient.setQueryData(queryKeys.projects.detail(context.projectId), context.previousProjectDetail);
+          queryClient.setQueryData(
+            queryKeys.projects.detail(context.projectId),
+            context.previousProjectDetail
+          );
         }
         if (context.previousAdvancedProjects && user?.id) {
-          queryClient.setQueryData(queryKeys.projects.advanced(user.id), context.previousAdvancedProjects);
+          queryClient.setQueryData(
+            queryKeys.projects.advanced(user.id),
+            context.previousAdvancedProjects
+          );
         }
         if (context.previousDashboardStats && user?.id) {
           const currentYear = new Date().getFullYear();
-          queryClient.setQueryData([...queryKeys.stats.overview(user.id), 'dashboard', currentYear], context.previousDashboardStats);
+          queryClient.setQueryData(
+            [...queryKeys.stats.overview(user.id), 'dashboard', currentYear],
+            context.previousDashboardStats
+          );
         }
-        
+
         // End timing
         if (context.endTiming) {
           context.endTiming();
         }
       }
-      
+
       handleMutationError(err, 'update project status', toast);
     },
     onSuccess: async (_, { projectId, status }, context) => {
       const endTiming = dashboardSyncMonitor.startTiming('simple-invalidation');
-      
+
       // Record successful mutation
       dashboardSyncMonitor.recordEvent({
         type: 'status_update',
@@ -220,11 +233,11 @@ export const useUpdateProjectStatusMutation = () => {
           newStatus: status,
           userId: user.id,
         });
-        
+
         try {
           // Modern TanStack Query v5 best practice: Simple targeted invalidation
           const currentYear = new Date().getFullYear();
-          
+
           await Promise.all([
             // Invalidate project detail with immediate active refetch
             queryClient.invalidateQueries({
@@ -245,9 +258,9 @@ export const useUpdateProjectStatusMutation = () => {
               refetchType: 'active',
             }),
           ]);
-          
+
           endTiming();
-          
+
           dashboardSyncMonitor.recordEvent({
             type: 'cache_invalidation',
             projectId,
@@ -255,14 +268,13 @@ export const useUpdateProjectStatusMutation = () => {
             success: true,
             metadata: { approach: 'simple-invalidation' },
           });
-          
+
           logger.info('✅ Simple cache invalidation completed successfully');
-          
         } catch (error) {
           logger.error('❌ Cache invalidation failed:', error);
-          
+
           endTiming();
-          
+
           dashboardSyncMonitor.recordEvent({
             type: 'cache_invalidation',
             projectId,
@@ -545,8 +557,7 @@ export const useArchiveProjectMutation = () => {
         queryClient.setQueriesData(
           { queryKey: queryKeys.projects.lists(), exact: false },
           (oldData: unknown) => {
-            if (!oldData || typeof oldData !== 'object' || !('projects' in oldData))
-              return oldData;
+            if (!oldData || typeof oldData !== 'object' || !('projects' in oldData)) return oldData;
             const data = oldData as { projects: Array<{ id: string; [key: string]: unknown }> };
             return {
               ...data,
@@ -716,8 +727,7 @@ export const useDeleteProjectMutation = () => {
         queryClient.setQueriesData(
           { queryKey: queryKeys.projects.lists(), exact: false },
           (oldData: unknown) => {
-            if (!oldData || typeof oldData !== 'object' || !('projects' in oldData))
-              return oldData;
+            if (!oldData || typeof oldData !== 'object' || !('projects' in oldData)) return oldData;
             const data = oldData as {
               projects: Array<{ id: string; [key: string]: unknown }>;
               totalItems: number;

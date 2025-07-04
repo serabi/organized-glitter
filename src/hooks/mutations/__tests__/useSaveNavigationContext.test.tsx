@@ -38,7 +38,11 @@ vi.mock('@/hooks/queries/queryKeys', () => ({
 }));
 
 // Import the hook after mocks are set up
-import { useSaveNavigationContext, SaveNavigationContextParams, DashboardFilterContext } from '../useSaveNavigationContext';
+import {
+  useSaveNavigationContext,
+  SaveNavigationContextParams,
+  DashboardFilterContext,
+} from '../useSaveNavigationContext';
 
 describe('useSaveNavigationContext', () => {
   let queryClient: QueryClient;

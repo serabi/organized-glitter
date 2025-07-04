@@ -34,5 +34,4 @@ export function FeedbackDialogProvider() {
   );
 }
 
-
 export default FeedbackDialogProvider;

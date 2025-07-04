@@ -1,6 +1,6 @@
 /**
  * PocketBase Real-time Project Synchronization Hook
- * 
+ *
  * Handles real-time project updates from PocketBase to ensure
  * React Query cache stays synchronized with external changes
  */
@@ -48,7 +48,7 @@ export const useRealtimeProjectSync = () => {
 
       // Only process events for the current user's projects
       if (e.record?.user !== user.id) {
-        logger.debug('⏭️ Skipping event - not current user\'s project');
+        logger.debug("⏭️ Skipping event - not current user's project");
         return;
       }
 
@@ -71,7 +71,7 @@ export const useRealtimeProjectSync = () => {
             exact: false,
             refetchType: 'active',
           }),
-          // Dashboard stats caches  
+          // Dashboard stats caches
           queryClient.invalidateQueries({
             queryKey: [...queryKeys.stats.overview(user.id), 'dashboard', currentYear],
             exact: true,

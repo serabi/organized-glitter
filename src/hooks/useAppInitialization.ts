@@ -78,11 +78,14 @@ export const useAppInitialization = (): void => {
       // DIAGNOSTIC: Check for React Query queryKey errors
       const reason = event.reason?.message || event.reason?.toString() || '';
       if (reason.includes("Cannot read properties of undefined (reading 'queryKey')")) {
-        logger.criticalError('🚨 CRITICAL: React Query queryKey undefined error detected in production!', {
-          reason: event.reason,
-          stack: event.reason?.stack,
-          timestamp: new Date().toISOString()
-        });
+        logger.criticalError(
+          '🚨 CRITICAL: React Query queryKey undefined error detected in production!',
+          {
+            reason: event.reason,
+            stack: event.reason?.stack,
+            timestamp: new Date().toISOString(),
+          }
+        );
       }
 
       // For chunk loading errors, reload the page

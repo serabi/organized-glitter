@@ -1,6 +1,6 @@
 /**
  * Dashboard Synchronization Performance Monitor
- * 
+ *
  * Provides debugging and performance monitoring tools for dashboard
  * status synchronization to help identify and prevent future issues.
  */
@@ -36,9 +36,9 @@ class DashboardSyncMonitor {
   private initializePerformanceMonitoring() {
     if (typeof window !== 'undefined' && 'PerformanceObserver' in window) {
       try {
-        this.performanceObserver = new PerformanceObserver((list) => {
+        this.performanceObserver = new PerformanceObserver(list => {
           const entries = list.getEntries();
-          entries.forEach((entry) => {
+          entries.forEach(entry => {
             if (entry.name.includes('dashboard') || entry.name.includes('project')) {
               logger.debug('🎯 Performance entry:', {
                 name: entry.name,
@@ -48,7 +48,7 @@ class DashboardSyncMonitor {
             }
           });
         });
-        
+
         this.performanceObserver.observe({ entryTypes: ['measure', 'navigation'] });
       } catch (error) {
         logger.debug('Performance monitoring not available:', error);
@@ -87,7 +87,7 @@ class DashboardSyncMonitor {
    */
   startTiming(operationName: string): () => void {
     const startTime = performance.now();
-    
+
     return () => {
       const duration = performance.now() - startTime;
       this.recordEvent({
@@ -119,18 +119,24 @@ class DashboardSyncMonitor {
   getPerformanceSummary() {
     const now = Date.now();
     const recentEvents = this.events.filter(event => now - event.timestamp < 60000); // Last minute
-    
+
     const summary = {
       totalEvents: recentEvents.length,
       successRate: recentEvents.filter(e => e.success).length / recentEvents.length,
-      averageDuration: recentEvents
-        .filter(e => e.duration)
-        .reduce((sum, e) => sum + (e.duration || 0), 0) / recentEvents.length,
-      eventsByType: recentEvents.reduce((acc, event) => {
-        acc[event.type] = (acc[event.type] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>),
-      errors: recentEvents.filter(e => !e.success).map(e => e.error).filter(Boolean),
+      averageDuration:
+        recentEvents.filter(e => e.duration).reduce((sum, e) => sum + (e.duration || 0), 0) /
+        recentEvents.length,
+      eventsByType: recentEvents.reduce(
+        (acc, event) => {
+          acc[event.type] = (acc[event.type] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>
+      ),
+      errors: recentEvents
+        .filter(e => !e.success)
+        .map(e => e.error)
+        .filter(Boolean),
     };
 
     logger.info('📊 Dashboard sync performance summary:', summary);
@@ -143,7 +149,7 @@ class DashboardSyncMonitor {
   diagnose(): string[] {
     const issues: string[] = [];
     const recentEvents = this.events.slice(-20); // Last 20 events
-    
+
     // Check for repeated failures
     const failures = recentEvents.filter(e => !e.success);
     if (failures.length > 3) {
@@ -204,7 +210,7 @@ export const dashboardSyncMonitor = new DashboardSyncMonitor();
 if (import.meta.env.DEV) {
   // Add to window for debugging
   (window as Record<string, unknown>).__dashboardSyncMonitor = dashboardSyncMonitor;
-  
+
   // Auto-diagnose every 30 seconds in development
   const diagnosisInterval = setInterval(() => {
     const issues = dashboardSyncMonitor.diagnose();

@@ -212,7 +212,7 @@ describe('Dashboard Integration', () => {
       },
     });
     vi.clearAllMocks();
-    
+
     mockGetFirstListItem.mockRejectedValue({ status: 404 }); // No saved state
     mockLocation.pathname = '/dashboard';
     mockLocation.search = '';
@@ -469,7 +469,7 @@ describe('Dashboard Integration', () => {
   describe('performance', () => {
     it('should render without excessive re-renders', async () => {
       const renderCount = vi.fn();
-      
+
       const TestWrapper = () => {
         renderCount();
         return <Dashboard />;
@@ -514,7 +514,7 @@ describe('Dashboard Integration', () => {
       // Filter controls should be focusable
       const searchInput = screen.getByPlaceholderText('Search projects...');
       expect(searchInput).toBeInTheDocument();
-      
+
       searchInput.focus();
       expect(searchInput).toHaveFocus();
     });

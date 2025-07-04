@@ -169,7 +169,9 @@ export const useUserMetadata = () => {
         } catch (error) {
           // Handle cancellation gracefully
           if (error && typeof error === 'object' && 'status' in error && error.status === 0) {
-            metadataLogger.debug('useUserMetadata: Request was cancelled, component likely unmounted');
+            metadataLogger.debug(
+              'useUserMetadata: Request was cancelled, component likely unmounted'
+            );
             return;
           }
           throw error;
@@ -185,7 +187,10 @@ export const useUserMetadata = () => {
           if (!isMounted) return;
           setCompanies(companiesResponse.data);
         } else if (companiesResponse.error) {
-          metadataLogger.error('useUserMetadata: Error fetching companies:', companiesResponse.error);
+          metadataLogger.error(
+            'useUserMetadata: Error fetching companies:',
+            companiesResponse.error
+          );
           // Only show toast for actual errors, not empty data
           if (
             !companiesResponse.error.message?.includes('not authenticated') &&

@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import { useNavigateToProject, useNavigateToProjectEdit, createNavigationContext } from '../useNavigateToProject';
+import {
+  useNavigateToProject,
+  useNavigateToProjectEdit,
+  createNavigationContext,
+} from '../useNavigateToProject';
 
 // Mock react-router-dom
 const mockNavigate = vi.fn();
@@ -28,7 +32,7 @@ describe('useNavigateToProject', () => {
   describe('useNavigateToProject hook', () => {
     it('should navigate to project detail page', () => {
       const { result } = renderHook(() => useNavigateToProject());
-      
+
       const navigateToProject = result.current;
       navigateToProject('project123');
 
@@ -41,7 +45,7 @@ describe('useNavigateToProject', () => {
 
     it('should navigate with replace option', () => {
       const { result } = renderHook(() => useNavigateToProject());
-      
+
       const navigateToProject = result.current;
       navigateToProject('project456', { replace: true });
 
@@ -54,7 +58,7 @@ describe('useNavigateToProject', () => {
 
     it('should use default options when none provided', () => {
       const { result } = renderHook(() => useNavigateToProject());
-      
+
       const navigateToProject = result.current;
       navigateToProject('project789');
 
@@ -63,7 +67,7 @@ describe('useNavigateToProject', () => {
 
     it('should handle empty project ID', () => {
       const { result } = renderHook(() => useNavigateToProject());
-      
+
       const navigateToProject = result.current;
       navigateToProject('');
 
@@ -72,7 +76,7 @@ describe('useNavigateToProject', () => {
 
     it('should be memoized and stable', () => {
       const { result, rerender } = renderHook(() => useNavigateToProject());
-      
+
       const firstRender = result.current;
       rerender();
       const secondRender = result.current;
@@ -84,7 +88,7 @@ describe('useNavigateToProject', () => {
   describe('useNavigateToProjectEdit hook', () => {
     it('should navigate to project edit page', () => {
       const { result } = renderHook(() => useNavigateToProjectEdit());
-      
+
       const navigateToEdit = result.current;
       navigateToEdit('project123');
 
@@ -96,7 +100,7 @@ describe('useNavigateToProject', () => {
 
     it('should ignore options parameter for backward compatibility', () => {
       const { result } = renderHook(() => useNavigateToProjectEdit());
-      
+
       const navigateToEdit = result.current;
       navigateToEdit('project456', { someOption: true });
 
@@ -105,7 +109,7 @@ describe('useNavigateToProject', () => {
 
     it('should handle empty project ID', () => {
       const { result } = renderHook(() => useNavigateToProjectEdit());
-      
+
       const navigateToEdit = result.current;
       navigateToEdit('');
 
@@ -114,7 +118,7 @@ describe('useNavigateToProject', () => {
 
     it('should be memoized and stable', () => {
       const { result, rerender } = renderHook(() => useNavigateToProjectEdit());
-      
+
       const firstRender = result.current;
       rerender();
       const secondRender = result.current;
@@ -132,19 +136,19 @@ describe('useNavigateToProject', () => {
       expect(context).toEqual({
         timestamp: expect.any(Number),
       });
-      
+
       expect(context.timestamp).toBeGreaterThanOrEqual(beforeTime);
       expect(context.timestamp).toBeLessThanOrEqual(afterTime);
     });
 
     it('should create new timestamp on each call', () => {
       const context1 = createNavigationContext();
-      
+
       // Small delay to ensure different timestamps
       const delay = new Promise(resolve => setTimeout(resolve, 1));
       return delay.then(() => {
         const context2 = createNavigationContext();
-        
+
         expect(context1.timestamp).not.toBe(context2.timestamp);
         expect(context2.timestamp).toBeGreaterThan(context1.timestamp);
       });
@@ -158,7 +162,7 @@ describe('useNavigateToProject', () => {
       });
 
       const { result } = renderHook(() => useNavigateToProject());
-      
+
       expect(() => {
         const navigateToProject = result.current;
         navigateToProject('project123');
@@ -173,7 +177,7 @@ describe('useNavigateToProject', () => {
 
     it('should handle special characters in project ID', () => {
       const { result } = renderHook(() => useNavigateToProject());
-      
+
       const navigateToProject = result.current;
       const specialId = 'project-123_test@example.com';
       navigateToProject(specialId);
@@ -185,7 +189,7 @@ describe('useNavigateToProject', () => {
   describe('integration with react-router', () => {
     it('should use react-router navigate function', () => {
       const { result } = renderHook(() => useNavigateToProject());
-      
+
       const navigateToProject = result.current;
       navigateToProject('project123');
 
@@ -195,7 +199,7 @@ describe('useNavigateToProject', () => {
 
     it('should pass correct parameters to navigate', () => {
       const { result } = renderHook(() => useNavigateToProject());
-      
+
       const navigateToProject = result.current;
       navigateToProject('test-project', { replace: true });
 
@@ -208,7 +212,7 @@ describe('useNavigateToProject', () => {
   describe('performance', () => {
     it('should not create new functions on every render', () => {
       const { result, rerender } = renderHook(() => useNavigateToProject());
-      
+
       const func1 = result.current;
       rerender();
       const func2 = result.current;
@@ -232,28 +236,28 @@ describe('useNavigateToProject', () => {
   describe('type safety', () => {
     it('should accept valid project IDs', () => {
       const { result } = renderHook(() => useNavigateToProject());
-      
+
       const navigateToProject = result.current;
-      
+
       // These should all work without TypeScript errors
       navigateToProject('valid-id');
       navigateToProject('123');
       navigateToProject('project_with_underscores');
       navigateToProject('project-with-dashes');
-      
+
       expect(mockNavigate).toHaveBeenCalledTimes(4);
     });
 
     it('should accept valid options', () => {
       const { result } = renderHook(() => useNavigateToProject());
-      
+
       const navigateToProject = result.current;
-      
+
       // These should all work without TypeScript errors
       navigateToProject('id', {});
       navigateToProject('id', { replace: true });
       navigateToProject('id', { replace: false });
-      
+
       expect(mockNavigate).toHaveBeenCalledTimes(3);
     });
   });

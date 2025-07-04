@@ -1,10 +1,10 @@
 /**
  * @fileoverview Projects Grid Component with Smart Date Separators
- * 
+ *
  * This component renders the main grid/list view of projects with intelligent sorting
  * and visual separators. It handles both grid and list layouts with responsive design
  * and provides pagination controls for large project collections.
- * 
+ *
  * Key Features:
  * - Responsive grid layout (1-3 columns based on screen size)
  * - Smart date-based separators for chronological sorting
@@ -13,18 +13,18 @@
  * - Empty state with filter reset option
  * - Integrated pagination controls
  * - Memorized rendering for performance
- * 
+ *
  * Date Separator Logic:
  * - Automatically detects date-based sorting fields
  * - Inserts separators between dated and undated projects
  * - Shows count of projects without the relevant date
  * - Adapts separator labels to current sort field
- * 
+ *
  * State Management:
  * - Consumes all data from DashboardFiltersContext
  * - Handles project click navigation with context preservation
  * - Integrates with recently edited highlighting system
- * 
+ *
  * @author serabi
  * @since 2025-07-03
  * @version 1.0.0 - Context-based grid with smart separators

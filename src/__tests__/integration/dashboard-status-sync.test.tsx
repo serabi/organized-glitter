@@ -1,6 +1,6 @@
 /**
  * Integration Tests for Dashboard Status Synchronization
- * 
+ *
  * Tests the complete flow from project status update to dashboard display
  * to ensure bulletproof synchronization between project changes and UI.
  */
@@ -29,7 +29,7 @@ const mockDashboardStatsService = vi.mocked(DashboardStatsService);
 // Test component that uses the mutation
 const TestComponent = ({ projectId }: { projectId: string }) => {
   const mutation = useUpdateProjectStatusMutation();
-  
+
   return (
     <div>
       <div data-testid="mutation-status">
@@ -66,9 +66,7 @@ const TestWrapper = ({ children, user = { id: 'test-user-id', email: 'test@test.
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
         <AuthContext.Provider value={authContextValue}>
-          <DashboardFiltersProvider user={user}>
-            {children}
-          </DashboardFiltersProvider>
+          <DashboardFiltersProvider user={user}>{children}</DashboardFiltersProvider>
         </AuthContext.Provider>
       </MemoryRouter>
     </QueryClientProvider>
@@ -111,7 +109,7 @@ describe('Dashboard Status Synchronization', () => {
 
   it('should properly cancel queries during optimistic updates', async () => {
     const cancelQueriesSpy = vi.spyOn(queryClient, 'cancelQueries');
-    
+
     render(
       <TestWrapper>
         <TestComponent projectId={projectId} />
@@ -139,7 +137,7 @@ describe('Dashboard Status Synchronization', () => {
 
   it('should invalidate cache with correct key structure', async () => {
     const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
-    
+
     render(
       <TestWrapper>
         <TestComponent projectId={projectId} />
@@ -192,7 +190,7 @@ describe('Dashboard Status Synchronization', () => {
     );
 
     const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
-    
+
     render(
       <TestWrapper>
         <TestComponent projectId={projectId} />
@@ -219,7 +217,7 @@ describe('Dashboard Status Synchronization', () => {
     } as never);
 
     const setQueryDataSpy = vi.spyOn(queryClient, 'setQueryData');
-    
+
     // Pre-populate cache with some data
     const previousData = { id: projectId, status: 'wishlist' };
     queryClient.setQueryData(queryKeys.projects.detail(projectId), previousData);
@@ -247,7 +245,7 @@ describe('Dashboard Status Synchronization', () => {
     const TestConcurrentComponent = () => {
       const mutation1 = useUpdateProjectStatusMutation();
       const mutation2 = useUpdateProjectStatusMutation();
-      
+
       return (
         <div>
           <button
@@ -293,7 +291,7 @@ describe('Dashboard Status Synchronization', () => {
   it('should maintain database as source of truth', async () => {
     const setQueryDataSpy = vi.spyOn(queryClient, 'setQueryData');
     const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
-    
+
     render(
       <TestWrapper>
         <TestComponent projectId={projectId} />
@@ -308,9 +306,8 @@ describe('Dashboard Status Synchronization', () => {
 
     // Should NOT use setQueryData for optimistic updates in onSuccess
     // (we removed optimistic updates in favor of immediate invalidation)
-    const optimisticCalls = setQueryDataSpy.mock.calls.filter(call => 
-      call[0] === queryKeys.projects.detail(projectId) &&
-      typeof call[1] === 'function'
+    const optimisticCalls = setQueryDataSpy.mock.calls.filter(
+      call => call[0] === queryKeys.projects.detail(projectId) && typeof call[1] === 'function'
     );
     expect(optimisticCalls).toHaveLength(0);
 
@@ -326,7 +323,7 @@ describe('Real-time Synchronization', () => {
   it('should handle external project updates via real-time events', async () => {
     // This would require mocking PocketBase real-time subscriptions
     // For now, we verify the hook is integrated
-    
+
     render(
       <TestWrapper>
         <div data-testid="test-content">Dashboard with real-time sync</div>
@@ -334,7 +331,7 @@ describe('Real-time Synchronization', () => {
     );
 
     expect(screen.getByTestId('test-content')).toBeInTheDocument();
-    
+
     // Real-time functionality is tested in the hook's unit tests
     // Integration would require a more complex setup with WebSocket mocking
   });

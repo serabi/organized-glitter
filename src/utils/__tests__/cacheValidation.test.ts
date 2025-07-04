@@ -62,7 +62,7 @@ describe('cacheValidation', () => {
       // Add a query with 404 error
       queryClient.setQueryData(['test', 'error'], 'some data');
       const query = queryClient.getQueryCache().find({ queryKey: ['test', 'error'] });
-      
+
       if (query) {
         // Simulate 404 error
         query.state = {
@@ -80,7 +80,7 @@ describe('cacheValidation', () => {
     it('should not remove queries that are currently fetching', () => {
       queryClient.setQueryData(['test', 'fetching'], 'some data');
       const query = queryClient.getQueryCache().find({ queryKey: ['test', 'fetching'] });
-      
+
       if (query) {
         query.state = {
           ...query.state,
@@ -97,7 +97,7 @@ describe('cacheValidation', () => {
     it('should not remove queries with non-404 errors', () => {
       queryClient.setQueryData(['test', 'servererror'], 'some data');
       const query = queryClient.getQueryCache().find({ queryKey: ['test', 'servererror'] });
-      
+
       if (query) {
         query.state = {
           ...query.state,

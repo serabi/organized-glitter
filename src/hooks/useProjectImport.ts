@@ -9,7 +9,11 @@ import { logger } from '@/utils/logger';
 import { TAG_COLOR_PALETTE } from '@/utils/tagColors'; // For default tag color
 import { generateUniqueSlug } from '@/utils/slugify';
 import { validateProjectData, validateTagNames, ValidationIssue } from '@/utils/csvValidation';
-import { analyzeCSVFile, generateColumnValidationMessage, ColumnAnalysisResult } from '@/utils/csvColumnAnalysis';
+import {
+  analyzeCSVFile,
+  generateColumnValidationMessage,
+  ColumnAnalysisResult,
+} from '@/utils/csvColumnAnalysis';
 
 const DEFAULT_TAG_COLOR_HEX = TAG_COLOR_PALETTE[0].hex; // Default color for new tags
 
@@ -107,7 +111,7 @@ export const useProjectImport = () => {
       logger.debug('Analyzing CSV column structure...');
       const columnAnalysis = await analyzeCSVFile(file);
       const validationMessage = generateColumnValidationMessage(columnAnalysis);
-      
+
       // Log column analysis results
       logger.debug('CSV column analysis complete', {
         detectedColumns: columnAnalysis.detectedColumns.length,
@@ -115,7 +119,7 @@ export const useProjectImport = () => {
         missingOptional: columnAnalysis.missingOptional.length,
         unmappedColumns: columnAnalysis.unmappedColumns.length,
         hasAllRequired: columnAnalysis.summary.hasAllRequired,
-        canProceed: validationMessage.canProceed
+        canProceed: validationMessage.canProceed,
       });
 
       // Check if we can proceed with import
@@ -173,16 +177,16 @@ export const useProjectImport = () => {
       logger.debug('Starting batch tag processing...', {
         allUniqueTagNamesCount: allUniqueTagNames.length,
       });
-      
+
       // Validate all tag names first
       const tagValidationResult = validateTagNames(allUniqueTagNames);
       const allValidationIssues: ValidationIssue[] = [...tagValidationResult.issues];
-      
+
       // Use validated tag names
       const validatedTagNamesMap = new Map(
         tagValidationResult.validatedTags.map(({ original, normalized }) => [original, normalized])
       );
-      
+
       const tagNameMap: Record<string, string> = {};
       const currentTagWarnings: string[] = []; // Use a local var for warnings during this phase
 
@@ -221,15 +225,21 @@ export const useProjectImport = () => {
             const checkSlugExists = async (slug: string): Promise<boolean> => {
               try {
                 const existingSlugs = await pb.collection('tags').getList(1, 1, {
-                  filter: pb.filter('user = {:userId} && slug = {:slug}', { userId: user.id, slug }),
+                  filter: pb.filter('user = {:userId} && slug = {:slug}', {
+                    userId: user.id,
+                    slug,
+                  }),
                   fields: 'id',
                 });
                 return existingSlugs.items.length > 0;
               } catch (error) {
                 // If error checking, assume it DOES exist to prevent duplicate creation
-                // This conservative approach avoids duplicate slugs at the cost of potentially 
+                // This conservative approach avoids duplicate slugs at the cost of potentially
                 // generating a longer slug than necessary
-                logger.warn(`Error checking slug existence for "${slug}", assuming it exists to prevent duplicates:`, error);
+                logger.warn(
+                  `Error checking slug existence for "${slug}", assuming it exists to prevent duplicates:`,
+                  error
+                );
                 return true;
               }
             };
@@ -248,7 +258,7 @@ export const useProjectImport = () => {
             createdTagsCount++;
             logger.debug(`Successfully created new tag: ${tagName}`, {
               id: createdTag.id,
-              slug: uniqueSlug
+              slug: uniqueSlug,
             });
           } catch (tagCreateError) {
             logger.error(`Failed to pre-create new tag: ${tagName}`, tagCreateError);
@@ -288,10 +298,10 @@ export const useProjectImport = () => {
             generalNotes: parsedProject.generalNotes,
             sourceUrl: parsedProject.sourceUrl,
           });
-          
+
           // Add validation issues to our tracking
           allValidationIssues.push(...projectValidation.issues);
-          
+
           // Map tag names to IDs using validated names
           const projectTagIds = (parsedProject.tagNames || [])
             .map(originalName => {
@@ -339,10 +349,10 @@ export const useProjectImport = () => {
 
       for (let i = 0; i < projectsToCreate.length; i++) {
         const project = projectsToCreate[i];
-        
+
         // Update current project being imported
         setImportStats(prev => ({ ...prev, currentProject: project.title }));
-        
+
         try {
           const result = await createProject(project); // createProject now expects tagIds
           successCount++;
@@ -413,16 +423,16 @@ export const useProjectImport = () => {
       if (tagWarnings.length > 0) {
         logger.warn('Tag processing/linking warnings:', { tagWarnings });
       }
-      
+
       if (allValidationIssues.length > 0) {
-        logger.warn('Data validation issues corrected:', { 
+        logger.warn('Data validation issues corrected:', {
           validationIssues: allValidationIssues.map(issue => ({
             field: issue.field,
             severity: issue.severity,
             message: issue.message,
             originalValue: issue.originalValue,
-            correctedValue: issue.correctedValue
-          }))
+            correctedValue: issue.correctedValue,
+          })),
         });
       }
 

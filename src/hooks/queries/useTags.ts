@@ -14,14 +14,14 @@ export function useTags() {
       if (!user?.id) {
         throw new Error('User not authenticated');
       }
-      
+
       // Use secure TagService instead of direct PocketBase calls
       const result = await TagService.getUserTags();
-      
+
       if (result.status === 'error') {
         throw new Error(result.error || 'Failed to fetch tags');
       }
-      
+
       return result.data;
     },
     enabled: !!user?.id,

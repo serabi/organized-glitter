@@ -15,10 +15,10 @@ interface MockSearchProjectsProps {
 vi.mock('../SearchProjects', () => ({
   default: ({ searchTerm, onSearchChange, isPending }: MockSearchProjectsProps) => (
     <div data-testid="search-projects">
-      <input 
+      <input
         data-testid="search-input"
         value={searchTerm}
-        onChange={(e) => onSearchChange(e.target.value)}
+        onChange={e => onSearchChange(e.target.value)}
       />
       {isPending && <span data-testid="search-pending">Searching...</span>}
     </div>
@@ -38,7 +38,7 @@ vi.mock('../FilterDropdown', () => ({
   default: ({ label, value, onChange, options, placeholder }: MockFilterDropdownProps) => (
     <div data-testid={`filter-dropdown-${label.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}>
       <label>{label}</label>
-      <select value={value} onChange={(e) => onChange(e.target.value)}>
+      <select value={value} onChange={e => onChange(e.target.value)}>
         <option value="all">{placeholder}</option>
         {options?.map((option: { label: string; value: string } | string) => (
           <option key={option.value || option} value={option.value || option}>
@@ -61,13 +61,13 @@ interface MockViewToggleProps {
 vi.mock('../ViewToggle', () => ({
   default: ({ activeView, onViewChange }: MockViewToggleProps) => (
     <div data-testid="view-toggle">
-      <button 
+      <button
         onClick={() => onViewChange('grid')}
         className={activeView === 'grid' ? 'active' : ''}
       >
         Grid
       </button>
-      <button 
+      <button
         onClick={() => onViewChange('list')}
         className={activeView === 'list' ? 'active' : ''}
       >
@@ -146,7 +146,7 @@ describe('DashboardFilters', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetActiveFilterCount.mockReturnValue(0);
-    
+
     // Reset filters to defaults
     Object.assign(mockFilters, {
       activeStatus: 'all',
@@ -206,7 +206,7 @@ describe('DashboardFilters', () => {
   describe('active filter count badge', () => {
     it('should show active filter count when filters are applied', () => {
       mockGetActiveFilterCount.mockReturnValue(3);
-      
+
       render(<DashboardFilters />);
 
       expect(screen.getByText('3 Active')).toBeInTheDocument();
@@ -214,7 +214,7 @@ describe('DashboardFilters', () => {
 
     it('should not show badge when no filters are active', () => {
       mockGetActiveFilterCount.mockReturnValue(0);
-      
+
       render(<DashboardFilters />);
 
       expect(screen.queryByText(/active/i)).not.toBeInTheDocument();
@@ -224,7 +224,7 @@ describe('DashboardFilters', () => {
   describe('loading state', () => {
     it('should show loading message when projects are loading', () => {
       mockContextValue.isLoadingProjects = true;
-      
+
       render(<DashboardFilters />);
 
       expect(screen.getByText('Loading filters...')).toBeInTheDocument();
@@ -232,7 +232,7 @@ describe('DashboardFilters', () => {
 
     it('should not show loading message when not loading', () => {
       mockContextValue.isLoadingProjects = false;
-      
+
       render(<DashboardFilters />);
 
       expect(screen.queryByText('Loading filters...')).not.toBeInTheDocument();
@@ -243,7 +243,7 @@ describe('DashboardFilters', () => {
     it('should render search component with correct props', () => {
       mockFilters.searchTerm = 'test search';
       mockContextValue.isSearchPending = true;
-      
+
       render(<DashboardFilters />);
 
       const searchInput = screen.getByTestId('search-input');
@@ -267,7 +267,7 @@ describe('DashboardFilters', () => {
 
       const companySelect = screen.getByTestId('filter-dropdown-company').querySelector('select');
       expect(companySelect).toHaveValue('all');
-      
+
       const options = Array.from(companySelect!.options).map(opt => opt.textContent);
       expect(options).toContain('Company 1');
       expect(options).toContain('Company 2');
@@ -294,7 +294,9 @@ describe('DashboardFilters', () => {
     it('should render drill shape filter', () => {
       render(<DashboardFilters />);
 
-      const drillShapeSelect = screen.getByTestId('filter-dropdown-drill-shape').querySelector('select');
+      const drillShapeSelect = screen
+        .getByTestId('filter-dropdown-drill-shape')
+        .querySelector('select');
       const options = Array.from(drillShapeSelect!.options).map(opt => opt.textContent);
       expect(options).toContain('round');
       expect(options).toContain('square');
@@ -303,7 +305,9 @@ describe('DashboardFilters', () => {
     it('should render year filter', () => {
       render(<DashboardFilters />);
 
-      const yearSelect = screen.getByTestId('filter-dropdown-year-finished').querySelector('select');
+      const yearSelect = screen
+        .getByTestId('filter-dropdown-year-finished')
+        .querySelector('select');
       const options = Array.from(yearSelect!.options).map(opt => opt.textContent);
       expect(options).toContain('2023');
       expect(options).toContain('2022');
@@ -323,7 +327,7 @@ describe('DashboardFilters', () => {
 
     it('should show first selected tag in dropdown', () => {
       mockFilters.selectedTags = ['tag1', 'tag2'];
-      
+
       render(<DashboardFilters />);
 
       const tagSelect = screen.getByTestId('filter-dropdown-tag').querySelector('select');
@@ -353,7 +357,7 @@ describe('DashboardFilters', () => {
   describe('mini kits checkbox', () => {
     it('should be checked when includeMiniKits is true', () => {
       mockFilters.includeMiniKits = true;
-      
+
       render(<DashboardFilters />);
 
       const checkbox = screen.getByTestId('include-mini-kits-checkbox');
@@ -362,7 +366,7 @@ describe('DashboardFilters', () => {
 
     it('should not be checked when includeMiniKits is false', () => {
       mockFilters.includeMiniKits = false;
-      
+
       render(<DashboardFilters />);
 
       const checkbox = screen.getByTestId('include-mini-kits-checkbox');
@@ -382,7 +386,7 @@ describe('DashboardFilters', () => {
   describe('view toggle', () => {
     it('should show current view type', () => {
       mockFilters.viewType = 'grid';
-      
+
       render(<DashboardFilters />);
 
       const gridButton = screen.getByText('Grid');
@@ -405,7 +409,7 @@ describe('DashboardFilters', () => {
 
       const sortSelect = screen.getByTestId('filter-dropdown-sort-by').querySelector('select');
       const options = Array.from(sortSelect!.options).map(opt => opt.textContent);
-      
+
       expect(options).toContain('Default');
       expect(options).toContain('Alphabetical by Kit Name');
       expect(options).toContain('Date Purchased');
@@ -414,36 +418,36 @@ describe('DashboardFilters', () => {
 
     it('should show correct sort direction options for kit_name field', () => {
       mockFilters.sortField = 'kit_name';
-      
+
       render(<DashboardFilters />);
 
       const orderSelect = screen.getByTestId('filter-dropdown-order').querySelector('select');
       const options = Array.from(orderSelect!.options).map(opt => opt.textContent);
-      
+
       expect(options).toContain('Z-A');
       expect(options).toContain('A-Z');
     });
 
     it('should show correct sort direction options for date fields', () => {
       mockFilters.sortField = 'date_purchased';
-      
+
       render(<DashboardFilters />);
 
       const orderSelect = screen.getByTestId('filter-dropdown-order').querySelector('select');
       const options = Array.from(orderSelect!.options).map(opt => opt.textContent);
-      
+
       expect(options).toContain('Newest First');
       expect(options).toContain('Oldest First');
     });
 
     it('should show correct sort direction options for last_updated field', () => {
       mockFilters.sortField = 'last_updated';
-      
+
       render(<DashboardFilters />);
 
       const orderSelect = screen.getByTestId('filter-dropdown-order').querySelector('select');
       const options = Array.from(orderSelect!.options).map(opt => opt.textContent);
-      
+
       expect(options).toContain('Most Recently Modified');
       expect(options).toContain('Least Recently Modified');
     });
@@ -468,7 +472,7 @@ describe('DashboardFilters', () => {
 
     it('should handle invalid sort direction gracefully', () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      
+
       render(<DashboardFilters />);
 
       const orderSelect = screen.getByTestId('filter-dropdown-order').querySelector('select');
@@ -478,7 +482,7 @@ describe('DashboardFilters', () => {
         expect.stringContaining('Invalid sort direction value received: invalid')
       );
       expect(mockUpdateSort).toHaveBeenCalledWith('last_updated', 'desc');
-      
+
       consoleSpy.mockRestore();
     });
   });

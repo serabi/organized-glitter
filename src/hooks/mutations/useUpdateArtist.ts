@@ -23,10 +23,7 @@ async function updateArtist(data: UpdateArtistData, userId: string): Promise<Art
 
   // Check if artist name already exists (if name changed)
   if (data.name.trim() !== currentArtist.name) {
-    const filter = new FilterBuilder()
-      .userScope(userId)
-      .equals('name', data.name.trim())
-      .build();
+    const filter = new FilterBuilder().userScope(userId).equals('name', data.name.trim()).build();
 
     const existing = await pb
       .collection(Collections.Artists)

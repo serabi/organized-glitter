@@ -1,10 +1,10 @@
 /**
  * @fileoverview Account Settings Component
- * 
+ *
  * Provides user account management functionality including email updates,
  * username changes, password management, and account deletion.
  * Uses secure FilterBuilder utility for PocketBase queries to prevent SQL injection.
- * 
+ *
  * @author Generated with Claude Code
  * @version 1.0.0
  * @since 2024-06-29
@@ -33,7 +33,7 @@ import { logger } from '@/utils/logger';
 
 /**
  * Props interface for the AccountSettings component
- * 
+ *
  * @interface AccountSettingsProps
  * @property {boolean} loading - Whether the profile data is currently loading
  * @property {string} [email] - User's current email address (optional)
@@ -51,22 +51,22 @@ interface AccountSettingsProps {
 
 /**
  * AccountSettings Component
- * 
+ *
  * Renders a comprehensive account management interface allowing users to:
  * - Update their username with secure duplicate validation
  * - Change their email address
  * - Update their password
  * - Delete their account
- * 
+ *
  * Security Features:
  * - Uses FilterBuilder utility for secure PocketBase queries
  * - Prevents SQL injection through parameterized filtering
  * - Validates username uniqueness before updates
- * 
+ *
  * @component
  * @param {AccountSettingsProps} props - Component properties
  * @returns {JSX.Element} Rendered account settings interface
- * 
+ *
  * @example
  * ```tsx
  * <AccountSettings
@@ -113,22 +113,22 @@ const AccountSettings = ({
 
   /**
    * Handles username update with secure validation
-   * 
+   *
    * Validates and updates the user's username while ensuring uniqueness.
    * Uses FilterBuilder utility for secure PocketBase queries to prevent SQL injection.
-   * 
+   *
    * Security Features:
    * - Secure parameterized queries using createFilter()
    * - Prevents SQL injection through proper parameter binding
    * - Validates uniqueness excluding current user
-   * 
+   *
    * @async
    * @function
    * @param {React.FormEvent} e - Form submission event
    * @returns {Promise<void>} Resolves when username update is complete
-   * 
+   *
    * @throws {Error} Throws when PocketBase update fails
-   * 
+   *
    * @example
    * ```tsx
    * // Triggered by form submission
@@ -154,10 +154,7 @@ const AccountSettings = ({
     try {
       // Check if username already exists (except for current user)
       const existingUsers = await pb.collection('users').getList(1, 1, {
-        filter: createFilter()
-          .equals('username', newUsername)
-          .notEquals('id', userId)
-          .build(),
+        filter: createFilter().equals('username', newUsername).notEquals('id', userId).build(),
       });
 
       if (existingUsers.items.length > 0) {

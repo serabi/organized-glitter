@@ -331,7 +331,7 @@ const Import = () => {
                           Importing projects... {progress}%
                         </p>
                         {importStats.currentProject && (
-                          <p className="text-xs text-muted-foreground italic">
+                          <p className="text-xs italic text-muted-foreground">
                             Currently importing: {importStats.currentProject}
                           </p>
                         )}
