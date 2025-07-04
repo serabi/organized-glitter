@@ -1,6 +1,10 @@
 /**
  * @fileoverview Tests for CSV validation utilities
+<<<<<<< HEAD
  *
+=======
+ * 
+>>>>>>> main
  * Tests the validation and normalization functions used during CSV import
  * to ensure data meets PocketBase schema constraints.
  */
@@ -15,6 +19,7 @@ import {
   validateDate,
   validateProjectData,
   validateTagNames,
+<<<<<<< HEAD
   FIELD_LIMITS,
 } from '../csvValidation';
 import {
@@ -22,14 +27,23 @@ import {
   ProjectsStatusOptions,
   ProjectsKitCategoryOptions,
 } from '@/types/pocketbase.types';
+=======
+  FIELD_LIMITS
+} from '../csvValidation';
+import { ProjectsDrillShapeOptions, ProjectsStatusOptions, ProjectsKitCategoryOptions } from '@/types/pocketbase.types';
+>>>>>>> main
 
 describe('csvValidation', () => {
   describe('normalizeDrillShape', () => {
     it('handles valid drill shapes correctly', () => {
       expect(normalizeDrillShape('round')).toEqual({ normalized: ProjectsDrillShapeOptions.round });
+<<<<<<< HEAD
       expect(normalizeDrillShape('square')).toEqual({
         normalized: ProjectsDrillShapeOptions.square,
       });
+=======
+      expect(normalizeDrillShape('square')).toEqual({ normalized: ProjectsDrillShapeOptions.square });
+>>>>>>> main
     });
 
     it('normalizes case variations', () => {
@@ -143,8 +157,12 @@ describe('csvValidation', () => {
     });
 
     it('truncates at word boundary when possible', () => {
+<<<<<<< HEAD
       const longTag =
         'This is a very long tag name that should be truncated at a good word boundary if possible and exceed the maximum field length significantly';
+=======
+      const longTag = 'This is a very long tag name that should be truncated at a good word boundary if possible and exceed the maximum field length significantly';
+>>>>>>> main
       const result = validateTagName(longTag);
       expect(result.normalized.length).toBeLessThanOrEqual(FIELD_LIMITS.TAG_NAME_MAX_LENGTH);
       expect(result.issue?.severity).toBe('warning');
@@ -156,7 +174,11 @@ describe('csvValidation', () => {
     it('handles CSV problematic tag names from real data', () => {
       const problematicTags = [
         'Changed snowflakes using light purple pearl from shimmering canvases',
+<<<<<<< HEAD
         'v2 Won from munimade event #mermaywithfemke2024! Completed diety of dawn for the event',
+=======
+        'v2 Won from munimade event #mermaywithfemke2024! Completed diety of dawn for the event'
+>>>>>>> main
       ];
 
       for (const tag of problematicTags) {
@@ -235,7 +257,11 @@ describe('csvValidation', () => {
         status: 'Completed',
         kit_category: 'Full',
         datePurchased: '2024-01-01',
+<<<<<<< HEAD
         generalNotes: 'Test notes',
+=======
+        generalNotes: 'Test notes'
+>>>>>>> main
       };
 
       const result = validateProjectData(projectData);
@@ -253,14 +279,22 @@ describe('csvValidation', () => {
         status: 'Unknown',
         kit_category: 'NotValid',
         datePurchased: '0242-06-04', // Invalid year (should be fixed)
+<<<<<<< HEAD
         generalNotes: 'a'.repeat(2000), // Too long
+=======
+        generalNotes: 'a'.repeat(2000) // Too long
+>>>>>>> main
       };
 
       const result = validateProjectData(problematicData);
       // Most issues are warnings that get corrected, so isValid may be true
+<<<<<<< HEAD
       expect(result.correctedData.title.length).toBeLessThanOrEqual(
         FIELD_LIMITS.PROJECT_TITLE_MAX_LENGTH
       );
+=======
+      expect(result.correctedData.title.length).toBeLessThanOrEqual(FIELD_LIMITS.PROJECT_TITLE_MAX_LENGTH);
+>>>>>>> main
       expect(result.correctedData.drillShape).toBeNull();
       expect(result.correctedData.status).toBe('wishlist'); // Default
       expect(result.correctedData.kit_category).toBe('full'); // Default
@@ -277,17 +311,29 @@ describe('csvValidation', () => {
       const tagNames = [
         'normal tag',
         'Changed snowflakes using light purple pearl from shimmering canvases', // 67 chars - might not be too long
+<<<<<<< HEAD
         'another tag',
+=======
+        'another tag'
+>>>>>>> main
       ];
 
       const result = validateTagNames(tagNames);
       expect(result.validatedTags).toHaveLength(3);
       expect(result.validatedTags[0].normalized).toBe('normal tag');
+<<<<<<< HEAD
       expect(result.validatedTags[1].normalized.length).toBeLessThanOrEqual(
         FIELD_LIMITS.TAG_NAME_MAX_LENGTH
       );
+=======
+      expect(result.validatedTags[1].normalized.length).toBeLessThanOrEqual(FIELD_LIMITS.TAG_NAME_MAX_LENGTH);
+>>>>>>> main
       // No issues should exist since the longest tag (67 chars) is under the 100-char limit
       expect(result.issues).toHaveLength(0);
     });
   });
+<<<<<<< HEAD
 });
+=======
+});
+>>>>>>> main

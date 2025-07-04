@@ -331,7 +331,11 @@ const Import = () => {
                           Importing projects... {progress}%
                         </p>
                         {importStats.currentProject && (
+<<<<<<< HEAD
                           <p className="text-xs italic text-muted-foreground">
+=======
+                          <p className="text-xs text-muted-foreground italic">
+>>>>>>> main
                             Currently importing: {importStats.currentProject}
                           </p>
                         )}
