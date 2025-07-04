@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { logger } from '@/utils/logger';
 
 interface UseImageReturn {
   url: string | undefined;
@@ -40,7 +41,7 @@ export function useImage(src?: string): UseImageReturn {
 
         img.onerror = event => {
           const loadError = new Error(`Failed to load image: ${src}`);
-          console.warn('Image load failed:', { src, event });
+          logger.warn('Image load failed:', { src, event });
           setError(loadError);
           setLoading(false);
           resolve();

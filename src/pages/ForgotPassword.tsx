@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { requestPasswordReset } from '@/services/auth';
 import { Mail, ArrowLeft } from 'lucide-react';
+import { logger } from '@/utils/logger';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
@@ -66,7 +67,7 @@ const ForgotPassword = () => {
         description: 'Check your email for a link to reset your password',
       });
     } catch (error: unknown) {
-      console.error('Password reset error:', error);
+      logger.error('Password reset error:', error);
 
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to send reset email. Please try again.';

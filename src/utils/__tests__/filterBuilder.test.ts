@@ -1,6 +1,6 @@
 /**
  * @fileoverview Tests for the PocketBase Filter Builder Utility
- * 
+ *
  * Tests the centralized, type-safe filter building utility to ensure
  * secure parameter injection using pb.filter().
  */
@@ -34,19 +34,14 @@ describe('FilterBuilder', () => {
     });
 
     it('should build a single user scope filter', () => {
-      const filter = createFilter()
-        .userScope('user123')
-        .build();
-      
+      const filter = createFilter().userScope('user123').build();
+
       expect(filter).toBe('user = [userId:user123]');
     });
 
     it('should build multiple chained filters', () => {
-      const filter = createFilter()
-        .userScope('user123')
-        .status('completed')
-        .build();
-      
+      const filter = createFilter().userScope('user123').status('completed').build();
+
       expect(filter).toBe('user = [userId:user123] && status = [status:completed]');
     });
 
@@ -56,7 +51,7 @@ describe('FilterBuilder', () => {
         .status(undefined)
         .company(undefined)
         .build();
-      
+
       expect(filter).toBe('');
     });
 
@@ -67,48 +62,50 @@ describe('FilterBuilder', () => {
         .company('all')
         .artist('all')
         .build();
-      
+
       expect(filter).toBe('user = [userId:user123]');
     });
   });
 
   describe('Date Range Filters', () => {
     it('should build year-based date range filter', () => {
-      const filter = createFilter()
-        .dateRange('date_completed', { year: 2024 })
-        .build();
-      
-      expect(filter).toBe('date_completed >= [startDate:2024-01-01] && date_completed <= [endDate:2024-12-31]');
+      const filter = createFilter().dateRange('date_completed', { year: 2024 }).build();
+
+      expect(filter).toBe(
+        'date_completed >= [startDate:2024-01-01] && date_completed <= [endDate:2024-12-31]'
+      );
     });
 
     it('should build year-based date range filter with time', () => {
       const filter = createFilter()
         .dateRange('date_completed', { year: 2024, includeTime: true })
         .build();
-      
-      expect(filter).toBe('date_completed >= [startDate:2024-01-01 00:00:00] && date_completed <= [endDate:2024-12-31 23:59:59]');
+
+      expect(filter).toBe(
+        'date_completed >= [startDate:2024-01-01 00:00:00] && date_completed <= [endDate:2024-12-31 23:59:59]'
+      );
     });
 
     it('should build custom date range filter', () => {
       const filter = createFilter()
-        .dateRange('date_started', { 
-          startDate: '2024-01-01', 
-          endDate: '2024-12-31' 
+        .dateRange('date_started', {
+          startDate: '2024-01-01',
+          endDate: '2024-12-31',
         })
         .build();
-      
-      expect(filter).toBe('date_started >= [startDate:2024-01-01] && date_started <= [endDate:2024-12-31]');
+
+      expect(filter).toBe(
+        'date_started >= [startDate:2024-01-01] && date_started <= [endDate:2024-12-31]'
+      );
     });
 
     it('should handle single date boundaries', () => {
       const startFilter = createFilter()
         .dateRange('date_started', { startDate: '2024-01-01' })
         .build();
-      
-      const endFilter = createFilter()
-        .dateRange('date_started', { endDate: '2024-12-31' })
-        .build();
-      
+
+      const endFilter = createFilter().dateRange('date_started', { endDate: '2024-12-31' }).build();
+
       expect(startFilter).toBe('date_started >= [startDate:2024-01-01]');
       expect(endFilter).toBe('date_started <= [endDate:2024-12-31]');
     });
@@ -119,10 +116,10 @@ describe('FilterBuilder', () => {
       const filter = createFilter()
         .search({
           fields: ['title', 'general_notes'],
-          term: 'landscape'
+          term: 'landscape',
         })
         .build();
-      
+
       expect(filter).toBe('(title ~ [term0:landscape] || general_notes ~ [term1:landscape])');
     });
 
@@ -130,10 +127,10 @@ describe('FilterBuilder', () => {
       const filter = createFilter()
         .search({
           fields: ['title'],
-          term: ''
+          term: '',
         })
         .build();
-      
+
       expect(filter).toBe('');
     });
 
@@ -141,47 +138,40 @@ describe('FilterBuilder', () => {
       const filter = createFilter()
         .search({
           fields: ['title'],
-          term: '  landscape  '
+          term: '  landscape  ',
         })
         .build();
-      
+
       expect(filter).toBe('(title ~ [term0:landscape])');
     });
   });
 
   describe('Tag Filters', () => {
     it('should build tag filter for multiple tags', () => {
-      const filter = createFilter()
-        .tags(['tag1', 'tag2', 'tag3'])
-        .build();
-      
-      expect(filter).toBe('(project_tags_via_project.tag ?= [tagId0:tag1] || project_tags_via_project.tag ?= [tagId1:tag2] || project_tags_via_project.tag ?= [tagId2:tag3])');
+      const filter = createFilter().tags(['tag1', 'tag2', 'tag3']).build();
+
+      expect(filter).toBe(
+        '(project_tags_via_project.tag ?= [tagId0:tag1] || project_tags_via_project.tag ?= [tagId1:tag2] || project_tags_via_project.tag ?= [tagId2:tag3])'
+      );
     });
 
     it('should handle empty tag arrays', () => {
-      const filter = createFilter()
-        .tags([])
-        .build();
-      
+      const filter = createFilter().tags([]).build();
+
       expect(filter).toBe('');
     });
   });
 
   describe('Comparison Filters', () => {
     it('should build equality filters', () => {
-      const filter = createFilter()
-        .equals('status', 'completed')
-        .equals('year', 2024)
-        .build();
-      
+      const filter = createFilter().equals('status', 'completed').equals('year', 2024).build();
+
       expect(filter).toBe('status = [status:completed] && year = [year:2024]');
     });
 
     it('should build not equals filters', () => {
-      const filter = createFilter()
-        .notEquals('kit_category', 'mini')
-        .build();
-      
+      const filter = createFilter().notEquals('kit_category', 'mini').build();
+
       expect(filter).toBe('kit_category != [kit_category:mini]');
     });
 
@@ -190,26 +180,21 @@ describe('FilterBuilder', () => {
         .greaterThan('total_diamonds', 1000)
         .lessThan('width', 50)
         .build();
-      
+
       expect(filter).toBe('total_diamonds > [total_diamonds:1000] && width < [width:50]');
     });
 
     it('should build like filters', () => {
-      const filter = createFilter()
-        .like('title', 'landscape')
-        .build();
-      
+      const filter = createFilter().like('title', 'landscape').build();
+
       expect(filter).toBe('title ~ [title:landscape]');
     });
   });
 
   describe('Null Checks', () => {
     it('should build null check filters', () => {
-      const filter = createFilter()
-        .isNull('date_completed')
-        .isNotNull('date_started')
-        .build();
-      
+      const filter = createFilter().isNull('date_completed').isNotNull('date_started').build();
+
       expect(filter).toBe('date_completed = null && date_started != null');
     });
   });
@@ -222,10 +207,10 @@ describe('FilterBuilder', () => {
         .dateRange('date_completed', { year: 2024 })
         .search({
           fields: ['title'],
-          term: 'landscape'
+          term: 'landscape',
         })
         .build();
-      
+
       expect(filter).toContain('user = [userId:user123]');
       expect(filter).toContain('status = [status:completed]');
       expect(filter).toContain('date_completed >= [startDate:2024-01-01]');
@@ -267,37 +252,37 @@ describe('Convenience Functions', () => {
   describe('buildUserYearStatsFilter()', () => {
     it('should build user year stats filter', () => {
       const filter = buildUserYearStatsFilter('user123', 2024, 'yearly');
-      
-      expect(filter).toBe('user = [userId:user123] && year = [year:2024] && stats_type = [stats_type:yearly]');
+
+      expect(filter).toBe(
+        'user = [userId:user123] && year = [year:2024] && stats_type = [stats_type:yearly]'
+      );
     });
 
     it('should use default stats type', () => {
       const filter = buildUserYearStatsFilter('user123', 2024);
-      
-      expect(filter).toBe('user = [userId:user123] && year = [year:2024] && stats_type = [stats_type:yearly]');
+
+      expect(filter).toBe(
+        'user = [userId:user123] && year = [year:2024] && stats_type = [stats_type:yearly]'
+      );
     });
   });
 });
 
 describe('Builder State Management', () => {
   it('should reset builder state', () => {
-    const builder = createFilter()
-      .userScope('user123')
-      .status('completed');
-    
+    const builder = createFilter().userScope('user123').status('completed');
+
     expect(builder.build()).toContain('user = [userId:user123]');
-    
+
     builder.reset();
     expect(builder.build()).toBe('');
   });
 
   it('should count filters', () => {
-    const builder = createFilter()
-      .userScope('user123')
-      .status('completed');
-    
+    const builder = createFilter().userScope('user123').status('completed');
+
     expect(builder.count()).toBe(2);
-    
+
     builder.reset();
     expect(builder.count()).toBe(0);
   });
@@ -336,44 +321,41 @@ describe('Security: Field Name Validation', () => {
     });
 
     it('should accept valid relation fields', () => {
-      const filter = createFilter()
-        .equals('project_tags_via_project.tag', 'tag123')
-        .build();
+      const filter = createFilter().equals('project_tags_via_project.tag', 'tag123').build();
 
-      expect(filter).toContain('project_tags_via_project.tag = [project_tags_via_project.tag:tag123]');
+      expect(filter).toContain(
+        'project_tags_via_project.tag = [project_tags_via_project.tag:tag123]'
+      );
     });
   });
 
   describe('Invalid field names - SQL injection prevention', () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const originalEnv = import.meta.env.DEV;
-    
+
     beforeEach(() => {
       // Run these tests in production mode to avoid error throwing
-      (import.meta.env as any).DEV = false;
+      (import.meta.env as Record<string, unknown>).DEV = false;
     });
-    
+
     afterEach(() => {
       consoleSpy.mockClear();
       // Restore original environment
-      (import.meta.env as any).DEV = originalEnv;
+      (import.meta.env as Record<string, unknown>).DEV = originalEnv;
     });
 
     it('should reject malicious field names in equals()', () => {
       const maliciousFields = [
         'title; DROP TABLE projects;--',
-        'user\' OR 1=1--',
+        "user' OR 1=1--",
         'status) OR 1=1;--',
         'invalid_field',
         'user.password',
-        'admin_secret'
+        'admin_secret',
       ];
 
       maliciousFields.forEach(field => {
-        const filter = createFilter()
-          .userScope('user123')
-          .equals(field, 'test')
-          .build();
+        const filter = createFilter().userScope('user123').equals(field, 'test').build();
 
         // Should only contain the valid userScope filter, malicious field rejected
         expect(filter).toBe('user = [userId:user123]');
@@ -395,7 +377,7 @@ describe('Security: Field Name Validation', () => {
         .userScope('user123')
         .search({
           fields: ['title', 'malicious_field; DROP TABLE;--', 'general_notes'],
-          term: 'test'
+          term: 'test',
         })
         .build();
 
@@ -411,8 +393,8 @@ describe('Security: Field Name Validation', () => {
       const filter = createFilter()
         .userScope('user123')
         .search({
-          fields: ['malicious1; DROP TABLE;--', 'malicious2\' OR 1=1--'],
-          term: 'test'
+          fields: ['malicious1; DROP TABLE;--', "malicious2' OR 1=1--"],
+          term: 'test',
         })
         .build();
 
@@ -435,7 +417,7 @@ describe('Security: Field Name Validation', () => {
       const filter = createFilter()
         .userScope('user123')
         .greaterThan('malicious; DROP;--', 100)
-        .lessThan('evil_field\' OR 1=1--', 200)
+        .lessThan("evil_field' OR 1=1--", 200)
         .like('bad_field) OR 1=1;--', 'test')
         .build();
 
@@ -447,9 +429,9 @@ describe('Security: Field Name Validation', () => {
       const filter = createFilter()
         .userScope('user123')
         .equals('', 'test')
-        .equals(null as any, 'test')
-        .equals(undefined as any, 'test')
-        .equals(123 as any, 'test')
+        .equals(null as string, 'test')
+        .equals(undefined as string, 'test')
+        .equals(String(123), 'test')
         .build();
 
       // Should only contain the valid userScope filter
@@ -459,16 +441,16 @@ describe('Security: Field Name Validation', () => {
 
   describe('Development mode error throwing', () => {
     const originalEnv = import.meta.env.DEV;
-    
+
     afterEach(() => {
       // Restore original environment
-      (import.meta.env as any).DEV = originalEnv;
+      (import.meta.env as Record<string, unknown>).DEV = originalEnv;
     });
 
     it('should throw errors in development mode for invalid fields', () => {
       // Mock development environment
-      (import.meta.env as any).DEV = true;
-      
+      (import.meta.env as Record<string, unknown>).DEV = true;
+
       expect(() => {
         createFilter().equals('malicious_field; DROP TABLE;--', 'test');
       }).toThrow(/Security violation: Invalid field name/);
@@ -476,8 +458,8 @@ describe('Security: Field Name Validation', () => {
 
     it('should not throw errors in production mode for invalid fields', () => {
       // Mock production environment
-      (import.meta.env as any).DEV = false;
-      
+      (import.meta.env as Record<string, unknown>).DEV = false;
+
       expect(() => {
         const filter = createFilter()
           .userScope('user123')
@@ -491,22 +473,20 @@ describe('Security: Field Name Validation', () => {
   describe('Security logging', () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const originalEnv = import.meta.env.DEV;
-    
+
     beforeEach(() => {
       // Run these tests in production mode to avoid error throwing
-      (import.meta.env as any).DEV = false;
+      (import.meta.env as Record<string, unknown>).DEV = false;
     });
-    
+
     afterEach(() => {
       consoleSpy.mockClear();
       // Restore original environment
-      (import.meta.env as any).DEV = originalEnv;
+      (import.meta.env as Record<string, unknown>).DEV = originalEnv;
     });
 
     it('should log security violations with context', () => {
-      const filter = createFilter()
-        .equals('malicious_field', 'test')
-        .build();
+      const filter = createFilter().equals('malicious_field', 'test').build();
 
       // Should log the security violation
       expect(consoleSpy).toHaveBeenCalled();
@@ -530,15 +510,15 @@ describe('Security: Field Name Validation', () => {
 
   describe('Comprehensive security test scenarios', () => {
     const originalEnv = import.meta.env.DEV;
-    
+
     beforeEach(() => {
       // Run these tests in production mode to avoid error throwing
-      (import.meta.env as any).DEV = false;
+      (import.meta.env as Record<string, unknown>).DEV = false;
     });
-    
+
     afterEach(() => {
       // Restore original environment
-      (import.meta.env as any).DEV = originalEnv;
+      (import.meta.env as Record<string, unknown>).DEV = originalEnv;
     });
     it('should handle complex SQL injection attempts', () => {
       const sqlInjectionAttempts = [
@@ -546,14 +526,11 @@ describe('Security: Field Name Validation', () => {
         "user) UNION SELECT password FROM users WHERE id='1'--",
         "status' OR '1'='1' OR status='",
         "id = 1; INSERT INTO admin_users VALUES ('hacker', 'password');--",
-        "created >= '2024-01-01'; DELETE FROM projects;--"
+        "created >= '2024-01-01'; DELETE FROM projects;--",
       ];
 
       sqlInjectionAttempts.forEach(maliciousField => {
-        const filter = createFilter()
-          .userScope('user123')
-          .equals(maliciousField, 'test')
-          .build();
+        const filter = createFilter().userScope('user123').equals(maliciousField, 'test').build();
 
         // All should be rejected, only userScope should remain
         expect(filter).toBe('user = [userId:user123]');

@@ -233,7 +233,7 @@ async function paginatedBatchDelete(
  *   project_title: 'Diamond Art Landscape',
  *   selected_projects: ['proj456', 'proj789', 'proj101']
  * });
- * console.log('Spin recorded:', spinResult.id);
+ * logger.log('Spin recorded:', spinResult.id);
  * ```
  */
 export async function createSpin(params: CreateSpinParams): Promise<SpinRecord> {
@@ -322,7 +322,7 @@ export async function getSpinHistory(userId: string, limit: number = 8): Promise
  * @example
  * ```typescript
  * const totalSpins = await getSpinHistoryCount('user123');
- * console.log(`User has ${totalSpins} total spins`);
+ * logger.log(`User has ${totalSpins} total spins`);
  * ```
  *
  * @performance
@@ -369,9 +369,9 @@ export async function getSpinHistoryCount(userId: string): Promise<number> {
  * ```typescript
  * try {
  *   const deletedCount = await clearSpinHistory('user123');
- *   console.log(`Cleared ${deletedCount} history records`);
+ *   logger.log(`Cleared ${deletedCount} history records`);
  * } catch (error) {
- *   console.error('Failed to clear history:', error);
+ *   logger.error('Failed to clear history:', error);
  * }
  * ```
  *
@@ -419,9 +419,9 @@ export async function clearSpinHistory(userId: string): Promise<number> {
  * ```typescript
  * const lastSpin = await getLastSpin('user123');
  * if (lastSpin) {
- *   console.log('Last selected project:', lastSpin.project_title);
+ *   logger.log('Last selected project:', lastSpin.project_title);
  * } else {
- *   console.log('User has not spun the wheel yet');
+ *   logger.log('User has not spun the wheel yet');
  * }
  * ```
  *
@@ -470,7 +470,7 @@ export async function getLastSpin(userId: string): Promise<SpinRecord | null> {
  * ```typescript
  * // Clean up records older than 30 days
  * const deleted = await cleanupOldSpins('user123', 30);
- * console.log(`Cleaned up ${deleted} old spin records`);
+ * logger.log(`Cleaned up ${deleted} old spin records`);
  *
  * // Use default 90-day retention
  * const deletedDefault = await cleanupOldSpins('user123');

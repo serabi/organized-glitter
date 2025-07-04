@@ -6,6 +6,7 @@ import { useProjectForm } from '@/hooks/useProjectForm';
 import { useImageUpload } from '@/hooks/useImageUpload';
 import { convertSchemaToFormValues } from '@/utils/projectFormTypeAdapter';
 import { Tag } from '@/types/tag';
+import { logger } from '@/utils/logger';
 
 interface UseProjectFormLogicProps {
   initialData?: Partial<ProjectFormValues>;
@@ -81,11 +82,11 @@ export const useProjectFormLogic = ({
 
   // Use the project form hook to manage form state
   const rhfMethods = useProjectForm({
-    initialData: initialData as Partial<ProjectFormSchemaType>,
+    initialData: initialData as unknown as Partial<ProjectFormSchemaType>,
     companies,
     artists,
     onSubmit: async (data: ProjectFormSchemaType) => {
-      console.log('📝 Form onSubmit called with schema data:', data);
+      logger.log('📝 Form onSubmit called with schema data:', data);
       try {
         setLocalIsLoading(true);
         const convertedData = convertSchemaToFormValues(data);
@@ -98,13 +99,13 @@ export const useProjectFormLogic = ({
           tagIds: uniqueTagIds,
         };
 
-        console.log('🔄 Converted data with tags:', payload);
-        console.log('🏷️ Tags to save:', projectTags);
-        console.log('🚀 Calling parent onSubmit...');
+        logger.log('🔄 Converted data with tags:', payload);
+        logger.log('🏷️ Tags to save:', projectTags);
+        logger.log('🚀 Calling parent onSubmit...');
         await onSubmit(payload);
-        console.log('✅ Parent onSubmit completed');
+        logger.log('✅ Parent onSubmit completed');
       } catch (error) {
-        console.error('❌ Error in form submission:', error);
+        logger.error('❌ Error in form submission:', error);
         toast({
           title: 'Error',
           description: 'Failed to save project. Please try again.',

@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { AdvancedFilters, AvailableFilters } from '@/hooks/useAdvancedFilters';
 import { ProjectFilterStatus } from '@/types/project';
 import { TagService } from '@/lib/tags';
+import { secureLogger } from '@/utils/secureLogger';
 import { Tag } from '@/types/tag';
 
 interface AdvancedFiltersProps {
@@ -82,7 +83,7 @@ const AdvancedFiltersComponent: React.FC<AdvancedFiltersProps> = ({
           setAvailableTags(response.data);
         }
       } catch (error) {
-        console.error('Failed to fetch tags:', error);
+        secureLogger.error('Failed to fetch tags:', error);
       } finally {
         setTagsLoading(false);
       }

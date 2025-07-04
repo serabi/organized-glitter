@@ -12,6 +12,7 @@ import DataImportExportSettings from '@/components/profile/DataImportExportSetti
 import PayPalSupportSection from '@/components/profile/PayPalSupportSection';
 import { useToast } from '@/hooks/use-toast';
 import type { AvatarConfig } from '@/types/avatar';
+import { logger } from '@/utils/logger';
 
 // Lazy load tab components for better performance
 const CompanyListTab = lazy(() => import('@/components/profile/CompanyListTab'));
@@ -21,12 +22,6 @@ const TagListTab = lazy(() => import('@/components/profile/TagListTab'));
 const Profile = () => {
   // Authentication handling
   const { user, isLoading: authLoading } = useAuth();
-  console.log(
-    '[Profile.tsx] User from useAuth():',
-    user ? { id: user.id, email: user.email, username: user.username } : null,
-    'AuthLoading:',
-    authLoading
-  );
 
   // Profile data with React Query
   const {
@@ -42,12 +37,6 @@ const Profile = () => {
     // Beta tester status
     isBetaTester,
   } = useProfileReactQuery();
-  console.log('[Profile.tsx] Data from useProfileReactQuery():', {
-    name,
-    email,
-    profileLoading,
-    isBetaTester,
-  });
 
   const updateBetaTesterMutation = useUpdateBetaTesterStatusMutation();
 
@@ -60,7 +49,7 @@ const Profile = () => {
         isBetaTester: newStatus,
       });
     } catch (error) {
-      console.error('Error updating beta tester status:', error);
+      logger.error('Error updating beta tester status:', error);
       toast({
         title: 'Error',
         description: 'Failed to update beta tester status',
@@ -76,8 +65,6 @@ const Profile = () => {
 
   // Handle avatar updates with React Query cache invalidation
   const handleAvatarUpdate = async (config: AvatarConfig) => {
-    console.log('[Profile] handleAvatarUpdate called with config:', config);
-
     try {
       if (config.type === 'upload' && config.uploadUrl) {
         // The avatar is already uploaded by AvatarManager
@@ -108,7 +95,7 @@ const Profile = () => {
         });
       }
     } catch (error) {
-      console.error('Error updating avatar:', error);
+      logger.error('Error updating avatar:', error);
       toast({
         title: 'Error',
         description: 'Failed to update avatar. Please try again.',

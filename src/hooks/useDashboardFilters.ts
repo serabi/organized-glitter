@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { ProjectType, ProjectFilterStatus, ViewType } from '@/types/project'; // Added ViewType
 import { TagService } from '@/lib/tags';
 import { Tag } from '@/types/tag';
+import { secureLogger } from '@/utils/secureLogger';
 // import { sortProjectsByDate } from '../utils/projectSorting'; // Removed
 
 // export type SortByType = 'title' | 'status' | 'datePurchased' | 'dateCompleted' | 'createdAt' | 'updatedAt'; // Removed
@@ -57,7 +58,7 @@ export const useDashboardFilters = (projects: ProjectType[]): UseDashboardFilter
     try {
       return storedFilters ? JSON.parse(storedFilters) : {};
     } catch (error) {
-      console.error('Failed to parse dashboardFilters from localStorage', error);
+      secureLogger.error('Failed to parse dashboardFilters from localStorage', error);
       return {};
     }
   }, []);
@@ -130,11 +131,11 @@ export const useDashboardFilters = (projects: ProjectType[]): UseDashboardFilter
         if (response.status === 'success' && response.data) {
           setAllUserTags(response.data);
         } else {
-          console.error('Failed to fetch user tags:', response.error);
+          secureLogger.error('Failed to fetch user tags:', response.error);
           setAllUserTags([]);
         }
       } catch (error) {
-        console.error('Error fetching user tags:', error);
+        secureLogger.error('Error fetching user tags:', error);
         setAllUserTags([]);
       }
     };

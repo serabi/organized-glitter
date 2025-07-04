@@ -16,11 +16,12 @@
  */
 
 import { useState, useEffect, useCallback, useMemo, startTransition } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ProjectType, ProjectFormValues } from '@/types/project';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigationWithWarning } from '@/hooks/useNavigationWithWarning';
 import { useConfirmationDialog } from '@/hooks/useConfirmationDialog';
-import { useNavigateToProject } from '@/hooks/useNavigateToProject';
+import { useNavigateToProject, NavigationContext } from '@/hooks/useNavigateToProject';
 // Using PocketBase directly
 import { pb } from '@/lib/pocketbase';
 import { ProjectsResponse, CompaniesResponse, ArtistsResponse } from '@/types/pocketbase.types';
@@ -32,6 +33,7 @@ import { createLogger } from '@/utils/secureLogger';
 import { Collections } from '@/types/pocketbase.types';
 import { TagService } from '@/lib/tags';
 import { useDeleteProjectMutation } from '@/hooks/mutations/useProjectDetailMutations';
+import { updateProjectInCache } from '@/utils/cacheUtils';
 
 const logger = createLogger('useEditProjectSimplified');
 
@@ -202,8 +204,18 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
   const { toast } = useServiceToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const location = useLocation();
   const navigateToProject = useNavigateToProject();
   const deleteProjectMutation = useDeleteProjectMutation();
+
+  // Extract navigation state from location
+  const locationState = location.state as {
+    fromNavigation?: boolean;
+    projectId?: string;
+    timestamp?: number;
+    navigationContext?: NavigationContext;
+  } | null;
 
   // State management
   const [project, setProject] = useState<ProjectType | null>(null);
@@ -288,7 +300,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
           setArtists(artistsResponse.items.map((a: { name: string }) => a.name));
         }
       } catch (error) {
-        console.error('Error loading project data:', error);
+        logger.error('Error loading project data:', { error });
         toast({
           title: 'Error',
           description: 'Failed to load project details',
@@ -554,28 +566,37 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
           // Remove beforeunload listener to prevent navigation confirmation
           removeBeforeUnloadListener();
 
-          // Navigate back to project detail page using React Router
-          logger.info('🚀 Navigating back to project detail page');
-          await navigateToProject(projectId, {
-            projectData: response.data,
-            replace: true, // Replace current history entry since we're coming from edit
-          });
+          // Check if we should return to dashboard with preserved position
+          const shouldReturnToDashboard = locationState?.navigationContext;
 
-          // Defer cache invalidation to happen after navigation
-          // Use startTransition to mark cache updates as non-urgent
+          if (shouldReturnToDashboard) {
+            logger.info('🚀 Returning to dashboard with preserved position after edit');
+
+            // Navigate back to dashboard with preserved context
+            navigate('/dashboard', {
+              replace: true,
+              state: {
+                fromEdit: true,
+                editedProjectId: projectId,
+                editedProjectData: response.data,
+                timestamp: Date.now(),
+                navigationContext: locationState.navigationContext,
+                preservePosition: true,
+              },
+            });
+          } else {
+            // Navigate back to project detail page using React Router
+            logger.info('🚀 Navigating back to project detail page');
+            await navigateToProject(projectId, {
+              replace: true, // Replace current history entry since we're coming from edit
+            });
+          }
+
+          // Use optimistic updates instead of cache invalidation to preserve sort order
+          // This maintains the user's current dashboard filters and sort preferences
           startTransition(() => {
-            // Invalidate React Query cache to ensure fresh data
-            queryClient.invalidateQueries({
-              queryKey: queryKeys.projects.detail(projectId),
-            });
-            queryClient.invalidateQueries({
-              queryKey: queryKeys.projects.lists(),
-            });
-            queryClient.invalidateQueries({
-              queryKey: queryKeys.projects.advanced(user?.id || ''),
-            });
-
-            logger.info('Project update cache invalidation completed');
+            updateProjectInCache(queryClient, projectId, response.data, user?.id || '');
+            logger.info('Project update optimistic cache updates completed');
           });
         } else {
           if (response?.error) {
@@ -589,7 +610,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
         }
       } catch (error) {
         // Only show toast for network errors not handled by service
-        console.error('Network error updating project:', error);
+        logger.error('Network error updating project:', error);
         toast({
           title: 'Error updating project',
           description: error instanceof Error ? error.message : 'Network error',
@@ -607,6 +628,8 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
       removeBeforeUnloadListener,
       project,
       navigateToProject,
+      navigate,
+      locationState,
     ]
   );
 
@@ -641,7 +664,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
 
       unsafeNavigate('/dashboard');
     } catch (error) {
-      console.error('Error archiving project:', error);
+      logger.error('Error archiving project:', { error });
       toast({
         title: 'Error archiving project',
         description: error instanceof Error ? error.message : 'An unknown error occurred',
@@ -684,7 +707,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
       // Navigation and cache invalidation are handled by the mutation
       unsafeNavigate('/dashboard');
     } catch (error) {
-      console.error('Error deleting project:', error);
+      logger.error('Error deleting project:', { error });
       toast({
         title: 'Error deleting project',
         description: error instanceof Error ? error.message : 'An unknown error occurred',
@@ -729,7 +752,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
         setArtists(artistsResponse.items.map((a: { name: string }) => a.name));
       }
     } catch (error) {
-      console.error('Error refreshing lists:', error);
+      logger.error('Error refreshing lists:', { error });
     }
   }, [user?.id]);
 

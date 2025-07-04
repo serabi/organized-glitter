@@ -1,6 +1,7 @@
 import React, { Component, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, Home } from 'lucide-react';
+import { logger } from '@/utils/logger';
 
 interface Props {
   children: ReactNode;
@@ -21,7 +22,7 @@ export class RouteErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error) {
-    console.error('Route error:', error);
+    logger.error('Route error:', error);
   }
 
   render() {

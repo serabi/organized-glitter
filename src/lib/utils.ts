@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { logger } from '@/utils/logger';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -23,7 +24,7 @@ export function formatDate(dateString: string): string {
       year: 'numeric',
     });
   } catch (error) {
-    console.error('Error formatting date:', error);
+    logger.error('Error formatting date:', error);
     return '';
   }
 }
@@ -48,7 +49,7 @@ export function extractDateOnly(dateString: string): string | undefined {
     // Return in YYYY-MM-DD format
     return date.toISOString().split('T')[0];
   } catch (error) {
-    console.error('Error extracting date:', error);
+    logger.error('Error extracting date:', error);
     return undefined;
   }
 }

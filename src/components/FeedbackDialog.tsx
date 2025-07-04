@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
 import { safeEnv } from '@/utils/safe-env';
-
+import { logger } from '@/utils/logger';
 import { sendFeedbackEmail } from '../lib/feedback-email-service';
 
 interface FeedbackDialogProps {
@@ -95,11 +95,11 @@ export function FeedbackDialog({
       if (safeEnv.isDev) {
         safeEnv.log('Failed to submit feedback:', error);
       } else {
-        console.error('Failed to submit feedback:', error);
+        logger.error('Failed to submit feedback:', error);
       }
 
       // Error handling will be shown in the dialog UI if needed
-      console.error('Failed to submit feedback:', error);
+      logger.error('Failed to submit feedback:', error);
     } finally {
       setIsSubmitting(false);
     }

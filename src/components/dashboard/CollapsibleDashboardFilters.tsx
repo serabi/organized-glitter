@@ -1,9 +1,32 @@
+/**
+ * @fileoverview Collapsible Dashboard Filters Component for Mobile View
+ *
+ * This component provides a mobile-optimized collapsible interface for dashboard filters.
+ * It wraps the main DashboardFilters component and provides toggle functionality with
+ * persistent state management through localStorage.
+ *
+ * Key Features:
+ * - Mobile-only visibility (renders nothing on desktop)
+ * - Collapsible interface with smooth transitions
+ * - Persistent collapse state in localStorage
+ * - Active filter count display in header
+ * - Keyboard accessibility support
+ * - Proper ARIA attributes for screen readers
+ *
+ * The component automatically consumes filter state from DashboardFiltersContext
+ * and displays the active filter count in the collapsible header.
+ *
+ * @author serabi
+ * @since 2025-07-03
+ * @version 1.0.0 - Mobile-optimized collapsible filters
+ */
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import DashboardFilters from './DashboardFilters'; // DashboardFilters will also use context
 // import { DashboardFiltersProps } from './DashboardFilters'; // No longer need to import props
-import { useDashboardFiltersContext } from '@/hooks/useDashboardFiltersContext'; // Import context
+import { useDashboardFilters } from '@/contexts/DashboardFiltersContext';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface CollapsibleDashboardFiltersProps {
@@ -14,7 +37,7 @@ const LOCAL_STORAGE_KEY = 'dashboardFiltersMobileCollapsed';
 
 const CollapsibleDashboardFiltersComponent: React.FC<CollapsibleDashboardFiltersProps> = () => {
   const isMobile = useIsMobile();
-  const { getActiveFilterCount } = useDashboardFiltersContext(); // Get necessary values from context
+  const { getActiveFilterCount } = useDashboardFilters();
 
   const [isOpen, setIsOpen] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {

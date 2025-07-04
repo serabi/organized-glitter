@@ -7,6 +7,7 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { pb } from '@/lib/pocketbase';
+import { secureLogger } from '@/utils/secureLogger';
 import {
   Collections,
   ProjectsResponse,
@@ -72,7 +73,7 @@ async function fetchInProgressProjects(userId: string): Promise<ProjectType[]> {
       tags: [],
     }));
   } catch (error) {
-    console.warn('[useInProgressProjects] Error fetching in-progress projects:', error);
+    secureLogger.warn('[useInProgressProjects] Error fetching in-progress projects:', error);
     throw error; // Let React Query manage the error state
   }
 }

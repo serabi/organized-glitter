@@ -4,6 +4,7 @@
 
 import { inject } from '@vercel/analytics';
 import { initializePostHog } from './posthog';
+import { logger } from './logger';
 
 /**
  * Initialize all analytics services based on environment
@@ -23,13 +24,13 @@ export const initializeAnalytics = (): void => {
  */
 export const logStartupInfo = (): void => {
   if (import.meta.env.DEV) {
-    console.info(`Organized Glitter - Build Version: ${import.meta.env.__BUILD_VERSION__}`);
-    console.log('Image upload limits: Project images up to 50MB (auto-compressed)');
-    console.info('Rate limiting is active. Default limits: 500 requests/5s per IP');
+    logger.info(`Organized Glitter - Build Version: ${import.meta.env.__BUILD_VERSION__}`);
+    logger.log('Image upload limits: Project images up to 50MB (auto-compressed)');
+    logger.info('Rate limiting is active. Default limits: 500 requests/5s per IP');
   } else {
     // Production environment debugging
-    console.log('🚀 Organized Glitter Production Build');
-    console.log('Environment check:', {
+    logger.log('🚀 Organized Glitter Production Build');
+    logger.log('Environment check:', {
       mode: import.meta.env.MODE,
       prod: import.meta.env.PROD,
       hasPocketbaseUrl: !!import.meta.env.VITE_POCKETBASE_URL,

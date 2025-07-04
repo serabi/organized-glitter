@@ -3,6 +3,7 @@ import { pb } from '@/lib/pocketbase';
 import { Collections } from '@/types/pocketbase.types';
 import { queryKeys } from '../queries/queryKeys';
 import { useToast } from '@/hooks/use-toast';
+import { secureLogger } from '@/utils/secureLogger';
 
 async function deleteArtist(id: string): Promise<void> {
   await pb.collection(Collections.Artists).delete(id);
@@ -26,7 +27,7 @@ export function useDeleteArtist() {
       });
     },
     onError: (error: unknown) => {
-      console.error('Error deleting artist:', error);
+      secureLogger.error('Error deleting artist:', error);
 
       // Handle specific error cases
       if (error && typeof error === 'object' && 'status' in error && error.status === 404) {

@@ -3,6 +3,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { ProjectStatus, ProjectType, ProgressNote } from '@/types/project';
 import { pb } from '@/lib/pocketbase';
+import { logger } from '@/utils/logger';
 import {
   Collections,
   ProjectsResponse,
@@ -47,8 +48,8 @@ export const useProjectDetail = (projectId: string | undefined) => {
 
     try {
       setLoading(true);
-      console.log('useProjectDetail: Fetching project:', projectId);
-      console.log('useProjectDetail: Checking for re-renders');
+      logger.log('useProjectDetail: Fetching project:', projectId);
+      logger.log('useProjectDetail: Checking for re-renders');
 
       // Fetch project with related data using consistent request key to enable auto-cancellation
       const projectRecord = await pb
@@ -136,9 +137,9 @@ export const useProjectDetail = (projectId: string | undefined) => {
       };
 
       setProject(projectData);
-      console.log('useProjectDetail: Project loaded successfully');
+      logger.log('useProjectDetail: Project loaded successfully');
     } catch (error) {
-      console.error('Error loading project:', error);
+      logger.error('Error loading project:', error);
       toast({
         title: 'Error',
         description: 'Failed to load project details',
@@ -180,7 +181,7 @@ export const useProjectDetail = (projectId: string | undefined) => {
       });
       return true;
     } catch (error) {
-      console.error('Error updating project status:', error);
+      logger.error('Error updating project status:', error);
       toast({
         title: 'Error',
         description: 'Failed to update project status',
@@ -212,7 +213,7 @@ export const useProjectDetail = (projectId: string | undefined) => {
         variant: 'default',
       });
     } catch (error) {
-      console.error('Error updating project notes:', error);
+      logger.error('Error updating project notes:', error);
       toast({
         title: 'Error',
         description: 'Failed to update project notes',
@@ -268,7 +269,7 @@ export const useProjectDetail = (projectId: string | undefined) => {
         variant: 'default',
       });
     } catch (error) {
-      console.error('Error adding progress note:', error);
+      logger.error('Error adding progress note:', error);
       toast({
         title: 'Error',
         description: 'Failed to add progress note',
@@ -307,7 +308,7 @@ export const useProjectDetail = (projectId: string | undefined) => {
         variant: 'default',
       });
     } catch (error) {
-      console.error('Error updating progress note:', error);
+      logger.error('Error updating progress note:', error);
       toast({
         title: 'Error',
         description: 'Failed to update progress note',
@@ -341,7 +342,7 @@ export const useProjectDetail = (projectId: string | undefined) => {
         variant: 'default',
       });
     } catch (error) {
-      console.error('Error deleting progress note:', error);
+      logger.error('Error deleting progress note:', error);
       toast({
         title: 'Error',
         description: 'Failed to delete progress note',
@@ -381,7 +382,7 @@ export const useProjectDetail = (projectId: string | undefined) => {
         variant: 'default',
       });
     } catch (error) {
-      console.error('Error removing progress note image:', error);
+      logger.error('Error removing progress note image:', error);
       toast({
         title: 'Error',
         description: 'Failed to remove progress note image',
@@ -417,7 +418,7 @@ export const useProjectDetail = (projectId: string | undefined) => {
 
       return true;
     } catch (error) {
-      console.error('Error archiving project:', error);
+      logger.error('Error archiving project:', error);
       toast({
         title: 'Error',
         description: 'Failed to archive project',
@@ -447,7 +448,7 @@ export const useProjectDetail = (projectId: string | undefined) => {
           await pb.collection(Collections.ProgressNotes).delete(note.id);
         }
       } catch (progressNotesError) {
-        console.error('Error deleting progress notes:', progressNotesError);
+        logger.error('Error deleting progress notes:', progressNotesError);
         // Continue with deletion attempt - the progress notes might not exist
       }
 
@@ -461,7 +462,7 @@ export const useProjectDetail = (projectId: string | undefined) => {
           await pb.collection(Collections.ProjectTags).delete(projectTag.id);
         }
       } catch (projectTagsError) {
-        console.error('Error deleting project tags:', projectTagsError);
+        logger.error('Error deleting project tags:', projectTagsError);
         // Continue with deletion attempt - the project tags might not exist
       }
 
@@ -481,7 +482,7 @@ export const useProjectDetail = (projectId: string | undefined) => {
 
       return true;
     } catch (error) {
-      console.error('Error deleting project:', error);
+      logger.error('Error deleting project:', error);
       toast({
         title: 'Error',
         description: 'Failed to delete project',

@@ -1,3 +1,31 @@
+/**
+ * @fileoverview Main Dashboard Filters Component
+ *
+ * This component provides a comprehensive filtering interface for the dashboard projects view.
+ * It includes search, multiple filter dropdowns, view toggles, sorting controls, and a reset
+ * option. All state management is handled through the DashboardFiltersContext.
+ *
+ * Key Features:
+ * - Real-time search with debounced input
+ * - Company, artist, drill shape, tag, and year filters
+ * - Include/exclude mini kits toggle
+ * - Grid/list view toggle
+ * - Dynamic sorting with field-specific direction labels
+ * - Active filter count badge
+ * - Reset all filters functionality
+ * - Responsive design with sticky positioning
+ *
+ * Filter Behavior:
+ * - All filters are applied server-side for performance
+ * - Tag filtering supports single selection via dropdown
+ * - Sort direction labels change based on selected field
+ * - Filter state persists to database on navigation
+ *
+ * @author serabi
+ * @since 2025-07-03
+ * @version 1.0.0 - Context-based filtering system
+ */
+
 import React, { useMemo } from 'react';
 import SearchProjects from '@/components/dashboard/SearchProjects';
 import FilterDropdown from '@/components/dashboard/FilterDropdown';
@@ -6,7 +34,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { useDashboardFiltersContext } from '@/hooks/useDashboardFiltersContext'; // Import context
+import { useDashboardFilters } from '@/contexts/DashboardFiltersContext';
+import { secureLogger } from '@/utils/secureLogger';
 import { DashboardValidSortField } from '@/features/dashboard/dashboard.constants'; // Import type from constants
 
 // No longer need to define ValidSortField here, it's imported from context
@@ -19,42 +48,45 @@ export interface DashboardFiltersProps {
   // All props will be removed as they come from context
 }
 
-const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = () => {
+const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(() => {
   const {
-    searchTerm,
-    applySearchTerm, // Renamed from onSearchChange
-    searchInputRef,
-    isSearchPending, // OG-91: Add search pending state
-    selectedCompany,
-    applyCompanyFilter, // Renamed from setSelectedCompany
-    selectedArtist,
-    applyArtistFilter, // Renamed from setSelectedArtist
-    selectedDrillShape,
-    applyDrillShapeFilter, // Renamed from setSelectedDrillShape
-    applyTagFilter, // Renamed from setSelectedTag
-    clearTagFilters,
-    selectedTags,
-    selectedYearFinished,
-    applyYearFinishedFilter,
-    includeMiniKits,
-    applyIncludeMiniKitsFilter, // Renamed from setIncludeMiniKits
-    viewType,
-    applyViewType, // Renamed from setViewType
+    filters,
+    updateSearchTerm,
+    updateCompany,
+    updateArtist,
+    updateDrillShape,
+    toggleTag,
+    clearAllTags,
+    updateYearFinished,
+    updateIncludeMiniKits,
+    updateViewType,
     companies,
     artists,
     drillShapes,
     allTags,
     yearFinishedOptions,
-    isLoadingProjects, // Renamed from loading
-    sortField: contextSortField, // Rename to avoid conflict with local `sortField` if any, or use directly
-    sortDirection,
-    applySort, // Renamed from onSortChange
+    isLoadingProjects,
+    updateSort,
     resetAllFilters,
     getActiveFilterCount,
-  } = useDashboardFiltersContext();
+    searchInputRef,
+    isSearchPending,
+  } = useDashboardFilters();
 
-  // Use contextSortField, providing a default if it's undefined, as FilterDropdown expects a non-undefined value for `value`
-  const currentSortField = contextSortField || 'last_updated';
+  // Extract values from filters with defaults
+  const searchTerm = filters.searchTerm;
+  const selectedCompany = filters.selectedCompany;
+  const selectedArtist = filters.selectedArtist;
+  const selectedDrillShape = filters.selectedDrillShape;
+  const selectedTags = filters.selectedTags;
+  const selectedYearFinished = filters.selectedYearFinished;
+  const includeMiniKits = filters.includeMiniKits;
+  const viewType = filters.viewType;
+  const sortField = filters.sortField;
+  const sortDirection = filters.sortDirection;
+
+  // Use sortField, providing a default if it's undefined, as FilterDropdown expects a non-undefined value for `value`
+  const currentSortField = sortField;
 
   // Removed excessive logging for performance
   // useEffect(() => {
@@ -82,9 +114,9 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = () => {
 
       <SearchProjects
         searchTerm={searchTerm}
-        onSearchChange={applySearchTerm} // Use context action
+        onSearchChange={updateSearchTerm}
         inputRef={searchInputRef}
-        isPending={isSearchPending} // OG-91: Show loading state
+        isPending={isSearchPending}
       />
 
       <div className="mt-6 space-y-4">
@@ -92,7 +124,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = () => {
           label="Company"
           options={companies}
           value={selectedCompany}
-          onChange={applyCompanyFilter} // Use context action
+          onChange={updateCompany}
           placeholder="All companies"
         />
 
@@ -100,7 +132,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = () => {
           label="Artist"
           options={artists}
           value={selectedArtist}
-          onChange={applyArtistFilter} // Use context action
+          onChange={updateArtist}
           placeholder="All artists"
         />
 
@@ -108,7 +140,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = () => {
           label="Drill Shape"
           options={drillShapes}
           value={selectedDrillShape}
-          onChange={applyDrillShapeFilter} // Use context action
+          onChange={updateDrillShape}
           placeholder="All drill shapes"
         />
 
@@ -119,12 +151,12 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = () => {
           onChange={value => {
             if (value === 'all') {
               // Clear all tag filters when "All Tags" is selected
-              clearTagFilters();
+              clearAllTags();
             } else {
               // Clear existing tags and set the new single tag
               // This ensures only one tag is selected at a time via the dropdown
-              clearTagFilters();
-              applyTagFilter(value);
+              clearAllTags();
+              toggleTag(value);
             }
           }}
           placeholder="All tags"
@@ -134,7 +166,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = () => {
           label="Year Finished"
           options={yearFinishedOptions}
           value={selectedYearFinished}
-          onChange={applyYearFinishedFilter}
+          onChange={updateYearFinished}
           placeholder="All years"
         />
 
@@ -142,7 +174,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = () => {
           <Checkbox
             id="include-mini-kits"
             checked={includeMiniKits}
-            onCheckedChange={checked => applyIncludeMiniKitsFilter(Boolean(checked))} // Use context action
+            onCheckedChange={checked => updateIncludeMiniKits(Boolean(checked))}
             data-testid="include-mini-kits-checkbox"
           />
           <Label htmlFor="include-mini-kits" className="text-sm font-medium">
@@ -152,7 +184,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = () => {
 
         <Button
           variant="outline"
-          onClick={resetAllFilters} // Use context action
+          onClick={resetAllFilters}
           className="mt-4 w-full"
           data-testid="reset-filters-button"
         >
@@ -161,10 +193,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = () => {
 
         <div className="mt-6">
           <h3 className="mb-2 text-sm font-medium">View</h3>
-          <ViewToggle
-            activeView={viewType}
-            onViewChange={applyViewType} // Use context action
-          />
+          <ViewToggle activeView={viewType} onViewChange={updateViewType} />
         </div>
 
         <div className="mt-6">
@@ -179,10 +208,10 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = () => {
                 { label: 'Date Started', value: 'date_started' },
                 { label: 'Date Received', value: 'date_received' },
               ]}
-              value={currentSortField} // Use the defaulted sort field
+              value={currentSortField}
               onChange={value => {
                 const newSortField = value as DashboardValidSortField | undefined;
-                applySort(newSortField || 'last_updated', sortDirection || 'desc'); // Ensure non-undefined field
+                updateSort(newSortField || 'last_updated', sortDirection || 'desc');
               }}
               placeholder="Select field"
               showAllOption={false}
@@ -210,15 +239,15 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = () => {
               }, [currentSortField])}
               value={sortDirection}
               onChange={value => {
-                // Ensure value is a valid SortDirectionType before calling applySort
+                // Ensure value is a valid SortDirectionType before calling updateSort
                 if (value === 'asc' || value === 'desc') {
-                  applySort(currentSortField, value);
+                  updateSort(currentSortField, value);
                 } else {
                   // Handle unexpected value, perhaps log an error or default
-                  console.warn(
+                  secureLogger.warn(
                     `DashboardFilters: Invalid sort direction value received: ${value}. Defaulting to 'desc'.`
                   );
-                  applySort(currentSortField, 'desc');
+                  updateSort(currentSortField, 'desc');
                 }
               }}
               placeholder="Select order"
@@ -229,6 +258,8 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = () => {
       </div>
     </div>
   );
-};
+});
 
-export default React.memo(DashboardFiltersComponent);
+DashboardFiltersComponent.displayName = 'DashboardFilters';
+
+export default DashboardFiltersComponent;

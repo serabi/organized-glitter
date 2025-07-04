@@ -1,3 +1,5 @@
+import { logger } from '@/utils/logger';
+
 /**
  * @interface FormTrackingData
  * @description Interface for data tracked during form submission start.
@@ -53,7 +55,7 @@ export const useProgressNoteFormTracking = () => {
    */
   const trackFormSubmissionStart = (data: FormTrackingData) => {
     // addBreadcrumb removed
-    console.log('Progress note form submission started', data);
+    logger.log('Progress note form submission started', data);
   };
 
   /**
@@ -68,7 +70,7 @@ export const useProgressNoteFormTracking = () => {
     contentLength: number
   ) => {
     // addBreadcrumb removed
-    console.log('Progress note form validation failed', {
+    logger.log('Progress note form validation failed', {
       missingDate,
       missingContent,
       contentLength,
@@ -83,7 +85,7 @@ export const useProgressNoteFormTracking = () => {
    */
   const trackDataPrepared = (date: string, contentLength: number, imageFile?: File) => {
     // addBreadcrumb removed
-    console.log('Progress note form data prepared for submission', {
+    logger.log('Progress note form data prepared for submission', {
       date,
       contentLength,
       hasImage: Boolean(imageFile),
@@ -99,7 +101,7 @@ export const useProgressNoteFormTracking = () => {
    */
   const trackSubmissionSuccess = (date: string, contentLength: number, hasImage: boolean) => {
     // addBreadcrumb removed
-    console.log('Progress note form submitted successfully', { date, contentLength, hasImage });
+    logger.log('Progress note form submitted successfully', { date, contentLength, hasImage });
   };
 
   /**
@@ -116,7 +118,7 @@ export const useProgressNoteFormTracking = () => {
     error: unknown
   ) => {
     // addBreadcrumb removed
-    console.error('Progress note form submission failed', { date, contentLength, hasImage, error });
+    logger.error('Progress note form submission failed', { date, contentLength, hasImage, error });
   };
 
   /**
@@ -125,7 +127,7 @@ export const useProgressNoteFormTracking = () => {
    */
   const trackImageSelection = (data: ImageTrackingData) => {
     // addBreadcrumb removed
-    console.log('Progress note form image selected', data);
+    logger.log('Progress note form image selected', data);
   };
 
   /**
@@ -134,7 +136,7 @@ export const useProgressNoteFormTracking = () => {
    */
   const trackImageCompression = (data: CompressionTrackingData) => {
     // addBreadcrumb removed
-    console.log('Progress note image compressed', data);
+    logger.log('Progress note image compressed', data);
   };
 
   /**
@@ -144,7 +146,7 @@ export const useProgressNoteFormTracking = () => {
    */
   const trackCompressionFailure = (error: unknown, originalSize: number) => {
     // addBreadcrumb removed
-    console.error('Progress note image compression failed', { error, originalSize });
+    logger.error('Progress note image compression failed', { error, originalSize });
   };
 
   /**
@@ -154,7 +156,7 @@ export const useProgressNoteFormTracking = () => {
    */
   const trackDateChange = (previousDate: string, newDate: string) => {
     // addBreadcrumb removed
-    console.log('Progress note form date changed', { previousDate, newDate });
+    logger.log('Progress note form date changed', { previousDate, newDate });
   };
 
   /**
@@ -169,7 +171,7 @@ export const useProgressNoteFormTracking = () => {
     isSignificantChange: boolean
   ) => {
     // addBreadcrumb removed
-    console.log('Progress note form content updated', {
+    logger.log('Progress note form content updated', {
       contentLength,
       hasContent,
       isSignificantChange,

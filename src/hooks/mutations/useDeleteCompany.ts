@@ -3,6 +3,7 @@ import { pb } from '@/lib/pocketbase';
 import { Collections } from '@/types/pocketbase.types';
 import { queryKeys } from '../queries/queryKeys';
 import { useToast } from '@/hooks/use-toast';
+import { secureLogger } from '@/utils/secureLogger';
 
 interface DeleteCompanyData {
   id: string;
@@ -33,7 +34,7 @@ export function useDeleteCompany() {
       });
     },
     onError: (error: unknown) => {
-      console.error('Error deleting company:', error);
+      secureLogger.error('Error deleting company:', error);
 
       // Handle specific error cases
       if (error && typeof error === 'object' && 'status' in error && error.status === 404) {

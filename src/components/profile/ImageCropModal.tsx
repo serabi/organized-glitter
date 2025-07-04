@@ -16,6 +16,7 @@ import { CropModalProps } from '@/types/avatar';
 import { validateImageFile, createFilePreviewUrl, revokePreviewUrl } from '@/utils/imageUtils';
 import { useToast } from '@/hooks/use-toast';
 import { trackEvent, captureException } from '@/utils/posthog';
+import { logger } from '@/utils/logger';
 
 interface CropData {
   x: number;
@@ -181,7 +182,7 @@ const ImageCropModal: React.FC<CropModalProps> = ({
 
       onCropComplete(croppedImageUrl);
     } catch (error) {
-      console.error('Error cropping image:', error);
+      logger.error('Error cropping image:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to crop image';
 
       // Track cropping error for analytics

@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { isServiceResponseError } from '@/types/shared';
 import { requireAuthenticatedUser } from '@/utils/authGuards';
+import { logger } from '@/utils/logger';
 
 interface UpdateTagData {
   id: string;
@@ -54,7 +55,7 @@ export function useUpdateTag() {
       });
     },
     onError: (error: unknown) => {
-      console.error('Error updating tag:', error);
+      logger.error('Error updating tag:', error);
 
       // Handle specific error cases
       const errorMessage = error instanceof Error ? error.message : String(error);

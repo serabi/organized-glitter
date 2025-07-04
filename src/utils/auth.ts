@@ -1,4 +1,5 @@
 import { pb } from '@/lib/pocketbase';
+import { logger } from './logger';
 
 /**
  * Clears all authentication data when switching environments
@@ -20,7 +21,7 @@ export const clearAuthData = async (): Promise<void> => {
 
     localStorageKeysToRemove.forEach(key => {
       localStorage.removeItem(key);
-      console.log(`Cleared localStorage key: ${key}`);
+      logger.log(`Cleared localStorage key: ${key}`);
     });
 
     // Clear sessionStorage auth tokens
@@ -34,12 +35,12 @@ export const clearAuthData = async (): Promise<void> => {
 
     sessionStorageKeysToRemove.forEach(key => {
       sessionStorage.removeItem(key);
-      console.log(`Cleared sessionStorage key: ${key}`);
+      logger.log(`Cleared sessionStorage key: ${key}`);
     });
 
-    console.log('Successfully cleared all auth data');
+    logger.log('Successfully cleared all auth data');
   } catch (error) {
-    console.error('Error clearing auth data:', error);
+    logger.error('Error clearing auth data:', error);
   }
 };
 
@@ -51,6 +52,6 @@ export const setupGlobalAuthClear = (): void => {
   if (typeof window !== 'undefined') {
     (window as Window & { clearOrganizedGlitterAuth?: () => void }).clearOrganizedGlitterAuth =
       clearAuthData;
-    console.log('Global auth clear function available: window.clearOrganizedGlitterAuth()');
+    logger.log('Global auth clear function available: window.clearOrganizedGlitterAuth()');
   }
 };

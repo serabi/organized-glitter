@@ -8,7 +8,6 @@ import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/contexts/AuthContext/AuthProvider';
 import { MetadataProvider } from '@/contexts/MetadataContext';
 import FeedbackDialogProvider from '@/components/FeedbackDialogProvider';
-import PerformancePrefetcher from '@/components/PerformancePrefetcher';
 
 import { queryClient } from '@/lib/queryClient';
 import { setupAutomaticCacheCleaning } from '@/utils/cacheValidation';
@@ -25,7 +24,7 @@ const CacheCleanupHandler: React.FC = () => {
     const cleanup = setupAutomaticCacheCleaning(queryClient);
     return cleanup;
   }, []);
-  
+
   return null;
 };
 
@@ -50,7 +49,6 @@ export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
               <TooltipProvider>
                 {children}
                 <Toaster />
-                <PerformancePrefetcher />
               </TooltipProvider>
             </MetadataProvider>
           </AuthProvider>

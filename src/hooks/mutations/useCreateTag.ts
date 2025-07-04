@@ -5,6 +5,7 @@ import { queryKeys } from '../queries/queryKeys';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { requireAuthenticatedUser } from '@/utils/authGuards';
+import { secureLogger } from '@/utils/secureLogger';
 
 interface CreateTagData {
   name: string;
@@ -49,7 +50,7 @@ export function useCreateTag() {
       });
     },
     onError: (error: unknown) => {
-      console.error('Error creating tag:', error);
+      secureLogger.error('Error creating tag:', error);
 
       // Handle specific error cases
       if (error && typeof error === 'object' && 'status' in error && error.status === 400) {

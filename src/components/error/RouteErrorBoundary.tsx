@@ -1,5 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
+import { logger } from '@/utils/logger';
 
 interface RouteErrorBoundaryState {
   hasError: boolean;
@@ -33,7 +34,7 @@ class RouteErrorBoundary extends Component<RouteErrorBoundaryProps, RouteErrorBo
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error(`[RouteErrorBoundary] Error in ${this.props.routeName || 'route'}:`, {
+    logger.error(`[RouteErrorBoundary] Error in ${this.props.routeName || 'route'}:`, {
       error: error.message,
       stack: error.stack,
       componentStack: errorInfo.componentStack,
@@ -50,7 +51,7 @@ class RouteErrorBoundary extends Component<RouteErrorBoundaryProps, RouteErrorBo
     const newRetryCount = this.state.retryCount + 1;
 
     if (newRetryCount <= this.maxRetries) {
-      console.log(
+      logger.log(
         `[RouteErrorBoundary] Retrying ${this.props.routeName || 'route'} (attempt ${newRetryCount}/${this.maxRetries})`
       );
       this.setState({
@@ -63,7 +64,7 @@ class RouteErrorBoundary extends Component<RouteErrorBoundaryProps, RouteErrorBo
   };
 
   handleReload = () => {
-    console.log(`[RouteErrorBoundary] Reloading page for ${this.props.routeName || 'route'}`);
+    logger.log(`[RouteErrorBoundary] Reloading page for ${this.props.routeName || 'route'}`);
     window.location.reload();
   };
 

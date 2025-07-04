@@ -1,16 +1,16 @@
 /**
  * @fileoverview PocketBase Filter Builder Utility - SECURITY CRITICAL
- * 
+ *
  * Centralized, type-safe utility for building secure PocketBase filter expressions.
  * Uses pb.filter() for secure parameter injection to prevent SQL injection attacks.
- * 
+ *
  * 🔒 SECURITY FEATURES:
  * - Field name whitelist validation to prevent SQL injection through field interpolation
  * - Secure parameter injection using pb.filter() for all user-provided values
  * - Comprehensive logging of security violations for monitoring
  * - Development-time error throwing for immediate debugging of security issues
  * - Automatic rejection of operations with invalid field names
- * 
+ *
  * Key Features:
  * - Type-safe filter building with TypeScript
  * - Secure parameter injection using pb.filter()
@@ -18,14 +18,14 @@
  * - Chainable API for complex filter combinations
  * - Reduces code duplication by 60-80% across the codebase
  * - Field name validation against comprehensive whitelist
- * 
+ *
  * ⚠️  SECURITY WARNINGS:
  * - NEVER modify COLLECTION_FIELDS without security review
  * - NEVER bypass field validation in any methods
  * - NEVER interpolate user input directly into filter strings
  * - ALWAYS use pb.filter() for parameterized queries
  * - ALWAYS validate field names before using them in filters
- * 
+ *
  * @author Generated with Claude Code
  * @version 2.0.0 - Security Hardened
  * @since 2024-06-29
@@ -40,96 +40,171 @@ const logger = createLogger('FilterBuilder');
 /**
  * Comprehensive field whitelist for all PocketBase collections
  * This prevents SQL injection through field name interpolation
- * 
+ *
  * CRITICAL SECURITY: Only fields listed here can be used in filter operations.
  * Never modify this whitelist without security review.
  */
 const COLLECTION_FIELDS = {
   // Core system fields present in all collections
-  system: new Set([
-    'id', 'created', 'updated', 'collectionId', 'collectionName'
-  ]),
-  
+  system: new Set(['id', 'created', 'updated', 'collectionId', 'collectionName']),
+
   // Projects collection fields
   projects: new Set([
-    'id', 'created', 'updated', 'collectionId', 'collectionName',
-    'user', 'title', 'status', 'kit_category', 'drill_shape',
-    'artist', 'company', 'date_purchased', 'date_received', 
-    'date_started', 'date_completed', 'width', 'height',
-    'total_diamonds', 'source_url', 'general_notes', 'image'
+    'id',
+    'created',
+    'updated',
+    'collectionId',
+    'collectionName',
+    'user',
+    'title',
+    'status',
+    'kit_category',
+    'drill_shape',
+    'artist',
+    'company',
+    'date_purchased',
+    'date_received',
+    'date_started',
+    'date_completed',
+    'width',
+    'height',
+    'total_diamonds',
+    'source_url',
+    'general_notes',
+    'image',
   ]),
-  
+
   // Progress notes collection fields
   progress_notes: new Set([
-    'id', 'created', 'updated', 'collectionId', 'collectionName',
-    'project', 'date', 'content', 'image'
+    'id',
+    'created',
+    'updated',
+    'collectionId',
+    'collectionName',
+    'project',
+    'date',
+    'content',
+    'image',
   ]),
-  
+
   // Tags collection fields
   tags: new Set([
-    'id', 'created', 'updated', 'collectionId', 'collectionName',
-    'user', 'name', 'slug', 'color'
+    'id',
+    'created',
+    'updated',
+    'collectionId',
+    'collectionName',
+    'user',
+    'name',
+    'slug',
+    'color',
   ]),
-  
+
   // Project tags relation fields
   project_tags: new Set([
-    'id', 'created', 'updated', 'collectionId', 'collectionName',
-    'project', 'tag'
+    'id',
+    'created',
+    'updated',
+    'collectionId',
+    'collectionName',
+    'project',
+    'tag',
   ]),
-  
+
   // Artists collection fields
-  artists: new Set([
-    'id', 'created', 'updated', 'collectionId', 'collectionName',
-    'user', 'name'
-  ]),
-  
+  artists: new Set(['id', 'created', 'updated', 'collectionId', 'collectionName', 'user', 'name']),
+
   // Companies collection fields
   companies: new Set([
-    'id', 'created', 'updated', 'collectionId', 'collectionName',
-    'user', 'name', 'website_url'
+    'id',
+    'created',
+    'updated',
+    'collectionId',
+    'collectionName',
+    'user',
+    'name',
+    'website_url',
   ]),
-  
+
   // User yearly stats fields
   user_yearly_stats: new Set([
-    'id', 'created', 'updated', 'collectionId', 'collectionName',
-    'user', 'year', 'stats_type', 'completed_count', 'in_progress_count',
-    'started_count', 'total_diamonds', 'estimated_drills', 'projects_included',
-    'status_breakdown', 'last_calculated', 'calculation_duration_ms', 'cache_version'
+    'id',
+    'created',
+    'updated',
+    'collectionId',
+    'collectionName',
+    'user',
+    'year',
+    'stats_type',
+    'completed_count',
+    'in_progress_count',
+    'started_count',
+    'total_diamonds',
+    'estimated_drills',
+    'projects_included',
+    'status_breakdown',
+    'last_calculated',
+    'calculation_duration_ms',
+    'cache_version',
   ]),
-  
+
   // Randomizer spins fields
   randomizer_spins: new Set([
-    'id', 'created', 'updated', 'collectionId', 'collectionName',
-    'user', 'project', 'project_title', 'selected_projects', 'spun_at'
+    'id',
+    'created',
+    'updated',
+    'collectionId',
+    'collectionName',
+    'user',
+    'project',
+    'project_title',
+    'selected_projects',
+    'spun_at',
   ]),
-  
+
   // Users collection fields (limited for security)
   users: new Set([
-    'id', 'created', 'updated', 'collectionId', 'collectionName',
-    'username', 'email', 'emailVisibility', 'verified', 'avatar', 'beta_tester'
+    'id',
+    'created',
+    'updated',
+    'collectionId',
+    'collectionName',
+    'username',
+    'email',
+    'emailVisibility',
+    'verified',
+    'avatar',
+    'beta_tester',
   ]),
-  
+
   // Account deletions fields
   account_deletions: new Set([
-    'id', 'created', 'updated', 'collectionId', 'collectionName',
-    'user_id', 'user_email', 'signup_method', 'notes'
+    'id',
+    'created',
+    'updated',
+    'collectionId',
+    'collectionName',
+    'user_id',
+    'user_email',
+    'signup_method',
+    'notes',
   ]),
-  
+
   // Commonly used relation fields and view expansions
   relations: new Set([
     'project_tags_via_project.tag', // Used in tag filtering
-    'tags_via_project_tags.name',   // Used in tag name queries
-    'artist.name',                  // Used in artist expansion
-    'company.name'                  // Used in company expansion
-  ])
+    'tags_via_project_tags.name', // Used in tag name queries
+    'artist.name', // Used in artist expansion
+    'company.name', // Used in company expansion
+  ]),
 } as const;
 
 /**
  * Validates a field name against the collection whitelist
- * 
+ *
  * CRITICAL SECURITY FUNCTION: Prevents SQL injection through field name validation.
  * Only whitelisted fields are allowed in filter operations.
- * 
+ *
  * @param field - The field name to validate
  * @param context - Optional context for better error messages (collection name, operation)
  * @returns true if field is valid, false otherwise
@@ -142,7 +217,7 @@ function validateFieldName(field: string, context?: string): boolean {
   }
 
   // Check if field is in any of our whitelisted sets
-  const isValidField = (
+  const isValidField =
     COLLECTION_FIELDS.system.has(field) ||
     COLLECTION_FIELDS.projects.has(field) ||
     COLLECTION_FIELDS.progress_notes.has(field) ||
@@ -154,23 +229,22 @@ function validateFieldName(field: string, context?: string): boolean {
     COLLECTION_FIELDS.randomizer_spins.has(field) ||
     COLLECTION_FIELDS.users.has(field) ||
     COLLECTION_FIELDS.account_deletions.has(field) ||
-    COLLECTION_FIELDS.relations.has(field)
-  );
+    COLLECTION_FIELDS.relations.has(field);
 
   if (!isValidField) {
     const errorMsg = `Security violation: Invalid field name "${field}" not in whitelist`;
-    logger.error(errorMsg, { 
-      field, 
+    logger.error(errorMsg, {
+      field,
       context,
       availableFields: Object.keys(COLLECTION_FIELDS),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-    
+
     // In development, throw error for immediate debugging
     if (import.meta.env.DEV) {
       throw new Error(`${errorMsg}. Context: ${context || 'unknown'}`);
     }
-    
+
     return false;
   }
 
@@ -275,7 +349,7 @@ export class FilterBuilder {
 
   /**
    * Add date range filter with flexible options and field validation
-   * 
+   *
    * SECURITY: Field name is validated against whitelist to prevent SQL injection
    */
   dateRange(field: string, options: DateRangeOptions): FilterBuilder {
@@ -301,20 +375,16 @@ export class FilterBuilder {
         })
       );
     } else if (options.startDate) {
-      this.filters.push(
-        pb.filter(`${field} >= {:startDate}`, { startDate: options.startDate })
-      );
+      this.filters.push(pb.filter(`${field} >= {:startDate}`, { startDate: options.startDate }));
     } else if (options.endDate) {
-      this.filters.push(
-        pb.filter(`${field} <= {:endDate}`, { endDate: options.endDate })
-      );
+      this.filters.push(pb.filter(`${field} <= {:endDate}`, { endDate: options.endDate }));
     }
     return this;
   }
 
   /**
    * Add search filter across multiple fields with field validation
-   * 
+   *
    * SECURITY: All field names are validated against whitelist to prevent SQL injection
    */
   search(options: SearchOptions): FilterBuilder {
@@ -326,29 +396,32 @@ export class FilterBuilder {
     const validFields = options.fields.filter(field => {
       const isValid = validateFieldName(field, 'search');
       if (!isValid) {
-        logger.error('Rejected search operation with invalid field name', { field, searchTerm: options.term });
+        logger.error('Rejected search operation with invalid field name', {
+          field,
+          searchTerm: options.term,
+        });
       }
       return isValid;
     });
 
     // If no valid fields remain, skip the search operation
     if (validFields.length === 0) {
-      logger.error('Search operation skipped: no valid fields provided', { 
-        originalFields: options.fields, 
-        searchTerm: options.term 
+      logger.error('Search operation skipped: no valid fields provided', {
+        originalFields: options.fields,
+        searchTerm: options.term,
       });
       return this;
     }
 
-    const searchConditions = validFields.map((field, index) => 
-      `${field} ~ {:term${index}}`
-    ).join(' || ');
-    
+    const searchConditions = validFields
+      .map((field, index) => `${field} ~ {:term${index}}`)
+      .join(' || ');
+
     const params: FilterParams = {};
     validFields.forEach((_, index) => {
       params[`term${index}`] = options.term.trim();
     });
-    
+
     this.filters.push(pb.filter(`(${searchConditions})`, params));
     return this;
   }
@@ -368,7 +441,7 @@ export class FilterBuilder {
 
   /**
    * Add equality filter for any field with field validation
-   * 
+   *
    * SECURITY: Field name is validated against whitelist to prevent SQL injection
    */
   equals(field: string, value: string | number | boolean): FilterBuilder {
@@ -382,7 +455,7 @@ export class FilterBuilder {
 
   /**
    * Add not equals filter for any field with field validation
-   * 
+   *
    * SECURITY: Field name is validated against whitelist to prevent SQL injection
    */
   notEquals(field: string, value: string | number | boolean): FilterBuilder {
@@ -396,7 +469,7 @@ export class FilterBuilder {
 
   /**
    * Add "in" filter for array values with field validation
-   * 
+   *
    * SECURITY: Field name is validated against whitelist to prevent SQL injection
    */
   in(field: string, values: (string | number)[]): FilterBuilder {
@@ -407,12 +480,14 @@ export class FilterBuilder {
 
     if (values && values.length > 0) {
       const params: FilterParams = {};
-      const placeholders = values.map((_, index) => {
-        const key = `${field}_${index}`;
-        params[key] = values[index];
-        return `{:${key}}`;
-      }).join(', ');
-      
+      const placeholders = values
+        .map((_, index) => {
+          const key = `${field}_${index}`;
+          params[key] = values[index];
+          return `{:${key}}`;
+        })
+        .join(', ');
+
       this.filters.push(pb.filter(`${field} in (${placeholders})`, params));
     }
     return this;
@@ -420,7 +495,7 @@ export class FilterBuilder {
 
   /**
    * Add "like" filter for partial text matching with field validation
-   * 
+   *
    * SECURITY: Field name is validated against whitelist to prevent SQL injection
    */
   like(field: string, value: string): FilterBuilder {
@@ -437,7 +512,7 @@ export class FilterBuilder {
 
   /**
    * Add greater than filter with field validation
-   * 
+   *
    * SECURITY: Field name is validated against whitelist to prevent SQL injection
    */
   greaterThan(field: string, value: string | number): FilterBuilder {
@@ -451,7 +526,7 @@ export class FilterBuilder {
 
   /**
    * Add less than filter with field validation
-   * 
+   *
    * SECURITY: Field name is validated against whitelist to prevent SQL injection
    */
   lessThan(field: string, value: string | number): FilterBuilder {
@@ -465,7 +540,7 @@ export class FilterBuilder {
 
   /**
    * Add null check filter with field validation
-   * 
+   *
    * SECURITY: Field name is validated against whitelist to prevent SQL injection
    */
   isNull(field: string): FilterBuilder {
@@ -479,7 +554,7 @@ export class FilterBuilder {
 
   /**
    * Add not null check filter with field validation
-   * 
+   *
    * SECURITY: Field name is validated against whitelist to prevent SQL injection
    */
   isNotNull(field: string): FilterBuilder {
@@ -493,7 +568,7 @@ export class FilterBuilder {
 
   /**
    * Add exclude filter (commonly used for categories) with field validation
-   * 
+   *
    * SECURITY: Field name is validated against whitelist to prevent SQL injection
    */
   exclude(field: string, value: string | number): FilterBuilder {
@@ -565,35 +640,35 @@ export function createFilter(): FilterBuilder {
 
 /**
  * Build comprehensive user-scoped filter for project queries
- * 
+ *
  * Creates a complete filter expression for project searches with user isolation
  * and optional filtering criteria. This is the most commonly used convenience
  * function for dashboard and project list queries.
- * 
+ *
  * Security Features:
  * - Automatic user scope isolation (users only see their own projects)
  * - Secure parameter injection for all filter criteria
  * - SQL injection prevention through parameterized queries
- * 
+ *
  * @function
  * @param {string | undefined} userId - User ID for data isolation (required for security)
  * @param {object} [options={}] - Optional filtering criteria
  * @param {string} [options.status] - Project status filter ('completed', 'progress', etc.)
  * @param {string} [options.company] - Company ID filter
- * @param {string} [options.artist] - Artist ID filter  
+ * @param {string} [options.artist] - Artist ID filter
  * @param {string} [options.drillShape] - Drill shape filter ('round', 'square')
  * @param {string} [options.yearFinished] - Year completed filter (YYYY format)
  * @param {boolean} [options.includeMiniKits] - Whether to include mini kit projects
  * @param {string} [options.searchTerm] - Text search across title and notes
  * @param {string[]} [options.selectedTags] - Array of tag IDs to filter by
  * @returns {string} Complete filter expression for PocketBase queries
- * 
+ *
  * @example
  * ```typescript
  * // Basic user filter
  * const filter = buildUserProjectFilter('user123');
  * // Result: "user = {:userId}"
- * 
+ *
  * // Complex filter with multiple criteria
  * const filter = buildUserProjectFilter('user123', {
  *   status: 'completed',
@@ -602,7 +677,7 @@ export function createFilter(): FilterBuilder {
  *   includeMiniKits: false
  * });
  * // Result: "user = {:userId} && status = {:status} && date_completed >= {:startDate} && ..."
- * 
+ *
  * // Use with PocketBase
  * const projects = await pb.collection('projects').getList(1, 20, {
  *   filter: buildUserProjectFilter(userId, { status: 'completed' })
@@ -667,28 +742,28 @@ export function buildUserProjectFilter(
 
 /**
  * Build user and year stats filter for dashboard statistics
- * 
+ *
  * Creates a secure filter expression for querying user yearly statistics
  * from the dashboard stats cache. Used by dashboard stats service for
  * efficient cache lookups and invalidation.
- * 
+ *
  * @function
  * @param {string} userId - User ID for data isolation
  * @param {number} year - Target year for statistics (e.g., 2024)
  * @param {string} [statsType='yearly'] - Type of statistics ('yearly', 'monthly', etc.)
  * @returns {string} Filter expression for user yearly stats queries
- * 
+ *
  * @example
  * ```typescript
  * // Get 2024 yearly stats filter
  * const filter = buildUserYearStatsFilter('user123', 2024);
  * // Result: "user = {:userId} && year = {:year} && stats_type = {:stats_type}"
- * 
+ *
  * // Use with PocketBase for cache lookup
  * const cachedStats = await pb.collection('user_yearly_stats').getFirstListItem(
  *   buildUserYearStatsFilter(userId, 2024)
  * );
- * 
+ *
  * // Custom stats type
  * const monthlyFilter = buildUserYearStatsFilter('user123', 2024, 'monthly');
  * ```
@@ -707,15 +782,15 @@ export function buildUserYearStatsFilter(
 
 /**
  * Build project relation filter for child records
- * 
+ *
  * Creates a secure filter expression for querying records related to a specific project.
  * Commonly used for progress notes, tags, images, and other project-associated data.
  * Uses secure parameterized queries to prevent SQL injection.
- * 
+ *
  * @function
  * @param {string} projectId - Unique identifier of the target project
  * @returns {string} Filter expression for project-related records
- * 
+ *
  * @example
  * ```typescript
  * // Get all progress notes for a project
@@ -723,7 +798,7 @@ export function buildUserYearStatsFilter(
  * const notes = await pb.collection('progress_notes').getList(1, 50, {
  *   filter // Result: "project = {:project}"
  * });
- * 
+ *
  * // Get project tags
  * const tagFilter = buildProjectRelationFilter('proj_abc123');
  * const projectTags = await pb.collection('project_tags').getList(1, 100, {
@@ -737,36 +812,36 @@ export function buildProjectRelationFilter(projectId: string): string {
 
 /**
  * Build find-by-name filter with user scope and optional exclusion
- * 
+ *
  * Creates a secure filter for finding records by name within a user's scope,
  * with optional exclusion of a specific record ID. Commonly used for duplicate
  * validation when creating or updating named entities like companies, artists, or tags.
- * 
+ *
  * Security Features:
  * - User-scoped queries ensure data isolation
  * - Secure parameter injection prevents SQL injection
  * - Case-sensitive exact name matching
- * 
+ *
  * @function
  * @param {string} userId - User ID for data isolation
  * @param {string} name - Exact name to search for
  * @param {string} [excludeId] - Optional record ID to exclude from results (useful for updates)
  * @returns {string} Filter expression for name-based queries with user scope
- * 
+ *
  * @example
  * ```typescript
  * // Check for duplicate company name during creation
  * const filter = buildFindByNameFilter('user123', 'Acme Corp');
  * const duplicates = await pb.collection('companies').getList(1, 1, { filter });
  * // Result: "user = {:userId} && name = {:name}"
- * 
+ *
  * // Check for duplicate during update (exclude current record)
  * const updateFilter = buildFindByNameFilter('user123', 'Updated Name', 'comp_456');
- * const conflicts = await pb.collection('companies').getList(1, 1, { 
- *   filter: updateFilter 
+ * const conflicts = await pb.collection('companies').getList(1, 1, {
+ *   filter: updateFilter
  * });
  * // Result: "user = {:userId} && name = {:name} && id != {:id}"
- * 
+ *
  * // Validate unique artist name
  * const artistFilter = buildFindByNameFilter('user123', 'Van Gogh');
  * const existingArtists = await pb.collection('artists').getList(1, 1, {
@@ -774,14 +849,8 @@ export function buildProjectRelationFilter(projectId: string): string {
  * });
  * ```
  */
-export function buildFindByNameFilter(
-  userId: string,
-  name: string,
-  excludeId?: string
-): string {
-  const builder = createFilter()
-    .userScope(userId)
-    .equals('name', name);
+export function buildFindByNameFilter(userId: string, name: string, excludeId?: string): string {
+  const builder = createFilter().userScope(userId).equals('name', name);
 
   if (excludeId) {
     builder.notEquals('id', excludeId);
@@ -792,23 +861,23 @@ export function buildFindByNameFilter(
 
 /**
  * Build date cleanup filter for removing old records
- * 
+ *
  * Creates a secure filter for identifying old records that need cleanup or archival.
  * Combines user scope isolation with date-based filtering to safely identify
  * records older than a specified cutoff date. Commonly used for data maintenance,
  * cache cleanup, and automated archival processes.
- * 
+ *
  * Security Features:
  * - User-scoped queries ensure data isolation
  * - Secure parameter injection prevents SQL injection
  * - Date validation through parameterized queries
- * 
+ *
  * @function
  * @param {string} userId - User ID for data isolation
  * @param {string} dateField - Name of the date field to filter on (e.g., 'created', 'updated', 'date_completed')
  * @param {string} cutoffDate - ISO date string for the cutoff threshold (records before this date will match)
  * @returns {string} Filter expression for date-based cleanup queries
- * 
+ *
  * @example
  * ```typescript
  * // Clean up old cache entries (older than 7 days)
@@ -816,14 +885,14 @@ export function buildFindByNameFilter(
  * const filter = buildDateCleanupFilter('user123', 'created', sevenDaysAgo);
  * const oldCache = await pb.collection('user_cache').getList(1, 100, { filter });
  * // Result: "user = {:userId} && created < {:created}"
- * 
+ *
  * // Archive completed projects older than 1 year
  * const lastYear = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
  * const archiveFilter = buildDateCleanupFilter('user123', 'date_completed', lastYear);
  * const oldProjects = await pb.collection('projects').getList(1, 50, {
  *   filter: archiveFilter
  * });
- * 
+ *
  * // Clean up old error logs
  * const thirtyDaysAgo = '2024-05-30T00:00:00.000Z';
  * const logFilter = buildDateCleanupFilter('user123', 'timestamp', thirtyDaysAgo);
@@ -837,8 +906,5 @@ export function buildDateCleanupFilter(
   dateField: string,
   cutoffDate: string
 ): string {
-  return createFilter()
-    .userScope(userId)
-    .lessThan(dateField, cutoffDate)
-    .build();
+  return createFilter().userScope(userId).lessThan(dateField, cutoffDate).build();
 }

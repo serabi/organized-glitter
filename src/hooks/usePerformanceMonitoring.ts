@@ -4,6 +4,7 @@
  */
 
 import { useEffect, useRef } from 'react';
+import { logger } from '@/utils/logger';
 
 interface PerformanceMetrics {
   pageLoadTime: number;
@@ -48,7 +49,7 @@ export function usePerformanceMonitoring(options: UsePerformanceMonitoringOption
     metricsRef.current.componentMountTime = componentMountTime;
 
     if (import.meta.env.DEV) {
-      console.log(`[Performance] ${componentName} mounted in ${componentMountTime.toFixed(2)}ms`);
+      logger.log(`[Performance] ${componentName} mounted in ${componentMountTime.toFixed(2)}ms`);
     }
   }, [enabled, componentName]);
 
@@ -72,7 +73,7 @@ export function usePerformanceMonitoring(options: UsePerformanceMonitoringOption
       }
 
       if (import.meta.env.DEV) {
-        console.log(
+        logger.log(
           `[Performance] ${componentName} page load completed in ${pageLoadTime.toFixed(2)}ms`
         );
       }
@@ -103,17 +104,17 @@ export function usePerformanceMonitoring(options: UsePerformanceMonitoringOption
     metricsRef.current.source = source;
 
     if (import.meta.env.DEV) {
-      console.log(`[Performance] Stats loaded in ${duration.toFixed(2)}ms from ${source}`);
+      logger.log(`[Performance] Stats loaded in ${duration.toFixed(2)}ms from ${source}`);
 
       // Performance analysis
       if (source === 'cache' && duration > 100) {
-        console.warn(
+        logger.warn(
           '[Performance] Cache hit but slow response time - investigate database performance'
         );
       } else if (source === 'realtime' && duration > 2000) {
-        console.warn('[Performance] Real-time calculation is slow - consider optimizing queries');
+        logger.warn('[Performance] Real-time calculation is slow - consider optimizing queries');
       } else if (source === 'cache' && duration < 50) {
-        console.log('[Performance] ✅ Excellent cache performance');
+        logger.log('[Performance] ✅ Excellent cache performance');
       }
     }
   };
@@ -128,21 +129,21 @@ export function usePerformanceMonitoring(options: UsePerformanceMonitoringOption
     if (!enabled || !import.meta.env.DEV) return;
 
     const metrics = getMetrics();
-    console.group(`[Performance Report] ${componentName}`);
-    console.table(metrics);
+    logger.group(`[Performance Report] ${componentName}`);
+    logger.table(metrics);
 
     // Performance recommendations
     if (metrics.pageLoadTime && metrics.pageLoadTime > 3000) {
-      console.warn('Page load time > 3s - consider further optimizations');
+      logger.warn('Page load time > 3s - consider further optimizations');
     } else if (metrics.pageLoadTime && metrics.pageLoadTime < 1000) {
-      console.log('✅ Excellent page load performance');
+      logger.log('✅ Excellent page load performance');
     }
 
     if (metrics.statsLoadTime && metrics.source === 'cache' && metrics.statsLoadTime < 100) {
-      console.log('✅ Excellent stats cache performance');
+      logger.log('✅ Excellent stats cache performance');
     }
 
-    console.groupEnd();
+    logger.groupEnd();
   };
 
   return {
@@ -172,7 +173,7 @@ export function useSimplePerformanceTracking(componentName: string) {
       const duration = endTime - startTime.current;
 
       if (import.meta.env.DEV) {
-        console.log(`[Performance] ${componentName} lifecycle: ${duration.toFixed(2)}ms`);
+        logger.log(`[Performance] ${componentName} lifecycle: ${duration.toFixed(2)}ms`);
       }
     };
   }, [componentName]);

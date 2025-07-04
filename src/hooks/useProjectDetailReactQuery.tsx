@@ -11,6 +11,7 @@ import {
 } from '@/hooks/mutations/useProjectDetailMutations';
 import { useAuth } from '@/hooks/useAuth';
 import { ProjectStatus } from '@/types/project';
+import { secureLogger } from '@/utils/secureLogger';
 
 /**
  * React Query-based hook for managing a project's details, status, notes, and progress notes
@@ -23,7 +24,7 @@ export const useProjectDetailReactQuery = (projectId: string | undefined) => {
 
   // Log auth state for debugging
   if (process.env.NODE_ENV === 'development') {
-    console.log('[useProjectDetailReactQuery] Auth state:', {
+    secureLogger.debug('[useProjectDetailReactQuery] Auth state:', {
       projectId,
       isAuthenticated,
       initialCheckComplete,

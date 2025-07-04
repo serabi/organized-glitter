@@ -6,6 +6,7 @@ import { useAdvancedProjects } from '@/hooks/queries/useAdvancedProjects';
 import { useToast } from '@/hooks/use-toast';
 import { useMetadata } from '@/contexts/MetadataContext';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { secureLogger } from '../utils/secureLogger';
 
 import ProjectsTable from '@/components/advanced/ProjectsTable';
 import AdvancedFilters from '@/components/advanced/AdvancedFilters';
@@ -74,7 +75,7 @@ const AdvancedView = () => {
     sortConfig,
     setSortConfig,
     availableFilters,
-  } = useAdvancedFilters(projects, showArchived, showDestashed, showMiniKits, externalFilters);
+  } = useAdvancedFilters(projects, showArchived, showDestashed, showMiniKits);
 
   // Client-side pagination
   const paginatedProjects = useMemo(() => {
@@ -118,7 +119,7 @@ const AdvancedView = () => {
   // Handle React Query errors
   useEffect(() => {
     if (isError && error) {
-      console.error('AdvancedView: React Query error:', error);
+      secureLogger.error('AdvancedView: React Query error', error);
       toast({
         title: 'Error Loading Projects',
         description: 'Failed to load projects. Please try refreshing the page.',

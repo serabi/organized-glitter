@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { confirmEmailVerification } from '@/services/auth';
 import { CheckCircle, XCircle, ArrowLeft, Mail } from 'lucide-react';
+import { logger } from '@/utils/logger';
 
 const VerifyEmail = () => {
   const [loading, setLoading] = useState(true);
@@ -53,7 +54,7 @@ const VerifyEmail = () => {
           });
         }
       } catch (err) {
-        console.error('Email verification error:', err);
+        logger.error('Email verification error:', err);
         const errorMessage = err instanceof Error ? err.message : 'Failed to verify email';
         setError(errorMessage);
         toast({

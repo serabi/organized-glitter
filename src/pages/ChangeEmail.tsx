@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { pb } from '@/lib/pocketbase';
 import { ClientResponseError } from 'pocketbase';
+import { secureLogger } from '../utils/secureLogger';
 import { Mail, ArrowLeft, CheckCircle, Shield } from 'lucide-react';
 
 /**
@@ -98,7 +99,7 @@ const ChangeEmail = () => {
         description: 'Check your new email for a confirmation link',
       });
     } catch (error: unknown) {
-      console.error('Email change request error:', error);
+      secureLogger.error('Email change request error', error);
 
       let errorMessage = 'Failed to request email change. Please try again.';
 

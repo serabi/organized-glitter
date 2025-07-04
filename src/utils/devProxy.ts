@@ -5,6 +5,7 @@
  */
 
 import { env } from '@/utils/env';
+import { logger } from './logger';
 
 /**
  * Determines if we're running in development mode
@@ -21,7 +22,7 @@ export const isDevelopment = env.MODE === 'development';
  * @returns The URL of the placeholder image
  */
 export async function getDevPlaceholder(file: File, bucket: string): Promise<string> {
-  console.log(`Creating development placeholder for ${file.name}`);
+  logger.log(`Creating development placeholder for ${file.name}`);
 
   try {
     // Generate a unique identifier
@@ -58,7 +59,7 @@ export async function getDevPlaceholder(file: File, bucket: string): Promise<str
 
         return `https://placehold.co/${width}x${height}/png?text=${encodeURIComponent(shortName)}-${timestamp}`;
       } catch (dimError) {
-        console.warn('Could not get image dimensions:', dimError);
+        logger.warn('Could not get image dimensions:', dimError);
         return `https://placehold.co/400x400/png?text=${encodeURIComponent(shortName)}-${timestamp}`;
       }
     } else {
@@ -66,7 +67,7 @@ export async function getDevPlaceholder(file: File, bucket: string): Promise<str
       return `https://placehold.co/400x400/png?text=${encodeURIComponent(shortName)}-${timestamp}`;
     }
   } catch (placeholderError) {
-    console.error('Error generating placeholder:', placeholderError);
+    logger.error('Error generating placeholder:', placeholderError);
     // Absolute fallback - simple object URL that will work during the session
     return URL.createObjectURL(file);
   }
@@ -89,7 +90,7 @@ async function hashString(str: string): Promise<string> {
         .join('');
     } catch (e) {
       // Fall back to simpler method if crypto fails
-      console.warn('Crypto API failed, using simple hash instead:', e);
+      logger.warn('Crypto API failed, using simple hash instead:', e);
     }
   }
 

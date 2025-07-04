@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { secureLogger } from '@/utils/secureLogger';
 import { ProgressNote } from '@/types/project';
 import { format, parseISO } from 'date-fns';
 import ImageGallery from './ImageGallery';
@@ -66,7 +67,7 @@ const ProgressNoteItem = React.memo(
         await onUpdateNote(note.id, editableContent);
         setIsEditing(false);
       } catch (error) {
-        console.error('Failed to update note:', error);
+        secureLogger.error('Failed to update note:', error);
       } finally {
         setIsSaving(false);
       }

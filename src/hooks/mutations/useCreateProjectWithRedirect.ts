@@ -8,7 +8,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNavigateToProject } from '@/hooks/useNavigateToProject';
 import { createLogger } from '@/utils/secureLogger';
 import { ClientResponseError } from 'pocketbase';
-import { DashboardStatsService } from '@/services/pocketbase/dashboardStatsService';
 import { TagService } from '@/lib/tags';
 
 const logger = createLogger('useCreateProjectWithRedirect');
@@ -246,23 +245,13 @@ export const useCreateProjectWithRedirect = () => {
           queryKey: queryKeys.tags.stats(),
         });
 
-        // Proactively update stats cache when project is created
+        // Invalidate dashboard stats cache when project is created
         if (user?.id) {
-          // Use async operation within startTransition for stats update
-          DashboardStatsService.updateCacheAfterProjectChange(user.id)
-            .then(() => {
-              // Invalidate React Query cache for dashboard stats to ensure immediate UI updates
-              const currentYear = new Date().getFullYear();
-              queryClient.invalidateQueries({
-                queryKey: [...queryKeys.stats.overview(user.id), 'dashboard', currentYear],
-              });
-
-              logger.info('Dashboard stats cache invalidated after project creation');
-            })
-            .catch(error => {
-              // Log cache update error but don't propagate to mutation error handler
-              logger.error('Failed to update stats cache after project creation:', error);
-            });
+          const currentYear = new Date().getFullYear();
+          queryClient.invalidateQueries({
+            queryKey: [...queryKeys.stats.overview(user.id), 'dashboard', currentYear],
+          });
+          logger.info('Dashboard stats cache invalidated after project creation');
         }
 
         logger.info('Project creation cache invalidation completed');

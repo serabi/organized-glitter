@@ -73,6 +73,8 @@ const buildFilterString = (userId: string, serverFilters: ServerFilters): string
   if (serverFilters.yearFinished && serverFilters.yearFinished !== 'all') {
     const year = parseInt(serverFilters.yearFinished, 10);
     if (!isNaN(year)) {
+      // Filter by completion date only - matches "Year Finished" semantic meaning
+      // Only includes projects that were actually completed in the selected year
       filterParts.push(
         pb.filter('date_completed >= {:startDate} && date_completed <= {:endDate}', {
           startDate: `${year}-01-01 00:00:00`,
@@ -211,6 +213,12 @@ const fetchProjects = async (
     };
   });
 
+  // Log all project statuses returned from server for debugging
+  logger.debug(
+    '[Debug] Project statuses from server:',
+    projectsData.map(p => ({ id: p.id, status: p.status, title: p.title }))
+  );
+
   logger.info(`Projects fetched: ${projectsData.length} of ${resultList.totalItems}`);
 
   return {
@@ -239,6 +247,14 @@ export const useProjects = ({
     }),
     [filters, sortField, sortDirection, currentPage, pageSize]
   );
+
+  // Debug logging to trace query execution
+  logger.debug('🔄 useProjects called', {
+    userId,
+    status: filters.status,
+    queryKey: queryKeys.projects.list(userId || '', queryParams),
+    enabled: !!userId,
+  });
 
   return useQuery({
     queryKey: queryKeys.projects.list(userId || '', queryParams),

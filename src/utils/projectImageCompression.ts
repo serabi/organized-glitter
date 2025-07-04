@@ -1,4 +1,5 @@
 import imageCompression from 'browser-image-compression';
+import { logger } from './logger';
 
 /**
  * Compression statistics for user feedback
@@ -109,7 +110,7 @@ export async function getCompressionPreview(
       compressedDimensions,
     };
   } catch (error) {
-    console.warn('Could not get image dimensions for compression stats:', error);
+    logger.warn('Could not get image dimensions for compression stats:', error);
     return {
       originalSizeMB,
       compressedSizeMB,
@@ -221,8 +222,8 @@ export async function compressProjectImage(
 
   try {
     const originalSizeMB = file.size / (1024 * 1024);
-    console.log(`[projectImageCompression] Starting compression for: ${file.name}`);
-    console.log(
+    logger.log(`[projectImageCompression] Starting compression for: ${file.name}`);
+    logger.log(
       `[projectImageCompression] Original type: ${file.type}, Original size: ${originalSizeMB.toFixed(2)}MB`
     );
 
@@ -233,7 +234,7 @@ export async function compressProjectImage(
 
     // Get adaptive compression options based on file size and type
     const adaptiveOptions = getAdaptiveCompressionOptions(file);
-    console.log(
+    logger.log(
       `[projectImageCompression] Using adaptive compression - target type: ${adaptiveOptions.fileType}, target size: ${adaptiveOptions.maxSizeMB}MB, quality: ${adaptiveOptions.initialQuality}`
     );
 
@@ -259,13 +260,13 @@ export async function compressProjectImage(
       onProgress(100);
     }
 
-    console.log(
+    logger.log(
       `[projectImageCompression] Compression completed. Output type: ${compressedFile.type}`
     );
-    console.log(
+    logger.log(
       `[projectImageCompression] Compressed size: ${(compressedFile.size / (1024 * 1024)).toFixed(2)}MB`
     );
-    console.log(
+    logger.log(
       `[projectImageCompression] Reduction: ${Math.round(((file.size - compressedFile.size) / file.size) * 100)}%`
     );
 
@@ -277,11 +278,11 @@ export async function compressProjectImage(
 
     return finalFile;
   } catch (error) {
-    console.error('[projectImageCompression] Compression failed:', error);
+    logger.error('[projectImageCompression] Compression failed:', error);
 
     // If compression fails but original file is acceptable size, return original
     if (file.size <= FILE_SIZE_LIMITS.TARGET_SIZE) {
-      console.log('[projectImageCompression] Using original file as fallback (acceptable size)');
+      logger.log('[projectImageCompression] Using original file as fallback (acceptable size)');
       if (onProgress) {
         onProgress(100);
       }

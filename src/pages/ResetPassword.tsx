@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { pb } from '@/lib/pocketbase';
 import { Lock, ArrowLeft, CheckCircle } from 'lucide-react';
+import { logger } from '@/utils/logger';
 
 const ResetPassword = () => {
   const [password, setPassword] = useState('');
@@ -110,7 +111,7 @@ const ResetPassword = () => {
         navigate('/login');
       }, 3000);
     } catch (err: unknown) {
-      console.error('Password reset error:', err);
+      logger.error('Password reset error:', err);
 
       // addBreadcrumb removed
 

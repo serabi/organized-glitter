@@ -1,6 +1,7 @@
 import { useEffect, useState, memo } from 'react';
 import { BetaTesterIcon } from '@/components/auth/icons';
 import { pb } from '@/lib/pocketbase';
+import { logger } from '@/utils/logger';
 
 interface ProfileIconsProps {
   userId: string | undefined;
@@ -21,7 +22,7 @@ const ProfileIcons = memo(
     useEffect(() => {
       // If we have a prop value, use it and don't fetch
       if (isBetaTester !== undefined) {
-        console.log('ProfileIcons - Using prop value:', isBetaTester);
+        logger.log('ProfileIcons - Using prop value:', isBetaTester);
         setShowBetaBadge(isBetaTester);
         setIsLoading(false);
         return;
@@ -37,10 +38,10 @@ const ProfileIcons = memo(
       const checkBetaStatus = async () => {
         try {
           const user = await pb.collection('users').getOne(userId);
-          console.log('ProfileIcons - Database check result:', user.beta_tester);
+          logger.log('ProfileIcons - Database check result:', user.beta_tester);
           setShowBetaBadge(!!user.beta_tester);
         } catch (error) {
-          console.error('Error checking beta status:', error);
+          logger.error('Error checking beta status:', error);
         } finally {
           setIsLoading(false);
         }

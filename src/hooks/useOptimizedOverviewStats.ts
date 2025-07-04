@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { secureLogger } from '@/utils/secureLogger';
 import { pb } from '@/lib/pocketbase';
 import {
   Collections,
@@ -150,7 +151,7 @@ export function useOptimizedOverviewStats(
       });
       setInProgressProjects(inProgressProjectsData);
     } catch (err) {
-      console.error('Error fetching overview stats:', err);
+      secureLogger.error('Error fetching overview stats:', err);
       setError(err instanceof Error ? err : new Error('Failed to fetch stats'));
     } finally {
       fetchingRef.current = false;

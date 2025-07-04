@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { useProgressNoteFormTracking } from './useProgressNoteFormTracking';
 import { useProgressImageCompression } from './useProgressImageCompression';
 import { analytics } from '@/services/analytics';
+import { logger } from '@/utils/logger';
 import {
   ProgressNoteFormProps as UseProgressNoteFormProps,
   ProgressNoteFormErrors,
@@ -121,7 +122,7 @@ export const useProgressNoteForm = ({
           onSuccess();
         }
       } catch (error) {
-        console.error('Error submitting progress note:', error);
+        logger.error('Error submitting progress note:', error);
         const errorMessage =
           error instanceof Error ? error.message : 'An unexpected error occurred.';
         tracking.trackSubmissionError(date, content?.trim().length || 0, Boolean(imageFile), error);

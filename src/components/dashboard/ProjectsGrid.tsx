@@ -1,34 +1,81 @@
+/**
+ * @fileoverview Projects Grid Component with Smart Date Separators
+ *
+ * This component renders the main grid/list view of projects with intelligent sorting
+ * and visual separators. It handles both grid and list layouts with responsive design
+ * and provides pagination controls for large project collections.
+ *
+ * Key Features:
+ * - Responsive grid layout (1-3 columns based on screen size)
+ * - Smart date-based separators for chronological sorting
+ * - Recently edited project highlighting
+ * - Loading states with skeleton placeholders
+ * - Empty state with filter reset option
+ * - Integrated pagination controls
+ * - Memorized rendering for performance
+ *
+ * Date Separator Logic:
+ * - Automatically detects date-based sorting fields
+ * - Inserts separators between dated and undated projects
+ * - Shows count of projects without the relevant date
+ * - Adapts separator labels to current sort field
+ *
+ * State Management:
+ * - Consumes all data from DashboardFiltersContext
+ * - Handles project click navigation with context preservation
+ * - Integrates with recently edited highlighting system
+ *
+ * @author serabi
+ * @since 2025-07-03
+ * @version 1.0.0 - Context-based grid with smart separators
+ */
+
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import ProjectCard from '@/components/dashboard/ProjectCard';
 import { ProjectType } from '@/types/project'; // Still needed for ProjectCard and internal logic
 import { Separator } from '@/components/ui/separator';
-import { useDashboardFiltersContext } from '@/hooks/useDashboardFiltersContext'; // Import context hook
+import { useDashboardFilters } from '@/contexts/DashboardFiltersContext';
 import ProjectPagination from '@/components/ui/ProjectPagination';
+import { useNavigateToProject } from '@/hooks/useNavigateToProject';
+import { useRecentlyEdited } from '@/contexts/DashboardFiltersContext';
+import { secureLogger } from '@/utils/secureLogger';
 
 // Interface ProjectsGridProps removed as it's no longer needed.
 // All data is sourced from DashboardFiltersContext.
 
 const ProjectsGridComponent = () => {
-  // Removed unused props
-  const navigate = useNavigate();
+  const navigateToProject = useNavigateToProject();
+  const dashboardContext = useDashboardFilters();
+  const { recentlyEditedProjectId } = useRecentlyEdited();
   const {
-    isLoadingProjects: loading, // Use from context
-    processedAndPaginatedProjects: projects, // Use paginated projects instead
-    viewType, // Use from context
-    searchTerm, // Use from context
-    sortField, // Use from context
-    resetAllFilters, // Use from context
+    isLoadingProjects: loading,
+    projects,
+    filters,
+    resetAllFilters,
     dynamicSeparatorProps,
-    // Pagination props
-    currentPage,
-    pageSize,
     totalItems,
     totalPages,
-    setCurrentPage,
-    setPageSize,
-  } = useDashboardFiltersContext();
+    updatePage,
+    updatePageSize,
+  } = dashboardContext;
+
+  // Debug log: print all project statuses in the grid for the Purchased section
+  React.useEffect(() => {
+    if (filters.activeStatus === 'purchased' && !loading) {
+      secureLogger.debug(
+        '[Debug] Projects rendered in Purchased section:',
+        projects.map(p => ({ id: p.id, status: p.status, title: p.title }))
+      );
+    }
+  }, [filters.activeStatus, loading, projects]);
+
+  // Extract individual properties from filters
+  const viewType = filters.viewType;
+  const searchTerm = filters.searchTerm;
+  const sortField = filters.sortField;
+  const currentPage = filters.currentPage;
+  const pageSize = filters.pageSize;
 
   const {
     isCurrentSortDateBased,
@@ -44,13 +91,13 @@ const ProjectsGridComponent = () => {
     }
   }, [loading, projects.length, viewType, searchTerm, sortField]); // Changed sortBy to sortField
 
-  // Handle project card click with breadcrumb tracking
+  // Handle project card click with simple navigation
   const handleProjectClick = React.useCallback(
     (project: ProjectType) => {
-      // addBreadcrumb removed
-      navigate(`/projects/${project.id}`);
+      // Simple navigation - dashboard filters will be saved automatically on navigation
+      navigateToProject(project.id);
     },
-    [navigate]
+    [navigateToProject]
   );
 
   if (loading) {
@@ -90,20 +137,25 @@ const ProjectsGridComponent = () => {
   // If a distinction is needed, further logic would be required here.
 
   const renderProjectsWithDivider = () => {
-    let dividerInserted = false;
     const elements: JSX.Element[] = [];
 
-    projects.forEach((project: ProjectType) => {
-      if (
-        isCurrentSortDateBased &&
-        currentSortDatePropertyKey &&
-        currentSortDateFriendlyName &&
-        countOfItemsWithoutCurrentSortDate &&
-        countOfItemsWithoutCurrentSortDate > 0 &&
-        countOfItemsWithoutCurrentSortDate < projects.length && // Ensures items in both groups
-        !project[currentSortDatePropertyKey] && // Current project lacks the specific date
-        !dividerInserted
-      ) {
+    // Calculate the separator position before rendering
+    let separatorIndex = -1;
+    if (
+      isCurrentSortDateBased &&
+      currentSortDatePropertyKey &&
+      currentSortDateFriendlyName &&
+      countOfItemsWithoutCurrentSortDate &&
+      countOfItemsWithoutCurrentSortDate > 0 &&
+      countOfItemsWithoutCurrentSortDate < projects.length
+    ) {
+      // Find the first project without the date - this is where separator should go
+      separatorIndex = projects.findIndex(project => !project[currentSortDatePropertyKey]);
+    }
+
+    projects.forEach((project: ProjectType, index: number) => {
+      // Insert separator before the first undated project
+      if (separatorIndex === index) {
         elements.push(
           <Separator
             key={`separator-${currentSortDatePropertyKey}`}
@@ -118,7 +170,6 @@ const ProjectsGridComponent = () => {
             Kits with no {currentSortDateFriendlyName} ({countOfItemsWithoutCurrentSortDate} kits):
           </h4>
         );
-        dividerInserted = true;
       }
 
       elements.push(
@@ -126,6 +177,7 @@ const ProjectsGridComponent = () => {
           key={project.id}
           project={project}
           onClick={() => handleProjectClick(project)}
+          isRecentlyEdited={project.id === recentlyEditedProjectId}
         />
       );
     });
@@ -148,8 +200,8 @@ const ProjectsGridComponent = () => {
           totalPages={totalPages}
           pageSize={pageSize}
           totalItems={totalItems}
-          onPageChange={setCurrentPage}
-          onPageSizeChange={setPageSize}
+          onPageChange={updatePage}
+          onPageSizeChange={updatePageSize}
         />
       )}
     </div>

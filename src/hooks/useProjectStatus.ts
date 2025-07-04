@@ -19,13 +19,13 @@ interface ExtendedToastHandlers {
  * It provides both utility functions and status update functionality.
  */
 
-// Note: 'archived' is not included in statusOptions as it should not be selectable by users
 export const statusOptions = [
   'wishlist',
   'purchased',
   'stash',
   'progress',
   'completed',
+  'archived',
   'destashed',
 ] as const;
 type StatusType = (typeof statusOptions)[number] | string;
@@ -84,7 +84,7 @@ export const useProjectStatus = (project?: ProjectType | null): StatusUtils => {
     async (newStatus: ProjectStatus): Promise<boolean> => {
       if (!project) return false;
       if (!project.id) {
-        console.error('Error: Project ID is undefined');
+        logger.error('Error: Project ID is undefined');
         toastHandlers.showError?.('Invalid project ID. Please try refreshing the page.');
         return false;
       }

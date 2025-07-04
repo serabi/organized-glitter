@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/hooks/queries/queryKeys';
 import { useAuth } from '@/hooks/useAuth';
+import { secureLogger } from '@/utils/secureLogger';
 
 interface TagSelectorProps {
   project: ProjectType;
@@ -76,7 +77,7 @@ export const TagSelector: React.FC<TagSelectorProps> = ({ project, availableTags
         });
       }
     } catch (error) {
-      console.error('Tag toggle error:', error);
+      secureLogger.error('Tag toggle error:', error);
       toast({
         title: 'Error Updating Tags',
         description: 'An unexpected error occurred. Please try again.',

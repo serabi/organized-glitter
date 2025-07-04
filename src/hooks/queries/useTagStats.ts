@@ -3,6 +3,9 @@ import { TagService } from '@/lib/tags';
 import { queryKeys } from './queryKeys';
 import { useAuth } from '@/hooks/useAuth';
 import { ClientResponseError } from 'pocketbase';
+import { createLogger } from '@/utils/secureLogger';
+
+const logger = createLogger('useTagStats');
 
 export interface TagStatsResult {
   data: Record<string, number>;
@@ -27,7 +30,7 @@ export function useTagStats(tagIds: string[]): TagStatsResult {
   const query = useQuery({
     queryKey: queryKeys.tags.stat(user?.id || '', tagIds),
     queryFn: async () => {
-      console.log('[useTagStats] Fetching stats for', tagIds.length, 'tags');
+      logger.debug('Fetching stats for tags', { tagCount: tagIds.length });
       const result = await TagService.getBulkTagStats(tagIds);
 
       if (result.status === 'error') {
@@ -68,7 +71,7 @@ export function useOptimisticTagStats() {
   const updateTagStats = (tagId: string, delta: number) => {
     // This would be implemented with React Query's optimistic updates
     // For now, we'll rely on cache invalidation
-    console.log('[useOptimisticTagStats] Would update tag', tagId, 'by', delta);
+    logger.debug('Would update tag stats', { tagId, delta });
   };
 
   return { updateTagStats };

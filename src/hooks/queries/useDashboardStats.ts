@@ -1,130 +1,272 @@
 /**
- * Dashboard Stats React Query Hook
+ * Dashboard Stats React Query Hook - Simplified Direct Approach
  *
- * Type-safe React Query hook for the new consolidated dashboard stats service.
- * Provides intelligent caching, error handling, and performance monitoring.
+ * Uses direct PocketBase queries with TanStack Query v5 for optimal performance.
+ * Removes complex multi-layer caching in favor of modern Query v5 patterns.
  */
 
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { DashboardStatsService } from '@/services/pocketbase/dashboardStatsService';
-import type { LegacyOverviewStats } from '@/types/dashboard-stats';
-import { toLegacyStats } from '@/types/dashboard-stats';
+import { useQuery } from '@tanstack/react-query';
+import { pb } from '@/lib/pocketbase';
+import { Collections } from '@/types/pocketbase.types';
 import { queryKeys } from './queryKeys';
 import { useAuth } from '@/hooks/useAuth';
+import { createLogger } from '@/utils/secureLogger';
+
+const logger = createLogger('useDashboardStats');
+
+interface StatusBreakdown {
+  wishlist: number;
+  purchased: number;
+  stash: number;
+  progress: number;
+  completed: number;
+  archived: number;
+  destashed: number;
+}
+
+interface DashboardStats {
+  completed_count: number;
+  started_count: number;
+  in_progress_count: number;
+  total_diamonds: number;
+  estimated_drills: number;
+  status_breakdown: StatusBreakdown;
+  available_years: number[];
+}
 
 /**
- * Main hook for dashboard statistics
+ * Calculate dashboard stats using count-based queries for optimal performance
+ * Uses countRecords() and targeted queries to minimize data transfer
+ */
+async function calculateDashboardStats(userId: string, year: number): Promise<DashboardStats> {
+  const yearStart = `${year}-01-01`;
+  const yearEnd = `${year + 1}-01-01`;
+
+  logger.debug(
+    `Calculating dashboard stats for user ${userId}, year ${year} using count-based queries`
+  );
+
+  try {
+    // Status breakdown using parallel count queries - ultra fast!
+    const statusCountPromises = [
+      pb
+        .collection(Collections.Projects)
+        .getList(1, 1, {
+          filter: pb.filter('user = {:userId} && status = "wishlist"', { userId }),
+          skipTotal: false,
+        })
+        .then(result => ({ status: 'wishlist', count: result.totalItems })),
+
+      pb
+        .collection(Collections.Projects)
+        .getList(1, 1, {
+          filter: pb.filter('user = {:userId} && status = "purchased"', { userId }),
+          skipTotal: false,
+        })
+        .then(result => ({ status: 'purchased', count: result.totalItems })),
+
+      pb
+        .collection(Collections.Projects)
+        .getList(1, 1, {
+          filter: pb.filter('user = {:userId} && status = "stash"', { userId }),
+          skipTotal: false,
+        })
+        .then(result => ({ status: 'stash', count: result.totalItems })),
+
+      pb
+        .collection(Collections.Projects)
+        .getList(1, 1, {
+          filter: pb.filter('user = {:userId} && status = "progress"', { userId }),
+          skipTotal: false,
+        })
+        .then(result => ({ status: 'progress', count: result.totalItems })),
+
+      pb
+        .collection(Collections.Projects)
+        .getList(1, 1, {
+          filter: pb.filter('user = {:userId} && status = "completed"', { userId }),
+          skipTotal: false,
+        })
+        .then(result => ({ status: 'completed', count: result.totalItems })),
+
+      pb
+        .collection(Collections.Projects)
+        .getList(1, 1, {
+          filter: pb.filter('user = {:userId} && status = "archived"', { userId }),
+          skipTotal: false,
+        })
+        .then(result => ({ status: 'archived', count: result.totalItems })),
+
+      pb
+        .collection(Collections.Projects)
+        .getList(1, 1, {
+          filter: pb.filter('user = {:userId} && status = "destashed"', { userId }),
+          skipTotal: false,
+        })
+        .then(result => ({ status: 'destashed', count: result.totalItems })),
+    ];
+
+    // Year-specific data queries - only fetch what we need
+    const yearSpecificPromises = [
+      // Completed this year count
+      pb
+        .collection(Collections.Projects)
+        .getList(1, 1, {
+          filter: pb.filter(
+            'user = {:userId} && status = "completed" && date_completed >= {:yearStart} && date_completed < {:yearEnd}',
+            { userId, yearStart, yearEnd }
+          ),
+          skipTotal: false,
+        })
+        .then(result => result.totalItems),
+
+      // Started this year count
+      pb
+        .collection(Collections.Projects)
+        .getList(1, 1, {
+          filter: pb.filter(
+            'user = {:userId} && date_started >= {:yearStart} && date_started < {:yearEnd}',
+            { userId, yearStart, yearEnd }
+          ),
+          skipTotal: false,
+        })
+        .then(result => result.totalItems),
+
+      // Total diamonds for completed projects this year
+      pb.collection(Collections.Projects).getFullList({
+        filter: pb.filter(
+          'user = {:userId} && status = "completed" && date_completed >= {:yearStart} && date_completed < {:yearEnd}',
+          { userId, yearStart, yearEnd }
+        ),
+        fields: 'total_diamonds',
+        requestKey: `dashboard-diamonds-${userId}-${year}`,
+      }),
+
+      // Available years - only fetch date_completed field
+      pb.collection(Collections.Projects).getFullList({
+        filter: pb.filter('user = {:userId} && date_completed != ""', { userId }),
+        fields: 'date_completed',
+        requestKey: `dashboard-years-${userId}`,
+      }),
+    ];
+
+    // Execute all queries in parallel for maximum performance
+    const [statusCounts, yearSpecificResults] = await Promise.all([
+      Promise.all(statusCountPromises),
+      Promise.all(yearSpecificPromises),
+    ]);
+
+    // Extract year-specific results with proper typing
+    const completedThisYear = yearSpecificResults[0] as number;
+    const startedThisYear = yearSpecificResults[1] as number;
+    const completedProjectsThisYear = yearSpecificResults[2] as Array<{ total_diamonds?: number }>;
+    const projectsWithDates = yearSpecificResults[3] as Array<{ date_completed?: string }>;
+
+    logger.debug(
+      `Count queries completed: ${statusCounts.length} status counts, ${completedProjectsThisYear.length} completed projects this year`
+    );
+
+    // Build status breakdown from count results
+    const statusBreakdown: StatusBreakdown = {
+      wishlist: 0,
+      purchased: 0,
+      stash: 0,
+      progress: 0,
+      completed: 0,
+      archived: 0,
+      destashed: 0,
+    };
+
+    for (const { status, count } of statusCounts) {
+      statusBreakdown[status as keyof StatusBreakdown] = count;
+    }
+
+    // Calculate total diamonds from completed projects this year
+    const totalDiamonds = completedProjectsThisYear.reduce(
+      (sum, project) => sum + (project.total_diamonds || 0),
+      0
+    );
+
+    // Extract available years from minimal dataset
+    const completionYears = new Set<number>();
+    for (const project of projectsWithDates) {
+      if (project.date_completed && project.date_completed.trim() !== '') {
+        try {
+          const completionYear = new Date(project.date_completed).getFullYear();
+          if (completionYear >= 1900 && completionYear <= 2100) {
+            completionYears.add(completionYear);
+          }
+        } catch {
+          // Invalid date, skip
+        }
+      }
+    }
+
+    const availableYears = Array.from(completionYears).sort((a, b) => b - a);
+
+    const stats: DashboardStats = {
+      completed_count: completedThisYear,
+      started_count: startedThisYear,
+      in_progress_count: statusBreakdown.progress,
+      total_diamonds: totalDiamonds,
+      estimated_drills: totalDiamonds,
+      status_breakdown: statusBreakdown,
+      available_years: availableYears,
+    };
+
+    logger.debug('Dashboard stats calculated using count-based queries:', {
+      ...stats,
+      performance: 'ultra-fast count queries + targeted data fetching',
+      statusQueryCount: statusCounts.length,
+      totalDataTransfer: `${completedProjectsThisYear.length} + ${projectsWithDates.length} records`,
+    });
+
+    return stats;
+  } catch (error) {
+    logger.error('Failed to calculate dashboard stats with count-based queries:', error);
+    throw error;
+  }
+}
+
+/**
+ * Main hook for dashboard statistics using direct PocketBase queries
  *
  * Features:
- * - Intelligent caching with database + React Query layers
- * - Automatic error recovery with stale cache fallback
- * - Performance monitoring and logging
- * - Type-safe with runtime validation
+ * - Direct PocketBase queries for maximum simplicity
+ * - TanStack Query v5 built-in caching and deduplication
+ * - Modern query patterns with optimal performance
  */
 export const useDashboardStats = (year?: number) => {
   const { user } = useAuth();
   const userId = user?.id;
   const targetYear = year || new Date().getFullYear();
-  const queryClient = useQueryClient();
 
   const query = useQuery({
     queryKey: [...queryKeys.stats.overview(userId || 'anonymous'), 'dashboard', targetYear],
-    queryFn: async () => {
-      try {
-        return await DashboardStatsService.getYearlyStats(userId!, targetYear);
-      } catch (error) {
-        // Handle 404 errors gracefully - they're expected for new users/years
-        // Instead of treating as error, return undefined so UI can handle gracefully
-        if (error && typeof error === 'object' && 'status' in error && 
-            (error as { status: number }).status === 404) {
-          return undefined;
-        }
-        throw error;
-      }
-    },
+    queryFn: () => calculateDashboardStats(userId!, targetYear),
     enabled: !!userId,
-    // Optimized cache settings for dashboard use
-    staleTime: 5 * 60 * 1000, // 5 minutes - data doesn't change frequently
-    gcTime: 30 * 60 * 1000, // 30 minutes garbage collection
-    // Conservative refetch settings since we have database caching
-    refetchInterval: false,
-    refetchIntervalInBackground: false,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: true,
-    // Simplified retry with exponential backoff
-    retry: (failureCount, error) => {
-      // Don't retry on validation errors
-      if (error && error instanceof Error && error.name === 'StatsServiceError') {
-        return false;
-      }
-      // Don't retry on 404 errors (cache misses are expected for new users/years)
-      if (error && typeof error === 'object' && 'status' in error && 
-          (error as { status: number }).status === 404) {
-        return false;
-      }
-      return failureCount < 2;
-    },
-    retryDelay: attemptIndex => Math.min(1000 * Math.pow(2, attemptIndex), 5000),
+    // TanStack Query v5 defaults provide excellent performance:
+    // - 5 minute staleTime prevents unnecessary refetches
+    // - 5 minute gcTime for cache cleanup
+    // - Automatic request deduplication
+    // - Background refetching for active queries
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 5 * 60 * 1000, // 5 minutes
+    retry: 2, // Retry failed requests twice
   });
-
-  // Manual cache invalidation
-  const invalidateCache = async () => {
-    if (userId) {
-      // Invalidate both database cache and React Query cache in parallel
-      await Promise.all([
-        DashboardStatsService.invalidateCache(userId, targetYear),
-        queryClient.invalidateQueries({
-          queryKey: [...queryKeys.stats.overview(userId), 'dashboard', targetYear],
-        }),
-      ]);
-    }
-  };
-
-  // Proactive cache update after project changes
-  const updateAfterProjectChange = async () => {
-    if (userId) {
-      // Update database cache proactively, then invalidate React Query in parallel
-      await DashboardStatsService.updateCacheAfterProjectChange(userId, targetYear);
-      await queryClient.invalidateQueries({
-        queryKey: [...queryKeys.stats.overview(userId), 'dashboard', targetYear],
-      });
-    }
-  };
-
-  // Pre-warm cache for better UX
-  const preWarmCache = async () => {
-    if (userId) {
-      await DashboardStatsService.preWarmCache(userId);
-    }
-  };
-
-  // Get cache status for debugging
-  const getCacheStatus = async () => {
-    if (userId) {
-      return await DashboardStatsService.getCacheStatus(userId, targetYear);
-    }
-    return null;
-  };
 
   return {
     // Core query data
     data: query.data,
-    stats: query.data?.stats,
+    stats: query.data,
+    dashboardStats: query.data, // Alias for backward compatibility
+    availableYears: query.data?.available_years || [],
     isLoading: query.isFetching && !query.data,
     isError: query.isError,
     error: query.error,
 
-    // Cache source information
-    cacheSource: query.data?.source,
-    cachedAt: query.data?.cached_at,
-    calculationTime: query.data?.calculation_time_ms,
-
     // Actions
     refetch: query.refetch,
-    invalidateCache,
-    updateAfterProjectChange,
-    preWarmCache,
-    getCacheStatus,
 
     // React Query status
     queryStatus: query.status,
@@ -133,77 +275,25 @@ export const useDashboardStats = (year?: number) => {
 };
 
 /**
- * Hook for legacy compatibility
+ * Optimized hook for available years - gets data from dashboard stats to eliminate redundant queries
  *
- * Provides the same interface as the old useOverviewStatsOptimized
- * for components that haven't been migrated yet.
+ * This replaces the separate useAvailableYears hook with a more efficient approach that
+ * extracts available years from the same data used for dashboard statistics.
  */
-export const useDashboardStatsLegacy = (year?: number) => {
-  const dashboardStats = useDashboardStats(year);
-
-  // Convert to legacy format
-  const legacyStats: LegacyOverviewStats | undefined = dashboardStats.stats
-    ? toLegacyStats(dashboardStats.stats)
-    : undefined;
+export const useAvailableYearsOptimized = (userId?: string) => {
+  const dashboardStats = useDashboardStats();
 
   return {
-    // Legacy format
-    data: legacyStats ? { stats: legacyStats } : undefined,
-    stats: legacyStats,
-
-    // Pass through loading/error states
+    years: dashboardStats.availableYears,
+    yearsWithMetadata: dashboardStats.availableYears.map(year => ({
+      year,
+      hasCompleted: true,
+      hasStarted: false,
+      hasReceived: false,
+      hasPurchased: false,
+    })),
     isLoading: dashboardStats.isLoading,
-    isError: dashboardStats.isError,
     error: dashboardStats.error,
-
-    // Actions (keep same names for compatibility)
-    invalidateCache: dashboardStats.invalidateCache,
-    updateAfterProjectChange: dashboardStats.updateAfterProjectChange,
+    refetch: dashboardStats.refetch,
   };
-};
-
-/**
- * Hook for prefetching dashboard stats
- */
-export const usePrefetchDashboardStats = () => {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-
-  return async (year?: number) => {
-    if (user?.id) {
-      const targetYear = year || new Date().getFullYear();
-      await queryClient.prefetchQuery({
-        queryKey: [...queryKeys.stats.overview(user.id), 'dashboard', targetYear],
-        queryFn: () => DashboardStatsService.getYearlyStats(user.id, targetYear),
-        staleTime: 5 * 60 * 1000,
-      });
-    }
-  };
-};
-
-/**
- * Hook for multiple years (dashboard historical view)
- */
-export const useDashboardStatsMultiYear = (years: number[]) => {
-  const { user } = useAuth();
-  const userId = user?.id;
-
-  return useQuery({
-    queryKey: userId ? [...queryKeys.stats.overview(userId), 'dashboard', 'multi-year', years] : [],
-    queryFn: async () => {
-      if (!userId) return [];
-
-      const results = await Promise.all(
-        years.map(year => DashboardStatsService.getYearlyStats(userId, year))
-      );
-
-      return results.map((result, index) => ({
-        year: years[index],
-        ...result,
-      }));
-    },
-    enabled: !!userId && years.length > 0,
-    staleTime: 10 * 60 * 1000, // 10 minutes for historical data
-    gcTime: 60 * 60 * 1000, // 1 hour
-  });
 };

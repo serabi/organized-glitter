@@ -3,6 +3,7 @@ import { useToast } from '@/hooks/use-toast';
 import { pb } from '@/lib/pocketbase';
 import { Collections } from '@/types/pocketbase.types';
 import { analytics } from '@/services/analytics';
+import { logger } from '@/utils/logger';
 
 export const useProjectDelete = (projectId: string | undefined) => {
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ export const useProjectDelete = (projectId: string | undefined) => {
         const project = await pb.collection(Collections.Projects).getOne(projectId);
         projectStatus = project.status;
       } catch (getProjectError) {
-        console.warn('Could not get project status before deletion:', getProjectError);
+        logger.warn('Could not get project status before deletion:', getProjectError);
       }
       // Step 1: Delete all progress notes for this project
       try {
@@ -31,7 +32,7 @@ export const useProjectDelete = (projectId: string | undefined) => {
           await pb.collection(Collections.ProgressNotes).delete(note.id);
         }
       } catch (progressNotesError) {
-        console.error('Error deleting progress notes:', progressNotesError);
+        logger.error('Error deleting progress notes:', progressNotesError);
         // Continue with deletion attempt - the progress notes might not exist
       }
 
@@ -45,7 +46,7 @@ export const useProjectDelete = (projectId: string | undefined) => {
           await pb.collection(Collections.ProjectTags).delete(projectTag.id);
         }
       } catch (projectTagsError) {
-        console.error('Error deleting project tags:', projectTagsError);
+        logger.error('Error deleting project tags:', projectTagsError);
         // Continue with deletion attempt - the project tags might not exist
       }
 
@@ -61,7 +62,7 @@ export const useProjectDelete = (projectId: string | undefined) => {
       });
       navigate('/dashboard');
     } catch (error) {
-      console.error('Error deleting project:', error);
+      logger.error('Error deleting project:', error);
       toast({
         title: 'Error',
         description: 'Failed to delete the project',

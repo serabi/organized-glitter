@@ -13,6 +13,7 @@ import {
 import { MailCheck } from 'lucide-react';
 import { pb } from '@/lib/pocketbase';
 import { useToast } from '@/hooks/use-toast';
+import { secureLogger } from '../utils/secureLogger';
 
 const EmailConfirmation = () => {
   const [resending, setResending] = useState(false);
@@ -46,7 +47,7 @@ const EmailConfirmation = () => {
         description: 'Please check your inbox (and spam folder) for the confirmation email.',
       });
     } catch (error) {
-      console.error('Error resending confirmation email:', error);
+      secureLogger.error('Error resending confirmation email', error);
       toast({
         title: 'Error',
         description: 'Failed to resend confirmation email. Please try again later.',

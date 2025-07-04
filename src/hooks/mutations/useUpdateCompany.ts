@@ -5,6 +5,7 @@ import { queryKeys } from '../queries/queryKeys';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { requireAuthenticatedUser } from '@/utils/authGuards';
+import { secureLogger } from '@/utils/secureLogger';
 import { FilterBuilder } from '@/utils/filterBuilder';
 
 interface UpdateCompanyData {
@@ -23,10 +24,7 @@ async function updateCompany(data: UpdateCompanyData, userId: string): Promise<C
 
   // Check if company name already exists (if name changed)
   if (data.name.trim() !== currentCompany.name) {
-    const filter = new FilterBuilder()
-      .userScope(userId)
-      .equals('name', data.name.trim())
-      .build();
+    const filter = new FilterBuilder().userScope(userId).equals('name', data.name.trim()).build();
 
     const existing = await pb
       .collection(Collections.Companies)
@@ -73,7 +71,7 @@ export function useUpdateCompany() {
       });
     },
     onError: (error: unknown) => {
-      console.error('Error updating company:', error);
+      secureLogger.error('Error updating company:', error);
 
       // Handle specific error cases
       const errorMessage = error instanceof Error ? error.message : String(error);

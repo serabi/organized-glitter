@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { pb } from '@/lib/pocketbase';
 import { Lock, ArrowLeft, CheckCircle } from 'lucide-react';
+import { logger } from '@/utils/logger';
 
 const ConfirmPasswordReset = () => {
   const [password, setPassword] = useState('');
@@ -108,7 +109,7 @@ const ConfirmPasswordReset = () => {
         navigate('/login');
       }, 3000);
     } catch (err: unknown) {
-      console.error('Password reset error:', err);
+      logger.error('Password reset error:', err);
 
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to reset password. Please try again.';

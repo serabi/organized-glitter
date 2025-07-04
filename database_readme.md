@@ -1,12 +1,8 @@
 # Database Schema Documentation
 
-This document provides a comprehensive overview of the PocketBase database schema for the Organized Glitter diamond painting app.
-
 ## Overview
 
 **Database**: PocketBase v0.28.2
-
-The database follows a relational model with user-scoped data access and comprehensive security rules.
 
 ## Security Model
 
@@ -23,7 +19,7 @@ All user data is strictly scoped to the authenticated user:
 
 - Users can only access their own projects, notes, tags, artists, and companies
 - Cross-user data access is prevented at the database level
-- Admin access is separate from user access
+- Admin access is separate from the user access and is not accessible from the actual application - it's only accessible from the actual database, and only @serabi has access to this.
 
 ## Core Collections
 
@@ -38,7 +34,7 @@ Primary user accounts with authentication and profile data.
 - `username` (text, 4-25 chars, required, unique)
 - `avatar` (file, optional)
   - Supported formats: JPEG, PNG, SVG, GIF, WebP, HEIC, HEIF
-- `beta_tester` (boolean, default false)
+- `beta_tester` (boolean, default false during testing period)
 - `created`, `updated` (auto-managed timestamps)
 
 **Security Rules:**
@@ -212,7 +208,7 @@ Cached statistics for performance optimization of yearly analytics.
 
 ### account_deletions
 
-Audit trail for deleted user accounts (admin access only).
+Audit trail for deleted user accounts (database admin access only).
 
 **Fields:**
 
@@ -299,11 +295,54 @@ The following collections are managed by PocketBase for authentication and secur
 - Date range queries supported for analytics
 - Status filtering optimized for dashboard queries
 
+### Date Field Performance Indexes
+
+**Single Date Field Indexes:**
+
+- `idx_projects_date_completed` - Completed date filtering (most common)
+- `idx_projects_date_started` - Started date filtering
+- `idx_projects_date_received` - Received date filtering
+- `idx_projects_date_purchased` - Purchased date filtering
+
+**Composite User + Date Indexes:**
+
+- `idx_projects_user_date_completed` - User-scoped completed date queries
+- `idx_projects_user_date_started` - User-scoped started date queries
+- `idx_projects_user_date_received` - User-scoped received date queries
+- `idx_projects_user_date_purchased` - User-scoped purchased date queries
+
+**Year Extraction Optimization:**
+
+- `idx_projects_year_completed` - Optimized year filtering using `strftime('%Y', date_completed)`
+
+These indexes specifically support:
+
+- useAvailableYears hook
+- Year dropdown filtering across all date fields
+- Dashboard date-based sorting and filtering
+- Reduced database load for metadata queries
+
 ### Caching
 
 - Yearly statistics are pre-calculated and cached
 - Cache invalidation on relevant data changes
 - Performance monitoring with calculation duration tracking
+
+### React Query Optimization
+
+**Modern Cache Management:**
+
+- Optimistic updates replace broad cache invalidation for sort order preservation
+- Targeted cache updates using `updateProjectInCache` utility
+- 30-minute stale time for metadata queries
+- Ultra-lightweight queries using PocketBase field selection
+
+**Query Patterns:**
+
+- `useAvailableYears` hook with field selection optimization
+- Request deduplication for repeated metadata queries
+- Conservative refetch settings for stable data
+- Automatic error recovery with fallback invalidation
 
 ## Data Integrity
 
@@ -311,22 +350,13 @@ The following collections are managed by PocketBase for authentication and secur
 
 - Cascade deletes configured for user-owned data
 - Foreign key constraints enforced at database level
-- Orphaned record prevention through proper relationship configuration
+- Orphaned record prevention via relationship configuration
 
 ### Validation
 
 - Field-level validation for data types and formats
-- Business logic validation in application layer
-- Comprehensive error handling for constraint violations
-
-## Migration Notes
-
-### Recent Changes
-
-- Migrated from Cloudflare R2 to PocketBase native file storage
-- Enhanced image support including HEIC/HEIF formats
-- Added yearly statistics caching system
-- Implemented comprehensive indexing strategy
+- logic validation in application layer
+- error handling for constraint violations
 
 ### Frontend-Database Field Mapping
 

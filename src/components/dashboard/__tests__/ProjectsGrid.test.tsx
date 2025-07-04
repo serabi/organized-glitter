@@ -4,50 +4,41 @@ import { BrowserRouter } from 'react-router-dom';
 import ProjectsGrid from '../ProjectsGrid';
 import { ProjectType } from '@/types/project';
 
-// Mock the context with proper types
-const mockContextValue: {
-  isLoadingProjects: boolean;
-  processedAndPaginatedProjects: ProjectType[];
-  viewType: 'grid' | 'list';
-  searchTerm: string;
-  sortField: string;
-  resetAllFilters: () => void;
-  dynamicSeparatorProps: {
-    isCurrentSortDateBased: boolean;
-    currentSortDateFriendlyName: string;
-    currentSortDatePropertyKey: string;
-    countOfItemsWithoutCurrentSortDate: number;
-  };
-  currentPage: number;
-  pageSize: number;
-  totalItems: number;
-  totalPages: number;
-  setCurrentPage: () => void;
-  setPageSize: () => void;
-} = {
+// Mock the updated dashboard filters context
+const mockContextValue = {
+  filters: {
+    viewType: 'grid' as const,
+    searchTerm: '',
+    sortField: 'last_updated' as const,
+    currentPage: 1,
+    pageSize: 10,
+  },
+  projects: [] as ProjectType[],
   isLoadingProjects: false,
-  processedAndPaginatedProjects: [], // Fixed property name
-  viewType: 'grid',
-  searchTerm: '',
-  sortField: 'updatedAt',
   resetAllFilters: vi.fn(),
   dynamicSeparatorProps: {
     isCurrentSortDateBased: true,
     currentSortDateFriendlyName: 'Last Updated',
-    currentSortDatePropertyKey: 'updatedAt',
+    currentSortDatePropertyKey: 'last_updated',
     countOfItemsWithoutCurrentSortDate: 0,
   },
-  // Add missing pagination props
-  currentPage: 1,
-  pageSize: 10,
   totalItems: 0,
   totalPages: 1,
-  setCurrentPage: vi.fn(),
-  setPageSize: vi.fn(),
+  updatePage: vi.fn(),
+  updatePageSize: vi.fn(),
 };
 
-vi.mock('@/hooks/useDashboardFiltersContext', () => ({
-  useDashboardFiltersContext: () => mockContextValue,
+// Mock the new context imports
+vi.mock('@/contexts/DashboardFiltersContext', () => ({
+  useDashboardFilters: () => mockContextValue,
+  useRecentlyEdited: () => ({
+    recentlyEditedProjectId: null,
+  }),
+}));
+
+// Mock the navigation hook
+vi.mock('@/hooks/useNavigateToProject', () => ({
+  useNavigateToProject: () => vi.fn(),
 }));
 
 // Mock ProjectCard
@@ -90,7 +81,7 @@ describe('ProjectsGrid', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockContextValue.isLoadingProjects = false;
-    mockContextValue.processedAndPaginatedProjects = [];
+    mockContextValue.projects = [];
     mockContextValue.totalItems = 0;
     mockContextValue.totalPages = 1;
   });
@@ -110,7 +101,7 @@ describe('ProjectsGrid', () => {
   });
 
   it('renders empty state when no projects', () => {
-    mockContextValue.processedAndPaginatedProjects = [];
+    mockContextValue.projects = [];
 
     render(
       <BrowserRouter>
@@ -122,8 +113,8 @@ describe('ProjectsGrid', () => {
   });
 
   it('renders projects in grid view', () => {
-    mockContextValue.processedAndPaginatedProjects = mockProjects;
-    mockContextValue.viewType = 'grid';
+    mockContextValue.projects = mockProjects;
+    mockContextValue.filters.viewType = 'grid';
     mockContextValue.totalItems = mockProjects.length;
 
     render(
@@ -139,8 +130,8 @@ describe('ProjectsGrid', () => {
   });
 
   it('renders projects in list view', () => {
-    mockContextValue.processedAndPaginatedProjects = mockProjects;
-    mockContextValue.viewType = 'list';
+    mockContextValue.projects = mockProjects;
+    mockContextValue.filters.viewType = 'list';
     mockContextValue.totalItems = mockProjects.length;
 
     render(
@@ -154,8 +145,8 @@ describe('ProjectsGrid', () => {
   });
 
   it('shows reset filters button when filters are applied', () => {
-    mockContextValue.processedAndPaginatedProjects = [];
-    mockContextValue.searchTerm = 'test search';
+    mockContextValue.projects = [];
+    mockContextValue.filters.searchTerm = 'test search';
 
     render(
       <BrowserRouter>

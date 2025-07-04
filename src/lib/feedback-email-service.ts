@@ -1,5 +1,6 @@
 import { safeEnv } from '../utils/safe-env';
 import { pb } from './pocketbase';
+import { logger } from '@/utils/logger';
 
 /**
  * Feedback request payload interface
@@ -60,11 +61,11 @@ export async function sendFeedbackEmail({
       window.location.hostname === 'localhost' ||
       window.location.hostname.includes('127.0.0.1')
     ) {
-      console.log(
+      logger.log(
         '%c📧 LOCAL FEEDBACK 📧',
         'background: #4CAF50; color: white; padding: 4px; border-radius: 4px;'
       );
-      console.table({
+      logger.log({
         message,
         name,
         email,
@@ -72,7 +73,7 @@ export async function sendFeedbackEmail({
         currentPage,
         timestamp: new Date().toISOString(),
       });
-      console.log('This feedback would be emailed to sarah@organizedglitter.app in production');
+      logger.log('This feedback would be emailed to sarah@organizedglitter.app in production');
 
       return { success: true };
     }
@@ -91,7 +92,7 @@ export async function sendFeedbackEmail({
     }
 
     // Send via Vercel API feedback endpoint
-    console.log('Sending feedback email via Vercel API...');
+    logger.log('Sending feedback email via Vercel API...');
 
     // Get user info if authenticated
     let userId = 'guest';
@@ -132,7 +133,7 @@ export async function sendFeedbackEmail({
 
     const responseData = (await response.json()) as FeedbackResponse;
 
-    console.log('Vercel API feedback response:', responseData);
+    logger.log('Vercel API feedback response:', responseData);
 
     if (safeEnv.isDev) {
       safeEnv.log('Feedback email sent successfully:', responseData);
@@ -155,12 +156,12 @@ export async function sendFeedbackEmail({
     if (safeEnv.isDev) {
       safeEnv.log('Failed to send feedback email:', error);
     } else {
-      console.error('Failed to send feedback email:', error);
+      logger.error('Failed to send feedback email:', error);
     }
 
     // Fallback to mailto link
     try {
-      console.log('Using mailto fallback...');
+      logger.log('Using mailto fallback...');
 
       const subject = encodeURIComponent(`Feedback from ${name || 'Anonymous User'}`);
       const body = encodeURIComponent(

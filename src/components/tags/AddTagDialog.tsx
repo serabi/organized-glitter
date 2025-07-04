@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { TagService } from '@/lib/tags';
 import FormField from '@/components/projects/form/FormField';
 import { TAG_COLOR_PALETTE } from '@/utils/tagColors';
+import { secureLogger } from '@/utils/secureLogger';
 
 interface AddTagDialogProps {
   onTagAdded: () => void;
@@ -75,7 +76,7 @@ const AddTagDialog = ({ onTagAdded }: AddTagDialogProps) => {
         throw new Error(response.error?.message || 'Failed to create tag');
       }
     } catch (error) {
-      console.error('Error adding tag:', error);
+      secureLogger.error('Error adding tag:', { error });
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Could not create tag',

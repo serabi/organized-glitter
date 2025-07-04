@@ -1,4 +1,5 @@
 import imageCompression from 'browser-image-compression';
+import { secureLogger } from '@/utils/secureLogger';
 
 /**
  * Compression statistics for user feedback
@@ -109,7 +110,7 @@ export async function getCompressionPreview(
       compressedDimensions,
     };
   } catch (error) {
-    console.warn('Could not get image dimensions for compression stats:', error);
+    secureLogger.warn('Could not get image dimensions for compression stats:', error);
     return {
       originalSizeMB,
       compressedSizeMB,
@@ -219,8 +220,6 @@ export async function compressProgressImage(
 
   try {
     const originalSizeMB = file.size / (1024 * 1024);
-    console.log(`[progressImageCompression] Starting compression for: ${file.name}`);
-    console.log(`[progressImageCompression] Original size: ${originalSizeMB.toFixed(2)}MB`);
 
     // Report initial progress
     if (onProgress) {
@@ -229,9 +228,6 @@ export async function compressProgressImage(
 
     // Get adaptive compression options based on file size
     const adaptiveOptions = getAdaptiveCompressionOptions(originalSizeMB);
-    console.log(
-      `[progressImageCompression] Using adaptive compression - target: ${adaptiveOptions.maxSizeMB}MB, quality: ${adaptiveOptions.initialQuality}`
-    );
 
     // Prepare compression options with progress callback
     const options = {
@@ -253,14 +249,6 @@ export async function compressProgressImage(
       onProgress(100);
     }
 
-    console.log(`[progressImageCompression] Compression completed`);
-    console.log(
-      `[progressImageCompression] Compressed size: ${(compressedFile.size / (1024 * 1024)).toFixed(2)}MB`
-    );
-    console.log(
-      `[progressImageCompression] Reduction: ${Math.round(((file.size - compressedFile.size) / file.size) * 100)}%`
-    );
-
     // Ensure compressed file has proper name
     const finalFile = new File([compressedFile], file.name, {
       type: compressedFile.type,
@@ -269,11 +257,10 @@ export async function compressProgressImage(
 
     return finalFile;
   } catch (error) {
-    console.error('[progressImageCompression] Compression failed:', error);
+    secureLogger.error('[progressImageCompression] Compression failed:', error);
 
     // If compression fails but original file is acceptable size, return original
     if (file.size <= FILE_SIZE_LIMITS.TARGET_SIZE) {
-      console.log('[progressImageCompression] Using original file as fallback (acceptable size)');
       if (onProgress) {
         onProgress(100);
       }

@@ -1,5 +1,6 @@
 import { ComponentType } from 'react';
 import { ErrorBoundary, ErrorBoundaryProps } from '../components/ErrorBoundary';
+import { logger } from './logger';
 
 export type WithErrorBoundaryOptions = Omit<ErrorBoundaryProps, 'children'>;
 
@@ -24,7 +25,7 @@ export type WithErrorBoundaryOptions = Omit<ErrorBoundaryProps, 'children'>;
  * export default withErrorBoundary(MyComponent, {
  *   fallback: <div>Something went wrong!</div>,
  *   onError: (error, errorInfo) => {
- *     console.error('Error caught by boundary:', error, errorInfo);
+ *     logger.error('Error caught by boundary:', error, errorInfo);
  *   },
  *   errorContext: { component: 'MyComponent' },
  *   showReloadButton: true

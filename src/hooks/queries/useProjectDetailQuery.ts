@@ -45,7 +45,7 @@ const fetchProjectDetail = async (projectId: string): Promise<ProjectType> => {
     });
   } catch (error) {
     // If expand fails, try without expand to get basic project data
-    console.warn('Full expand failed, trying basic query:', error);
+    projectDetailLogger.warn('Full expand failed, trying basic query:', error);
 
     projectRecord = await pb.collection(Collections.Projects).getOne<ProjectWithExpand>(projectId, {
       requestKey: `project-detail-basic-${projectId}`,
@@ -68,7 +68,7 @@ const fetchProjectDetail = async (projectId: string): Promise<ProjectType> => {
         }
       }
     } catch (companyError) {
-      console.warn('Company expand failed:', companyError);
+      projectDetailLogger.warn('Company expand failed:', companyError);
     }
 
     try {
@@ -84,7 +84,7 @@ const fetchProjectDetail = async (projectId: string): Promise<ProjectType> => {
         }
       }
     } catch (artistError) {
-      console.warn('Artist expand failed:', artistError);
+      projectDetailLogger.warn('Artist expand failed:', artistError);
     }
 
     try {
@@ -101,7 +101,7 @@ const fetchProjectDetail = async (projectId: string): Promise<ProjectType> => {
         };
       }
     } catch (tagsError) {
-      console.warn('Tags expand failed:', tagsError);
+      projectDetailLogger.warn('Tags expand failed:', tagsError);
     }
   }
 

@@ -5,6 +5,7 @@ import { queryKeys } from '../queries/queryKeys';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { requireAuthenticatedUser } from '@/utils/authGuards';
+import { secureLogger } from '@/utils/secureLogger';
 import { FilterBuilder } from '@/utils/filterBuilder';
 
 interface UpdateArtistData {
@@ -22,10 +23,7 @@ async function updateArtist(data: UpdateArtistData, userId: string): Promise<Art
 
   // Check if artist name already exists (if name changed)
   if (data.name.trim() !== currentArtist.name) {
-    const filter = new FilterBuilder()
-      .userScope(userId)
-      .equals('name', data.name.trim())
-      .build();
+    const filter = new FilterBuilder().userScope(userId).equals('name', data.name.trim()).build();
 
     const existing = await pb
       .collection(Collections.Artists)
@@ -71,7 +69,7 @@ export function useUpdateArtist() {
       });
     },
     onError: (error: unknown) => {
-      console.error('Error updating artist:', error);
+      secureLogger.error('Error updating artist:', error);
 
       // Handle specific error cases
       const errorMessage = error instanceof Error ? error.message : String(error);

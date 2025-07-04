@@ -37,6 +37,22 @@ const badgeVariants = cva(
           'border-transparent bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800/40',
         'tag-rose':
           'border-transparent bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300 hover:bg-rose-200 dark:hover:bg-rose-800/40',
+        // Status-specific badge variants for dashboard tabs
+        'status-all': 'border-transparent bg-muted text-muted-foreground hover:bg-muted/80',
+        'status-wishlist':
+          'border-transparent bg-diamond-100 text-diamond-800 dark:bg-diamond-900/30 dark:text-diamond-300 hover:bg-diamond-200 dark:hover:bg-diamond-800/40',
+        'status-purchased':
+          'border-transparent bg-flamingo-100 text-flamingo-800 dark:bg-flamingo-900/30 dark:text-flamingo-300 hover:bg-flamingo-200 dark:hover:bg-flamingo-800/40',
+        'status-stash':
+          'border-transparent bg-peach-100 text-peach-800 dark:bg-peach-900/30 dark:text-peach-300 hover:bg-peach-200 dark:hover:bg-peach-800/40',
+        'status-progress':
+          'border-transparent bg-mauve-100 text-mauve-800 dark:bg-mauve-900/30 dark:text-mauve-300 hover:bg-mauve-200 dark:hover:bg-mauve-800/40',
+        'status-completed':
+          'border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-800/40',
+        'status-destashed':
+          'border-transparent bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-800/40',
+        'status-archived':
+          'border-transparent bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800/40',
       },
     },
     defaultVariants: {

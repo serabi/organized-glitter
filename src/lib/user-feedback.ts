@@ -3,6 +3,7 @@
 import { safeEnv } from '../utils/safe-env';
 import { create } from 'zustand';
 import { sendFeedbackEmail } from './feedback-email-service';
+import { logger } from '@/utils/logger';
 
 /**
  * Configuration options for the User Report Dialog
@@ -109,7 +110,7 @@ export const showUserReportDialog = (options: UserReportOptions = {}) => {
     // Use our custom dialog for user feedback
     useFeedbackDialog.getState().openDialog(dialogOptions);
   } catch (error) {
-    console.error('Failed to show user report dialog:', error);
+    logger.error('Failed to show user report dialog:', error);
   }
 };
 
@@ -130,7 +131,7 @@ export const submitUserFeedback = async (
   eventId?: string
 ) => {
   if (!message) {
-    console.error('Feedback message is required');
+    logger.error('Feedback message is required');
     return;
   }
 
@@ -156,6 +157,6 @@ export const submitUserFeedback = async (
     if (safeEnv.isDev) {
       safeEnv.log('feedback-email-service submission failed.', directApiError);
     }
-    console.error('Failed to submit user feedback via feedback-email-service:', directApiError);
+    logger.error('Failed to submit user feedback via feedback-email-service:', directApiError);
   }
 };

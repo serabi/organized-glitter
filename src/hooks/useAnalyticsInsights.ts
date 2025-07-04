@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { trackEvent } from '@/utils/posthog';
 import { useAuth } from '@/hooks/useAuth';
+import { logger } from '@/utils/logger';
 
 interface UserInsights {
   projectCount: number;
@@ -36,7 +37,7 @@ export const useAnalyticsInsights = () => {
       // This would integrate with your existing project queries
       trackEvent('analytics_insights_refreshed');
     } catch (error) {
-      console.error('Failed to refresh insights:', error);
+      logger.error('Failed to refresh insights:', error);
     } finally {
       setLoading(false);
     }

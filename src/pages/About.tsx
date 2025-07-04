@@ -2,7 +2,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import { MessageCircle, ExternalLink, Heart } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { showUserReportDialog } from '@/components/FeedbackDialogProvider';
+import { showUserReportDialog } from '@/components/FeedbackDialogStore';
 
 const About = () => {
   return (

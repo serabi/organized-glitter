@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { ProjectType, ProjectFilterStatus } from '@/types/project';
+import { logger } from '@/utils/logger';
 
 export type SortKey =
   | 'title'
@@ -228,6 +229,14 @@ export const useAdvancedFilters = (
       return sortConfig.direction === 'asc' ? compareResult : -compareResult;
     });
 
+    // Log filtered projects for debugging, especially for "Purchased" section
+    if (filters.status === 'purchased') {
+      // eslint-disable-next-line no-console
+      logger.debug(
+        '[Debug] Filtered projects for Purchased section:',
+        filtered.map(p => ({ id: p.id, status: p.status, title: p.title }))
+      );
+    }
     return filtered;
   }, [projects, filters, sortConfig, showArchived, showDestashed, showMiniKits]);
 

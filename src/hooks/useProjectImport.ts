@@ -5,11 +5,17 @@ import { useToast } from '@/hooks/use-toast';
 import { ProjectCreateDTO } from '@/types/project';
 import { pb } from '@/lib/pocketbase';
 import { PROJECT_IMAGE_CONSTANTS } from '@/components/projects/ProgressNoteForm/constants';
-import { logger } from '@/utils/logger';
+import { createLogger } from '@/utils/secureLogger';
 import { TAG_COLOR_PALETTE } from '@/utils/tagColors'; // For default tag color
+
+const logger = createLogger('ProjectImport');
 import { generateUniqueSlug } from '@/utils/slugify';
 import { validateProjectData, validateTagNames, ValidationIssue } from '@/utils/csvValidation';
-import { analyzeCSVFile, generateColumnValidationMessage, ColumnAnalysisResult } from '@/utils/csvColumnAnalysis';
+import {
+  analyzeCSVFile,
+  generateColumnValidationMessage,
+  ColumnAnalysisResult,
+} from '@/utils/csvColumnAnalysis';
 
 const DEFAULT_TAG_COLOR_HEX = TAG_COLOR_PALETTE[0].hex; // Default color for new tags
 
@@ -104,18 +110,18 @@ export const useProjectImport = () => {
 
     try {
       // Step 1: Analyze CSV columns before parsing
-      logger.csvImport('Analyzing CSV column structure...');
+      logger.debug('Analyzing CSV column structure...');
       const columnAnalysis = await analyzeCSVFile(file);
       const validationMessage = generateColumnValidationMessage(columnAnalysis);
-      
+
       // Log column analysis results
-      logger.csvImport('CSV column analysis complete', {
+      logger.debug('CSV column analysis complete', {
         detectedColumns: columnAnalysis.detectedColumns.length,
         missingRequired: columnAnalysis.missingRequired.length,
         missingOptional: columnAnalysis.missingOptional.length,
         unmappedColumns: columnAnalysis.unmappedColumns.length,
         hasAllRequired: columnAnalysis.summary.hasAllRequired,
-        canProceed: validationMessage.canProceed
+        canProceed: validationMessage.canProceed,
       });
 
       // Check if we can proceed with import
@@ -148,7 +154,7 @@ export const useProjectImport = () => {
       setImportStats(prev => ({ ...prev, columnAnalysis }));
 
       // Debug CSV tag parsing (ORG-36)
-      logger.csvImport('Running CSV tag debug analysis...');
+      logger.debug('Running CSV tag debug analysis...');
       // logCSVTagDebugInfo removed for PocketBase migration
 
       // Step 2: Parse CSV file directly using Papa Parse with progress callback
@@ -170,19 +176,19 @@ export const useProjectImport = () => {
       }
 
       // --- BEGIN BATCH TAG PROCESSING ---
-      logger.csvImport('Starting batch tag processing...', {
+      logger.debug('Starting batch tag processing...', {
         allUniqueTagNamesCount: allUniqueTagNames.length,
       });
-      
+
       // Validate all tag names first
       const tagValidationResult = validateTagNames(allUniqueTagNames);
       const allValidationIssues: ValidationIssue[] = [...tagValidationResult.issues];
-      
+
       // Use validated tag names
       const validatedTagNamesMap = new Map(
         tagValidationResult.validatedTags.map(({ original, normalized }) => [original, normalized])
       );
-      
+
       const tagNameMap: Record<string, string> = {};
       const currentTagWarnings: string[] = []; // Use a local var for warnings during this phase
 
@@ -194,7 +200,7 @@ export const useProjectImport = () => {
         existingUserTags.forEach(tag => {
           tagNameMap[tag.name] = tag.id;
         });
-        logger.csvImport('Fetched existing user tags and built initial map.', {
+        logger.debug('Fetched existing user tags and built initial map.', {
           count: existingUserTags.length,
         });
 
@@ -206,7 +212,7 @@ export const useProjectImport = () => {
             newTagNamesToCreate.push(normalizedName);
           }
         });
-        logger.csvImport('Identified new tags to create.', {
+        logger.debug('Identified new tags to create.', {
           count: newTagNamesToCreate.length,
           newTagNamesToCreate,
         });
@@ -221,15 +227,21 @@ export const useProjectImport = () => {
             const checkSlugExists = async (slug: string): Promise<boolean> => {
               try {
                 const existingSlugs = await pb.collection('tags').getList(1, 1, {
-                  filter: pb.filter('user = {:userId} && slug = {:slug}', { userId: user.id, slug }),
+                  filter: pb.filter('user = {:userId} && slug = {:slug}', {
+                    userId: user.id,
+                    slug,
+                  }),
                   fields: 'id',
                 });
                 return existingSlugs.items.length > 0;
               } catch (error) {
                 // If error checking, assume it DOES exist to prevent duplicate creation
-                // This conservative approach avoids duplicate slugs at the cost of potentially 
+                // This conservative approach avoids duplicate slugs at the cost of potentially
                 // generating a longer slug than necessary
-                logger.warn(`Error checking slug existence for "${slug}", assuming it exists to prevent duplicates:`, error);
+                logger.warn(
+                  `Error checking slug existence for "${slug}", assuming it exists to prevent duplicates:`,
+                  error
+                );
                 return true;
               }
             };
@@ -246,9 +258,9 @@ export const useProjectImport = () => {
             const createdTag = await pb.collection('tags').create(newTagData);
             tagNameMap[tagName] = createdTag.id;
             createdTagsCount++;
-            logger.csvImport(`Successfully created new tag: ${tagName}`, { 
-              id: createdTag.id, 
-              slug: uniqueSlug 
+            logger.debug(`Successfully created new tag: ${tagName}`, {
+              id: createdTag.id,
+              slug: uniqueSlug,
             });
           } catch (tagCreateError) {
             logger.error(`Failed to pre-create new tag: ${tagName}`, tagCreateError);
@@ -259,7 +271,7 @@ export const useProjectImport = () => {
           // Update progress during new tag creation (e.g., 15% to 25%)
           setProgress(Math.round(15 + (createdTagsCount / (newTagNamesToCreate.length || 1)) * 10));
         }
-        logger.csvImport('Finished creating new tags and updated map.', {
+        logger.debug('Finished creating new tags and updated map.', {
           finalMapSize: Object.keys(tagNameMap).length,
           createdCount: createdTagsCount,
         });
@@ -288,10 +300,10 @@ export const useProjectImport = () => {
             generalNotes: parsedProject.generalNotes,
             sourceUrl: parsedProject.sourceUrl,
           });
-          
+
           // Add validation issues to our tracking
           allValidationIssues.push(...projectValidation.issues);
-          
+
           // Map tag names to IDs using validated names
           const projectTagIds = (parsedProject.tagNames || [])
             .map(originalName => {
@@ -339,10 +351,10 @@ export const useProjectImport = () => {
 
       for (let i = 0; i < projectsToCreate.length; i++) {
         const project = projectsToCreate[i];
-        
+
         // Update current project being imported
         setImportStats(prev => ({ ...prev, currentProject: project.title }));
-        
+
         try {
           const result = await createProject(project); // createProject now expects tagIds
           successCount++;
@@ -357,7 +369,7 @@ export const useProjectImport = () => {
             });
           }
         } catch (error) {
-          console.error(`Error importing project at index ${i}:`, error);
+          logger.error(`Error importing project at index ${i}:`, error);
           failedCount++;
 
           const errorMessage =
@@ -413,16 +425,31 @@ export const useProjectImport = () => {
       if (tagWarnings.length > 0) {
         logger.warn('Tag processing/linking warnings:', { tagWarnings });
       }
-      
+
       if (allValidationIssues.length > 0) {
-        logger.warn('Data validation issues corrected:', { 
+        logger.warn('Data validation issues corrected:', {
           validationIssues: allValidationIssues.map(issue => ({
             field: issue.field,
             severity: issue.severity,
             message: issue.message,
             originalValue: issue.originalValue,
-            correctedValue: issue.correctedValue
-          }))
+            correctedValue: issue.correctedValue,
+          })),
+        });
+      }
+
+      // Clear current project when import completes
+      setImportStats(prev => ({ ...prev, currentProject: undefined }));
+
+      if (allValidationIssues.length > 0) {
+        logger.warn('Data validation issues corrected:', {
+          validationIssues: allValidationIssues.map(issue => ({
+            field: issue.field,
+            severity: issue.severity,
+            message: issue.message,
+            originalValue: issue.originalValue,
+            correctedValue: issue.correctedValue,
+          })),
         });
       }
 
@@ -431,7 +458,7 @@ export const useProjectImport = () => {
 
       return true;
     } catch (error) {
-      console.error('Import error:', error);
+      logger.error('Import error:', error);
 
       toast({
         title: 'Import failed',

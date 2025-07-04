@@ -38,7 +38,9 @@ export const createMockPocketBase = () => {
   }));
 
   const mockFiles = {
-    getFileUrl: vi.fn((_record: any, filename: string) => `https://example.com/${filename}`),
+    getFileUrl: vi.fn(
+      (_record: Record<string, unknown>, filename: string) => `https://example.com/${filename}`
+    ),
     getToken: vi.fn(),
   };
 
@@ -58,12 +60,17 @@ export const createMockPocketBase = () => {
     // Auth methods
     save: vi.fn(),
     clear: vi.fn(),
-    onChange: vi.fn((callback: (token: string, model: any) => void, fireImmediately?: boolean) => {
-      if (fireImmediately) {
-        callback(mockAuthStore.token, mockAuthStore.model);
+    onChange: vi.fn(
+      (
+        callback: (token: string, model: UserRecordModel | null) => void,
+        fireImmediately?: boolean
+      ) => {
+        if (fireImmediately) {
+          callback(mockAuthStore.token, mockAuthStore.model);
+        }
+        return vi.fn(); // unsubscribe function
       }
-      return vi.fn(); // unsubscribe function
-    }),
+    ),
   };
 
   const mockAuth = {

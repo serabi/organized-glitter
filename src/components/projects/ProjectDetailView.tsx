@@ -1,7 +1,27 @@
+/**
+ * @fileoverview Project detail view component
+ *
+ * This component displays comprehensive project information including:
+ * - Project images and details
+ * - Notable dates (purchased, received, started, completed)
+ * - Project notes and progress tracking
+ * - Back to Dashboard navigation
+ *
+ * Key features:
+ * - Mobile-responsive layout with optimized button placement
+ * - Integrated progress notes with real-time updates
+ * - Archive and delete operations with confirmation dialogs
+ * - Simple navigation back to dashboard
+ *
+ * @author serabi
+ * @since 2025-07-02
+ */
+
 // Functional components don't need to import React with modern JSX transform
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ProjectType, ProjectStatus, ProgressNote } from '@/types/project';
+import { PocketBaseUser } from '@/contexts/AuthContext.types';
 import ImageGallery from '@/components/projects/ImageGallery';
 import ProjectDetails from '@/components/projects/ProjectDetails';
 import ProjectNotes from '@/components/projects/form/ProjectNotes';
@@ -19,20 +39,48 @@ import {
 } from '@/components/ui/alert-dialog';
 import { formatDate } from '@/lib/utils';
 
+/**
+ * Props for the ProjectDetailView component
+ */
 interface ProjectDetailViewProps {
+  /** Project data with optional progress notes */
   project: ProjectType & {
     progressNotes?: ProgressNote[];
   };
+  /** Whether the interface is in mobile mode */
   isMobile: boolean;
+  /** Handler for project status changes */
   onStatusChange: (status: ProjectStatus) => void;
+  /** Handler for updating project notes */
   onUpdateNotes: (notes: string) => Promise<void>;
+  /** Handler for archiving the project */
   onArchive: () => void;
+  /** Handler for deleting the project */
   onDelete: () => void;
+  /** Navigation handler for edit mode */
   navigateToEdit: () => void;
-  // userName?: string; // Removed unused parameter
+  /** Whether any operation is currently submitting */
   isSubmitting?: boolean;
+  /** Current authenticated user */
+  user: PocketBaseUser | null;
 }
 
+/**
+ * Project detail view component with comprehensive project information display
+ *
+ * This component provides a complete view of a project including images, details,
+ * notable dates, notes, and progress tracking. It features simple navigation
+ * back to the dashboard.
+ *
+ * Key Features:
+ * - Mobile-responsive layout with optimized controls
+ * - Real-time progress notes integration
+ * - Archive/delete operations with confirmation
+ * - Simple "Back to Dashboard" navigation
+ *
+ * @param props - Component props
+ * @returns Rendered project detail view
+ */
 const ProjectDetailView = ({
   project,
   isMobile,
@@ -41,16 +89,19 @@ const ProjectDetailView = ({
   onArchive,
   onDelete,
   navigateToEdit,
-  // userName removed as unused
   isSubmitting = false,
+  user,
 }: ProjectDetailViewProps) => {
   return (
     <div className="container mx-auto px-4 py-6">
       <div className="mb-6 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
-        <div>
-          <Link to="/dashboard" className="mb-2 inline-block text-accent hover:underline">
-            &larr; Back to Dashboard
-          </Link>
+        <div className="flex-1">
+          {/* Navigation area - Back to Dashboard */}
+          <div className="mb-2 flex items-center gap-4">
+            <Link to="/dashboard" className="inline-block text-accent hover:underline">
+              &larr; Back to Dashboard
+            </Link>
+          </div>
           <h1 className="text-2xl font-bold">{project.title || 'Untitled Project'}</h1>
           {!project.title && <p className="text-red-500">Warning: Project title is missing</p>}
         </div>

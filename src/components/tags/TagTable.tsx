@@ -15,6 +15,7 @@ import { Link } from 'react-router-dom';
 import type { Tag } from '@/types/tag';
 import { useDeleteTag } from '@/hooks/mutations/useDeleteTag';
 import { useTagStats } from '@/hooks/queries/useTagStats';
+import { secureLogger } from '@/utils/secureLogger';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -80,7 +81,7 @@ const TagTable = ({ tags, loading }: TagTableProps) => {
 
   // Log any errors for debugging but don't break the UI
   if (statsError) {
-    console.error('[TagTable] Tag stats error:', statsError);
+    secureLogger.error('[TagTable] Tag stats error:', { statsError });
   }
 
   const handleDeleteTag = (tag: Tag) => {

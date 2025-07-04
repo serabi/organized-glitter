@@ -5,6 +5,7 @@ import { useDeleteProject } from '@/hooks/mutations/useDeleteProject';
 import { useUpdateProject } from '@/hooks/mutations/useUpdateProject';
 import { ProjectType } from '@/types/project';
 import { UseAdvancedEditSelectionReturn } from './useAdvancedEditSelection';
+import { logger } from '@/utils/logger';
 
 interface UseAdvancedEditActionsReturn {
   handleBulkDelete: () => Promise<void>;
@@ -52,7 +53,7 @@ export const useAdvancedEditActions = (
         });
         successCount++;
       } catch (error) {
-        console.error(`Delete failed for project ${projectId}:`, error);
+        logger.error(`Delete failed for project ${projectId}:`, error);
         failedDeletions.push(projectId);
       }
     }
@@ -79,7 +80,7 @@ export const useAdvancedEditActions = (
     async (projectId: string, updates: Partial<ProjectType>) => {
       try {
         // Log the update for debugging
-        console.log('Updating project:', projectId, 'with updates:', updates);
+        logger.log('Updating project:', projectId, 'with updates:', updates);
 
         await updateProjectMutation.mutateAsync({
           id: projectId,
@@ -91,8 +92,8 @@ export const useAdvancedEditActions = (
           description: 'Project has been updated successfully.',
         });
       } catch (error) {
-        console.error('Project update failed:', error);
-        console.error('Update payload was:', { id: projectId, ...updates });
+        logger.error('Project update failed:', error);
+        logger.error('Update payload was:', { id: projectId, ...updates });
 
         // Extract more specific error information
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';

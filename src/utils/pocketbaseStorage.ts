@@ -29,14 +29,14 @@ export async function uploadFileToPocketBase(
     const formData = new FormData();
     formData.append(fieldName, file);
 
-    console.log(
+    logger.log(
       `[PocketBaseStorage] Uploading file to collection: ${collection}, recordId: ${recordId}, fieldName: ${fieldName}`
     );
 
     // Update the record with the new file
     const record = await pb.collection(collection).update(recordId, formData);
 
-    console.log(`[PocketBaseStorage] Upload response:`, {
+    logger.log(`[PocketBaseStorage] Upload response:`, {
       id: record.id,
       fieldValue: record[fieldName],
       allFields: Object.keys(record),
@@ -45,7 +45,7 @@ export async function uploadFileToPocketBase(
     // Get the file URL
     const filename = record[fieldName];
     if (!filename) {
-      console.error(
+      logger.error(
         `[PocketBaseStorage] No filename found in field '${fieldName}'. Record:`,
         record
       );
@@ -54,10 +54,10 @@ export async function uploadFileToPocketBase(
 
     const url = getFileUrl(record, filename);
 
-    console.log(`[PocketBaseStorage] Generated URL: ${url}`);
+    logger.log(`[PocketBaseStorage] Generated URL: ${url}`);
 
     if (!url) {
-      console.error(`[PocketBaseStorage] getFileUrl returned empty URL for filename: ${filename}`);
+      logger.error(`[PocketBaseStorage] getFileUrl returned empty URL for filename: ${filename}`);
       throw new Error('Failed to generate file URL');
     }
 

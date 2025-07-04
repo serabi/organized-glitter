@@ -1,7 +1,7 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
 import { logger } from '@/utils/logger';
 import { captureException } from '@/utils/posthog';
-import { showUserReportDialog } from './FeedbackDialogProvider';
+import { showUserReportDialog } from './FeedbackDialogStore';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
@@ -193,7 +193,7 @@ export class FeedbackErrorBoundary extends Component<
     });
 
     // Report error and store the event ID
-    console.error('FeedbackErrorBoundary caught an error:', error, {
+    logger.error('FeedbackErrorBoundary caught an error:', error, {
       extra: { componentStack: errorInfo?.componentStack, ...this.props.errorContext },
     });
     const eventId = null;

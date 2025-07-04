@@ -1,5 +1,6 @@
 import { format } from 'date-fns';
 import { Project, Tag } from '@/types/shared';
+import { logger } from './logger';
 
 /**
  * Converts an array of projects to CSV format
@@ -66,7 +67,7 @@ export const projectsToCsv = (projects: Project[]): string => {
  */
 export const downloadCsv = (csvData: string, filename: string = 'projects-export.csv'): void => {
   if (!csvData) {
-    console.error('No CSV data to download');
+    logger.error('No CSV data to download');
     return;
   }
 
@@ -134,7 +135,7 @@ const formatDate = (dateString: string | undefined): string => {
 
     return format(date, 'yyyy-MM-dd');
   } catch (error) {
-    console.error('Error formatting date:', error);
+    logger.error('Error formatting date:', error);
     return dateString;
   }
 };
