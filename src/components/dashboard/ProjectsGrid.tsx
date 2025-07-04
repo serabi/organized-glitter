@@ -39,6 +39,7 @@ import { useDashboardFilters } from '@/contexts/DashboardFiltersContext';
 import ProjectPagination from '@/components/ui/ProjectPagination';
 import { useNavigateToProject } from '@/hooks/useNavigateToProject';
 import { useRecentlyEdited } from '@/contexts/DashboardFiltersContext';
+import { secureLogger } from '@/utils/secureLogger';
 
 // Interface ProjectsGridProps removed as it's no longer needed.
 // All data is sourced from DashboardFiltersContext.
@@ -62,7 +63,6 @@ const ProjectsGridComponent = () => {
   // Debug log: print all project statuses in the grid for the Purchased section
   React.useEffect(() => {
     if (filters.activeStatus === 'purchased' && !loading) {
-      // eslint-disable-next-line no-console
       secureLogger.debug(
         '[Debug] Projects rendered in Purchased section:',
         projects.map(p => ({ id: p.id, status: p.status, title: p.title }))

@@ -10,6 +10,7 @@ import { Collections } from '@/types/pocketbase.types';
 import { DashboardStatsService } from '@/services/pocketbase/dashboardStatsService';
 import { createFilter } from '@/utils/filterBuilder';
 import { logger } from './logger';
+import { secureLogger } from './secureLogger';
 
 export interface DebugStats {
   userId: string;
