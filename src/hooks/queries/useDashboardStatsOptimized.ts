@@ -27,16 +27,13 @@ interface StatusBreakdown {
 }
 
 /**
- * Dashboard stats interface - maintains compatibility with existing code
+ * Dashboard stats interface - simplified for optimized performance
  */
 interface DashboardStats {
   completed_count: number;
-  started_count: number;
   in_progress_count: number;
   total_diamonds: number;
-  estimated_drills: number;
   status_breakdown: StatusBreakdown;
-  available_years: number[];
 }
 
 /**
@@ -68,12 +65,9 @@ async function fetchOptimizedDashboardStats(userId: string): Promise<DashboardSt
 
     const dashboardStats: DashboardStats = {
       completed_count: statsRecord.completed,
-      started_count: 0, // Will be computed separately if needed
       in_progress_count: statsRecord.progress,
-      total_diamonds: 0, // Will be computed separately if needed
-      estimated_drills: 0, // Will be computed separately if needed
+      total_diamonds: 0, // TODO: Add total_diamonds calculation if needed for specific year
       status_breakdown: statusBreakdown,
-      available_years: [], // Will be computed separately if needed
     };
 
     logger.debug('✅ Optimized dashboard stats:', {
@@ -122,7 +116,6 @@ export const useDashboardStatsOptimized = () => {
     data: query.data,
     stats: query.data,
     dashboardStats: query.data,
-    availableYears: query.data?.available_years || [],
     isLoading: query.isFetching && !query.data,
     isError: query.isError,
     error: query.error,
