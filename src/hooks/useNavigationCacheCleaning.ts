@@ -9,7 +9,7 @@
 
 import { useEffect, useCallback, useRef } from 'react';
 import { useLocation } from 'wouter';
-import { useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { useQueryClient, type QueryClient, Query } from '@tanstack/react-query';
 import { cleanInvalidCacheEntries } from '@/utils/cacheValidation';
 import { createLogger } from '@/utils/secureLogger';
 
@@ -203,7 +203,7 @@ export function useCacheCleaning() {
 
     // Utility for custom predicates
     cleanByPredicate: useCallback(
-      (predicate: (query: any) => boolean, description?: string) => {
+      (predicate: (query: Query) => boolean, description?: string) => {
         const removedQueries = queryClient.removeQueries({ predicate });
         if (description) {
           logger.debug(`Cleaned cache entries: ${description}`, { removedCount: removedQueries });

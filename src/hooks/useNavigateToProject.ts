@@ -72,12 +72,18 @@ export const useNavigateToProject = () => {
   );
 };
 
+// Navigation options interface
+interface NavigateToProjectEditOptions {
+  replace?: boolean;
+  state?: Record<string, unknown>;
+}
+
 // Simple navigation to project edit page
 export const useNavigateToProjectEdit = () => {
   const navigate = useNavigate();
 
   return useCallback(
-    (projectId: string, options: any = {}) => {
+    (projectId: string, options: NavigateToProjectEditOptions = {}) => {
       logger.debug('Navigating to project edit', { projectId });
 
       navigate(`/projects/${projectId}/edit`);

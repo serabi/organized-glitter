@@ -11,16 +11,15 @@ import { pb } from '@/lib/pocketbase';
 import { useAuth } from '@/hooks/useAuth';
 import { queryKeys } from '@/hooks/queries/queryKeys';
 import { createLogger } from '@/utils/secureLogger';
+import { RecordModel } from 'pocketbase';
 
 const logger = createLogger('useRealtimeProjectSync');
 
 interface ProjectRealtimeEvent {
   action: 'create' | 'update' | 'delete';
-  record: {
-    id: string;
+  record: RecordModel & {
     status: string;
     user: string;
-    [key: string]: any;
   };
 }
 

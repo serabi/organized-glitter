@@ -1,12 +1,18 @@
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient, Query } from '@tanstack/react-query';
 import { createLogger } from '@/utils/secureLogger';
+
+// Define proper error interface
+interface ErrorWithStatus {
+  status: number;
+  message?: string;
+}
 
 const logger = createLogger('QueryClient');
 
 // DIAGNOSTIC: Global error interceptor to catch React Query internal errors
 if (typeof window !== 'undefined') {
   const originalConsoleError = logger.error;
-  logger.error = (...args: any[]) => {
+  logger.error = (...args: unknown[]) => {
     // Check for the specific queryKey error
     const errorMessage = args.join(' ');
     if (errorMessage.includes("Cannot read properties of undefined (reading 'queryKey')")) {
@@ -24,7 +30,7 @@ if (typeof window !== 'undefined') {
  * Global error handler for React Query that gracefully handles PocketBase 404 errors
  * and prevents them from surfacing to users during navigation and cache invalidation.
  */
-function handleQueryError(error: unknown, query: any): boolean {
+function handleQueryError(error: unknown, query: Query | undefined): boolean {
   // DIAGNOSTIC: Log query object state for debugging production issues
   if (!query) {
     logger.criticalError(
@@ -96,7 +102,7 @@ export const queryClient = new QueryClient({
           errorMessage: error?.message,
           errorStatus:
             error && typeof error === 'object' && 'status' in error
-              ? (error as any).status
+              ? (error as ErrorWithStatus).status
               : undefined,
         });
 
@@ -108,7 +114,7 @@ export const queryClient = new QueryClient({
 
         // Handle PocketBase 404 errors gracefully (simplified without query object)
         if (error && typeof error === 'object' && 'status' in error) {
-          const status = (error as { status: number }).status;
+          const status = (error as ErrorWithStatus).status;
 
           if (status === 404) {
             logger.debug('404 error detected - not retrying');
@@ -153,7 +159,7 @@ export const queryClient = new QueryClient({
 
         // Don't retry client errors (4xx) - they indicate bad requests
         if (error && typeof error === 'object' && 'status' in error) {
-          const status = (error as { status: number }).status;
+          const status = (error as ErrorWithStatus).status;
           if (status >= 400 && status < 500) return false;
         }
 

@@ -42,7 +42,66 @@ import ResponsiveTabText, {
   useWindowDimensions,
 } from '@/components/ui/responsive-tab-text';
 import { ProjectFilterStatus } from '@/types/project';
-import { useDashboardFilters } from '@/contexts/DashboardFiltersContext';
+import { useDashboardFilters, CountsForTabsType } from '@/contexts/DashboardFiltersContext';
+
+// Tab configuration for dynamic rendering
+interface TabConfig {
+  value: ProjectFilterStatus;
+  fullText: string;
+  abbreviatedText: string;
+  getCount: (counts: CountsForTabsType) => number;
+}
+
+const TAB_CONFIG: TabConfig[] = [
+  {
+    value: 'all',
+    fullText: 'All',
+    abbreviatedText: 'All',
+    getCount: counts => counts.all,
+  },
+  {
+    value: 'wishlist',
+    fullText: 'Wishlist',
+    abbreviatedText: 'Wish',
+    getCount: counts => counts.wishlist,
+  },
+  {
+    value: 'purchased',
+    fullText: 'Purchased',
+    abbreviatedText: 'Bought',
+    getCount: counts => counts.purchased,
+  },
+  {
+    value: 'stash',
+    fullText: 'In Stash',
+    abbreviatedText: 'Stash',
+    getCount: counts => counts.stash,
+  },
+  {
+    value: 'progress',
+    fullText: 'In Progress',
+    abbreviatedText: 'Progress',
+    getCount: counts => counts.progress,
+  },
+  {
+    value: 'completed',
+    fullText: 'Completed',
+    abbreviatedText: 'Done',
+    getCount: counts => counts.completed,
+  },
+  {
+    value: 'destashed',
+    fullText: 'Destashed',
+    abbreviatedText: 'Removed',
+    getCount: counts => counts.destashed,
+  },
+  {
+    value: 'archived',
+    fullText: 'Archived',
+    abbreviatedText: 'Archive',
+    getCount: counts => counts.archived,
+  },
+];
 
 const StatusTabsComponent = () => {
   // Removed unused props
@@ -70,6 +129,16 @@ const StatusTabsComponent = () => {
     return variants[status] || 'status-all';
   };
 
+  // Generate className for TabsTrigger components
+  const getTriggerClassName = (isMobile: boolean): string => {
+    const baseClasses =
+      'relative flex items-center gap-2 rounded-md border border-transparent bg-background/20 backdrop-blur-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md data-[state=active]:border-primary/20 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md';
+    const responsiveClasses = isMobile
+      ? 'min-h-[44px] w-full justify-start px-3 py-2'
+      : 'px-3 py-2';
+    return `${baseClasses} ${responsiveClasses}`;
+  };
+
   return (
     <Tabs
       value={activeStatus}
@@ -82,105 +151,24 @@ const StatusTabsComponent = () => {
           isMobile ? 'flex flex-col gap-1.5' : 'grid grid-cols-4 gap-1.5 lg:grid-cols-8'
         }`}
       >
-        <TabsTrigger
-          value="all"
-          className={`relative flex items-center gap-2 rounded-md border border-transparent bg-background/20 backdrop-blur-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md data-[state=active]:border-primary/20 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md ${
-            isMobile ? 'min-h-[44px] w-full justify-start px-3 py-2' : 'px-3 py-2'
-          }`}
-        >
-          <ResponsiveTabText fullText="All" abbreviatedText="All" breakpoint={375} />
-          <Badge variant={getBadgeVariant('all')} className="text-xs">
-            {counts.all}
-          </Badge>
-        </TabsTrigger>
-        <TabsTrigger
-          value="wishlist"
-          className={`relative flex items-center gap-2 rounded-md border border-transparent bg-background/20 backdrop-blur-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md data-[state=active]:border-primary/20 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md ${
-            isMobile ? 'min-h-[44px] w-full justify-start px-3 py-2' : 'px-3 py-2'
-          }`}
-        >
-          <ResponsiveTabText fullText="Wishlist" abbreviatedText="Wish" breakpoint={375} />
-          <Badge variant={getBadgeVariant('wishlist')} className="text-xs">
-            {counts.wishlist}
-          </Badge>
-        </TabsTrigger>
-        <TabsTrigger
-          value="purchased"
-          className={`relative flex items-center gap-2 rounded-md border border-transparent bg-background/20 backdrop-blur-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md data-[state=active]:border-primary/20 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md ${
-            isMobile ? 'min-h-[44px] w-full justify-start px-3 py-2' : 'px-3 py-2'
-          }`}
-        >
-          <ResponsiveTabText fullText="Purchased" abbreviatedText="Bought" breakpoint={375} />
-          <Badge variant={getBadgeVariant('purchased')} className="text-xs">
-            {counts.purchased}
-          </Badge>
-        </TabsTrigger>
-        <TabsTrigger
-          value="stash"
-          className={`relative flex items-center gap-2 rounded-md border border-transparent bg-background/20 backdrop-blur-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md data-[state=active]:border-primary/20 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md ${
-            isMobile ? 'min-h-[44px] w-full justify-start px-3 py-2' : 'px-3 py-2'
-          }`}
-        >
-          <ResponsiveTabText fullText="In Stash" abbreviatedText="Stash" breakpoint={375} />
-          <Badge variant={getBadgeVariant('stash')} className="text-xs">
-            {counts.stash}
-          </Badge>
-        </TabsTrigger>
-        <TabsTrigger
-          value="progress"
-          className={`relative flex items-center gap-2 rounded-md border border-transparent bg-background/20 backdrop-blur-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md data-[state=active]:border-primary/20 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md ${
-            isMobile ? 'min-h-[44px] w-full justify-start px-3 py-2' : 'px-3 py-2'
-          }`}
-        >
-          <ResponsiveTabText fullText="In Progress" abbreviatedText="Progress" breakpoint={375} />
-          <Badge variant={getBadgeVariant('progress')} className="text-xs">
-            {counts.progress}
-          </Badge>
-        </TabsTrigger>
-        <TabsTrigger
-          value="completed"
-          className={`relative flex items-center gap-2 rounded-md border border-transparent bg-background/20 backdrop-blur-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md data-[state=active]:border-primary/20 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md ${
-            isMobile ? 'min-h-[44px] w-full justify-start px-3 py-2' : 'px-3 py-2'
-          }`}
-        >
-          <ResponsiveTabText fullText="Completed" abbreviatedText="Done" breakpoint={375} />
-          <Badge variant={getBadgeVariant('completed')} className="text-xs">
-            {counts.completed}
-          </Badge>
-        </TabsTrigger>
-        <TabsTrigger
-          value="destashed"
-          className={`relative flex items-center gap-2 rounded-md border border-transparent bg-background/20 backdrop-blur-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md data-[state=active]:border-primary/20 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md ${
-            isMobile ? 'min-h-[44px] w-full justify-start px-3 py-2' : 'px-3 py-2'
-          }`}
-        >
-          <ResponsiveTabText fullText="Destashed" abbreviatedText="Removed" breakpoint={375} />
-          <Badge variant={getBadgeVariant('destashed')} className="text-xs">
-            {counts.destashed}
-          </Badge>
-        </TabsTrigger>
-        <TabsTrigger
-          value="archived"
-          className={`relative flex items-center gap-2 rounded-md border border-transparent bg-background/20 backdrop-blur-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md data-[state=active]:border-primary/20 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md ${
-            isMobile ? 'min-h-[44px] w-full justify-start px-3 py-2' : 'px-3 py-2'
-          }`}
-        >
-          <ResponsiveTabText fullText="Archived" abbreviatedText="Archive" breakpoint={375} />
-          <Badge variant={getBadgeVariant('archived')} className="text-xs">
-            {counts.archived}
-          </Badge>
-        </TabsTrigger>
+        {TAB_CONFIG.map(tab => (
+          <TabsTrigger key={tab.value} value={tab.value} className={getTriggerClassName(isMobile)}>
+            <ResponsiveTabText
+              fullText={tab.fullText}
+              abbreviatedText={tab.abbreviatedText}
+              breakpoint={375}
+            />
+            <Badge variant={getBadgeVariant(tab.value)} className="text-xs">
+              {tab.getCount(counts)}
+            </Badge>
+          </TabsTrigger>
+        ))}
       </TabsList>
 
       {/* TabsContent is needed for the Tabs component to work properly */}
-      <TabsContent value="all" className="mt-0"></TabsContent>
-      <TabsContent value="wishlist" className="mt-0"></TabsContent>
-      <TabsContent value="purchased" className="mt-0"></TabsContent>
-      <TabsContent value="stash" className="mt-0"></TabsContent>
-      <TabsContent value="progress" className="mt-0"></TabsContent>
-      <TabsContent value="completed" className="mt-0"></TabsContent>
-      <TabsContent value="destashed" className="mt-0"></TabsContent>
-      <TabsContent value="archived" className="mt-0"></TabsContent>
+      {TAB_CONFIG.map(tab => (
+        <TabsContent key={tab.value} value={tab.value} className="mt-0"></TabsContent>
+      ))}
     </Tabs>
   );
 };
