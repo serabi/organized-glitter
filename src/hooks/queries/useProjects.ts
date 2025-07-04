@@ -16,6 +16,7 @@ export interface ServerFilters {
   yearFinished?: string;
   includeMiniKits?: boolean;
   includeDestashed?: boolean;
+  includeArchived?: boolean;
   searchTerm?: string;
   selectedTags?: string[];
 }
@@ -91,6 +92,11 @@ const buildFilterString = (userId: string, serverFilters: ServerFilters): string
   // Include destashed filtering - exclude destashed projects unless specifically viewing destashed tab
   if (serverFilters.includeDestashed === false && serverFilters.status !== 'destashed') {
     filterParts.push('status != "destashed"');
+  }
+
+  // Include archived filtering - exclude archived projects unless specifically viewing archived tab
+  if (serverFilters.includeArchived === false && serverFilters.status !== 'archived') {
+    filterParts.push('status != "archived"');
   }
 
   // Add search term filtering using secure pb.filter() method

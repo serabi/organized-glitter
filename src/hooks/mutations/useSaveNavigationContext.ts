@@ -21,6 +21,7 @@ export interface DashboardFilterContext {
     yearFinished: string;
     includeMiniKits: boolean;
     includeDestashed: boolean;
+    includeArchived: boolean;
     searchTerm: string;
     selectedTags: string[];
   };

@@ -24,6 +24,7 @@ export const useDashboardData = (
     yearFinished: filters.selectedYearFinished,
     includeMiniKits: filters.includeMiniKits,
     includeDestashed: filters.includeDestashed,
+    includeArchived: filters.includeArchived,
     searchTerm: debouncedSearchTerm, // Use the debounced version from context
     selectedTags: filters.selectedTags,
   };

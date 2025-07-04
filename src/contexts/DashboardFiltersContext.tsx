@@ -66,6 +66,7 @@ export interface FilterState {
   selectedYearFinished: string;
   includeMiniKits: boolean;
   includeDestashed: boolean;
+  includeArchived: boolean;
   searchTerm: string;
   selectedTags: string[];
 
@@ -94,6 +95,7 @@ export interface DashboardFiltersContextValue {
   updateYearFinished: (year: string | null, source?: ChangeSource) => void;
   updateIncludeMiniKits: (include: boolean, source?: ChangeSource) => void;
   updateIncludeDestashed: (include: boolean, source?: ChangeSource) => void;
+  updateIncludeArchived: (include: boolean, source?: ChangeSource) => void;
   updateSearchTerm: (term: string, source?: ChangeSource) => void;
   updateTags: (tags: string[], source?: ChangeSource) => void;
   toggleTag: (tagId: string, source?: ChangeSource) => void;
@@ -136,6 +138,7 @@ const getDefaultFilters = (): FilterState => ({
   selectedYearFinished: 'all',
   includeMiniKits: true,
   includeDestashed: true,
+  includeArchived: false,
   searchTerm: '',
   selectedTags: [],
   sortField: 'last_updated',
@@ -157,6 +160,7 @@ const validateAndSanitizeFilters = (filters: Partial<FilterState>): FilterState 
     selectedYearFinished: filters.selectedYearFinished ?? defaults.selectedYearFinished,
     includeMiniKits: filters.includeMiniKits ?? defaults.includeMiniKits,
     includeDestashed: filters.includeDestashed ?? defaults.includeDestashed,
+    includeArchived: filters.includeArchived ?? defaults.includeArchived,
     searchTerm: filters.searchTerm ?? defaults.searchTerm,
     selectedTags: Array.isArray(filters.selectedTags)
       ? filters.selectedTags
@@ -181,6 +185,7 @@ type FilterAction =
   | { type: 'SET_YEAR_FINISHED'; payload: string | null }
   | { type: 'SET_INCLUDE_MINI_KITS'; payload: boolean }
   | { type: 'SET_INCLUDE_DESTASHED'; payload: boolean }
+  | { type: 'SET_INCLUDE_ARCHIVED'; payload: boolean }
   | { type: 'SET_SEARCH_TERM'; payload: string }
   | { type: 'SET_TAGS'; payload: string[] }
   | { type: 'TOGGLE_TAG'; payload: string }
@@ -219,6 +224,9 @@ const filtersReducer = (state: FilterState, action: FilterAction): FilterState =
       break;
     case 'SET_INCLUDE_DESTASHED':
       newState = { ...state, includeDestashed: action.payload, currentPage: 1 };
+      break;
+    case 'SET_INCLUDE_ARCHIVED':
+      newState = { ...state, includeArchived: action.payload, currentPage: 1 };
       break;
     case 'SET_SEARCH_TERM':
       newState = { ...state, searchTerm: action.payload, currentPage: 1 };
@@ -408,6 +416,7 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
           yearFinished: debouncedFilters.selectedYearFinished,
           includeMiniKits: debouncedFilters.includeMiniKits,
           includeDestashed: debouncedFilters.includeDestashed,
+          includeArchived: debouncedFilters.includeArchived,
           searchTerm: debouncedFilters.searchTerm,
           selectedTags: debouncedFilters.selectedTags,
         },
@@ -596,6 +605,7 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
               selectedYearFinished: savedContext.filters?.yearFinished,
               includeMiniKits: savedContext.filters?.includeMiniKits,
               includeDestashed: savedContext.filters?.includeDestashed,
+              includeArchived: savedContext.filters?.includeArchived,
               searchTerm: savedContext.filters?.searchTerm,
               selectedTags: savedContext.filters?.selectedTags,
               sortField: savedContext.sortField,
@@ -772,6 +782,13 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
     [dispatchWithSource]
   );
 
+  const updateIncludeArchived = useCallback(
+    (include: boolean, source?: ChangeSource) => {
+      dispatchWithSource({ type: 'SET_INCLUDE_ARCHIVED', payload: include }, source);
+    },
+    [dispatchWithSource]
+  );
+
   const updateSearchTerm = useCallback(
     (term: string, source?: ChangeSource) => {
       dispatchWithSource({ type: 'SET_SEARCH_TERM', payload: term }, source);
@@ -937,6 +954,7 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       updateYearFinished,
       updateIncludeMiniKits,
       updateIncludeDestashed,
+      updateIncludeArchived,
       updateSearchTerm,
       updateTags,
       toggleTag,
@@ -967,6 +985,7 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       updateYearFinished,
       updateIncludeMiniKits,
       updateIncludeDestashed,
+      updateIncludeArchived,
       updateSearchTerm,
       updateTags,
       toggleTag,

@@ -60,6 +60,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
     updateYearFinished,
     updateIncludeMiniKits,
     updateIncludeDestashed,
+    updateIncludeArchived,
     updateViewType,
     companies,
     artists,
@@ -83,6 +84,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
   const selectedYearFinished = filters.selectedYearFinished;
   const includeMiniKits = filters.includeMiniKits;
   const includeDestashed = filters.includeDestashed;
+  const includeArchived = filters.includeArchived;
   const viewType = filters.viewType;
   const sortField = filters.sortField;
   const sortDirection = filters.sortDirection;
@@ -193,6 +195,18 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
           />
           <Label htmlFor="include-destashed-kits" className="text-sm font-medium">
             Include Destashed Kits?
+          </Label>
+        </div>
+
+        <div className="mt-4 flex items-center space-x-2">
+          <Checkbox
+            id="include-archived-kits"
+            checked={includeArchived}
+            onCheckedChange={checked => updateIncludeArchived(Boolean(checked))}
+            data-testid="include-archived-checkbox"
+          />
+          <Label htmlFor="include-archived-kits" className="text-sm font-medium">
+            Include Archived Kits?
           </Label>
         </div>
 
