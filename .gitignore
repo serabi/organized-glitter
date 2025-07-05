@@ -127,53 +127,6 @@ coverage/
 /temp_archive/
 organized-glitter-worker/.wrangler/
 
-# WordPress Development
-wordpress/wp-config.php
-wordpress/wp-config-local.php
-wordpress/.htaccess
-
-# WordPress uploads and cache
-wordpress/wp-content/uploads/
-wordpress/wp-content/cache/
-wordpress/wp-content/backup*/
-wordpress/wp-content/backups/
-wordpress/wp-content/upgrade/
-
-# WordPress cache plugins
-wordpress/wp-content/advanced-cache.php
-wordpress/wp-content/wp-cache-config.php
-
-# WordPress log files
-wordpress/*.log
-wordpress/error_log
-wordpress/access_log
-
-# WordPress database files
-wordpress/*.sql
-wordpress/*.sql.gz
-
-# WordPress Studio by WordPress local files
-wordpress/.wp-env.json
-wordpress/.wp-env.override.json
-
-# WordPress theme development
-wordpress/node_modules/
-wordpress/.sass-cache/
-wordpress/*.map
-
-# WordPress editor files
-wordpress/*.tmp
-wordpress/*.swp
-wordpress/*~
-
-# WordPress local environment variables
-wordpress/.env
-wordpress/.env.local
-wordpress/.env.*.local
-
-# WordPress Studio by WordPress specific
-wordpress/.studio/
-wordpress/studio.config.json
 
 # Personal/Internal Development Files (exclude from open source)
 CLAUDE.md
