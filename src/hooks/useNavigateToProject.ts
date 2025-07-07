@@ -23,10 +23,16 @@
  * const navigateToEdit = useNavigateToProjectEdit();
  *
  * // Navigate to project detail
- * navigateToProject('project-id');
+ * const result = navigateToProject('project-id');
+ * if (!result.success) {
+ *   console.error('Navigation failed:', result.error);
+ * }
  *
- * // Navigate with replace mode
- * navigateToProject('project-id', { replace: true });
+ * // Navigate with replace mode and success message
+ * const result = navigateToProject('project-id', {
+ *   replace: true,
+ *   successMessage: 'Project loaded successfully!'
+ * });
  *
  * // Navigate to edit page
  * navigateToEdit('project-id');
@@ -48,25 +54,64 @@ export interface NavigationContext {
   timestamp: number;
 }
 
-// Simple navigation options
+// Navigation result interface
+export interface NavigationResult {
+  success: boolean;
+  error?: string;
+  projectId?: string;
+}
+
+// Enhanced navigation options to support all expected properties
 interface NavigateToProjectOptions {
   replace?: boolean;
+  projectData?: Record<string, unknown>;
+  successMessage?: string;
+  showLoadingFeedback?: boolean;
 }
 
 /**
- * Simplified hook for navigating to project pages.
- * No more complex navigation context or arrow navigation support.
+ * Hook for navigating to project pages with proper result handling.
+ * Returns NavigationResult to support error handling and success tracking.
  */
 export const useNavigateToProject = () => {
   const navigate = useNavigate();
 
   return useCallback(
-    (projectId: string, options: NavigateToProjectOptions = {}) => {
-      const { replace = false } = options;
+    (projectId: string, options: NavigateToProjectOptions = {}): NavigationResult => {
+      const { replace = false, projectData, successMessage, showLoadingFeedback } = options;
 
-      logger.debug('Navigating to project', { projectId, replace });
+      try {
+        logger.debug('Navigating to project', {
+          projectId,
+          replace,
+          hasProjectData: !!projectData,
+          hasSuccessMessage: !!successMessage,
+          showLoadingFeedback,
+        });
 
-      navigate(`/projects/${projectId}`, { replace });
+        // Show success message if provided
+        if (successMessage) {
+          logger.info(successMessage);
+        }
+
+        // Perform navigation
+        navigate(`/projects/${projectId}`, { replace });
+
+        // Return success result
+        return {
+          success: true,
+          projectId,
+        };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown navigation error';
+        logger.error('❌ Navigation failed:', { projectId, error: errorMessage });
+
+        return {
+          success: false,
+          error: errorMessage,
+          projectId,
+        };
+      }
     },
     [navigate]
   );

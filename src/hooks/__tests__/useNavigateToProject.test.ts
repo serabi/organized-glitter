@@ -1,28 +1,28 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
+
+// Mock dependencies using vi.hoisted to ensure they're available during module initialization
+const mockNavigate = vi.hoisted(() => vi.fn());
+const mockLogger = vi.hoisted(() => ({
+  debug: vi.fn(),
+  info: vi.fn(),
+  error: vi.fn(),
+  warn: vi.fn(),
+}));
+
+vi.mock('react-router-dom', () => ({
+  useNavigate: () => mockNavigate,
+}));
+
+vi.mock('@/utils/secureLogger', () => ({
+  createLogger: () => mockLogger,
+}));
+
 import {
   useNavigateToProject,
   useNavigateToProjectEdit,
   createNavigationContext,
 } from '../useNavigateToProject';
-
-// Mock react-router-dom
-const mockNavigate = vi.fn();
-vi.mock('react-router-dom', () => ({
-  useNavigate: () => mockNavigate,
-}));
-
-// Mock logger
-const mockLogger = {
-  debug: vi.fn(),
-  info: vi.fn(),
-  error: vi.fn(),
-  warn: vi.fn(),
-};
-
-vi.mock('@/utils/secureLogger', () => ({
-  createLogger: () => mockLogger,
-}));
 
 describe('useNavigateToProject', () => {
   beforeEach(() => {
@@ -30,29 +30,43 @@ describe('useNavigateToProject', () => {
   });
 
   describe('useNavigateToProject hook', () => {
-    it('should navigate to project detail page', () => {
+    it('should navigate to project detail page and return success result', () => {
       const { result } = renderHook(() => useNavigateToProject());
 
       const navigateToProject = result.current;
-      navigateToProject('project123');
+      const navigationResult = navigateToProject('project123');
 
       expect(mockNavigate).toHaveBeenCalledWith('/projects/project123', { replace: false });
       expect(mockLogger.debug).toHaveBeenCalledWith('Navigating to project', {
         projectId: 'project123',
         replace: false,
+        hasProjectData: false,
+        hasSuccessMessage: false,
+        showLoadingFeedback: undefined,
+      });
+      expect(navigationResult).toEqual({
+        success: true,
+        projectId: 'project123',
       });
     });
 
-    it('should navigate with replace option', () => {
+    it('should navigate with replace option and return success result', () => {
       const { result } = renderHook(() => useNavigateToProject());
 
       const navigateToProject = result.current;
-      navigateToProject('project456', { replace: true });
+      const navigationResult = navigateToProject('project456', { replace: true });
 
       expect(mockNavigate).toHaveBeenCalledWith('/projects/project456', { replace: true });
       expect(mockLogger.debug).toHaveBeenCalledWith('Navigating to project', {
         projectId: 'project456',
         replace: true,
+        hasProjectData: false,
+        hasSuccessMessage: false,
+        showLoadingFeedback: undefined,
+      });
+      expect(navigationResult).toEqual({
+        success: true,
+        projectId: 'project456',
       });
     });
 
@@ -83,6 +97,32 @@ describe('useNavigateToProject', () => {
 
       expect(firstRender).toBe(secondRender);
     });
+
+    it('should handle enhanced options with success message', () => {
+      const { result } = renderHook(() => useNavigateToProject());
+
+      const navigateToProject = result.current;
+      const navigationResult = navigateToProject('project789', {
+        replace: true,
+        successMessage: 'Project created successfully!',
+        projectData: { id: 'project789', title: 'Test Project' },
+        showLoadingFeedback: true,
+      });
+
+      expect(mockNavigate).toHaveBeenCalledWith('/projects/project789', { replace: true });
+      expect(mockLogger.debug).toHaveBeenCalledWith('Navigating to project', {
+        projectId: 'project789',
+        replace: true,
+        hasProjectData: true,
+        hasSuccessMessage: true,
+        showLoadingFeedback: true,
+      });
+      expect(mockLogger.info).toHaveBeenCalledWith('Project created successfully!');
+      expect(navigationResult).toEqual({
+        success: true,
+        projectId: 'project789',
+      });
+    });
   });
 
   describe('useNavigateToProjectEdit hook', () => {
@@ -92,9 +132,14 @@ describe('useNavigateToProject', () => {
       const navigateToEdit = result.current;
       navigateToEdit('project123');
 
-      expect(mockNavigate).toHaveBeenCalledWith('/projects/project123/edit');
+      expect(mockNavigate).toHaveBeenCalledWith('/projects/project123/edit', {
+        replace: false,
+        state: undefined,
+      });
       expect(mockLogger.debug).toHaveBeenCalledWith('Navigating to project edit', {
         projectId: 'project123',
+        replace: false,
+        state: undefined,
       });
     });
 
@@ -104,7 +149,10 @@ describe('useNavigateToProject', () => {
       const navigateToEdit = result.current;
       navigateToEdit('project456', { someOption: true });
 
-      expect(mockNavigate).toHaveBeenCalledWith('/projects/project456/edit');
+      expect(mockNavigate).toHaveBeenCalledWith('/projects/project456/edit', {
+        replace: false,
+        state: undefined,
+      });
     });
 
     it('should handle empty project ID', () => {
@@ -113,7 +161,10 @@ describe('useNavigateToProject', () => {
       const navigateToEdit = result.current;
       navigateToEdit('');
 
-      expect(mockNavigate).toHaveBeenCalledWith('/projects//edit');
+      expect(mockNavigate).toHaveBeenCalledWith('/projects//edit', {
+        replace: false,
+        state: undefined,
+      });
     });
 
     it('should be memoized and stable', () => {
@@ -156,22 +207,31 @@ describe('useNavigateToProject', () => {
   });
 
   describe('error handling', () => {
-    it('should handle navigation errors gracefully', () => {
+    it('should handle navigation errors gracefully and return error result', () => {
       mockNavigate.mockImplementation(() => {
         throw new Error('Navigation failed');
       });
 
       const { result } = renderHook(() => useNavigateToProject());
 
-      expect(() => {
-        const navigateToProject = result.current;
-        navigateToProject('project123');
-      }).toThrow('Navigation failed');
+      const navigateToProject = result.current;
+      const navigationResult = navigateToProject('project123');
 
-      // Logger should still be called before the error
       expect(mockLogger.debug).toHaveBeenCalledWith('Navigating to project', {
         projectId: 'project123',
         replace: false,
+        hasProjectData: false,
+        hasSuccessMessage: false,
+        showLoadingFeedback: undefined,
+      });
+      expect(mockLogger.error).toHaveBeenCalledWith('❌ Navigation failed:', {
+        projectId: 'project123',
+        error: 'Navigation failed',
+      });
+      expect(navigationResult).toEqual({
+        success: false,
+        error: 'Navigation failed',
+        projectId: 'project123',
       });
     });
 
