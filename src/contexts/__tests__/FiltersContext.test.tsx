@@ -1,13 +1,9 @@
 import React, { ReactNode } from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import {
-  DashboardFiltersProvider,
-  useDashboardFilters,
-  useRecentlyEdited,
-} from '../DashboardFiltersContext';
+import { FiltersProvider, useFilters } from '../FiltersContext';
 
 // Mock dependencies
 const mockNavigate = vi.fn();
@@ -32,7 +28,7 @@ vi.mock('@/hooks/use-toast', () => ({
 
 // Mock useDebounce
 vi.mock('@/hooks/useDebounce', () => ({
-  default: (value: any) => value, // Return value immediately for testing
+  default: (value: any) => value,
 }));
 
 // Mock MetadataContext
@@ -58,48 +54,6 @@ const mockMetadataContext = {
 
 vi.mock('@/contexts/MetadataContext', () => ({
   useMetadata: () => mockMetadataContext,
-}));
-
-// Mock hooks
-const mockProjectsData = {
-  projects: [
-    { id: 'project1', kit_name: 'Project 1', last_updated: '2023-01-01' },
-    { id: 'project2', kit_name: 'Project 2', last_updated: '2023-01-02' },
-  ],
-  totalItems: 2,
-  totalPages: 1,
-};
-
-const mockRefetch = vi.fn();
-
-vi.mock('@/hooks/queries/useProjects', () => ({
-  useProjects: () => ({
-    data: mockProjectsData,
-    isLoading: false,
-    error: null,
-    refetch: mockRefetch,
-  }),
-}));
-
-const mockDashboardStats = {
-  status_breakdown: {
-    wishlist: 2,
-    purchased: 3,
-    stash: 2,
-    progress: 1,
-    completed: 2,
-    destashed: 0,
-    archived: 0,
-  },
-};
-
-vi.mock('@/hooks/queries/useDashboardStats', () => ({
-  useDashboardStats: () => ({
-    stats: mockDashboardStats,
-  }),
-  useAvailableYearsOptimized: () => ({
-    years: [2023, 2022, 2021],
-  }),
 }));
 
 // Mock PocketBase
@@ -128,32 +82,52 @@ vi.mock('@/utils/secureLogger', () => ({
     error: vi.fn(),
     warn: vi.fn(),
   }),
+  performanceLogger: {
+    start: vi.fn(() => 'perf-id'),
+    end: vi.fn(),
+  },
+}));
+
+// Mock auth hook
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: () => ({
+    user: { id: 'test-user-id' },
+    isLoading: false,
+    error: null,
+  }),
 }));
 
 // Test component to consume context
-const TestConsumer = () => {
+const TestFiltersConsumer = () => {
   const {
     filters,
-    projects,
     updateStatus,
     updateCompany,
+    updateArtist,
     updateSearchTerm,
+    updateTags,
     resetAllFilters,
     getActiveFilterCount,
-    getCountsForTabs,
-  } = useDashboardFilters();
-
-  const { recentlyEditedProjectId, setRecentlyEditedProjectId } = useRecentlyEdited();
+    updateSort,
+    updatePage,
+    updatePageSize,
+  } = useFilters();
 
   return (
     <div>
       <div data-testid="status">{filters.activeStatus}</div>
       <div data-testid="company">{filters.selectedCompany}</div>
+      <div data-testid="artist">{filters.selectedArtist}</div>
       <div data-testid="search-term">{filters.searchTerm}</div>
-      <div data-testid="projects-count">{projects.length}</div>
+      <div data-testid="selected-tags">{filters.selectedTags.join(',')}</div>
+      <div data-testid="drill-shape">{filters.selectedDrillShape}</div>
+      <div data-testid="year-finished">{filters.selectedYearFinished}</div>
+      <div data-testid="include-mini-kits">{filters.includeMiniKits.toString()}</div>
       <div data-testid="active-filters">{getActiveFilterCount()}</div>
-      <div data-testid="tab-counts">{JSON.stringify(getCountsForTabs())}</div>
-      <div data-testid="recently-edited">{recentlyEditedProjectId || 'none'}</div>
+      <div data-testid="sort-field">{filters.sortField}</div>
+      <div data-testid="sort-direction">{filters.sortDirection}</div>
+      <div data-testid="current-page">{filters.currentPage}</div>
+      <div data-testid="page-size">{filters.pageSize}</div>
 
       <button onClick={() => updateStatus('wishlist')} data-testid="update-status">
         Update Status
@@ -161,17 +135,26 @@ const TestConsumer = () => {
       <button onClick={() => updateCompany('company1')} data-testid="update-company">
         Update Company
       </button>
+      <button onClick={() => updateArtist('artist1')} data-testid="update-artist">
+        Update Artist
+      </button>
       <button onClick={() => updateSearchTerm('test search')} data-testid="update-search">
         Update Search
+      </button>
+      <button onClick={() => updateTags(['tag1', 'tag2'])} data-testid="update-tags">
+        Update Tags
       </button>
       <button onClick={() => resetAllFilters()} data-testid="reset-filters">
         Reset Filters
       </button>
-      <button
-        onClick={() => setRecentlyEditedProjectId('project1')}
-        data-testid="set-recently-edited"
-      >
-        Set Recently Edited
+      <button onClick={() => updateSort('kit_name', 'desc')} data-testid="update-sort">
+        Update Sort
+      </button>
+      <button onClick={() => updatePage(2)} data-testid="update-page">
+        Update Page
+      </button>
+      <button onClick={() => updatePageSize(50)} data-testid="update-page-size">
+        Update Page Size
       </button>
     </div>
   );
@@ -189,25 +172,15 @@ const createWrapper = (user = { id: 'user123', email: 'test@example.com' }) => {
   return ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <DashboardFiltersProvider user={user}>{children}</DashboardFiltersProvider>
+        <FiltersProvider user={user}>{children}</FiltersProvider>
       </BrowserRouter>
     </QueryClientProvider>
   );
 };
 
-describe('DashboardFiltersContext', () => {
-  let queryClient: QueryClient;
-
+describe('FiltersContext', () => {
   beforeEach(() => {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: { retry: false },
-        mutations: { retry: false },
-      },
-    });
     vi.clearAllMocks();
-
-    // Reset mocks
     mockGetFirstListItem.mockRejectedValue({ status: 404 });
     mockLocation.pathname = '/dashboard';
     mockLocation.search = '';
@@ -223,43 +196,25 @@ describe('DashboardFiltersContext', () => {
 
       render(
         <Wrapper>
-          <TestConsumer />
+          <TestFiltersConsumer />
         </Wrapper>
       );
 
       await waitFor(() => {
         expect(screen.getByTestId('status')).toHaveTextContent('all');
         expect(screen.getByTestId('company')).toHaveTextContent('all');
+        expect(screen.getByTestId('artist')).toHaveTextContent('all');
         expect(screen.getByTestId('search-term')).toHaveTextContent('');
-        expect(screen.getByTestId('projects-count')).toHaveTextContent('2');
-        expect(screen.getByTestId('recently-edited')).toHaveTextContent('none');
+        expect(screen.getByTestId('selected-tags')).toHaveTextContent('');
+        expect(screen.getByTestId('drill-shape')).toHaveTextContent('all');
+        expect(screen.getByTestId('year-finished')).toHaveTextContent('all');
+        expect(screen.getByTestId('include-mini-kits')).toHaveTextContent('true');
+        expect(screen.getByTestId('active-filters')).toHaveTextContent('0');
+        expect(screen.getByTestId('sort-field')).toHaveTextContent('last_updated');
+        expect(screen.getByTestId('sort-direction')).toHaveTextContent('desc');
+        expect(screen.getByTestId('current-page')).toHaveTextContent('1');
+        expect(screen.getByTestId('page-size')).toHaveTextContent('25');
       });
-    });
-
-    it('should show loading state when metadata is loading', () => {
-      // Mock loading state by updating the mock directly
-      mockMetadataContext.isLoading = {
-        tags: true,
-        companies: false,
-        artists: false,
-      };
-
-      const Wrapper = createWrapper();
-
-      render(
-        <Wrapper>
-          <TestConsumer />
-        </Wrapper>
-      );
-
-      expect(document.querySelector('.animate-spin')).toBeInTheDocument();
-
-      // Reset after test
-      mockMetadataContext.isLoading = {
-        tags: false,
-        companies: false,
-        artists: false,
-      };
     });
 
     it('should restore filters from database on initialization', async () => {
@@ -267,10 +222,10 @@ describe('DashboardFiltersContext', () => {
         filters: {
           status: 'wishlist',
           company: 'company1',
-          artist: 'all',
-          drillShape: 'all',
-          yearFinished: 'all',
-          includeMiniKits: true,
+          artist: 'artist1',
+          drillShape: 'round',
+          yearFinished: '2023',
+          includeMiniKits: false,
           searchTerm: 'saved search',
           selectedTags: ['tag1'],
         },
@@ -288,14 +243,23 @@ describe('DashboardFiltersContext', () => {
 
       render(
         <Wrapper>
-          <TestConsumer />
+          <TestFiltersConsumer />
         </Wrapper>
       );
 
       await waitFor(() => {
         expect(screen.getByTestId('status')).toHaveTextContent('wishlist');
         expect(screen.getByTestId('company')).toHaveTextContent('company1');
+        expect(screen.getByTestId('artist')).toHaveTextContent('artist1');
         expect(screen.getByTestId('search-term')).toHaveTextContent('saved search');
+        expect(screen.getByTestId('selected-tags')).toHaveTextContent('tag1');
+        expect(screen.getByTestId('drill-shape')).toHaveTextContent('round');
+        expect(screen.getByTestId('year-finished')).toHaveTextContent('2023');
+        expect(screen.getByTestId('include-mini-kits')).toHaveTextContent('false');
+        expect(screen.getByTestId('sort-field')).toHaveTextContent('kit_name');
+        expect(screen.getByTestId('sort-direction')).toHaveTextContent('asc');
+        expect(screen.getByTestId('current-page')).toHaveTextContent('2');
+        expect(screen.getByTestId('page-size')).toHaveTextContent('50');
       });
     });
   });
@@ -306,19 +270,19 @@ describe('DashboardFiltersContext', () => {
 
       render(
         <Wrapper>
-          <TestConsumer />
+          <TestFiltersConsumer />
         </Wrapper>
       );
 
       await waitFor(() => {
         expect(screen.getByTestId('status')).toHaveTextContent('all');
-        expect(screen.getByTestId('update-status')).toBeInTheDocument();
       });
 
       fireEvent.click(screen.getByTestId('update-status'));
 
       await waitFor(() => {
         expect(screen.getByTestId('status')).toHaveTextContent('wishlist');
+        expect(screen.getByTestId('current-page')).toHaveTextContent('1'); // Should reset page
       });
     });
 
@@ -327,19 +291,40 @@ describe('DashboardFiltersContext', () => {
 
       render(
         <Wrapper>
-          <TestConsumer />
+          <TestFiltersConsumer />
         </Wrapper>
       );
 
       await waitFor(() => {
         expect(screen.getByTestId('company')).toHaveTextContent('all');
-        expect(screen.getByTestId('update-company')).toBeInTheDocument();
       });
 
       fireEvent.click(screen.getByTestId('update-company'));
 
       await waitFor(() => {
         expect(screen.getByTestId('company')).toHaveTextContent('company1');
+        expect(screen.getByTestId('current-page')).toHaveTextContent('1'); // Should reset page
+      });
+    });
+
+    it('should update artist filter', async () => {
+      const Wrapper = createWrapper();
+
+      render(
+        <Wrapper>
+          <TestFiltersConsumer />
+        </Wrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('artist')).toHaveTextContent('all');
+      });
+
+      fireEvent.click(screen.getByTestId('update-artist'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('artist')).toHaveTextContent('artist1');
+        expect(screen.getByTestId('current-page')).toHaveTextContent('1'); // Should reset page
       });
     });
 
@@ -348,19 +333,40 @@ describe('DashboardFiltersContext', () => {
 
       render(
         <Wrapper>
-          <TestConsumer />
+          <TestFiltersConsumer />
         </Wrapper>
       );
 
       await waitFor(() => {
         expect(screen.getByTestId('search-term')).toHaveTextContent('');
-        expect(screen.getByTestId('update-search')).toBeInTheDocument();
       });
 
       fireEvent.click(screen.getByTestId('update-search'));
 
       await waitFor(() => {
         expect(screen.getByTestId('search-term')).toHaveTextContent('test search');
+        expect(screen.getByTestId('current-page')).toHaveTextContent('1'); // Should reset page
+      });
+    });
+
+    it('should update selected tags', async () => {
+      const Wrapper = createWrapper();
+
+      render(
+        <Wrapper>
+          <TestFiltersConsumer />
+        </Wrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('selected-tags')).toHaveTextContent('');
+      });
+
+      fireEvent.click(screen.getByTestId('update-tags'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('selected-tags')).toHaveTextContent('tag1,tag2');
+        expect(screen.getByTestId('current-page')).toHaveTextContent('1'); // Should reset page
       });
     });
 
@@ -369,23 +375,19 @@ describe('DashboardFiltersContext', () => {
 
       render(
         <Wrapper>
-          <TestConsumer />
+          <TestFiltersConsumer />
         </Wrapper>
       );
-
-      // Wait for component to be initialized and content to load
-      await waitFor(() => {
-        expect(screen.getByTestId('status')).toHaveTextContent('all');
-        expect(screen.getByTestId('update-status')).toBeInTheDocument();
-      });
 
       // First update some filters
       fireEvent.click(screen.getByTestId('update-status'));
       fireEvent.click(screen.getByTestId('update-company'));
+      fireEvent.click(screen.getByTestId('update-search'));
 
       await waitFor(() => {
         expect(screen.getByTestId('status')).toHaveTextContent('wishlist');
         expect(screen.getByTestId('company')).toHaveTextContent('company1');
+        expect(screen.getByTestId('search-term')).toHaveTextContent('test search');
       });
 
       // Then reset
@@ -394,40 +396,90 @@ describe('DashboardFiltersContext', () => {
       await waitFor(() => {
         expect(screen.getByTestId('status')).toHaveTextContent('all');
         expect(screen.getByTestId('company')).toHaveTextContent('all');
+        expect(screen.getByTestId('artist')).toHaveTextContent('all');
         expect(screen.getByTestId('search-term')).toHaveTextContent('');
+        expect(screen.getByTestId('selected-tags')).toHaveTextContent('');
+        expect(screen.getByTestId('drill-shape')).toHaveTextContent('all');
+        expect(screen.getByTestId('year-finished')).toHaveTextContent('all');
+        expect(screen.getByTestId('include-mini-kits')).toHaveTextContent('true');
+        expect(screen.getByTestId('current-page')).toHaveTextContent('1');
       });
     });
   });
 
-  describe('Recently Edited Context', () => {
-    it('should manage recently edited project state', async () => {
+  describe('Pagination and Sorting', () => {
+    it('should update sort field and direction', async () => {
       const Wrapper = createWrapper();
 
       render(
         <Wrapper>
-          <TestConsumer />
+          <TestFiltersConsumer />
         </Wrapper>
       );
 
       await waitFor(() => {
-        expect(screen.getByTestId('recently-edited')).toHaveTextContent('none');
+        expect(screen.getByTestId('sort-field')).toHaveTextContent('last_updated');
+        expect(screen.getByTestId('sort-direction')).toHaveTextContent('desc');
       });
 
-      fireEvent.click(screen.getByTestId('set-recently-edited'));
+      fireEvent.click(screen.getByTestId('update-sort'));
 
       await waitFor(() => {
-        expect(screen.getByTestId('recently-edited')).toHaveTextContent('project1');
+        expect(screen.getByTestId('sort-field')).toHaveTextContent('kit_name');
+        expect(screen.getByTestId('sort-direction')).toHaveTextContent('desc');
+        expect(screen.getByTestId('current-page')).toHaveTextContent('1'); // Should reset page
+      });
+    });
+
+    it('should update current page', async () => {
+      const Wrapper = createWrapper();
+
+      render(
+        <Wrapper>
+          <TestFiltersConsumer />
+        </Wrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('current-page')).toHaveTextContent('1');
+      });
+
+      fireEvent.click(screen.getByTestId('update-page'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('current-page')).toHaveTextContent('2');
+      });
+    });
+
+    it('should update page size', async () => {
+      const Wrapper = createWrapper();
+
+      render(
+        <Wrapper>
+          <TestFiltersConsumer />
+        </Wrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('page-size')).toHaveTextContent('25');
+      });
+
+      fireEvent.click(screen.getByTestId('update-page-size'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('page-size')).toHaveTextContent('50');
+        expect(screen.getByTestId('current-page')).toHaveTextContent('1'); // Should reset page
       });
     });
   });
 
-  describe('Computed Values', () => {
+  describe('Active Filter Count', () => {
     it('should calculate active filter count correctly', async () => {
       const Wrapper = createWrapper();
 
       render(
         <Wrapper>
-          <TestConsumer />
+          <TestFiltersConsumer />
         </Wrapper>
       );
 
@@ -439,30 +491,10 @@ describe('DashboardFiltersContext', () => {
       fireEvent.click(screen.getByTestId('update-status'));
       fireEvent.click(screen.getByTestId('update-company'));
       fireEvent.click(screen.getByTestId('update-search'));
+      fireEvent.click(screen.getByTestId('update-tags'));
 
       await waitFor(() => {
-        expect(screen.getByTestId('active-filters')).toHaveTextContent('3');
-      });
-    });
-
-    it('should provide correct tab counts', async () => {
-      const Wrapper = createWrapper();
-
-      render(
-        <Wrapper>
-          <TestConsumer />
-        </Wrapper>
-      );
-
-      await waitFor(() => {
-        const tabCounts = JSON.parse(screen.getByTestId('tab-counts').textContent || '{}');
-        // Total is calculated as sum of all status breakdowns (2+3+2+1+2+0+0 = 10)
-        expect(tabCounts.all).toBe(10);
-        expect(tabCounts.wishlist).toBe(2);
-        expect(tabCounts.purchased).toBe(3);
-        expect(tabCounts.stash).toBe(2);
-        expect(tabCounts.progress).toBe(1);
-        expect(tabCounts.completed).toBe(2);
+        expect(screen.getByTestId('active-filters')).toHaveTextContent('4');
       });
     });
   });
@@ -475,7 +507,7 @@ describe('DashboardFiltersContext', () => {
 
       render(
         <Wrapper>
-          <TestConsumer />
+          <TestFiltersConsumer />
         </Wrapper>
       );
 
@@ -489,48 +521,14 @@ describe('DashboardFiltersContext', () => {
     });
   });
 
-  describe('Navigation Context Saving', () => {
-    it('should have navigation context save functionality available', async () => {
-      const user = { id: 'user123', email: 'test@example.com' };
-      const Wrapper = createWrapper(user);
-
-      render(
-        <Wrapper>
-          <TestConsumer />
-        </Wrapper>
-      );
-
-      // Wait for initialization
-      await waitFor(() => {
-        expect(screen.getByTestId('status')).toHaveTextContent('all');
-      });
-
-      // Update some filters to create state that would be saved
-      fireEvent.click(screen.getByTestId('update-status'));
-      fireEvent.click(screen.getByTestId('update-company'));
-
-      await waitFor(() => {
-        expect(screen.getByTestId('status')).toHaveTextContent('wishlist');
-        expect(screen.getByTestId('company')).toHaveTextContent('company1');
-      });
-
-      // Verify that the save navigation context mutation is available
-      expect(mockSaveNavigationContext).toBeDefined();
-
-      // Note: Testing the actual useEffect cleanup that triggers on navigation
-      // is complex in the test environment. The save mechanism is thoroughly
-      // tested in the useSaveNavigationContext.test.tsx file.
-    });
-  });
-
   describe('Error Handling', () => {
     it('should handle missing user gracefully', () => {
-      const Wrapper = createWrapper(null);
+      const Wrapper = createWrapper(undefined);
 
       expect(() => {
         render(
           <Wrapper>
-            <TestConsumer />
+            <TestFiltersConsumer />
           </Wrapper>
         );
       }).not.toThrow();
@@ -543,7 +541,7 @@ describe('DashboardFiltersContext', () => {
 
       render(
         <Wrapper>
-          <TestConsumer />
+          <TestFiltersConsumer />
         </Wrapper>
       );
 

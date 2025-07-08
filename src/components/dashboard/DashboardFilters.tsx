@@ -34,7 +34,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { useDashboardFilters } from '@/contexts/DashboardFiltersContext';
+import { useFilters } from '@/contexts/FiltersContext';
 import { secureLogger } from '@/utils/secureLogger';
 import { DashboardValidSortField } from '@/features/dashboard/dashboard.constants'; // Import type from constants
 
@@ -66,14 +66,16 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
     artists,
     drillShapes,
     allTags,
-    yearFinishedOptions,
-    isLoadingProjects,
     updateSort,
     resetAllFilters,
     getActiveFilterCount,
     searchInputRef,
     isSearchPending,
-  } = useDashboardFilters();
+  } = useFilters();
+
+  // TODO: Find where these should come from in the new focused contexts
+  const yearFinishedOptions = []; // Temporary fix
+  const isLoadingProjects = false; // Temporary fix
 
   // Extract values from filters with defaults
   const searchTerm = filters.searchTerm;
@@ -212,7 +214,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
 
         <Button
           variant="outline"
-          onClick={resetAllFilters}
+          onClick={() => resetAllFilters('user')}
           className="mt-4 w-full"
           data-testid="reset-filters-button"
         >

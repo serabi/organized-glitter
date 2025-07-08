@@ -9,12 +9,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
-import { pb } from '@/lib/pocketbase';
-import { useUpdateProjectStatusMutation } from '@/hooks/mutations/useProjectDetailMutations';
-import { DashboardFiltersProvider } from '@/contexts/DashboardFiltersContext';
-import { AuthContext } from '@/contexts/AuthContext';
-import { DashboardStatsService } from '@/services/pocketbase/dashboardStatsService';
-import { queryKeys } from '@/hooks/queries/queryKeys';
+import { pb } from '../../lib/pocketbase';
+import { useUpdateProjectStatusMutation } from '../../hooks/mutations/useProjectDetailMutations';
+import { StatsProvider } from '../../contexts/StatsContext';
+import { FiltersProvider } from '../../contexts/FiltersContext';
+import { UIProvider } from '../../contexts/UIContext';
+import { RecentlyEditedProvider } from '../../contexts/RecentlyEditedContext';
+import { updateDashboardStats } from '../../services/dashboardStatsService';
+import { queryKeys } from '../../hooks/queries/queryKeys';
 
 // Mock dependencies
 vi.mock('@/lib/pocketbase');
@@ -24,7 +26,7 @@ vi.mock('@/hooks/useRealtimeProjectSync', () => ({
 }));
 
 const mockPb = vi.mocked(pb);
-const mockDashboardStatsService = vi.mocked(DashboardStatsService);
+const mockUpdateDashboardStats = vi.mocked(updateDashboardStats);
 
 // Test component that uses the mutation
 const TestComponent = ({ projectId }: { projectId: string }) => {
@@ -65,9 +67,15 @@ const TestWrapper = ({ children, user = { id: 'test-user-id', email: 'test@test.
   return (
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
-        <AuthContext.Provider value={authContextValue}>
-          <DashboardFiltersProvider user={user}>{children}</DashboardFiltersProvider>
-        </AuthContext.Provider>
+        <StatsProvider>
+          <FiltersProvider user={user}>
+            <UIProvider>
+              <RecentlyEditedProvider>
+                {children}
+              </RecentlyEditedProvider>
+            </UIProvider>
+          </FiltersProvider>
+        </StatsProvider>
       </MemoryRouter>
     </QueryClientProvider>
   );
@@ -100,7 +108,7 @@ describe('Dashboard Status Synchronization', () => {
     } as never);
 
     // Mock successful dashboard stats update
-    mockDashboardStatsService.updateCacheAfterProjectChange.mockResolvedValue();
+    mockUpdateDashboardStats.mockResolvedValue();
   });
 
   afterEach(() => {
@@ -177,15 +185,17 @@ describe('Dashboard Status Synchronization', () => {
     });
 
     // Verify dashboard stats service was called synchronously
-    expect(mockDashboardStatsService.updateCacheAfterProjectChange).toHaveBeenCalledWith(
+    expect(mockUpdateDashboardStats).toHaveBeenCalledWith({
       userId,
-      currentYear
-    );
+      oldStatus: 'wishlist',
+      newStatus: 'purchased',
+      operation: 'update'
+    });
   });
 
   it('should handle dashboard stats update failures gracefully', async () => {
     // Mock dashboard stats service failure
-    mockDashboardStatsService.updateCacheAfterProjectChange.mockRejectedValue(
+    mockUpdateDashboardStats.mockRejectedValue(
       new Error('Stats update failed')
     );
 
@@ -278,13 +288,15 @@ describe('Dashboard Status Synchronization', () => {
 
     // Both should handle their respective updates
     await waitFor(() => {
-      expect(mockDashboardStatsService.updateCacheAfterProjectChange).toHaveBeenCalledTimes(2);
+      expect(mockUpdateDashboardStats).toHaveBeenCalledTimes(2);
     });
 
     // Verify both stats calls succeeded
-    expect(mockDashboardStatsService.updateCacheAfterProjectChange).toHaveBeenCalledWith(
-      userId,
-      currentYear
+    expect(mockUpdateDashboardStats).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId,
+        operation: 'update'
+      })
     );
   });
 

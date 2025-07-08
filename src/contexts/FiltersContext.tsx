@@ -1,13 +1,60 @@
+/**
+ * @fileoverview Dashboard Filters Context Provider
+ * 
+ * Comprehensive context for managing dashboard filter state, persistence, and URL integration.
+ * Extracted from the monolithic DashboardFiltersContext to improve performance and maintainability.
+ * 
+ * This context handles all aspects of dashboard filtering including:
+ * - Complex filter state management with useReducer
+ * - Automatic database persistence with debounced auto-save
+ * - URL parameter processing and navigation integration
+ * - Change source tracking for debugging and optimization
+ * - Filter validation and sanitization
+ * - Performance optimization with memoization
+ * 
+ * Key Features:
+ * - Comprehensive filter state management (status, company, artist, drill shape, etc.)
+ * - Database persistence with automatic saving and loading
+ * - URL parameter integration for deep linking
+ * - Debounced auto-save to prevent excessive database writes
+ * - Change source tracking for debugging and state management
+ * - Performance monitoring with detailed logging
+ * - Mobile-optimized network handling
+ * - Type-safe filter operations with comprehensive validation
+ * 
+ * Performance Optimizations:
+ * - Uses useReducer for complex state management
+ * - Debounced auto-save with rate limiting
+ * - Memoized computed values and callbacks
+ * - Efficient re-render prevention
+ * - Performance monitoring with metrics
+ * 
+ * @author serabi
+ * @since 2025-07-08
+ * @version 1.0.0
+ * 
+ * Dependencies:
+ * - React for context and state management
+ * - React Router for URL integration
+ * - PocketBase for database persistence
+ * - MetadataContext for available options
+ * - Custom hooks for debouncing and navigation
+ * 
+ * @see {@link StatsContext} for statistics state management
+ * @see {@link UIContext} for UI state management
+ * @see {@link RecentlyEditedContext} for recently edited tracking
+ */
+
 import React, {
   createContext,
   useContext,
+  useReducer,
   useState,
   useEffect,
   useCallback,
   useMemo,
   useRef,
   ReactNode,
-  useReducer,
 } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import useDebounce from '@/hooks/useDebounce';
@@ -19,44 +66,31 @@ import {
 import { createLogger, performanceLogger } from '@/utils/secureLogger';
 import { useToast } from '@/hooks/use-toast';
 import { ProjectFilterStatus, Tag } from '@/types/project';
-import { useRealtimeProjectSync } from '@/hooks/useRealtimeProjectSync';
 import { DashboardValidSortField } from '@/features/dashboard/dashboard.constants';
-import { useDashboardStatsStable } from '@/hooks/queries/useDashboardStatsStable';
 
-const logger = createLogger('DashboardFilters');
+const logger = createLogger('FiltersContext');
 
-// Recently Edited Context (moved from Dashboard.tsx for proper context stability)
-interface RecentlyEditedContextValue {
-  recentlyEditedProjectId: string | null;
-  setRecentlyEditedProjectId: (id: string | null) => void;
-}
-
-const RecentlyEditedContext = createContext<RecentlyEditedContextValue | undefined>(undefined);
-
-export const useRecentlyEdited = () => {
-  const context = useContext(RecentlyEditedContext);
-  if (context === undefined) {
-    throw new Error('useRecentlyEdited must be used within a DashboardFiltersProvider');
-  }
-  return context;
-};
-
-// Types
+/**
+ * Sort direction type definition
+ */
 export type SortDirectionType = 'asc' | 'desc';
+
+/**
+ * View type definition for dashboard display
+ */
 export type ViewType = 'grid' | 'list';
 
-// Status counts interface for StatusTabs component
-export interface CountsForTabsType {
-  all: number;
-  wishlist: number;
-  purchased: number;
-  stash: number;
-  progress: number;
-  completed: number;
-  destashed: number;
-  archived: number;
-}
+/**
+ * Source of filter changes for debugging and state management
+ */
+export type ChangeSource = 'user' | 'system' | 'real-time' | 'initialization' | 'batch';
 
+/**
+ * Comprehensive filter state interface
+ * 
+ * Defines all possible filter states for the dashboard, including
+ * server-side filters, sorting, pagination, and view preferences.
+ */
 export interface FilterState {
   // Server-side filters
   activeStatus: ProjectFilterStatus;
@@ -82,10 +116,16 @@ export interface FilterState {
   viewType: ViewType;
 }
 
-export interface DashboardFiltersContextValue {
+/**
+ * Context interface for dashboard filters management
+ * 
+ * Provides comprehensive filter state management with persistence,
+ * URL integration, and performance optimization.
+ */
+export interface FiltersContextType {
   // Current filter state
   filters: FilterState;
-  debouncedSearchTerm: string; // Provide debounced search term for queries
+  debouncedSearchTerm: string;
 
   // Filter actions
   updateStatus: (status: ProjectFilterStatus, source?: ChangeSource) => void;
@@ -113,7 +153,6 @@ export interface DashboardFiltersContextValue {
 
   // Computed values
   getActiveFilterCount: () => number;
-  getCountsForTabs: () => CountsForTabsType;
 
   // Available options
   companies: { label: string; value: string }[];
@@ -125,11 +164,16 @@ export interface DashboardFiltersContextValue {
   searchInputRef: React.RefObject<HTMLInputElement>;
   isSearchPending: boolean;
   isMetadataLoading: boolean;
+  isInitialized: boolean;
 }
 
-const DashboardFiltersContext = createContext<DashboardFiltersContextValue | undefined>(undefined);
+const FiltersContext = createContext<FiltersContextType | null>(null);
 
-// Default filter state
+/**
+ * Default filter state factory
+ * 
+ * Provides consistent default values for all filter properties.
+ */
 const getDefaultFilters = (): FilterState => ({
   activeStatus: 'all',
   selectedCompany: 'all',
@@ -148,7 +192,12 @@ const getDefaultFilters = (): FilterState => ({
   viewType: 'grid',
 });
 
-// Validate and sanitize filter state
+/**
+ * Validate and sanitize filter state
+ * 
+ * Ensures all filter properties have valid values, falling back to
+ * defaults for any invalid or missing properties.
+ */
 const validateAndSanitizeFilters = (filters: Partial<FilterState>): FilterState => {
   const defaults = getDefaultFilters();
 
@@ -173,10 +222,9 @@ const validateAndSanitizeFilters = (filters: Partial<FilterState>): FilterState 
   };
 };
 
-// Define the source of a change for better state management
-export type ChangeSource = 'user' | 'system' | 'real-time' | 'initialization' | 'batch';
-
-// Reducer action types
+/**
+ * Filter reducer action types
+ */
 type FilterAction =
   | { type: 'SET_STATUS'; payload: ProjectFilterStatus }
   | { type: 'SET_COMPANY'; payload: string | null }
@@ -198,7 +246,12 @@ type FilterAction =
   | { type: 'SET_INITIAL_STATE'; payload: FilterState }
   | { type: 'BATCH_UPDATE_FILTERS'; payload: Partial<FilterState> };
 
-// Reducer function to manage filter state transitions
+/**
+ * Filter reducer function
+ * 
+ * Handles all filter state transitions with performance monitoring
+ * and consistent state updates.
+ */
 const filtersReducer = (state: FilterState, action: FilterAction): FilterState => {
   const perfId = performanceLogger.start(`reducer:${action.type}`);
   let newState: FilterState;
@@ -280,15 +333,21 @@ const filtersReducer = (state: FilterState, action: FilterAction): FilterState =
   return newState;
 };
 
-interface DashboardFiltersProviderProps {
+/**
+ * Props interface for FiltersProvider component
+ */
+interface FiltersProviderProps {
   children: ReactNode;
   user: { id: string; email?: string } | null;
 }
 
-export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> = ({
-  children,
-  user,
-}) => {
+/**
+ * FiltersProvider component that provides comprehensive filter management
+ * 
+ * Manages all aspects of dashboard filtering including state, persistence,
+ * URL integration, and performance optimization.
+ */
+export const FiltersProvider: React.FC<FiltersProviderProps> = ({ children, user }) => {
   const userMetadata = useMetadata();
   const location = useLocation();
   const navigate = useNavigate();
@@ -296,68 +355,69 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
   const saveNavigationContext = useSaveNavigationContext();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Enable real-time project synchronization
-  useRealtimeProjectSync();
-
-  // Dashboard stats for status counts
-  const dashboardStats = useDashboardStatsStable();
-
-  // Recently edited project state (moved from Dashboard for context stability)
-  const [recentlyEditedProjectId, setRecentlyEditedProjectId] = useState<string | null>(null);
-
-  // Centralized state management with useReducer
+  // Filter state management
   const [filters, dispatch] = useReducer(filtersReducer, getDefaultFilters());
   const [isInitialized, setIsInitialized] = useState(false);
   const [isAutoSaveEnabled, setIsAutoSaveEnabled] = useState(false);
 
-  // More granular initialization state tracking
+  // State tracking for performance and debugging
   const initializationStateRef = useRef<'pending' | 'initializing' | 'complete'>('pending');
-
-  // Track the source of filter changes to distinguish user actions from system updates
   const changeSourceRef = useRef<ChangeSource>('initialization');
   const lastSaveTimeRef = useRef(0);
-
-  // Track last saved state for content-based deduplication
   const lastSavedFiltersRef = useRef<FilterState | null>(null);
 
-  // Infinite loop detection - track render cycles
+  // Performance monitoring
   const renderCountRef = useRef(0);
   const lastRenderTimeRef = useRef(Date.now());
 
-  // Check for potential infinite loop (more than 50 renders in 5 seconds)
+  // Monitor for potential infinite loops
   useEffect(() => {
     renderCountRef.current += 1;
     const now = Date.now();
     const timeSinceLastRender = now - lastRenderTimeRef.current;
 
-    // Reset counter if more than 5 seconds have passed
     if (timeSinceLastRender > 5000) {
       renderCountRef.current = 1;
     }
 
-    // Log warning if too many renders detected
     if (renderCountRef.current > 50) {
-      logger.error('🚨 Infinite loop detected in DashboardFiltersContext', {
+      logger.error('🚨 Infinite loop detected in FiltersContext', {
         renderCount: renderCountRef.current,
         timeWindow: timeSinceLastRender,
         isInitialized,
         userId: user?.id,
       });
-      renderCountRef.current = 0; // Reset to prevent spam
+      renderCountRef.current = 0;
     }
 
     lastRenderTimeRef.current = now;
   });
 
-  // Debounced search for better UX
+  // Debounced values for performance
   const debouncedSearchTerm = useDebounce(filters.searchTerm, 300);
+  const debouncedFilters = useDebounce(filters, 1000);
   const isSearchPending = filters.searchTerm !== debouncedSearchTerm;
 
-  // Debounced filter saving for immediate persistence
-  // Increased debounce time to prevent cascading invalidations
-  const debouncedFilters = useDebounce(filters, 1000);
+  // State ref for avoiding stale closures
+  const latestStateRef = useRef({
+    filters,
+    user,
+    isInitialized,
+    saveNavigationContext: saveNavigationContext.mutate,
+  });
+  latestStateRef.current = {
+    filters,
+    user,
+    isInitialized,
+    saveNavigationContext: saveNavigationContext.mutate,
+  };
 
-  // Save filters to database when they change (debounced)
+  /**
+   * Auto-save filter changes to database
+   * 
+   * Implements debounced saving with rate limiting and content-based
+   * deduplication to prevent unnecessary database writes.
+   */
   useEffect(() => {
     const perfId = performanceLogger.start('autoSaveEffect');
 
@@ -373,7 +433,7 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
 
     const source = changeSourceRef.current;
     if (source !== 'user' && source !== 'batch') {
-      logger.debug(`💾 Auto-save skipped - change source is "${source}" not "user" or "batch"`);
+      logger.debug(`💾 Auto-save skipped - change source is "${source}"`);
       performanceLogger.end(perfId, { skipped: true, reason: 'invalid_source', source });
       return;
     }
@@ -398,14 +458,7 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
 
     const saveFilters = async () => {
       const savePerfId = performanceLogger.start('saveNavigationContext.mutate');
-      logger.info('💾 Auto-saving filter changes...', {
-        source,
-        changedKeys: Object.keys(debouncedFilters).filter(
-          key =>
-            lastSavedFiltersRef.current?.[key as keyof FilterState] !==
-            debouncedFilters[key as keyof FilterState]
-        ),
-      });
+      logger.info('💾 Auto-saving filter changes...', { source });
 
       const navigationContext: DashboardFilterContext = {
         filters: {
@@ -456,21 +509,11 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
     performanceLogger.end(perfId);
   }, [debouncedFilters, isInitialized, user?.id, saveNavigationContext.mutate, isAutoSaveEnabled]);
 
-  // Use ref to store latest state for save-on-navigation to avoid stale closures
-  const latestStateRef = useRef({
-    filters,
-    user,
-    isInitialized,
-    saveNavigationContext: saveNavigationContext.mutate,
-  });
-  latestStateRef.current = {
-    filters,
-    user,
-    isInitialized,
-    saveNavigationContext: saveNavigationContext.mutate,
-  };
-
-  // Save filters on navigation away from dashboard
+  /**
+   * Save filters to database on navigation
+   * 
+   * Ensures filter state is persisted when navigating away from dashboard.
+   */
   const saveFiltersToDatabase = useCallback(() => {
     const {
       filters: currentFilters,
@@ -480,22 +523,16 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
     } = latestStateRef.current;
 
     if (!currentInitialized || !currentUser?.id) {
-      logger.debug('Skipping save - not initialized or no user', {
-        currentInitialized,
-        hasUser: !!currentUser?.id,
-      });
+      logger.debug('Skipping save - not initialized or no user');
       return;
     }
 
-    // Defensive check to ensure valid filter state
     if (
       !currentFilters.activeStatus ||
       !currentFilters.sortField ||
       !currentFilters.sortDirection
     ) {
-      logger.warn('Skipping database save due to incomplete filter state', {
-        filters: currentFilters,
-      });
+      logger.warn('Skipping database save due to incomplete filter state');
       return;
     }
 
@@ -529,16 +566,10 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       },
       {
         onSuccess: () => {
-          logger.info('✅ Saved current filter state on navigation', {
-            userId: currentUser.id,
-            activeStatus: currentFilters.activeStatus,
-            searchTerm: currentFilters.searchTerm,
-            selectedCompany: currentFilters.selectedCompany,
-          });
+          logger.info('✅ Saved current filter state on navigation');
         },
         onError: error => {
           logger.error('Failed to save dashboard filters on navigation:', error);
-          // Show subtle toast notification for user awareness
           toast({
             title: 'Save Issue',
             description: 'Dashboard preferences may not be saved.',
@@ -548,21 +579,25 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
         },
       }
     );
-  }, [toast]); // Include toast dependency
+  }, [toast]);
 
   // Save filters when navigating away from dashboard
   useEffect(() => {
     const currentPath = location.pathname;
 
     return () => {
-      // Only save if we're currently on dashboard and navigating away
       if (currentPath === '/dashboard' && isInitialized) {
         saveFiltersToDatabase();
       }
     };
   }, [location.pathname, saveFiltersToDatabase, isInitialized]);
 
-  // Initialize from database
+  /**
+   * Initialize filters from database and URL parameters
+   * 
+   * Loads saved filter state from database and applies URL parameters
+   * with proper validation and fallback handling.
+   */
   useEffect(() => {
     if (
       !user?.id ||
@@ -595,7 +630,7 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
           const twentyFourHours = 24 * 60 * 60 * 1000;
 
           if (timeSinceLastVisit > twentyFourHours) {
-            logger.info('⏰ Resetting to "All" - more than 24 hours since last visit');
+            logger.info('⏰ Resetting to defaults - more than 24 hours since last visit');
             sourceOfTruth = 'defaults (24h reset)';
           } else {
             const rawSavedFilters = {
@@ -617,43 +652,48 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
             };
             initialFilters = validateAndSanitizeFilters(rawSavedFilters as Partial<FilterState>);
             sourceOfTruth = 'database';
-            logger.info('✅ Restored filters from database', {
-              timeSinceLastVisit: `${Math.round(timeSinceLastVisit / 1000 / 60)} minutes`,
-            });
+            logger.info('✅ Restored filters from database');
           }
         }
       } catch (error) {
         if (error?.status !== 404) {
           logger.error('Error loading saved filters:', error);
         } else {
-          logger.info('No saved filter settings found for user. Using defaults.');
+          logger.info('No saved filter settings found. Using defaults.');
           sourceOfTruth = 'defaults (no record)';
         }
       }
 
+      // Process URL parameters
       const urlParams = new URLSearchParams(location.search);
       if (urlParams.toString().length > 0) {
-        logger.info('🔥 Processing URL parameters, overriding existing state...');
+        logger.info('🔥 Processing URL parameters...');
         sourceOfTruth = 'url_params';
         const urlFilters: Partial<FilterState> = {};
+        
         const status = urlParams.get('status');
         if (status) urlFilters.activeStatus = status as ProjectFilterStatus;
+        
         const company = urlParams.get('company');
         if (company) urlFilters.selectedCompany = company;
+        
         const artist = urlParams.get('artist');
         if (artist) urlFilters.selectedArtist = artist;
+        
         const tag = urlParams.get('tag');
         if (tag) {
           const matchingTag = userMetadata.tags.find(t => t.name === tag);
           if (matchingTag) urlFilters.selectedTags = [matchingTag.id];
         }
+        
         const year = urlParams.get('year');
         if (year) urlFilters.selectedYearFinished = year;
+        
         const drillShape = urlParams.get('drillShape');
         if (drillShape) urlFilters.selectedDrillShape = drillShape;
 
         initialFilters = { ...initialFilters, ...urlFilters };
-        logger.info('✅ URL parameters applied', { applied: urlFilters });
+        logger.info('✅ URL parameters applied');
         navigate(location.pathname, { replace: true });
       }
 
@@ -663,10 +703,9 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       setIsInitialized(true);
       initializationStateRef.current = 'complete';
 
-      // Enable auto-save after a short delay to prevent race conditions
       setTimeout(() => {
         setIsAutoSaveEnabled(true);
-        logger.info('✅ Auto-save mechanism enabled.');
+        logger.info('✅ Auto-save mechanism enabled');
       }, 1500);
 
       performanceLogger.end(perfId);
@@ -675,7 +714,6 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
     initializeFilters();
   }, [
     user?.id,
-    isInitialized,
     userMetadata.isLoading.tags,
     userMetadata.isLoading.companies,
     userMetadata.isLoading.artists,
@@ -685,55 +723,34 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
     userMetadata.tags,
   ]);
 
-  // NOTE: URL parameter processing moved to initialization for immediate application
-
-  // Wrapper for dispatch to track change source and log changes
+  /**
+   * Enhanced dispatch wrapper with source tracking and logging
+   */
   const dispatchWithSource = useCallback(
     (action: FilterAction, source: ChangeSource = 'user') => {
-      // Use latestStateRef to get current state without causing dependency changes
       const prevState = latestStateRef.current.filters;
       changeSourceRef.current = source;
 
-      const logPayload = 'payload' in action ? action.payload : 'No payload for this action type';
-
-      logger.debug(`🚀 Dispatching filter action: ${action.type}`, {
-        source,
-        payload: logPayload,
-      });
+      logger.debug(`🚀 Dispatching filter action: ${action.type}`, { source });
 
       const perfId = performanceLogger.start(`dispatch:${action.type}`);
       dispatch(action);
       performanceLogger.end(perfId);
 
-      // Log state change after dispatch
-      // Use setTimeout to allow state to update before logging
       setTimeout(() => {
         const nextState = latestStateRef.current.filters;
         const changedKeys = Object.keys(nextState).filter(
           key => nextState[key as keyof FilterState] !== prevState[key as keyof FilterState]
         );
         if (changedKeys.length > 0) {
-          logger.info(`🔄 Filter state updated via ${action.type}`, {
-            source,
-            changedKeys,
-            changes: changedKeys.reduce(
-              (acc: Record<string, { from: unknown; to: unknown }>, key) => {
-                acc[key] = {
-                  from: prevState[key as keyof FilterState],
-                  to: nextState[key as keyof FilterState],
-                };
-                return acc;
-              },
-              {}
-            ),
-          });
+          logger.info(`🔄 Filter state updated via ${action.type}`, { source, changedKeys });
         }
       }, 0);
     },
-    [dispatch] // Remove filters dependency to stabilize callback reference
+    [dispatch]
   );
 
-  // Filter update functions (now dispatching actions)
+  // Filter update functions
   const updateStatus = useCallback(
     (status: ProjectFilterStatus, source?: ChangeSource) => {
       dispatchWithSource({ type: 'SET_STATUS', payload: status }, source);
@@ -878,38 +895,6 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
     return count;
   }, [filters]);
 
-  const getCountsForTabs = useCallback((): CountsForTabsType => {
-    const statusBreakdown = dashboardStats.stats?.status_breakdown;
-
-    if (!statusBreakdown) {
-      // Return fallback counts when loading or no data
-      return {
-        all: 0,
-        wishlist: 0,
-        purchased: 0,
-        stash: 0,
-        progress: 0,
-        completed: 0,
-        destashed: 0,
-        archived: 0,
-      };
-    }
-
-    // Calculate total count for "all" tab
-    const all = Object.values(statusBreakdown).reduce((sum, count) => sum + count, 0);
-
-    return {
-      all,
-      wishlist: statusBreakdown.wishlist,
-      purchased: statusBreakdown.purchased,
-      stash: statusBreakdown.stash,
-      progress: statusBreakdown.progress,
-      completed: statusBreakdown.completed,
-      destashed: statusBreakdown.destashed,
-      archived: statusBreakdown.archived,
-    };
-  }, [dashboardStats.stats?.status_breakdown]);
-
   // Available options
   const companies = useMemo(
     () =>
@@ -943,8 +928,8 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
     [userMetadata?.isLoading]
   );
 
-  // Context value
-  const contextValue: DashboardFiltersContextValue = useMemo(
+  // Memoized context value
+  const contextValue: FiltersContextType = useMemo(
     () => ({
       filters,
       debouncedSearchTerm,
@@ -967,7 +952,6 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       resetAllFilters,
       batchUpdateFilters,
       getActiveFilterCount,
-      getCountsForTabs,
       companies,
       artists,
       drillShapes,
@@ -975,6 +959,7 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       searchInputRef,
       isSearchPending,
       isMetadataLoading,
+      isInitialized,
     }),
     [
       filters,
@@ -998,7 +983,6 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       resetAllFilters,
       batchUpdateFilters,
       getActiveFilterCount,
-      getCountsForTabs,
       companies,
       artists,
       drillShapes,
@@ -1006,35 +990,36 @@ export const DashboardFiltersProvider: React.FC<DashboardFiltersProviderProps> =
       searchInputRef,
       isSearchPending,
       isMetadataLoading,
+      isInitialized,
     ]
   );
 
-  // Prevent children from rendering until provider is fully initialized
-  // This prevents context timing issues that cause "useRecentlyEdited must be used within a Provider" errors
-  if (!isInitialized || isMetadataLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
   return (
-    <DashboardFiltersContext.Provider value={contextValue}>
-      <RecentlyEditedContext.Provider
-        value={{ recentlyEditedProjectId, setRecentlyEditedProjectId }}
-      >
-        {children}
-      </RecentlyEditedContext.Provider>
-    </DashboardFiltersContext.Provider>
+    <FiltersContext.Provider value={contextValue}>
+      {children}
+    </FiltersContext.Provider>
   );
 };
 
-// Hook to use the context
-export const useDashboardFilters = () => {
-  const context = useContext(DashboardFiltersContext);
-  if (context === undefined) {
-    throw new Error('useDashboardFilters must be used within a DashboardFiltersProvider');
+/**
+ * Hook to use the FiltersContext
+ * 
+ * Provides access to filter state and management functions.
+ * Must be used within a FiltersProvider component.
+ * 
+ * @returns FiltersContextType with filter state and functions
+ * @throws Error if used outside of FiltersProvider
+ */
+export const useFilters = (): FiltersContextType => {
+  const context = useContext(FiltersContext);
+  if (!context) {
+    throw new Error('useFilters must be used within a FiltersProvider');
   }
   return context;
 };
+
+/**
+ * Default export for the FiltersContext
+ * @deprecated Use named exports instead
+ */
+export default FiltersContext;

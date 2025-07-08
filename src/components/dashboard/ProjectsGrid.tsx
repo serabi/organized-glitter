@@ -35,13 +35,13 @@ import { Button } from '@/components/ui/button';
 import ProjectCard from '@/components/dashboard/ProjectCard';
 import { ProjectType } from '@/types/project'; // Still needed for ProjectCard and internal logic
 import { Separator } from '@/components/ui/separator';
-import { useDashboardFilters } from '@/contexts/DashboardFiltersContext';
+import { useFilters } from '@/contexts/FiltersContext';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useDynamicSeparatorProps } from '@/hooks/useDynamicSeparatorProps';
 import { useAuth } from '@/hooks/useAuth';
 import ProjectPagination from '@/components/ui/ProjectPagination';
 import { useNavigateToProject } from '@/hooks/useNavigateToProject';
-import { useRecentlyEdited } from '@/contexts/DashboardFiltersContext';
+import { useRecentlyEdited } from '@/contexts/RecentlyEditedContext';
 import { secureLogger } from '@/utils/secureLogger';
 
 // Interface ProjectsGridProps removed as it's no longer needed.
@@ -52,7 +52,7 @@ const ProjectsGridComponent = () => {
   const { user } = useAuth();
   const { recentlyEditedProjectId } = useRecentlyEdited();
   const { filters, debouncedSearchTerm, resetAllFilters, updatePage, updatePageSize } =
-    useDashboardFilters();
+    useFilters();
 
   // Get dashboard data using the new hook with debounced search term
   const dashboardData = useDashboardData(user?.id || 'guest', filters, debouncedSearchTerm);
@@ -124,7 +124,7 @@ const ProjectsGridComponent = () => {
     return (
       <div className="py-8 text-center">
         <p className="text-muted-foreground">No projects match your current filters.</p>
-        <Button variant="outline" onClick={resetAllFilters} className="mt-2">
+        <Button variant="outline" onClick={() => resetAllFilters('user')} className="mt-2">
           Clear Filters
         </Button>
       </div>
