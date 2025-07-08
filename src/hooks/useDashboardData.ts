@@ -7,7 +7,7 @@
 import { useProjects, ServerFilters } from '@/hooks/queries/useProjects';
 import { useDashboardStatsStable } from '@/hooks/queries/useDashboardStatsStable';
 import { useAvailableYears } from '@/hooks/queries/useAvailableYears';
-import { FilterState } from '@/contexts/DashboardFiltersContext';
+import { FilterState } from '@/contexts/FiltersContext';
 
 export const useDashboardData = (
   userId: string,

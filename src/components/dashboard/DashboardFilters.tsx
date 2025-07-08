@@ -35,6 +35,9 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useFilters } from '@/contexts/FiltersContext';
+import { useAvailableYears } from '@/hooks/queries/useAvailableYears';
+import { useDashboardData } from '@/hooks/useDashboardData';
+import { useAuth } from '@/hooks/useAuth';
 import { secureLogger } from '@/utils/secureLogger';
 import { DashboardValidSortField } from '@/features/dashboard/dashboard.constants'; // Import type from constants
 
@@ -49,6 +52,7 @@ export interface DashboardFiltersProps {
 }
 
 const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(() => {
+  const { user } = useAuth();
   const {
     filters,
     updateSearchTerm,
@@ -71,11 +75,20 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
     getActiveFilterCount,
     searchInputRef,
     isSearchPending,
+    debouncedSearchTerm,
   } = useFilters();
 
-  // TODO: Find where these should come from in the new focused contexts
-  const yearFinishedOptions = []; // Temporary fix
-  const isLoadingProjects = false; // Temporary fix
+  // Get available years from the appropriate hook
+  const { data: availableYears = [] } = useAvailableYears();
+  
+  // Get loading state from dashboard data
+  const { isLoadingProjects } = useDashboardData(user?.id || 'guest', filters, debouncedSearchTerm);
+
+  // Transform available years to the expected format for the dropdown
+  const yearFinishedOptions = availableYears.map(year => ({
+    label: year.toString(),
+    value: year.toString(),
+  }));
 
   // Extract values from filters with defaults
   const searchTerm = filters.searchTerm;
