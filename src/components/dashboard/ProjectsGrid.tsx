@@ -43,6 +43,7 @@ import ProjectPagination from '@/components/ui/ProjectPagination';
 import { useNavigateToProject } from '@/hooks/useNavigateToProject';
 import { useRecentlyEdited } from '@/contexts/RecentlyEditedContext';
 import { secureLogger } from '@/utils/secureLogger';
+import { useTabAwareErrorMessage } from '@/hooks/useTabAwareErrorMessage';
 
 // Interface ProjectsGridProps removed as it's no longer needed.
 // All data is sourced from DashboardFiltersContext.
@@ -53,6 +54,9 @@ const ProjectsGridComponent = () => {
   const { recentlyEditedProjectId } = useRecentlyEdited();
   const { filters, debouncedSearchTerm, resetAllFilters, updatePage, updatePageSize } =
     useFilters();
+  
+  // Get dynamic error message based on active tab
+  const tabAwareErrorMessage = useTabAwareErrorMessage();
 
   // Get dashboard data using the new hook with debounced search term
   const dashboardData = useDashboardData(user?.id || 'guest', filters, debouncedSearchTerm);
@@ -123,7 +127,7 @@ const ProjectsGridComponent = () => {
     // Condition updated as per task, though !loading is implicit due to prior check
     return (
       <div className="py-8 text-center">
-        <p className="text-muted-foreground">No projects match your current filters.</p>
+        <p className="text-muted-foreground">{tabAwareErrorMessage}</p>
         <Button variant="outline" onClick={() => resetAllFilters('user')} className="mt-2">
           Clear Filters
         </Button>
