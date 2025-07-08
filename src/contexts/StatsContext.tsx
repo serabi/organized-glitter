@@ -12,7 +12,7 @@
  * - Mobile-specific network timeout handling
  * - Spinner-based loading states for status tab badges
  * - Intelligent error handling with user-friendly fallbacks
- * - Automatic retry logic for failed network requests
+ * - Proper query invalidation for retry logic (no page reloads)
  * - Comprehensive loading state management
  * - TypeScript strict mode compliance
  * 
@@ -53,9 +53,13 @@ import React, {
   useEffect,
   useState,
 } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useDashboardStatsStable } from '@/hooks/queries/useDashboardStatsStable';
 import { createLogger } from '@/utils/secureLogger';
 import { DashboardStats } from '@/types/dashboard';
+import { queryKeys } from '@/hooks/queries/queryKeys';
+import { safeInvalidateQueries } from '@/utils/queryInvalidationGuard';
+import { useAuth } from '@/hooks/useAuth';
 
 const logger = createLogger('StatsContext');
 
@@ -222,6 +226,12 @@ export const StatsProvider: React.FC<StatsProviderProps> = ({ children }) => {
   // Network detection for mobile optimization
   const { isNetworkSlow, timeoutDuration } = useNetworkDetection();
   
+  // React Query client for cache invalidation
+  const queryClient = useQueryClient();
+  
+  // User authentication for query keys
+  const { user } = useAuth();
+  
   // Dashboard stats query with error handling
   const dashboardStats = useDashboardStatsStable();
   
@@ -256,7 +266,7 @@ export const StatsProvider: React.FC<StatsProviderProps> = ({ children }) => {
     }
     
     // Calculate total count for "all" tab
-    const all = Object.values(statusBreakdown).reduce((sum, count) => sum + count, 0);
+    const all = Object.values(statusBreakdown).reduce((sum, count) => sum + (Number(count) || 0), 0);
     
     const counts: CountsForTabsType = {
       all,
@@ -297,16 +307,39 @@ export const StatsProvider: React.FC<StatsProviderProps> = ({ children }) => {
   
   /**
    * Retry failed stats request
-   * 
+   *
    * Manually triggers a retry of the stats query when it has failed.
-   * Useful for error recovery scenarios.
+   * Uses React Query's invalidation mechanism to refetch only the necessary data
+   * without requiring a full page reload.
+   *
+   * @async
    */
-  const retry = useCallback(() => {
-    logger.info('Manually retrying stats request');
-    // This would typically invalidate the query to trigger a refetch
-    // Implementation depends on the specific query client setup
-    window.location.reload(); // Temporary implementation
-  }, []);
+  const retry = useCallback(async () => {
+    if (!user?.id) {
+      logger.warn('Cannot retry stats request - no user ID available');
+      return;
+    }
+
+    logger.info('Manually retrying stats request via query invalidation');
+    
+    try {
+      await safeInvalidateQueries(
+        queryClient,
+        {
+          queryKey: queryKeys.stats.overview(user.id),
+          refetchType: 'active',
+        },
+        { source: 'stats-context-retry' }
+      );
+      
+      logger.info('Stats query invalidation completed successfully');
+    } catch (error) {
+      logger.error('Failed to invalidate stats queries during retry', {
+        error: error instanceof Error ? error.message : String(error),
+        userId: user.id,
+      });
+    }
+  }, [queryClient, user?.id]);
   
   // Memoized context value to prevent unnecessary re-renders
   const contextValue: StatsContextType = useMemo(() => ({

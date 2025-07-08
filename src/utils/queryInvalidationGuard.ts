@@ -22,7 +22,7 @@ class InvalidationTracker {
   /**
    * Creates a unique key for tracking invalidations
    */
-  private createKey(queryKey: unknown[]): string {
+  private createKey(queryKey: readonly unknown[]): string {
     try {
       return JSON.stringify(queryKey);
     } catch {
@@ -33,7 +33,7 @@ class InvalidationTracker {
   /**
    * Checks if an invalidation should be allowed
    */
-  canInvalidate(queryKey: unknown[]): boolean {
+  canInvalidate(queryKey: readonly unknown[]): boolean {
     const key = this.createKey(queryKey);
     const now = Date.now();
 
@@ -68,7 +68,7 @@ class InvalidationTracker {
   /**
    * Marks an invalidation as started
    */
-  startInvalidation(queryKey: unknown[]): void {
+  startInvalidation(queryKey: readonly unknown[]): void {
     const key = this.createKey(queryKey);
     const now = Date.now();
 
@@ -81,7 +81,7 @@ class InvalidationTracker {
   /**
    * Marks an invalidation as completed
    */
-  completeInvalidation(queryKey: unknown[]): void {
+  completeInvalidation(queryKey: readonly unknown[]): void {
     const key = this.createKey(queryKey);
     this.activeInvalidations.delete(key);
 
