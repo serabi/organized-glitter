@@ -12,6 +12,7 @@ import React, {
   useEffect,
   useCallback,
   useRef,
+  useMemo,
   ReactNode,
 } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -67,7 +68,7 @@ export interface FilterState {
 }
 
 /**
- * Context interface for filter state management
+ * Context interface for filter state management with integrated metadata
  */
 export interface FilterStateContextType {
   filters: FilterState;
@@ -76,6 +77,18 @@ export interface FilterStateContextType {
   isSearchPending: boolean;
   isMetadataLoading: boolean;
   dispatch: FilterDispatch;
+
+  // Raw metadata (ID-based for queries)
+  companies: Array<{ id: string; name: string }>;
+  artists: Array<{ id: string; name: string }>;
+  tags: Array<{ id: string; name: string; color: string }>;
+  drillShapes: string[];
+  searchInputRef: React.RefObject<HTMLInputElement>;
+
+  // Computed properties for backward compatibility with DashboardFilters
+  companiesOptions: Array<{ label: string; value: string }>;
+  artistsOptions: Array<{ label: string; value: string }>;
+  drillShapesOptions: Array<{ label: string; value: string }>;
 }
 
 const FilterStateContext = createContext<FilterStateContextType | null>(null);
@@ -259,6 +272,7 @@ export const FilterStateProvider: React.FC<FilterStateProviderProps> = ({ childr
 
   // State tracking for performance and debugging
   const initializationStateRef = useRef<'pending' | 'initializing' | 'complete'>('pending');
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Debounced search term
   useEffect(() => {
@@ -408,7 +422,35 @@ export const FilterStateProvider: React.FC<FilterStateProviderProps> = ({ childr
     userMetadata.tags,
   ]);
 
-  // Stable context value - state values and dispatch function
+  // Compute transformed options for backward compatibility
+  const companiesOptions = useMemo(
+    () =>
+      (userMetadata?.companies || []).map(company => ({
+        label: company.name,
+        value: company.name, // Use name as value for DashboardFilters compatibility
+      })),
+    [userMetadata?.companies]
+  );
+
+  const artistsOptions = useMemo(
+    () =>
+      (userMetadata?.artists || []).map(artist => ({
+        label: artist.name,
+        value: artist.name, // Use name as value for DashboardFilters compatibility
+      })),
+    [userMetadata?.artists]
+  );
+
+  const drillShapesOptions = useMemo(
+    () =>
+      ['round', 'square'].map(shape => ({
+        label: shape === 'round' ? 'Round' : 'Square',
+        value: shape,
+      })),
+    []
+  );
+
+  // Stable context value - state values, dispatch function, and metadata
   const contextValue: FilterStateContextType = {
     filters,
     debouncedSearchTerm,
@@ -416,6 +458,18 @@ export const FilterStateProvider: React.FC<FilterStateProviderProps> = ({ childr
     isSearchPending,
     isMetadataLoading,
     dispatch,
+
+    // Raw metadata (ID-based for queries like AdvancedFilters)
+    companies: userMetadata?.companies || [],
+    artists: userMetadata?.artists || [],
+    tags: userMetadata?.tags || [],
+    drillShapes: ['round', 'square'],
+    searchInputRef,
+
+    // Computed options for backward compatibility (DashboardFilters)
+    companiesOptions,
+    artistsOptions,
+    drillShapesOptions,
   };
 
   return <FilterStateContext.Provider value={contextValue}>{children}</FilterStateContext.Provider>;

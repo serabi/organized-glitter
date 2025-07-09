@@ -63,10 +63,10 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
     updateIncludeDestashed,
     updateIncludeArchived,
     updateViewType,
-    companies,
-    artists,
-    drillShapes,
-    allTags,
+    companiesOptions, // Use computed options for DashboardFilters
+    artistsOptions, // Use computed options for DashboardFilters
+    drillShapesOptions,
+    tags: allTags, // Raw tags for tag filtering (already has id, name)
     updateSort,
     resetAllFilters,
     getActiveFilterCount,
@@ -133,7 +133,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
       <div className="mt-6 space-y-4">
         <FilterDropdown
           label="Company"
-          options={companies}
+          options={companiesOptions}
           value={selectedCompany}
           onChange={updateCompany}
           placeholder="All companies"
@@ -141,7 +141,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
 
         <FilterDropdown
           label="Artist"
-          options={artists}
+          options={artistsOptions}
           value={selectedArtist}
           onChange={updateArtist}
           placeholder="All artists"
@@ -149,7 +149,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
 
         <FilterDropdown
           label="Drill Shape"
-          options={drillShapes}
+          options={drillShapesOptions}
           value={selectedDrillShape}
           onChange={updateDrillShape}
           placeholder="All drill shapes"

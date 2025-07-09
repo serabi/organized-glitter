@@ -80,13 +80,13 @@ FilterDropdown.displayName = 'FilterDropdown';
 
 // Context-aware specialized components
 export const CompanyFilter = React.memo(() => {
-  const { companies, updateCompany } = useFilterActionsAndMeta();
+  const { companiesOptions, updateCompany } = useFilterActionsAndMeta();
   const { filters } = useFilterStateOnly();
 
   return (
     <FilterDropdown
       label="Company"
-      options={companies}
+      options={companiesOptions}
       value={filters.selectedCompany}
       onChange={value => updateCompany(value === 'all' ? null : value)}
       placeholder="Select company..."
@@ -95,13 +95,13 @@ export const CompanyFilter = React.memo(() => {
 });
 
 export const ArtistFilter = React.memo(() => {
-  const { artists, updateArtist } = useFilterActionsAndMeta();
+  const { artistsOptions, updateArtist } = useFilterActionsAndMeta();
   const { filters } = useFilterStateOnly();
 
   return (
     <FilterDropdown
       label="Artist"
-      options={artists}
+      options={artistsOptions}
       value={filters.selectedArtist}
       onChange={value => updateArtist(value === 'all' ? null : value)}
       placeholder="Select artist..."

@@ -1,23 +1,29 @@
+/**
+ * Advanced Edit page component providing table-based project editing with server-side filtering
+ * @author @serabi
+ * @created 2025-07-09
+ */
+
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { useMetadata } from '@/contexts/MetadataContext';
-import { useAdvancedProjects } from '@/hooks/queries/useAdvancedProjects';
+import { useProjects } from '@/hooks/queries/useProjects';
+import { useFilterStateOnly, usePagination } from '@/contexts/FilterHooks';
 
 import AdvancedEditTable from '@/components/advanced/AdvancedEditTable/index';
 import AdvancedFilters from '@/components/advanced/AdvancedFilters';
-import useAdvancedFilters from '@/hooks/useAdvancedFilters';
 import ProjectPagination from '@/components/ui/ProjectPagination';
 import { AdvancedEditHeader } from '@/components/advanced/AdvancedEditHeader';
 import { AdvancedEditSummary } from '@/components/advanced/AdvancedEditSummary';
 
 // Custom hooks
 import { useAdvancedEditSelection } from '@/hooks/useAdvancedEditSelection';
-import { useAdvancedEditPagination } from '@/hooks/useAdvancedEditPagination';
 import { useAdvancedEditActions } from '@/hooks/useAdvancedEditActions';
-import { secureLogger } from '../utils/secureLogger';
+import { createLogger } from '@/utils/secureLogger';
+
+const logger = createLogger('AdvancedEdit');
 
 const AdvancedEdit = () => {
   // Hooks
@@ -25,83 +31,90 @@ const AdvancedEdit = () => {
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
 
-  // Data fetching
-  const { data, isLoading: loading, error } = useAdvancedProjects(user?.id);
-  const projects = data?.projects || [];
+  // Server-side filter state and metadata
+  const {
+    filters,
+    debouncedSearchTerm,
+    isInitialized,
+    isMetadataLoading,
+    companies,
+    artists,
+    tags,
+  } = useFilterStateOnly();
+  const { currentPage, pageSize, updatePage, updatePageSize } = usePagination();
 
-  // Metadata
-  const { companies, artists, tags, companyNames, artistNames } = useMetadata();
+  // Memoized filter dependencies to prevent excessive re-renders
+  const memoizedFilters = useMemo(
+    () => ({
+      status: filters.activeStatus,
+      company: filters.selectedCompany,
+      artist: filters.selectedArtist,
+      drillShape: filters.selectedDrillShape,
+      yearFinished: filters.selectedYearFinished,
+      includeMiniKits: filters.includeMiniKits,
+      includeDestashed: filters.includeDestashed,
+      includeArchived: filters.includeArchived,
+      searchTerm: debouncedSearchTerm,
+      selectedTags: filters.selectedTags,
+    }),
+    [
+      filters.activeStatus,
+      filters.selectedCompany,
+      filters.selectedArtist,
+      filters.selectedDrillShape,
+      filters.selectedYearFinished,
+      filters.includeMiniKits,
+      filters.includeDestashed,
+      filters.includeArchived,
+      debouncedSearchTerm,
+      filters.selectedTags,
+    ]
+  );
+
+  // Data fetching with server-side filtering
+  const {
+    data,
+    isLoading: loading,
+    error,
+  } = useProjects({
+    userId: user?.id,
+    filters: memoizedFilters,
+    sortField: filters.sortField,
+    sortDirection: filters.sortDirection,
+    currentPage,
+    pageSize,
+    enabled: isInitialized && !!user?.id,
+  });
+
+  const projects = data?.projects || [];
+  const totalItems = data?.totalItems || 0;
+  const totalPages = data?.totalPages || 0;
+
+  // Metadata from FilterProvider (already in consistent ID-based format)
   const allCompanies = Array.isArray(companies) ? companies : [];
   const allArtists = Array.isArray(artists) ? artists : [];
   const allTags = useMemo(() => (Array.isArray(tags) ? tags : []), [tags]);
 
   // View state
   const [showImages, setShowImages] = useState(false);
-  const [showMiniKits, setShowMiniKits] = useState(false);
-  const [showArchived, setShowArchived] = useState(false);
-  const [showDestashed, setShowDestashed] = useState(false);
-
-  // URL parameters
-  const companyParam = searchParams.get('company');
-  const artistParam = searchParams.get('artist');
-  const tagParam = searchParams.get('tag');
-
-  // Advanced filtering logic
-  const {
-    filteredProjects: allFilteredProjects,
-    filters,
-    setFilters,
-    sortConfig,
-    setSortConfig,
-    availableFilters,
-  } = useAdvancedFilters(projects, showArchived, showDestashed, showMiniKits);
 
   // Custom hooks
-  const pagination = useAdvancedEditPagination(allFilteredProjects);
   const selection = useAdvancedEditSelection();
-  const actions = useAdvancedEditActions(selection, allFilteredProjects);
+  const actions = useAdvancedEditActions(selection, projects);
 
   // Handle React Query error state
   useEffect(() => {
     if (error) {
-      secureLogger.error('AdvancedEdit: Error loading projects', error);
+      logger.error('AdvancedEdit: Error loading projects', error);
       toast({
         title: 'Error loading projects',
         description: 'Please try refreshing the page',
         variant: 'destructive',
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [error]); // toast is stable from useToast hook
+  }, [error, toast]);
 
-  // Apply URL parameter filters when projects load
-  useEffect(() => {
-    if (projects.length > 0) {
-      if (companyParam) {
-        setFilters(prevFilters => ({
-          ...prevFilters,
-          company: companyParam,
-        }));
-      }
-
-      if (artistParam) {
-        setFilters(prevFilters => ({
-          ...prevFilters,
-          artist: artistParam,
-        }));
-      }
-
-      if (tagParam) {
-        setFilters(prevFilters => ({
-          ...prevFilters,
-          tag: tagParam,
-        }));
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projects.length, companyParam, artistParam, tagParam]); // setFilters is stable from useState
-
-  if (loading) {
+  if (loading || !isInitialized || isMetadataLoading) {
     return (
       <MainLayout>
         <div className="p-6">
@@ -126,39 +139,24 @@ const AdvancedEdit = () => {
           onNavigateToTags={actions.navigateToTags}
         />
 
-        <AdvancedFilters
-          filters={filters}
-          setFilters={setFilters}
-          availableFilters={availableFilters}
-          loading={loading}
-          showImages={showImages}
-          onShowImagesChange={setShowImages}
-          showMiniKits={showMiniKits}
-          onShowMiniKitsChange={setShowMiniKits}
-          showArchived={showArchived}
-          onShowArchivedChange={setShowArchived}
-          showDestashed={showDestashed}
-          onShowDestashedChange={setShowDestashed}
-        />
+        <AdvancedFilters showImages={showImages} onShowImagesChange={setShowImages} />
 
         <AdvancedEditSummary
-          totalItems={pagination.totalItems}
-          paginatedProjects={pagination.paginatedProjects}
+          totalItems={totalItems}
+          paginatedProjects={projects}
           selectedCount={selection.selectedCount}
           onClearSelection={selection.clearSelection}
-          onSelectAll={() => selection.selectAllOnPage(pagination.paginatedProjects)}
+          onSelectAll={() => selection.selectAllOnPage(projects)}
         />
 
         <div className="rounded-md border">
           <AdvancedEditTable
-            projects={pagination.paginatedProjects}
+            projects={projects}
             loading={loading}
-            sortConfig={sortConfig}
-            onSortChange={setSortConfig}
             showImages={showImages}
             selectedProjects={selection.selectedProjects}
             onSelectProject={selection.selectProject}
-            onSelectAll={() => selection.toggleSelectAll(pagination.paginatedProjects)}
+            onSelectAll={() => selection.toggleSelectAll(projects)}
             onProjectUpdate={actions.handleProjectUpdate}
             onBulkDelete={actions.handleBulkDelete}
             availableCompanies={allCompanies}
@@ -167,14 +165,14 @@ const AdvancedEdit = () => {
           />
         </div>
 
-        {pagination.totalPages > 1 && (
+        {totalPages > 1 && (
           <ProjectPagination
-            currentPage={pagination.currentPage}
-            totalPages={pagination.totalPages}
-            totalItems={pagination.totalItems}
-            pageSize={pagination.pageSize}
-            onPageChange={pagination.handlePageChange}
-            onPageSizeChange={pagination.handlePageSizeChange}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            pageSize={pageSize}
+            onPageChange={updatePage}
+            onPageSizeChange={updatePageSize}
           />
         )}
       </div>

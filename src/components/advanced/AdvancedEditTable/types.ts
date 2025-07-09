@@ -1,4 +1,3 @@
-import { SortConfig } from '@/hooks/useAdvancedFilters';
 import { ProjectType } from '@/types/project';
 import { Tag } from '@/types/tag';
 import { ArtistsResponse, CompaniesResponse } from '@/types/pocketbase.types';
@@ -6,8 +5,6 @@ import { ArtistsResponse, CompaniesResponse } from '@/types/pocketbase.types';
 export interface AdvancedEditTableProps {
   projects: ProjectType[];
   loading: boolean;
-  sortConfig: SortConfig;
-  onSortChange: (config: SortConfig) => void;
   showImages: boolean;
   selectedProjects: Set<string>;
   onSelectProject: (projectId: string) => void;

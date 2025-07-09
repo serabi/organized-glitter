@@ -3,9 +3,11 @@ import { Routes, Route } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { RootRoute } from '@/components/auth/RootRoute';
 import { MetadataProvider } from '@/contexts/MetadataContext';
+import { FilterProvider } from '@/contexts/FilterProvider';
 import { PageLoading } from '@/components/ui/page-loading';
 import { usePostHogPageTracking } from '@/hooks/usePostHogPageTracking';
 import { useNavigationMonitoring } from '@/hooks/useNavigationMonitoring';
+import { useAuth } from '@/hooks/useAuth';
 import { createLogger } from '@/utils/secureLogger';
 import RouteErrorBoundary from '@/components/error/RouteErrorBoundary';
 
@@ -130,6 +132,19 @@ const ProjectDetailWrapper: React.FC = () => {
   });
 
   return <ProjectDetail />;
+};
+
+// Wrapper for AdvancedEdit route with FilterProvider
+const AdvancedEditWrapper: React.FC = () => {
+  const { user } = useAuth();
+
+  return (
+    <MetadataProvider>
+      <FilterProvider user={user}>
+        <AdvancedEdit />
+      </FilterProvider>
+    </MetadataProvider>
+  );
 };
 
 /**
@@ -346,11 +361,9 @@ export const AppRoutes: React.FC = () => {
         path="/advanced-edit"
         element={
           <ProtectedRoute>
-            <MetadataProvider>
-              <Suspense fallback={<PageLoading />}>
-                <AdvancedEdit />
-              </Suspense>
-            </MetadataProvider>
+            <Suspense fallback={<PageLoading />}>
+              <AdvancedEditWrapper />
+            </Suspense>
           </ProtectedRoute>
         }
       />

@@ -12,24 +12,25 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { Home } from 'lucide-react';
-import { useCompanies } from '@/hooks/queries/useCompanies';
+import { useMetadata } from '@/contexts/MetadataContext';
 
 const CompanyList = () => {
   const { toast } = useToast();
 
-  // React Query hooks
-  const { data: companies = [], isLoading: loading, error } = useCompanies();
+  // Get companies data from MetadataContext (eliminates redundant API call)
+  const { companies, isLoading, error } = useMetadata();
+  const loading = isLoading.companies;
 
   // Handle errors from React Query - only fire toast when error state changes
   useEffect(() => {
-    if (error) {
+    if (error.companies) {
       toast({
         title: 'Error',
         description: 'Could not load companies',
         variant: 'destructive',
       });
     }
-  }, [error, toast]);
+  }, [error.companies, toast]);
 
   const handleCompanyAdded = () => {
     // React Query will automatically refetch when invalidated by the mutation

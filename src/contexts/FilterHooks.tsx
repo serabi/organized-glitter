@@ -1,90 +1,51 @@
 /**
- * Selective filter hooks for optimized component subscriptions
+ * Consolidated filter hooks for optimized component subscriptions
  * @author @serabi
  * @created 2025-07-09
  */
 
 import { useFilterState } from '@/contexts/FilterStateContext';
 import { useFilterActions } from '@/contexts/FilterActionsContext';
-import { useFilterMeta } from '@/contexts/FilterMetaContext';
 import { useMemo } from 'react';
 
 /**
- * Hook for components that need filter state and actions
- * Used by: DashboardFilters, ProjectsGrid, StatusTabs
+ * Hook for components that need comprehensive filter functionality
+ * Consolidates state, actions, and metadata for optimal performance
+ * Used by: DashboardFilters, ProjectsGrid, StatusTabs, AdvancedFilters
  */
 export const useFilters = () => {
-  const { filters, debouncedSearchTerm, isInitialized, isSearchPending } = useFilterState();
+  const {
+    filters,
+    debouncedSearchTerm,
+    isInitialized,
+    isSearchPending,
+    isMetadataLoading,
+    companies,
+    artists,
+    tags,
+    drillShapes,
+    searchInputRef,
+  } = useFilterState();
   const actions = useFilterActions();
 
   return useMemo(
     () => ({
-      filters,
-      debouncedSearchTerm,
-      isInitialized,
-      isSearchPending,
-      ...actions,
-    }),
-    [filters, debouncedSearchTerm, isInitialized, isSearchPending, actions]
-  );
-};
-
-/**
- * Hook for components that only need filter state (no actions)
- * Used by: ProjectsSection, pagination components
- */
-export const useFilterStateOnly = () => {
-  const { filters, debouncedSearchTerm, isInitialized, isSearchPending, isMetadataLoading } =
-    useFilterState();
-
-  return useMemo(
-    () => ({
+      // State
       filters,
       debouncedSearchTerm,
       isInitialized,
       isSearchPending,
       isMetadataLoading,
-    }),
-    [filters, debouncedSearchTerm, isInitialized, isSearchPending, isMetadataLoading]
-  );
-};
 
-/**
- * Hook for components that only need filter actions (no state)
- * Used by: individual filter components, buttons
- */
-export const useFilterActionsOnly = () => {
-  return useFilterActions();
-};
-
-/**
- * Hook for components that only need metadata (no state or actions)
- * Used by: dropdown components, option lists
- */
-export const useFilterMetaOnly = () => {
-  return useFilterMeta();
-};
-
-/**
- * Hook for components that need state and metadata (no actions)
- * Used by: display components, read-only filters
- */
-export const useFilterStateAndMeta = () => {
-  const { filters, debouncedSearchTerm, isInitialized, isSearchPending, isMetadataLoading } =
-    useFilterState();
-  const { companies, artists, drillShapes, allTags } = useFilterMeta();
-
-  return useMemo(
-    () => ({
-      filters,
-      debouncedSearchTerm,
-      isInitialized,
-      isSearchPending,
-      isMetadataLoading,
+      // Metadata (ID-based for consistent querying)
       companies,
       artists,
+      tags: tags, // Already includes id, name, color
       drillShapes,
-      allTags,
+      searchInputRef,
+
+      // Actions
+      ...actions,
     }),
     [
       filters,
@@ -94,56 +55,45 @@ export const useFilterStateAndMeta = () => {
       isMetadataLoading,
       companies,
       artists,
+      tags,
       drillShapes,
-      allTags,
+      searchInputRef,
+      actions,
     ]
   );
 };
 
 /**
- * Hook for components that need actions and metadata (no state)
- * Used by: interactive filter components
+ * Hook for components that only need filter state and basic metadata
+ * Used by: ProjectsSection, pagination components, read-only displays
  */
-export const useFilterActionsAndMeta = () => {
-  const actions = useFilterActions();
-  const { companies, artists, drillShapes, allTags, searchInputRef } = useFilterMeta();
+export const useFilterStateOnly = () => {
+  const {
+    filters,
+    debouncedSearchTerm,
+    isInitialized,
+    isSearchPending,
+    isMetadataLoading,
+    companies,
+    artists,
+    tags,
+    drillShapes,
+  } = useFilterState();
 
   return useMemo(
     () => ({
-      ...actions,
-      companies,
-      artists,
-      drillShapes,
-      allTags,
-      searchInputRef,
-    }),
-    [actions, companies, artists, drillShapes, allTags, searchInputRef]
-  );
-};
-
-/**
- * Hook for components that need everything (full compatibility)
- * Used by: main dashboard wrapper, complex filter components
- */
-export const useFiltersFull = () => {
-  const { filters, debouncedSearchTerm, isInitialized, isSearchPending, isMetadataLoading } =
-    useFilterState();
-  const actions = useFilterActions();
-  const { companies, artists, drillShapes, allTags, searchInputRef } = useFilterMeta();
-
-  return useMemo(
-    () => ({
+      // State
       filters,
       debouncedSearchTerm,
       isInitialized,
       isSearchPending,
       isMetadataLoading,
+
+      // Metadata for display purposes
       companies,
       artists,
+      tags,
       drillShapes,
-      allTags,
-      searchInputRef,
-      ...actions,
     }),
     [
       filters,
@@ -153,10 +103,8 @@ export const useFiltersFull = () => {
       isMetadataLoading,
       companies,
       artists,
+      tags,
       drillShapes,
-      allTags,
-      searchInputRef,
-      actions,
     ]
   );
 };
@@ -199,28 +147,15 @@ export const useSorting = () => {
 };
 
 /**
- * Hook for components that only need search functionality
- * Used by: search components
+ * Hook for components that only need filter actions (no state)
+ * Used by: individual filter components, buttons
  */
-export const useSearch = () => {
-  const { filters, debouncedSearchTerm, isSearchPending } = useFilterState();
-  const { updateSearchTerm } = useFilterActions();
-  const { searchInputRef } = useFilterMeta();
-
-  return useMemo(
-    () => ({
-      searchTerm: filters.searchTerm,
-      debouncedSearchTerm,
-      isSearchPending,
-      updateSearchTerm,
-      searchInputRef,
-    }),
-    [filters.searchTerm, debouncedSearchTerm, isSearchPending, updateSearchTerm, searchInputRef]
-  );
+export const useFilterActionsOnly = () => {
+  return useFilterActions();
 };
 
 /**
- * Hook for components that only need status filtering
+ * Hook for components that need status filtering
  * Used by: status tabs, status buttons
  */
 export const useStatusFilter = () => {
@@ -237,22 +172,105 @@ export const useStatusFilter = () => {
 };
 
 /**
- * Hook for components that only need tag filtering
- * Used by: tag components
+ * Hook for components that need everything (full compatibility)
+ * Used by: main dashboard wrapper, complex filter components
  */
-export const useTagFilter = () => {
-  const { filters } = useFilterState();
-  const { updateTags, toggleTag, clearAllTags } = useFilterActions();
-  const { allTags } = useFilterMeta();
+export const useFiltersFull = () => {
+  const {
+    filters,
+    debouncedSearchTerm,
+    isInitialized,
+    isSearchPending,
+    isMetadataLoading,
+    companies,
+    artists,
+    tags,
+    drillShapes,
+    companiesOptions,
+    artistsOptions,
+    drillShapesOptions,
+    searchInputRef,
+  } = useFilterState();
+  const actions = useFilterActions();
 
   return useMemo(
     () => ({
-      selectedTags: filters.selectedTags,
-      allTags,
-      updateTags,
-      toggleTag,
-      clearAllTags,
+      filters,
+      debouncedSearchTerm,
+      isInitialized,
+      isSearchPending,
+      isMetadataLoading,
+      companies,
+      artists,
+      tags,
+      drillShapes,
+      // Computed options for DashboardFilters backward compatibility
+      companiesOptions,
+      artistsOptions,
+      drillShapesOptions,
+      allTags: tags, // Alias for backward compatibility
+      searchInputRef,
+      ...actions,
     }),
-    [filters.selectedTags, allTags, updateTags, toggleTag, clearAllTags]
+    [
+      filters,
+      debouncedSearchTerm,
+      isInitialized,
+      isSearchPending,
+      isMetadataLoading,
+      companies,
+      artists,
+      tags,
+      drillShapes,
+      companiesOptions,
+      artistsOptions,
+      drillShapesOptions,
+      searchInputRef,
+      actions,
+    ]
+  );
+};
+
+/**
+ * Hook for components that need actions and metadata (no state)
+ * Used by: interactive filter components
+ */
+export const useFilterActionsAndMeta = () => {
+  const actions = useFilterActions();
+  const {
+    companies,
+    artists,
+    drillShapes,
+    tags,
+    companiesOptions,
+    artistsOptions,
+    drillShapesOptions,
+    searchInputRef,
+  } = useFilterState();
+
+  return useMemo(
+    () => ({
+      ...actions,
+      companies,
+      artists,
+      drillShapes,
+      tags,
+      companiesOptions,
+      artistsOptions,
+      drillShapesOptions,
+      allTags: tags, // Alias for backward compatibility
+      searchInputRef,
+    }),
+    [
+      actions,
+      companies,
+      artists,
+      drillShapes,
+      tags,
+      companiesOptions,
+      artistsOptions,
+      drillShapesOptions,
+      searchInputRef,
+    ]
   );
 };

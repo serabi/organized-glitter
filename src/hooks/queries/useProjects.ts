@@ -308,6 +308,8 @@ export const useProjects = ({
     // Alternative to placeholderData - keeps previous data during refetches
     refetchOnWindowFocus: false, // Reduce unnecessary refetches that cause blinking
     refetchOnReconnect: false, // Reduce blinking on reconnect
+    // Optimize re-renders by only notifying on specific prop changes
+    notifyOnChangeProps: ['data', 'error', 'isLoading', 'isError'],
     retry: (failureCount, error) => {
       // Don't retry on 4xx errors (client errors)
       const errorMessage = error?.message || '';
