@@ -17,7 +17,7 @@
 
 import { ServerFilters } from './useProjects';
 import { DashboardValidSortField } from '@/features/dashboard/dashboard.constants';
-import { SortDirectionType } from '@/contexts/FiltersContext';
+import { SortDirectionType } from '@/contexts/FilterProvider';
 
 /**
  * Parameters for project list queries

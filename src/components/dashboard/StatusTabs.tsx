@@ -50,7 +50,7 @@ import ResponsiveTabText, {
 } from '@/components/ui/responsive-tab-text';
 import { ProjectFilterStatus } from '@/types/project';
 import { useStats, CountsForTabsType } from '@/contexts/StatsContext';
-import { useFilters } from '@/contexts/FiltersContext';
+import { useStatusFilter } from '@/contexts/FilterProvider';
 import { createLogger } from '@/utils/secureLogger';
 
 // Tab configuration for dynamic rendering
@@ -134,8 +134,7 @@ const isValidProjectFilterStatus = (value: string): value is ProjectFilterStatus
 const StatusTabsComponent = () => {
   // Use focused contexts instead of monolithic DashboardFiltersContext
   const { getCountsForTabs, getBadgeContent, isError, isLoading } = useStats();
-  const { filters, updateStatus } = useFilters();
-  const activeStatus = filters.activeStatus;
+  const { activeStatus, updateStatus } = useStatusFilter();
 
   // Fallback counts object with all required properties
   const fallbackCounts: CountsForTabsType = {

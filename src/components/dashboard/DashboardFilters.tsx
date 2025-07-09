@@ -34,7 +34,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { useFilters } from '@/contexts/FiltersContext';
+import { useFiltersFull } from '@/contexts/FilterProvider';
 import { useAvailableYears } from '@/hooks/queries/useAvailableYears';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useAuth } from '@/hooks/useAuth';
@@ -73,7 +73,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
     searchInputRef,
     isSearchPending,
     debouncedSearchTerm,
-  } = useFilters();
+  } = useFiltersFull();
 
   // Get available years from the appropriate hook
   const { data: availableYears = [] } = useAvailableYears();

@@ -8,7 +8,7 @@ import { useMemo, useEffect, useRef, useCallback } from 'react';
 import { useProjects, ServerFilters } from '@/hooks/queries/useProjects';
 import { useDashboardStatsStable } from '@/hooks/queries/useDashboardStatsStable';
 import { useAvailableYears } from '@/hooks/queries/useAvailableYears';
-import { FilterState } from '@/contexts/FiltersContext';
+import { FilterState } from '@/contexts/FilterProvider';
 import { createLogger } from '@/utils/secureLogger';
 
 export const useDashboardData = (

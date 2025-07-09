@@ -31,10 +31,9 @@ import DashboardFilterSection from '@/components/dashboard/DashboardFilterSectio
 import ProjectsSection from '@/components/dashboard/ProjectsSection';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/hooks/useAuth';
-import { useFilters } from '@/contexts/FiltersContext';
 import { useRecentlyEdited } from '@/contexts/RecentlyEditedContext';
 import { StatsProvider } from '@/contexts/StatsContext';
-import { FiltersProvider } from '@/contexts/FiltersContext';
+import { FilterProvider } from '@/contexts/FilterProvider';
 import { UIProvider } from '@/contexts/UIContext';
 import { RecentlyEditedProvider } from '@/contexts/RecentlyEditedContext';
 import { NavigationContext } from '@/hooks/useNavigateToProject';
@@ -161,13 +160,13 @@ const Dashboard: React.FC = () => {
 
   return (
     <StatsProvider>
-      <FiltersProvider user={user}>
+      <FilterProvider user={user}>
         <UIProvider>
           <RecentlyEditedProvider>
             <DashboardInternal />
           </RecentlyEditedProvider>
         </UIProvider>
-      </FiltersProvider>
+      </FilterProvider>
     </StatsProvider>
   );
 };

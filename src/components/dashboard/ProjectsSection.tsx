@@ -3,14 +3,14 @@ import StatusTabs from '@/components/dashboard/StatusTabs';
 import ProjectsGrid from '@/components/dashboard/ProjectsGrid';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useAuth } from '@/hooks/useAuth';
-import { useFilters } from '@/contexts/FiltersContext';
+import { useFilterStateOnly } from '@/contexts/FilterProvider';
 import { createLogger } from '@/utils/secureLogger';
 
 const logger = createLogger('ProjectsSection');
 
 const ProjectsSectionComponent = () => {
   const { user } = useAuth();
-  const { filters, debouncedSearchTerm, isInitialized } = useFilters();
+  const { filters, debouncedSearchTerm, isInitialized } = useFilterStateOnly();
 
   // Single shared dashboard data call to prevent duplicate useProjects calls
   // Only fetch data once filter initialization is complete

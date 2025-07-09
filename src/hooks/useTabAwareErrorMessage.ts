@@ -19,7 +19,7 @@
  */
 
 import { useMemo } from 'react';
-import { useFilters } from '@/contexts/FiltersContext';
+import { useStatusFilter } from '@/contexts/FilterProvider';
 import { getTabDisplayName } from '@/utils/tabDisplayNames';
 
 /**
@@ -45,8 +45,7 @@ import { getTabDisplayName } from '@/utils/tabDisplayNames';
  * ```
  */
 export const useTabAwareErrorMessage = (): string => {
-  const { filters } = useFilters();
-  const { activeStatus } = filters;
+  const { activeStatus } = useStatusFilter();
 
   // Memoize error message generation for performance
   // Only recalculates when activeStatus changes

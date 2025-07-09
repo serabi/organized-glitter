@@ -4,7 +4,7 @@ import { pb } from '@/lib/pocketbase';
 import { Project, ProjectFilterStatus, ProjectStatus } from '@/types/project';
 import { createLogger } from '@/utils/secureLogger';
 import { DashboardValidSortField } from '@/features/dashboard/dashboard.constants';
-import { SortDirectionType } from '@/contexts/FiltersContext';
+import { SortDirectionType } from '@/contexts/FilterProvider';
 import { ProjectsResponse } from '@/types/pocketbase.types';
 import { queryKeys, ProjectQueryParams } from './queryKeys';
 

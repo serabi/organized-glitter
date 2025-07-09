@@ -35,7 +35,7 @@ import { Button } from '@/components/ui/button';
 import ProjectCard from '@/components/dashboard/ProjectCard';
 import { ProjectType } from '@/types/project'; // Still needed for ProjectCard and internal logic
 import { Separator } from '@/components/ui/separator';
-import { useFilters } from '@/contexts/FiltersContext';
+import { useFilters } from '@/contexts/FilterProvider';
 // import { useDashboardData } from '@/hooks/useDashboardData'; // Now passed as prop
 import { useDynamicSeparatorProps } from '@/hooks/useDynamicSeparatorProps';
 import { useAuth } from '@/hooks/useAuth';

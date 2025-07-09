@@ -26,7 +26,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import DashboardFilters from './DashboardFilters'; // DashboardFilters will also use context
 // import { DashboardFiltersProps } from './DashboardFilters'; // No longer need to import props
-import { useFilters } from '@/contexts/FiltersContext';
+import { useFilterActionsOnly } from '@/contexts/FilterProvider';
 
 type CollapsibleDashboardFiltersProps = Record<string, never>;
 
@@ -34,7 +34,7 @@ const LOCAL_STORAGE_KEY = 'dashboardFiltersMobileCollapsed';
 
 const CollapsibleDashboardFiltersComponent: React.FC<CollapsibleDashboardFiltersProps> = () => {
   const isMobile = useIsMobile();
-  const { getActiveFilterCount } = useFilters();
+  const { getActiveFilterCount } = useFilterActionsOnly();
 
   const [isOpen, setIsOpen] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {

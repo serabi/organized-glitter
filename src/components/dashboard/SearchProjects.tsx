@@ -1,33 +1,26 @@
-import React, { useState, useEffect } from 'react';
+/**
+ * Simplified search component using context debouncing
+ * @author @serabi  
+ * @created 2025-07-09
+ */
+
+import React from 'react';
 import { Input } from '@/components/ui/input';
-import useDebounce from '@/hooks/useDebounce';
 import { Loader2 } from 'lucide-react';
 
 interface SearchProjectsProps {
   searchTerm: string;
   onSearchChange: (term: string) => void;
   inputRef?: React.Ref<HTMLInputElement>;
-  isPending?: boolean; // OG-91: Show loading state during deferred search
+  isPending?: boolean; // Show loading state during deferred search
 }
 
 const SearchProjects = ({
-  searchTerm: initialSearchTerm,
+  searchTerm,
   onSearchChange,
   inputRef,
   isPending,
 }: SearchProjectsProps) => {
-  const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
-  const debouncedSearchTerm = useDebounce(searchTerm, 300);
-
-  useEffect(() => {
-    onSearchChange(debouncedSearchTerm);
-  }, [debouncedSearchTerm, onSearchChange]);
-
-  // Update local search term if initialSearchTerm changes from props (e.g. URL change)
-  useEffect(() => {
-    setSearchTerm(initialSearchTerm);
-  }, [initialSearchTerm]);
-
   return (
     <div className="relative">
       <label htmlFor="project-search" className="sr-only">
@@ -53,7 +46,7 @@ const SearchProjects = ({
         type="text"
         placeholder="Search projects..."
         value={searchTerm}
-        onChange={e => setSearchTerm(e.target.value)}
+        onChange={e => onSearchChange(e.target.value)}
         className="w-full pl-10 pr-10"
         aria-describedby="search-help"
         ref={inputRef}
