@@ -104,11 +104,12 @@ export const queryKeys = {
 
   // Company-related keys
   companies: {
-    all: () => ['companies'] as const,
-    lists: () => [...queryKeys.companies.all(), 'list'] as const,
+    all: ['companies'] as const,
+    lists: () => [...queryKeys.companies.all, 'list'] as const,
     list: (userId: string, params: CompanyQueryParams) =>
       [...queryKeys.companies.lists(), userId, params] as const,
-    details: () => [...queryKeys.companies.all(), 'detail'] as const,
+    allForUser: (userId: string) => [...queryKeys.companies.all, 'all-for-user', userId] as const,
+    details: () => [...queryKeys.companies.all, 'detail'] as const,
     detail: (id: string) => [...queryKeys.companies.details(), id] as const,
   },
 

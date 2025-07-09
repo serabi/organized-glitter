@@ -11,6 +11,7 @@ import { Collections, CompaniesResponse } from '@/types/pocketbase.types';
 import { queryKeys, CompanyQueryParams } from './queryKeys';
 import { ClientResponseError } from 'pocketbase';
 import { createLogger } from '@/utils/secureLogger';
+import { useAuth } from '@/hooks/useAuth';
 
 const logger = createLogger('useCompanies');
 
@@ -126,19 +127,28 @@ export const useCompanies = (params: UseCompaniesParams) => {
  * @returns React Query result with all companies data
  */
 export const useAllCompanies = () => {
-  logger.debug('useAllCompanies called');
+  const { user } = useAuth();
+
+  logger.debug('useAllCompanies called', { userId: user?.id });
 
   return useQuery({
-    queryKey: queryKeys.companies.all(),
+    queryKey: queryKeys.companies.allForUser(user?.id || ''),
     queryFn: async () => {
-      logger.debug('Executing all companies query');
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
+
+      logger.debug('Executing all companies query', { userId: user.id });
 
       try {
         const result = await pb.collection(Collections.Companies).getFullList({
+          filter: `user = "${user.id}"`,
           sort: 'name',
+          requestKey: `companies-all-${user.id}`, // Enable request deduplication with user context
         });
 
         logger.debug('All companies query successful:', {
+          userId: user.id,
           itemsCount: result.length,
         });
 
@@ -148,8 +158,19 @@ export const useAllCompanies = () => {
         throw error;
       }
     },
+    enabled: !!user?.id, // Only run when user is authenticated
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
-    retry: 3,
+    retry: (failureCount, error) => {
+      // Don't retry on client errors (4xx)
+      if (error instanceof ClientResponseError && error.status >= 400 && error.status < 500) {
+        return false;
+      }
+      return failureCount < 3;
+    },
+    refetchOnWindowFocus: false, // Reduce unnecessary refetches
+    refetchOnReconnect: false, // Reduce blinking on reconnect
+    // Add specific notification optimization
+    notifyOnChangeProps: ['data', 'error', 'isLoading', 'isError'] as const,
   });
 };

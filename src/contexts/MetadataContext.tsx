@@ -1,9 +1,12 @@
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { createContext, useContext, useMemo, useEffect } from 'react';
 import { useAllCompanies } from '@/hooks/queries/useCompanies';
 import { useArtists } from '@/hooks/queries/useArtists';
 import { useTags } from '@/hooks/queries/useTags';
 import type { Tag } from '@/types/tag';
 import { ArtistsResponse, CompaniesResponse } from '@/types/pocketbase.types';
+import { createLogger } from '@/utils/secureLogger';
+
+const logger = createLogger('MetadataContext');
 
 interface MetadataContextType {
   companies: CompaniesResponse[];
@@ -45,10 +48,41 @@ interface MetadataProviderProps {
  * Shared metadata context using React Query for companies, artists, and tags
  * React Query handles caching, deduplication, and prevents redundant API calls
  */
-export function MetadataProvider({ children }: MetadataProviderProps) {
+export const MetadataProvider = React.memo(({ children }: MetadataProviderProps) => {
+  logger.debug('MetadataProvider: Starting render, calling hooks');
+
   const companiesQuery = useAllCompanies();
+  logger.debug('MetadataProvider: useAllCompanies completed', {
+    isLoading: companiesQuery.isLoading,
+    dataLength: companiesQuery.data?.length || 0,
+    error: companiesQuery.error?.message,
+  });
+
   const artistsQuery = useArtists();
+  logger.debug('MetadataProvider: useArtists completed', {
+    isLoading: artistsQuery.isLoading,
+    dataLength: artistsQuery.data?.length || 0,
+    error: artistsQuery.error?.message,
+  });
+
   const tagsQuery = useTags();
+  logger.debug('MetadataProvider: useTags completed', {
+    isLoading: tagsQuery.isLoading,
+    dataLength: tagsQuery.data?.length || 0,
+    error: tagsQuery.error?.message,
+  });
+
+  // Debug logging to track re-renders
+  useEffect(() => {
+    logger.debug('MetadataProvider rendered/re-rendered', {
+      companiesLoading: companiesQuery.isLoading,
+      artistsLoading: artistsQuery.isLoading,
+      tagsLoading: tagsQuery.isLoading,
+      companiesData: companiesQuery.data?.length || 0,
+      artistsData: artistsQuery.data?.length || 0,
+      tagsData: tagsQuery.data?.length || 0,
+    });
+  });
 
   // Memoize arrays to prevent recreation on every render
   const companies = useMemo(
@@ -98,28 +132,28 @@ export function MetadataProvider({ children }: MetadataProviderProps) {
     () => async () => {
       await Promise.all([companiesQuery.refetch(), artistsQuery.refetch(), tagsQuery.refetch()]);
     },
-    [companiesQuery.refetch, artistsQuery.refetch, tagsQuery.refetch]
+    [companiesQuery, artistsQuery, tagsQuery]
   );
 
   const refreshCompanies = useMemo(
     () => async () => {
       await companiesQuery.refetch();
     },
-    [companiesQuery.refetch]
+    [companiesQuery]
   );
 
   const refreshArtists = useMemo(
     () => async () => {
       await artistsQuery.refetch();
     },
-    [artistsQuery.refetch]
+    [artistsQuery]
   );
 
   const refreshTags = useMemo(
     () => async () => {
       await tagsQuery.refetch();
     },
-    [tagsQuery.refetch]
+    [tagsQuery]
   );
 
   const value: MetadataContextType = useMemo(
@@ -152,4 +186,6 @@ export function MetadataProvider({ children }: MetadataProviderProps) {
   );
 
   return <MetadataContext.Provider value={value}>{children}</MetadataContext.Provider>;
-}
+});
+
+MetadataProvider.displayName = 'MetadataProvider';

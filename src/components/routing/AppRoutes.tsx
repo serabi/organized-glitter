@@ -2,7 +2,6 @@ import React, { Suspense, lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { RootRoute } from '@/components/auth/RootRoute';
-import { MetadataProvider } from '@/contexts/MetadataContext';
 import { FilterProvider } from '@/contexts/FilterProvider';
 import { PageLoading } from '@/components/ui/page-loading';
 import { usePostHogPageTracking } from '@/hooks/usePostHogPageTracking';
@@ -138,11 +137,9 @@ const AdvancedEditWrapper: React.FC = () => {
   const { user } = useAuth();
 
   return (
-    <MetadataProvider>
-      <FilterProvider user={user}>
-        <AdvancedEdit />
-      </FilterProvider>
-    </MetadataProvider>
+    <FilterProvider user={user}>
+      <AdvancedEdit />
+    </FilterProvider>
   );
 };
 
@@ -211,9 +208,7 @@ export const AppRoutes: React.FC = () => {
         element={
           <ProtectedRoute>
             <Suspense fallback={<PageLoading />}>
-              <MetadataProvider>
-                <NewProject />
-              </MetadataProvider>
+              <NewProject />
             </Suspense>
           </ProtectedRoute>
         }

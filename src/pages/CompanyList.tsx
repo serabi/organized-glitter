@@ -1,3 +1,9 @@
+/**
+ * Company List page component
+ * @author @serabi
+ * @created 2025-01-09
+ */
+
 import { useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useToast } from '@/hooks/use-toast';
@@ -14,6 +20,12 @@ import {
 import { Home } from 'lucide-react';
 import { useMetadata } from '@/contexts/MetadataContext';
 
+/**
+ * CompanyList Component
+ *
+ * Main page component for managing companies. Uses MetadataContext to access
+ * cached companies data, preventing duplicate API calls.
+ */
 const CompanyList = () => {
   const { toast } = useToast();
 
