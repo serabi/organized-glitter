@@ -219,7 +219,7 @@ describe('FiltersContext', () => {
 
     it('should restore filters from database on initialization', async () => {
       console.log('DEBUG: Starting database restoration test');
-      
+
       const savedContext = {
         filters: {
           status: 'wishlist',
@@ -236,46 +236,49 @@ describe('FiltersContext', () => {
         currentPage: 2,
         pageSize: 50,
       };
-  
+
       console.log('DEBUG: Mock data prepared:', savedContext);
       mockGetFirstListItem.mockResolvedValue({
         navigation_context: savedContext,
       });
       console.log('DEBUG: mockGetFirstListItem configured to resolve with savedContext');
-  
+
       const Wrapper = createWrapper();
       console.log('DEBUG: Wrapper created');
-  
+
       render(
         <Wrapper>
           <TestFiltersConsumer />
         </Wrapper>
       );
       console.log('DEBUG: Component rendered, waiting for data...');
-  
+
       // Wait for restoration with extended timeout
       console.log('DEBUG: Starting waitFor with 15 second timeout...');
-      await waitFor(() => {
-        console.log('DEBUG: Checking elements...');
-        const statusElement = screen.getByTestId('status');
-        const companyElement = screen.getByTestId('company');
-        console.log('DEBUG: Status content:', statusElement.textContent);
-        console.log('DEBUG: Company content:', companyElement.textContent);
-        
-        expect(statusElement).toHaveTextContent('wishlist');
-        expect(companyElement).toHaveTextContent('company1');
-        expect(screen.getByTestId('artist')).toHaveTextContent('artist1');
-        expect(screen.getByTestId('search-term')).toHaveTextContent('saved search');
-        expect(screen.getByTestId('selected-tags')).toHaveTextContent('tag1');
-        expect(screen.getByTestId('drill-shape')).toHaveTextContent('round');
-        expect(screen.getByTestId('year-finished')).toHaveTextContent('2023');
-        expect(screen.getByTestId('include-mini-kits')).toHaveTextContent('false');
-        expect(screen.getByTestId('sort-field')).toHaveTextContent('kit_name');
-        expect(screen.getByTestId('sort-direction')).toHaveTextContent('asc');
-        expect(screen.getByTestId('current-page')).toHaveTextContent('2');
-        expect(screen.getByTestId('page-size')).toHaveTextContent('50');
-      }, { timeout: 15000 });  // Increased timeout to 15 seconds
-      
+      await waitFor(
+        () => {
+          console.log('DEBUG: Checking elements...');
+          const statusElement = screen.getByTestId('status');
+          const companyElement = screen.getByTestId('company');
+          console.log('DEBUG: Status content:', statusElement.textContent);
+          console.log('DEBUG: Company content:', companyElement.textContent);
+
+          expect(statusElement).toHaveTextContent('wishlist');
+          expect(companyElement).toHaveTextContent('company1');
+          expect(screen.getByTestId('artist')).toHaveTextContent('artist1');
+          expect(screen.getByTestId('search-term')).toHaveTextContent('saved search');
+          expect(screen.getByTestId('selected-tags')).toHaveTextContent('tag1');
+          expect(screen.getByTestId('drill-shape')).toHaveTextContent('round');
+          expect(screen.getByTestId('year-finished')).toHaveTextContent('2023');
+          expect(screen.getByTestId('include-mini-kits')).toHaveTextContent('false');
+          expect(screen.getByTestId('sort-field')).toHaveTextContent('kit_name');
+          expect(screen.getByTestId('sort-direction')).toHaveTextContent('asc');
+          expect(screen.getByTestId('current-page')).toHaveTextContent('2');
+          expect(screen.getByTestId('page-size')).toHaveTextContent('50');
+        },
+        { timeout: 15000 }
+      ); // Increased timeout to 15 seconds
+
       console.log('DEBUG: Database restoration test completed successfully');
     });
   });

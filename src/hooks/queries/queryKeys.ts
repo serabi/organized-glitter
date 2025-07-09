@@ -32,6 +32,15 @@ export interface ProjectQueryParams {
 }
 
 /**
+ * Parameters for company list queries
+ * Used to create unique cache keys for different pagination combinations
+ */
+export interface CompanyQueryParams {
+  currentPage: number;
+  pageSize: number;
+}
+
+/**
  * Hierarchical query key definitions for React Query cache management
  *
  * Structure follows the pattern: [resource, type, identifier, params]
@@ -70,10 +79,11 @@ export const queryKeys = {
 
   // Company-related keys
   companies: {
-    all: ['companies'] as const,
-    lists: () => [...queryKeys.companies.all, 'list'] as const,
-    list: (userId: string) => [...queryKeys.companies.lists(), userId] as const,
-    details: () => [...queryKeys.companies.all, 'detail'] as const,
+    all: () => ['companies'] as const,
+    lists: () => [...queryKeys.companies.all(), 'list'] as const,
+    list: (userId: string, params: CompanyQueryParams) =>
+      [...queryKeys.companies.lists(), userId, params] as const,
+    details: () => [...queryKeys.companies.all(), 'detail'] as const,
     detail: (id: string) => [...queryKeys.companies.details(), id] as const,
   },
 

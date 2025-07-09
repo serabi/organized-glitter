@@ -4,39 +4,126 @@
  * @created 2025-07-04
  */
 
+import { useMemo, useEffect, useRef, useCallback } from 'react';
 import { useProjects, ServerFilters } from '@/hooks/queries/useProjects';
 import { useDashboardStatsStable } from '@/hooks/queries/useDashboardStatsStable';
 import { useAvailableYears } from '@/hooks/queries/useAvailableYears';
 import { FilterState } from '@/contexts/FiltersContext';
+import { createLogger } from '@/utils/secureLogger';
 
 export const useDashboardData = (
   userId: string,
   filters: FilterState,
-  debouncedSearchTerm: string
+  debouncedSearchTerm: string,
+  isInitialized: boolean = false
 ) => {
   // Use the debounced search term passed from context to avoid double debouncing
+  // Only fetch data once filter initialization is complete
 
-  const serverFilters: ServerFilters = {
-    status: filters.activeStatus,
-    company: filters.selectedCompany,
-    artist: filters.selectedArtist,
-    drillShape: filters.selectedDrillShape,
-    yearFinished: filters.selectedYearFinished,
-    includeMiniKits: filters.includeMiniKits,
-    includeDestashed: filters.includeDestashed,
-    includeArchived: filters.includeArchived,
-    searchTerm: debouncedSearchTerm, // Use the debounced version from context
-    selectedTags: filters.selectedTags,
-  };
+  // Memoize server filters to prevent unnecessary re-executions
+  const serverFilters: ServerFilters = useMemo(
+    () => ({
+      status: filters.activeStatus,
+      company: filters.selectedCompany,
+      artist: filters.selectedArtist,
+      drillShape: filters.selectedDrillShape,
+      yearFinished: filters.selectedYearFinished,
+      includeMiniKits: filters.includeMiniKits,
+      includeDestashed: filters.includeDestashed,
+      includeArchived: filters.includeArchived,
+      searchTerm: debouncedSearchTerm, // Use the debounced version from context
+      selectedTags: filters.selectedTags,
+    }),
+    [
+      filters.activeStatus,
+      filters.selectedCompany,
+      filters.selectedArtist,
+      filters.selectedDrillShape,
+      filters.selectedYearFinished,
+      filters.includeMiniKits,
+      filters.includeDestashed,
+      filters.includeArchived,
+      debouncedSearchTerm,
+      filters.selectedTags,
+    ]
+  );
 
-  const projectsQuery = useProjects({
+  // Debug logging to track dashboard data calls (only when filters change)
+  const logger = createLogger('useDashboardData');
+
+  // Add render counting to detect excessive re-renders
+  const renderCountRef = useRef(0);
+  renderCountRef.current += 1;
+
+  // Only fetch data if user exists and initialization is complete
+  const shouldFetchData = Boolean(userId && userId !== 'guest' && isInitialized);
+
+  useEffect(() => {
+    logger.debug('🎯 useDashboardData called', {
+      userId,
+      serverFilters,
+      sortField: filters.sortField,
+      sortDirection: filters.sortDirection,
+      currentPage: filters.currentPage,
+      pageSize: filters.pageSize,
+      isInitialized,
+      shouldFetchData,
+      caller: new Error().stack?.split('\n')[1]?.trim(),
+      timestamp: new Date().toISOString(),
+      renderCount: renderCountRef.current,
+    });
+
+    // Warn if called too many times in a short period
+    if (renderCountRef.current > 10) {
+      logger.warn('🚨 useDashboardData called excessively:', {
+        renderCount: renderCountRef.current,
+        userId,
+        sortField: filters.sortField,
+        currentPage: filters.currentPage,
+      });
+    }
+  }, [
     userId,
-    filters: serverFilters,
-    sortField: filters.sortField,
-    sortDirection: filters.sortDirection,
-    currentPage: filters.currentPage,
-    pageSize: filters.pageSize,
-  });
+    serverFilters,
+    filters.sortField,
+    filters.sortDirection,
+    filters.currentPage,
+    filters.pageSize,
+    isInitialized,
+    shouldFetchData,
+    logger,
+  ]);
+
+  // Memoize useProjects parameters to prevent unnecessary re-executions
+  const projectsParams = useMemo(
+    () => ({
+      userId,
+      filters: serverFilters,
+      sortField: filters.sortField,
+      sortDirection: filters.sortDirection,
+      currentPage: filters.currentPage,
+      pageSize: filters.pageSize,
+    }),
+    [
+      userId,
+      serverFilters,
+      filters.sortField,
+      filters.sortDirection,
+      filters.currentPage,
+      filters.pageSize,
+    ]
+  );
+
+  // Add enabled flag to prevent execution during initialization
+  const projectsParamsWithEnabled = useMemo(
+    () => ({
+      ...projectsParams,
+      enabled: shouldFetchData,
+    }),
+    [projectsParams, shouldFetchData]
+  );
+
+  const projectsQuery = useProjects(projectsParamsWithEnabled);
 
   const statsQuery = useDashboardStatsStable();
   const yearsQuery = useAvailableYears();

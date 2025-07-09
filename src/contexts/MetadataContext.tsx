@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useMemo } from 'react';
-import { useCompanies } from '@/hooks/queries/useCompanies';
+import { useAllCompanies } from '@/hooks/queries/useCompanies';
 import { useArtists } from '@/hooks/queries/useArtists';
 import { useTags } from '@/hooks/queries/useTags';
 import type { Tag } from '@/types/tag';
@@ -46,7 +46,7 @@ interface MetadataProviderProps {
  * React Query handles caching, deduplication, and prevents redundant API calls
  */
 export function MetadataProvider({ children }: MetadataProviderProps) {
-  const companiesQuery = useCompanies();
+  const companiesQuery = useAllCompanies();
   const artistsQuery = useArtists();
   const tagsQuery = useTags();
 

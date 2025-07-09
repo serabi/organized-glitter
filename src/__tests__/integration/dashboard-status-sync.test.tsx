@@ -70,9 +70,7 @@ const TestWrapper = ({ children, user = { id: 'test-user-id', email: 'test@test.
         <StatsProvider>
           <FiltersProvider user={user}>
             <UIProvider>
-              <RecentlyEditedProvider>
-                {children}
-              </RecentlyEditedProvider>
+              <RecentlyEditedProvider>{children}</RecentlyEditedProvider>
             </UIProvider>
           </FiltersProvider>
         </StatsProvider>
@@ -189,15 +187,13 @@ describe('Dashboard Status Synchronization', () => {
       userId,
       oldStatus: 'wishlist',
       newStatus: 'purchased',
-      operation: 'update'
+      operation: 'update',
     });
   });
 
   it('should handle dashboard stats update failures gracefully', async () => {
     // Mock dashboard stats service failure
-    mockUpdateDashboardStats.mockRejectedValue(
-      new Error('Stats update failed')
-    );
+    mockUpdateDashboardStats.mockRejectedValue(new Error('Stats update failed'));
 
     const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
@@ -295,7 +291,7 @@ describe('Dashboard Status Synchronization', () => {
     expect(mockUpdateDashboardStats).toHaveBeenCalledWith(
       expect.objectContaining({
         userId,
-        operation: 'update'
+        operation: 'update',
       })
     );
   });

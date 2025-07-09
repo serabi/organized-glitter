@@ -1,14 +1,14 @@
 /**
  * @fileoverview Dashboard UI Context Provider
- * 
+ *
  * Focused context for managing dashboard UI state including view preferences,
  * loading states, and skeleton display patterns. Extracted from the monolithic
  * DashboardFiltersContext to improve performance and UI responsiveness.
- * 
+ *
  * This context provides comprehensive UI state management for the dashboard,
  * focusing on visual presentation, loading states, and user interface preferences.
  * It implements modern skeleton loading patterns and responsive design considerations.
- * 
+ *
  * Key Features:
  * - View type management (grid/list) with persistence
  * - Skeleton loading states for improved perceived performance
@@ -16,28 +16,28 @@
  * - Responsive design state management
  * - Loading state coordination across components
  * - Performance-optimized UI updates
- * 
+ *
  * Performance Optimizations:
  * - Minimal re-renders through focused state scope
  * - Memoized context values and callbacks
  * - Efficient skeleton loading patterns
  * - Optimized mobile UI state management
- * 
+ *
  * Mobile Considerations:
  * - Adaptive skeleton loading for mobile networks
  * - Touch-friendly UI state management
  * - Responsive view type handling
  * - Mobile-specific loading patterns
- * 
+ *
  * @author serabi
  * @since 2025-07-08
  * @version 1.0.0
- * 
+ *
  * Dependencies:
  * - React for context and state management
  * - @/utils/secureLogger for debugging
  * - Local storage for view preference persistence
- * 
+ *
  * @see {@link StatsContext} for statistics state management
  * @see {@link FiltersContext} for filter state management
  * @see {@link RecentlyEditedContext} for recently edited tracking
@@ -93,58 +93,58 @@ export interface SkeletonConfig {
 
 /**
  * Context interface for UI state management
- * 
+ *
  * Provides comprehensive UI state management for the dashboard
  * with focus on visual presentation and loading states.
- * 
+ *
  * @interface UIContextType
  * @since 2025-07-08
  */
 interface UIContextType {
   /** Current view type (grid or list) */
   viewType: ViewType;
-  
+
   /** Update view type with persistence */
   setViewType: (type: ViewType) => void;
-  
+
   /** Loading states for various UI components */
   loadingStates: LoadingStates;
-  
+
   /** Update individual loading state */
   setLoadingState: (key: keyof LoadingStates, value: boolean) => void;
-  
+
   /** Update multiple loading states at once */
   setLoadingStates: (states: Partial<LoadingStates>) => void;
-  
+
   /** Skeleton configuration */
   skeletonConfig: SkeletonConfig;
-  
+
   /** Update skeleton configuration */
   setSkeletonConfig: (config: Partial<SkeletonConfig>) => void;
-  
+
   /** Mobile detection state */
   isMobileView: boolean;
-  
+
   /** Responsive breakpoint detection */
   isTabletView: boolean;
-  
+
   /** Current screen width */
   screenWidth: number;
-  
+
   /** Utility functions */
   utils: {
     /** Reset all loading states */
     resetLoadingStates: () => void;
-    
+
     /** Enable skeleton loading with configuration */
     enableSkeletonLoading: (config?: Partial<SkeletonConfig>) => void;
-    
+
     /** Disable skeleton loading */
     disableSkeletonLoading: () => void;
-    
+
     /** Get optimal skeleton count for current view */
     getOptimalSkeletonCount: () => number;
-    
+
     /** Check if any loading state is active */
     isAnyLoading: () => boolean;
   };
@@ -182,11 +182,11 @@ interface UIProviderProps {
 
 /**
  * UIProvider component that provides dashboard UI context
- * 
+ *
  * Manages all UI-related state including view preferences, loading states,
  * and responsive design considerations. Implements modern skeleton loading
  * patterns and performance optimizations.
- * 
+ *
  * @param props - Provider props containing children
  * @returns JSX element with UI context
  */
@@ -206,10 +206,11 @@ export const UIProvider: React.FC<UIProviderProps> = ({ children }) => {
   const [loadingStates, setLoadingStatesState] = useState<LoadingStates>(getDefaultLoadingStates);
 
   // Skeleton configuration
-  const [skeletonConfig, setSkeletonConfigState] = useState<SkeletonConfig>(getDefaultSkeletonConfig);
+  const [skeletonConfig, setSkeletonConfigState] =
+    useState<SkeletonConfig>(getDefaultSkeletonConfig);
 
   // Responsive design state
-  const [screenWidth, setScreenWidth] = useState(() => 
+  const [screenWidth, setScreenWidth] = useState(() =>
     typeof window !== 'undefined' ? window.innerWidth : 1024
   );
 
@@ -234,16 +235,19 @@ export const UIProvider: React.FC<UIProviderProps> = ({ children }) => {
   /**
    * Update view type with localStorage persistence
    */
-  const setViewType = useCallback((type: ViewType) => {
-    logger.debug('Updating view type', { from: viewType, to: type });
-    setViewTypeState(type);
-    
-    try {
-      localStorage.setItem('dashboard-view-type', type);
-    } catch (error) {
-      logger.warn('Failed to save view type to localStorage', error);
-    }
-  }, [viewType]);
+  const setViewType = useCallback(
+    (type: ViewType) => {
+      logger.debug('Updating view type', { from: viewType, to: type });
+      setViewTypeState(type);
+
+      try {
+        localStorage.setItem('dashboard-view-type', type);
+      } catch (error) {
+        logger.warn('Failed to save view type to localStorage', error);
+      }
+    },
+    [viewType]
+  );
 
   /**
    * Update individual loading state
@@ -282,11 +286,11 @@ export const UIProvider: React.FC<UIProviderProps> = ({ children }) => {
    */
   const enableSkeletonLoading = useCallback((config?: Partial<SkeletonConfig>) => {
     logger.debug('Enabling skeleton loading', config);
-    
+
     if (config) {
       setSkeletonConfigState(prev => ({ ...prev, ...config }));
     }
-    
+
     setLoadingStatesState(prev => ({ ...prev, isSkeletonLoading: true }));
   }, []);
 
@@ -305,11 +309,11 @@ export const UIProvider: React.FC<UIProviderProps> = ({ children }) => {
     if (isMobileView) {
       return viewType === 'grid' ? 6 : 8;
     }
-    
+
     if (isTabletView) {
       return viewType === 'grid' ? 9 : 12;
     }
-    
+
     return viewType === 'grid' ? 12 : 15;
   }, [isMobileView, isTabletView, viewType]);
 
@@ -321,60 +325,62 @@ export const UIProvider: React.FC<UIProviderProps> = ({ children }) => {
   }, [loadingStates]);
 
   // Utility functions object
-  const utils = useMemo(() => ({
-    resetLoadingStates,
-    enableSkeletonLoading,
-    disableSkeletonLoading,
-    getOptimalSkeletonCount,
-    isAnyLoading,
-  }), [
-    resetLoadingStates,
-    enableSkeletonLoading,
-    disableSkeletonLoading,
-    getOptimalSkeletonCount,
-    isAnyLoading,
-  ]);
+  const utils = useMemo(
+    () => ({
+      resetLoadingStates,
+      enableSkeletonLoading,
+      disableSkeletonLoading,
+      getOptimalSkeletonCount,
+      isAnyLoading,
+    }),
+    [
+      resetLoadingStates,
+      enableSkeletonLoading,
+      disableSkeletonLoading,
+      getOptimalSkeletonCount,
+      isAnyLoading,
+    ]
+  );
 
   // Memoized context value to prevent unnecessary re-renders
-  const contextValue: UIContextType = useMemo(() => ({
-    viewType,
-    setViewType,
-    loadingStates,
-    setLoadingState,
-    setLoadingStates,
-    skeletonConfig,
-    setSkeletonConfig,
-    isMobileView,
-    isTabletView,
-    screenWidth,
-    utils,
-  }), [
-    viewType,
-    setViewType,
-    loadingStates,
-    setLoadingState,
-    setLoadingStates,
-    skeletonConfig,
-    setSkeletonConfig,
-    isMobileView,
-    isTabletView,
-    screenWidth,
-    utils,
-  ]);
-
-  return (
-    <UIContext.Provider value={contextValue}>
-      {children}
-    </UIContext.Provider>
+  const contextValue: UIContextType = useMemo(
+    () => ({
+      viewType,
+      setViewType,
+      loadingStates,
+      setLoadingState,
+      setLoadingStates,
+      skeletonConfig,
+      setSkeletonConfig,
+      isMobileView,
+      isTabletView,
+      screenWidth,
+      utils,
+    }),
+    [
+      viewType,
+      setViewType,
+      loadingStates,
+      setLoadingState,
+      setLoadingStates,
+      skeletonConfig,
+      setSkeletonConfig,
+      isMobileView,
+      isTabletView,
+      screenWidth,
+      utils,
+    ]
   );
+
+  return <UIContext.Provider value={contextValue}>{children}</UIContext.Provider>;
 };
 
 /**
  * Hook to use the UIContext
- * 
+ *
  * Provides access to UI state and management functions.
  * Must be used within a UIProvider component.
- * 
+ *
  * @returns UIContextType with UI state and functions
  * @throws Error if used outside of UIProvider
  */

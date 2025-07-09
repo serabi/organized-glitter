@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMemo, useEffect, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { pb } from '@/lib/pocketbase';
 import { Project, ProjectFilterStatus, ProjectStatus } from '@/types/project';
 import { createLogger } from '@/utils/secureLogger';
@@ -28,6 +28,7 @@ export interface UseProjectsParams {
   sortDirection: SortDirectionType;
   currentPage: number;
   pageSize: number;
+  enabled?: boolean;
 }
 
 export interface ProjectsResult {
@@ -140,6 +141,17 @@ const fetchProjects = async (
   const startTime = performance.now();
   const requestKey = `dashboard-projects-${userId}-page${currentPage}-size${pageSize}-sort${pbSort}-filter${pbFilter}`;
 
+  // Enhanced debug logging to track query execution
+  logger.debug('🚀 fetchProjects execution details:', {
+    userId,
+    queryParams: { filters, sortField, sortDirection, currentPage, pageSize },
+    pbFilter,
+    pbSort,
+    requestKey,
+    caller: new Error().stack?.split('\n')[1]?.trim(), // Get caller info
+    timestamp: new Date().toISOString(),
+  });
+
   // Use optimized query with minimal field selection and targeted relation expansion
   // Following PocketBase best practices: https://pocketbase.io/docs/api-records/#query-parameters
   const resultList = await pb.collection('projects').getList(currentPage, pageSize, {
@@ -247,7 +259,10 @@ export const useProjects = ({
   sortDirection,
   currentPage,
   pageSize,
+  enabled = true,
 }: UseProjectsParams) => {
+  const queryClient = useQueryClient();
+
   // Memoize query parameters to prevent unnecessary re-computations
   const queryParams: ProjectQueryParams = useMemo(
     () => ({
@@ -260,18 +275,36 @@ export const useProjects = ({
     [filters, sortField, sortDirection, currentPage, pageSize]
   );
 
-  // Debug logging to trace query execution
+  // Debug logging to trace query execution with render counting
+  const renderCountRef = useRef(0);
+  renderCountRef.current += 1;
+
   logger.debug('🔄 useProjects called', {
     userId,
     status: filters.status,
     queryKey: queryKeys.projects.list(userId || '', queryParams),
-    enabled: !!userId,
+    enabled: !!userId && enabled,
+    initializationGated: !enabled,
+    caller: new Error().stack?.split('\n')[1]?.trim(), // Get caller info for debugging
+    fullQueryParams: queryParams,
+    renderCount: renderCountRef.current,
   });
 
-  return useQuery({
+  // Warn about excessive re-renders
+  if (renderCountRef.current > 5) {
+    logger.warn('🚨 useProjects excessive re-renders detected:', {
+      renderCount: renderCountRef.current,
+      userId,
+      status: filters.status,
+      queryKey: queryKeys.projects.list(userId || '', queryParams),
+      caller: new Error().stack?.split('\n')[1]?.trim(),
+    });
+  }
+
+  const query = useQuery({
     queryKey: queryKeys.projects.list(userId || '', queryParams),
     queryFn: () => fetchProjects({ userId: userId!, ...queryParams }),
-    enabled: !!userId, // Only run when userId is available
+    enabled: !!userId && enabled, // Only run when userId is available AND hook is enabled
     staleTime: 2 * 60 * 1000, // 2 minutes (increased from 30 seconds)
     gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
     // Prevent blinking by keeping previous data while fetching new data
@@ -297,4 +330,36 @@ export const useProjects = ({
     },
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
+
+  // Prefetch next page for better UX
+  useEffect(() => {
+    if (
+      userId &&
+      query.data?.totalPages &&
+      currentPage < query.data.totalPages &&
+      !query.isPlaceholderData
+    ) {
+      const nextPageParams: ProjectQueryParams = {
+        ...queryParams,
+        currentPage: currentPage + 1,
+      };
+
+      queryClient.prefetchQuery({
+        queryKey: queryKeys.projects.list(userId, nextPageParams),
+        queryFn: () => fetchProjects({ userId, ...nextPageParams }),
+        staleTime: 2 * 60 * 1000, // Same as main query
+      });
+
+      logger.debug('🔄 Prefetched next page:', currentPage + 1);
+    }
+  }, [
+    userId,
+    query.data?.totalPages,
+    currentPage,
+    query.isPlaceholderData,
+    queryParams,
+    queryClient,
+  ]);
+
+  return query;
 };

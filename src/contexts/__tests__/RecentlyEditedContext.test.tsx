@@ -27,7 +27,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 console.log('DEBUG: React Query imports loaded');
 
 import { RecentlyEditedProvider, useRecentlyEdited } from '../RecentlyEditedContext';
-console.log('DEBUG: RecentlyEditedContext imports loaded - this should appear if secureLogger resolves');
+console.log(
+  'DEBUG: RecentlyEditedContext imports loaded - this should appear if secureLogger resolves'
+);
 
 // Test component to consume context
 const TestRecentlyEditedConsumer = () => {
@@ -40,9 +42,7 @@ const TestRecentlyEditedConsumer = () => {
 
   return (
     <div>
-      <div data-testid="recently-edited-id">
-        {recentlyEditedProjectId || 'null'}
-      </div>
+      <div data-testid="recently-edited-id">{recentlyEditedProjectId || 'null'}</div>
       <div data-testid="is-project-1-recently-edited">
         {isRecentlyEdited('project-1').toString()}
       </div>
@@ -50,28 +50,16 @@ const TestRecentlyEditedConsumer = () => {
         {isRecentlyEdited('project-2').toString()}
       </div>
 
-      <button 
-        onClick={() => setRecentlyEditedProjectId('project-1')} 
-        data-testid="set-project-1"
-      >
+      <button onClick={() => setRecentlyEditedProjectId('project-1')} data-testid="set-project-1">
         Set Project 1
       </button>
-      <button 
-        onClick={() => setRecentlyEditedProjectId('project-2')} 
-        data-testid="set-project-2"
-      >
+      <button onClick={() => setRecentlyEditedProjectId('project-2')} data-testid="set-project-2">
         Set Project 2
       </button>
-      <button 
-        onClick={() => setRecentlyEditedProjectId(null)} 
-        data-testid="set-null"
-      >
+      <button onClick={() => setRecentlyEditedProjectId(null)} data-testid="set-null">
         Set Null
       </button>
-      <button 
-        onClick={clearRecentlyEdited} 
-        data-testid="clear-recently-edited"
-      >
+      <button onClick={clearRecentlyEdited} data-testid="clear-recently-edited">
         Clear Recently Edited
       </button>
     </div>
@@ -281,10 +269,7 @@ describe('RecentlyEditedContext', () => {
             <div data-testid="is-undefined-recently-edited">
               {isRecentlyEdited(undefined as any).toString()}
             </div>
-            <button 
-              onClick={() => setRecentlyEditedProjectId('')} 
-              data-testid="set-empty-string"
-            >
+            <button onClick={() => setRecentlyEditedProjectId('')} data-testid="set-empty-string">
               Set Empty String
             </button>
           </div>
@@ -328,7 +313,7 @@ describe('RecentlyEditedContext', () => {
       await waitFor(() => {
         expect(mockLogger.debug).toHaveBeenCalledWith('Setting recently edited project', {
           previousId: null,
-          newId: 'project-1'
+          newId: 'project-1',
         });
       });
     });
@@ -348,7 +333,7 @@ describe('RecentlyEditedContext', () => {
       await waitFor(() => {
         expect(mockLogger.debug).toHaveBeenCalledWith('Setting recently edited project', {
           previousId: null,
-          newId: 'project-1'
+          newId: 'project-1',
         });
       });
 
@@ -361,7 +346,7 @@ describe('RecentlyEditedContext', () => {
         expect(mockLogger.debug).toHaveBeenCalledWith('Clearing recently edited project state');
         expect(mockLogger.debug).toHaveBeenCalledWith('Setting recently edited project', {
           previousId: 'project-1',
-          newId: null
+          newId: null,
         });
       });
     });
@@ -381,7 +366,7 @@ describe('RecentlyEditedContext', () => {
       await waitFor(() => {
         expect(mockLogger.debug).toHaveBeenCalledWith('Setting recently edited project', {
           previousId: null,
-          newId: 'project-1'
+          newId: 'project-1',
         });
       });
 
@@ -394,7 +379,7 @@ describe('RecentlyEditedContext', () => {
       await waitFor(() => {
         expect(mockLogger.debug).toHaveBeenCalledWith('Setting recently edited project', {
           previousId: 'project-1',
-          newId: 'project-2'
+          newId: 'project-2',
         });
       });
     });
@@ -416,25 +401,23 @@ describe('RecentlyEditedContext', () => {
   describe('Context Value Stability', () => {
     it('should maintain context value stability to prevent unnecessary re-renders', async () => {
       const renderCount = { count: 0 };
-      
+
       const TestStability = () => {
         const context = useRecentlyEdited();
         renderCount.count++;
-        
+
         return (
           <div>
             <div data-testid="render-count">{renderCount.count}</div>
-            <div data-testid="recently-edited-id">
-              {context.recentlyEditedProjectId || 'null'}
-            </div>
-            <button 
-              onClick={() => context.setRecentlyEditedProjectId('project-1')} 
+            <div data-testid="recently-edited-id">{context.recentlyEditedProjectId || 'null'}</div>
+            <button
+              onClick={() => context.setRecentlyEditedProjectId('project-1')}
               data-testid="set-project-1"
             >
               Set Project 1
             </button>
-            <button 
-              onClick={() => context.setRecentlyEditedProjectId('project-1')} 
+            <button
+              onClick={() => context.setRecentlyEditedProjectId('project-1')}
               data-testid="set-project-1-again"
             >
               Set Project 1 Again

@@ -1,9 +1,9 @@
 /**
  * @fileoverview Dashboard Filters Context Provider
- * 
+ *
  * Comprehensive context for managing dashboard filter state, persistence, and URL integration.
  * Extracted from the monolithic DashboardFiltersContext to improve performance and maintainability.
- * 
+ *
  * This context handles all aspects of dashboard filtering including:
  * - Complex filter state management with useReducer
  * - Automatic database persistence with debounced auto-save
@@ -11,7 +11,7 @@
  * - Change source tracking for debugging and optimization
  * - Filter validation and sanitization
  * - Performance optimization with memoization
- * 
+ *
  * Key Features:
  * - Comprehensive filter state management (status, company, artist, drill shape, etc.)
  * - Database persistence with automatic saving and loading
@@ -21,25 +21,25 @@
  * - Performance monitoring with detailed logging
  * - Mobile-optimized network handling
  * - Type-safe filter operations with comprehensive validation
- * 
+ *
  * Performance Optimizations:
  * - Uses useReducer for complex state management
  * - Debounced auto-save with rate limiting
  * - Memoized computed values and callbacks
  * - Efficient re-render prevention
  * - Performance monitoring with metrics
- * 
+ *
  * @author serabi
  * @since 2025-07-08
  * @version 1.0.0
- * 
+ *
  * Dependencies:
  * - React for context and state management
  * - React Router for URL integration
  * - PocketBase for database persistence
  * - MetadataContext for available options
  * - Custom hooks for debouncing and navigation
- * 
+ *
  * @see {@link StatsContext} for statistics state management
  * @see {@link UIContext} for UI state management
  * @see {@link RecentlyEditedContext} for recently edited tracking
@@ -87,7 +87,7 @@ export type ChangeSource = 'user' | 'system' | 'real-time' | 'initialization' | 
 
 /**
  * Comprehensive filter state interface
- * 
+ *
  * Defines all possible filter states for the dashboard, including
  * server-side filters, sorting, pagination, and view preferences.
  */
@@ -118,7 +118,7 @@ export interface FilterState {
 
 /**
  * Context interface for dashboard filters management
- * 
+ *
  * Provides comprehensive filter state management with persistence,
  * URL integration, and performance optimization.
  */
@@ -171,7 +171,7 @@ const FiltersContext = createContext<FiltersContextType | null>(null);
 
 /**
  * Default filter state factory
- * 
+ *
  * Provides consistent default values for all filter properties.
  */
 const getDefaultFilters = (): FilterState => ({
@@ -194,7 +194,7 @@ const getDefaultFilters = (): FilterState => ({
 
 /**
  * Validate and sanitize filter state
- * 
+ *
  * Ensures all filter properties have valid values, falling back to
  * defaults for any invalid or missing properties.
  */
@@ -248,7 +248,7 @@ type FilterAction =
 
 /**
  * Filter reducer function
- * 
+ *
  * Handles all filter state transitions with performance monitoring
  * and consistent state updates.
  */
@@ -343,7 +343,7 @@ interface FiltersProviderProps {
 
 /**
  * FiltersProvider component that provides comprehensive filter management
- * 
+ *
  * Manages all aspects of dashboard filtering including state, persistence,
  * URL integration, and performance optimization.
  */
@@ -414,7 +414,7 @@ export const FiltersProvider: React.FC<FiltersProviderProps> = ({ children, user
 
   /**
    * Auto-save filter changes to database
-   * 
+   *
    * Implements debounced saving with rate limiting and content-based
    * deduplication to prevent unnecessary database writes.
    */
@@ -507,11 +507,11 @@ export const FiltersProvider: React.FC<FiltersProviderProps> = ({ children, user
 
     saveFilters();
     performanceLogger.end(perfId);
-  }, [debouncedFilters, isInitialized, user?.id, saveNavigationContext.mutate, isAutoSaveEnabled]);
+  }, [debouncedFilters, isInitialized, user?.id, isAutoSaveEnabled, saveNavigationContext]);
 
   /**
    * Save filters to database on navigation
-   * 
+   *
    * Ensures filter state is persisted when navigating away from dashboard.
    */
   const saveFiltersToDatabase = useCallback(() => {
@@ -593,10 +593,11 @@ export const FiltersProvider: React.FC<FiltersProviderProps> = ({ children, user
   }, [location.pathname, saveFiltersToDatabase, isInitialized]);
 
   /**
-   * Initialize filters from database and URL parameters
-   * 
+   * Initialize filters from database and URL parameters with batched updates
+   *
    * Loads saved filter state from database and applies URL parameters
-   * with proper validation and fallback handling.
+   * with proper validation and fallback handling. Uses batched updates
+   * to prevent cascading re-renders during initialization.
    */
   useEffect(() => {
     if (
@@ -612,7 +613,7 @@ export const FiltersProvider: React.FC<FiltersProviderProps> = ({ children, user
     const initializeFilters = async () => {
       initializationStateRef.current = 'initializing';
       const perfId = performanceLogger.start('initializeFilters');
-      logger.info('🚀 Initializing dashboard filters...');
+      logger.info('🚀 Initializing dashboard filters with batched updates...');
 
       let initialFilters = getDefaultFilters();
       let sourceOfTruth = 'defaults';
@@ -670,25 +671,25 @@ export const FiltersProvider: React.FC<FiltersProviderProps> = ({ children, user
         logger.info('🔥 Processing URL parameters...');
         sourceOfTruth = 'url_params';
         const urlFilters: Partial<FilterState> = {};
-        
+
         const status = urlParams.get('status');
         if (status) urlFilters.activeStatus = status as ProjectFilterStatus;
-        
+
         const company = urlParams.get('company');
         if (company) urlFilters.selectedCompany = company;
-        
+
         const artist = urlParams.get('artist');
         if (artist) urlFilters.selectedArtist = artist;
-        
+
         const tag = urlParams.get('tag');
         if (tag) {
           const matchingTag = userMetadata.tags.find(t => t.name === tag);
           if (matchingTag) urlFilters.selectedTags = [matchingTag.id];
         }
-        
+
         const year = urlParams.get('year');
         if (year) urlFilters.selectedYearFinished = year;
-        
+
         const drillShape = urlParams.get('drillShape');
         if (drillShape) urlFilters.selectedDrillShape = drillShape;
 
@@ -698,11 +699,22 @@ export const FiltersProvider: React.FC<FiltersProviderProps> = ({ children, user
       }
 
       logger.info('🏁 Filter initialization complete', { sourceOfTruth });
-      dispatch({ type: 'SET_INITIAL_STATE', payload: initialFilters });
-      changeSourceRef.current = 'initialization';
-      setIsInitialized(true);
-      initializationStateRef.current = 'complete';
 
+      // BATCHED INITIALIZATION - Apply all initialization updates in a single React update cycle
+      // This prevents cascading re-renders that cause excessive useProjects calls
+      React.startTransition(() => {
+        // Set filter state
+        dispatch({ type: 'SET_INITIAL_STATE', payload: initialFilters });
+        changeSourceRef.current = 'initialization';
+
+        // Set initialization flag
+        setIsInitialized(true);
+        initializationStateRef.current = 'complete';
+
+        logger.info('✅ Batched initialization updates applied - preventing cascade re-renders');
+      });
+
+      // Auto-save is enabled after a delay to prevent immediate saves during initialization
       setTimeout(() => {
         setIsAutoSaveEnabled(true);
         logger.info('✅ Auto-save mechanism enabled');
@@ -928,30 +940,81 @@ export const FiltersProvider: React.FC<FiltersProviderProps> = ({ children, user
     [userMetadata?.isLoading]
   );
 
-  // Memoized context value
-  const contextValue: FiltersContextType = useMemo(
-    () => ({
+  // Create stable callback functions using useRef to prevent unnecessary re-renders
+  const callbacksRef = useRef({
+    updateStatus,
+    updateCompany,
+    updateArtist,
+    updateDrillShape,
+    updateYearFinished,
+    updateIncludeMiniKits,
+    updateIncludeDestashed,
+    updateIncludeArchived,
+    updateSearchTerm,
+    updateTags,
+    toggleTag,
+    clearAllTags,
+    updateSort,
+    updatePage,
+    updatePageSize,
+    updateViewType,
+    resetAllFilters,
+    batchUpdateFilters,
+    getActiveFilterCount,
+  });
+
+  // Update the ref with current callbacks
+  callbacksRef.current = {
+    updateStatus,
+    updateCompany,
+    updateArtist,
+    updateDrillShape,
+    updateYearFinished,
+    updateIncludeMiniKits,
+    updateIncludeDestashed,
+    updateIncludeArchived,
+    updateSearchTerm,
+    updateTags,
+    toggleTag,
+    clearAllTags,
+    updateSort,
+    updatePage,
+    updatePageSize,
+    updateViewType,
+    resetAllFilters,
+    batchUpdateFilters,
+    getActiveFilterCount,
+  };
+
+  // Deep comparison utility for stable context value
+  const deepEqual = useCallback((a: unknown, b: unknown): boolean => {
+    if (a === b) return true;
+    if (a === null || b === null) return false;
+    if (typeof a !== 'object' || typeof b !== 'object') return false;
+
+    const keysA = Object.keys(a as Record<string, unknown>);
+    const keysB = Object.keys(b as Record<string, unknown>);
+
+    if (keysA.length !== keysB.length) return false;
+
+    for (const key of keysA) {
+      if (!keysB.includes(key)) return false;
+      if (!deepEqual((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key]))
+        return false;
+    }
+
+    return true;
+  }, []);
+
+  // Ref to hold the previous context value for deep comparison
+  const previousContextValueRef = useRef<FiltersContextType | null>(null);
+
+  // Create context value with deep comparison to prevent unnecessary re-renders
+  const createContextValue = useCallback(
+    (): FiltersContextType => ({
       filters,
       debouncedSearchTerm,
-      updateStatus,
-      updateCompany,
-      updateArtist,
-      updateDrillShape,
-      updateYearFinished,
-      updateIncludeMiniKits,
-      updateIncludeDestashed,
-      updateIncludeArchived,
-      updateSearchTerm,
-      updateTags,
-      toggleTag,
-      clearAllTags,
-      updateSort,
-      updatePage,
-      updatePageSize,
-      updateViewType,
-      resetAllFilters,
-      batchUpdateFilters,
-      getActiveFilterCount,
+      ...callbacksRef.current,
       companies,
       artists,
       drillShapes,
@@ -964,49 +1027,45 @@ export const FiltersProvider: React.FC<FiltersProviderProps> = ({ children, user
     [
       filters,
       debouncedSearchTerm,
-      updateStatus,
-      updateCompany,
-      updateArtist,
-      updateDrillShape,
-      updateYearFinished,
-      updateIncludeMiniKits,
-      updateIncludeDestashed,
-      updateIncludeArchived,
-      updateSearchTerm,
-      updateTags,
-      toggleTag,
-      clearAllTags,
-      updateSort,
-      updatePage,
-      updatePageSize,
-      updateViewType,
-      resetAllFilters,
-      batchUpdateFilters,
-      getActiveFilterCount,
       companies,
       artists,
       drillShapes,
       allTags,
-      searchInputRef,
       isSearchPending,
       isMetadataLoading,
       isInitialized,
     ]
   );
 
-  return (
-    <FiltersContext.Provider value={contextValue}>
-      {children}
-    </FiltersContext.Provider>
-  );
+  // Memoized context value with deep comparison - prevents excessive re-renders
+  const contextValue: FiltersContextType = useMemo(() => {
+    const newContextValue = createContextValue();
+
+    // Use deep comparison to check if context actually changed
+    if (
+      previousContextValueRef.current &&
+      deepEqual(previousContextValueRef.current, newContextValue)
+    ) {
+      logger.debug(
+        '📌 Context value unchanged - returning previous reference to prevent re-render'
+      );
+      return previousContextValueRef.current;
+    }
+
+    logger.debug('🔄 Context value changed - creating new reference');
+    previousContextValueRef.current = newContextValue;
+    return newContextValue;
+  }, [createContextValue, deepEqual]);
+
+  return <FiltersContext.Provider value={contextValue}>{children}</FiltersContext.Provider>;
 };
 
 /**
  * Hook to use the FiltersContext
- * 
+ *
  * Provides access to filter state and management functions.
  * Must be used within a FiltersProvider component.
- * 
+ *
  * @returns FiltersContextType with filter state and functions
  * @throws Error if used outside of FiltersProvider
  */

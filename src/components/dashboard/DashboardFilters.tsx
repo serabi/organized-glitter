@@ -46,10 +46,7 @@ import { DashboardValidSortField } from '@/features/dashboard/dashboard.constant
 
 // No longer need DATE_SORT_FIELDS_FOR_LABELS here, logic will be direct
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface DashboardFiltersProps {
-  // All props will be removed as they come from context
-}
+export type DashboardFiltersProps = Record<string, never>;
 
 const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(() => {
   const { user } = useAuth();
@@ -80,9 +77,8 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
 
   // Get available years from the appropriate hook
   const { data: availableYears = [] } = useAvailableYears();
-  
-  // Get loading state from dashboard data
-  const { isLoadingProjects } = useDashboardData(user?.id || 'guest', filters, debouncedSearchTerm);
+
+  // Loading state is no longer needed here since we removed duplicate useDashboardData calls
 
   // Transform available years to the expected format for the dropdown
   const yearFinishedOptions = availableYears.map(year => ({
@@ -126,10 +122,6 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
           <Badge variant="secondary">{getActiveFilterCount()} Active</Badge>
         )}
       </div>
-
-      {isLoadingProjects && (
-        <div className="mb-4 text-sm text-muted-foreground">Loading filters...</div>
-      )}
 
       <SearchProjects
         searchTerm={searchTerm}

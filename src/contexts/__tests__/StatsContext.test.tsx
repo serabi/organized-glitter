@@ -88,7 +88,7 @@ const createWrapper = () => {
 describe('StatsContext', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Default mock implementation
     mockUseDashboardStats.mockReturnValue({
       stats: mockDashboardStats,

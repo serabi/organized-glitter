@@ -153,13 +153,13 @@ const StatusTabsComponent = () => {
   const counts = (() => {
     try {
       const result = getCountsForTabs();
-      
+
       // If result is a loading state string, return fallback counts
       if (typeof result === 'string') {
         logger.debug('Stats are in loading state:', result);
         return fallbackCounts;
       }
-      
+
       // Return actual counts
       return result;
     } catch (error) {

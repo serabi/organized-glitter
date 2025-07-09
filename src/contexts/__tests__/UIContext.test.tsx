@@ -76,8 +76,12 @@ const TestUIConsumer = () => {
       <div data-testid="skeleton-loading">{loadingStates.isSkeletonLoading.toString()}</div>
       <div data-testid="main-content-loading">{loadingStates.isMainContentLoading.toString()}</div>
       <div data-testid="search-loading">{loadingStates.isSearchLoading.toString()}</div>
-      <div data-testid="filter-options-loading">{loadingStates.isFilterOptionsLoading.toString()}</div>
-      <div data-testid="page-transition-loading">{loadingStates.isPageTransitionLoading.toString()}</div>
+      <div data-testid="filter-options-loading">
+        {loadingStates.isFilterOptionsLoading.toString()}
+      </div>
+      <div data-testid="page-transition-loading">
+        {loadingStates.isPageTransitionLoading.toString()}
+      </div>
       <div data-testid="skeleton-count">{skeletonConfig.count}</div>
       <div data-testid="skeleton-animation-speed">{skeletonConfig.animationSpeed}</div>
       <div data-testid="skeleton-shimmer">{skeletonConfig.enableShimmer.toString()}</div>
@@ -88,19 +92,31 @@ const TestUIConsumer = () => {
       <button onClick={() => setViewType('list')} data-testid="set-view-type">
         Set View Type
       </button>
-      <button onClick={() => setLoadingState('isSkeletonLoading', true)} data-testid="set-skeleton-loading">
+      <button
+        onClick={() => setLoadingState('isSkeletonLoading', true)}
+        data-testid="set-skeleton-loading"
+      >
         Set Skeleton Loading
       </button>
-      <button onClick={() => setLoadingStates({ isMainContentLoading: true, isSearchLoading: true })} data-testid="set-multiple-loading">
+      <button
+        onClick={() => setLoadingStates({ isMainContentLoading: true, isSearchLoading: true })}
+        data-testid="set-multiple-loading"
+      >
         Set Multiple Loading
       </button>
-      <button onClick={() => setSkeletonConfig({ count: 18, animationSpeed: 2000 })} data-testid="set-skeleton-config">
+      <button
+        onClick={() => setSkeletonConfig({ count: 18, animationSpeed: 2000 })}
+        data-testid="set-skeleton-config"
+      >
         Set Skeleton Config
       </button>
       <button onClick={utils.resetLoadingStates} data-testid="reset-loading">
         Reset Loading
       </button>
-      <button onClick={() => utils.enableSkeletonLoading({ count: 24 })} data-testid="enable-skeleton">
+      <button
+        onClick={() => utils.enableSkeletonLoading({ count: 24 })}
+        data-testid="enable-skeleton"
+      >
         Enable Skeleton
       </button>
       <button onClick={utils.disableSkeletonLoading} data-testid="disable-skeleton">
@@ -129,17 +145,17 @@ const createWrapper = () => {
 describe('UIContext', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Reset window size
     Object.defineProperty(window, 'innerWidth', {
       writable: true,
       configurable: true,
       value: 1024,
     });
-    
+
     // Reset media query
     mockMediaQueryList.matches = false;
-    
+
     // Reset localStorage mock
     mockLocalStorage.getItem.mockReturnValue(null);
   });
@@ -178,7 +194,7 @@ describe('UIContext', () => {
 
     it('should load view type from localStorage', async () => {
       mockLocalStorage.getItem.mockReturnValue('list');
-      
+
       const Wrapper = createWrapper();
 
       render(
@@ -196,7 +212,7 @@ describe('UIContext', () => {
       mockLocalStorage.getItem.mockImplementation(() => {
         throw new Error('localStorage error');
       });
-      
+
       const Wrapper = createWrapper();
 
       render(
@@ -217,7 +233,7 @@ describe('UIContext', () => {
         configurable: true,
         value: 500,
       });
-      
+
       mockMediaQueryList.matches = true;
 
       const Wrapper = createWrapper();
@@ -480,7 +496,7 @@ describe('UIContext', () => {
         configurable: true,
         value: 500,
       });
-      
+
       mockMediaQueryList.matches = true;
 
       const Wrapper = createWrapper();
@@ -503,7 +519,7 @@ describe('UIContext', () => {
         configurable: true,
         value: 500,
       });
-      
+
       mockMediaQueryList.matches = true;
 
       const Wrapper = createWrapper();

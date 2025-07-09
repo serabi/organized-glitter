@@ -28,10 +28,7 @@ import DashboardFilters from './DashboardFilters'; // DashboardFilters will also
 // import { DashboardFiltersProps } from './DashboardFilters'; // No longer need to import props
 import { useFilters } from '@/contexts/FiltersContext';
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-interface CollapsibleDashboardFiltersProps {
-  // No props needed as everything comes from context or is local state
-}
+type CollapsibleDashboardFiltersProps = Record<string, never>;
 
 const LOCAL_STORAGE_KEY = 'dashboardFiltersMobileCollapsed';
 
