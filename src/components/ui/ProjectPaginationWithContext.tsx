@@ -123,7 +123,7 @@ const ProjectPagination: React.FC<ProjectPaginationProps> = ({
             <span className="text-sm text-muted-foreground">Show:</span>
             <Select
               value={pageSize.toString()}
-              onValueChange={(value) => onPageSizeChange(Number(value))}
+              onValueChange={value => onPageSizeChange(Number(value))}
               disabled={disabled}
             >
               <SelectTrigger className="w-20">
@@ -161,9 +161,7 @@ const ProjectPagination: React.FC<ProjectPaginationProps> = ({
                     <PaginationLink
                       onClick={() => onPageChange(page)}
                       isActive={page === currentPage}
-                      className={
-                        disabled ? 'pointer-events-none opacity-50' : 'cursor-pointer'
-                      }
+                      className={disabled ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
                     >
                       {page}
                     </PaginationLink>
@@ -197,7 +195,7 @@ export const ProjectPaginationWithContext: React.FC<{
   disabled?: boolean;
 }> = ({ totalPages, totalItems, className, disabled }) => {
   const { currentPage, pageSize, updatePage, updatePageSize } = usePagination();
-  
+
   return (
     <ProjectPagination
       currentPage={currentPage}

@@ -1,6 +1,6 @@
 /**
  * Simplified search component using context debouncing
- * @author @serabi  
+ * @author @serabi
  * @created 2025-07-09
  */
 

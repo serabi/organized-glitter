@@ -12,9 +12,7 @@ interface DashboardFilterSectionProps {
   isMobile: boolean;
 }
 
-const DashboardFilterSectionComponent: React.FC<DashboardFilterSectionProps> = ({
-  isMobile,
-}) => {
+const DashboardFilterSectionComponent: React.FC<DashboardFilterSectionProps> = ({ isMobile }) => {
   if (isMobile) {
     return <CollapsibleDashboardFilters />;
   } else {

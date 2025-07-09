@@ -7,6 +7,7 @@ import { DashboardValidSortField } from '@/features/dashboard/dashboard.constant
 import { SortDirectionType } from '@/contexts/FilterProvider';
 import { ProjectsResponse } from '@/types/pocketbase.types';
 import { queryKeys, ProjectQueryParams } from './queryKeys';
+import { useRenderGuard, useThrottledLogger } from '@/utils/renderGuards';
 
 export interface ServerFilters {
   status?: ProjectFilterStatus;
@@ -275,31 +276,26 @@ export const useProjects = ({
     [filters, sortField, sortDirection, currentPage, pageSize]
   );
 
-  // Debug logging to trace query execution with render counting
-  const renderCountRef = useRef(0);
-  renderCountRef.current += 1;
+  // Use render guard to track excessive re-renders
+  const { renderCount, isExcessive } = useRenderGuard('useProjects', 6);
+  const { shouldLog } = useThrottledLogger('useProjects', 1000);
 
-  logger.debug('🔄 useProjects called', {
-    userId,
-    status: filters.status,
-    queryKey: queryKeys.projects.list(userId || '', queryParams),
-    enabled: !!userId && enabled,
-    initializationGated: !enabled,
-    caller: new Error().stack?.split('\n')[1]?.trim(), // Get caller info for debugging
-    fullQueryParams: queryParams,
-    renderCount: renderCountRef.current,
-  });
-
-  // Warn about excessive re-renders
-  if (renderCountRef.current > 5) {
-    logger.warn('🚨 useProjects excessive re-renders detected:', {
-      renderCount: renderCountRef.current,
-      userId,
-      status: filters.status,
-      queryKey: queryKeys.projects.list(userId || '', queryParams),
-      caller: new Error().stack?.split('\n')[1]?.trim(),
-    });
-  }
+  // Optimized debug logging - throttle excessive logs
+  useEffect(() => {
+    if (shouldLog()) {
+      logger.debug('🔄 useProjects called', {
+        userId,
+        status: filters.status,
+        queryKey: queryKeys.projects.list(userId || '', queryParams),
+        enabled: !!userId && enabled,
+        initializationGated: !enabled,
+        caller: new Error().stack?.split('\n')[1]?.trim(), // Get caller info for debugging
+        fullQueryParams: queryParams,
+        renderCount,
+        isExcessive,
+      });
+    }
+  }, [userId, queryParams, enabled, filters.status, renderCount, isExcessive, shouldLog]);
 
   const query = useQuery({
     queryKey: queryKeys.projects.list(userId || '', queryParams),

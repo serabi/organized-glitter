@@ -4,20 +4,28 @@
  * @created 2025-07-09
  */
 
-import React, { createContext, useContext, useCallback, useMemo, useRef, useEffect, ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useCallback,
+  useMemo,
+  useRef,
+  useEffect,
+  ReactNode,
+} from 'react';
 import { createLogger, performanceLogger } from '@/utils/secureLogger';
 import { ProjectFilterStatus } from '@/types/project';
 import { DashboardValidSortField } from '@/features/dashboard/dashboard.constants';
-import { 
-  FilterState, 
-  FilterAction, 
-  FilterDispatch, 
-  SortDirectionType, 
-  ViewType, 
+import {
+  FilterState,
+  FilterAction,
+  FilterDispatch,
+  SortDirectionType,
+  ViewType,
   ChangeSource,
-  useFilterState
+  useFilterState,
 } from '@/contexts/FilterStateContext';
-import { 
+import {
   useSaveNavigationContext,
   DashboardFilterContext,
 } from '@/hooks/mutations/useSaveNavigationContext';
@@ -69,10 +77,7 @@ interface FilterActionsProviderProps {
 /**
  * FilterActionsProvider component that provides stable filter actions
  */
-export const FilterActionsProvider: React.FC<FilterActionsProviderProps> = ({ 
-  children, 
-  user 
-}) => {
+export const FilterActionsProvider: React.FC<FilterActionsProviderProps> = ({ children, user }) => {
   const saveNavigationContext = useSaveNavigationContext();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -365,7 +370,6 @@ export const FilterActionsProvider: React.FC<FilterActionsProviderProps> = ({
     performanceLogger.end(perfId);
   }, [filters, isInitialized, user?.id, isAutoSaveEnabled, saveNavigationContext]);
 
-
   // Enable auto-save after initialization
   React.useEffect(() => {
     if (isInitialized) {
@@ -379,52 +383,53 @@ export const FilterActionsProvider: React.FC<FilterActionsProviderProps> = ({
   }, [isInitialized]);
 
   // Stable context value - all functions are memoized and stable
-  const contextValue: FilterActionsContextType = useMemo(() => ({
-    updateStatus,
-    updateCompany,
-    updateArtist,
-    updateDrillShape,
-    updateYearFinished,
-    updateIncludeMiniKits,
-    updateIncludeDestashed,
-    updateIncludeArchived,
-    updateSearchTerm,
-    updateTags,
-    toggleTag,
-    clearAllTags,
-    updateSort,
-    updatePage,
-    updatePageSize,
-    updateViewType,
-    resetAllFilters,
-    batchUpdateFilters,
-    getActiveFilterCount,
-  }), [
-    updateStatus,
-    updateCompany,
-    updateArtist,
-    updateDrillShape,
-    updateYearFinished,
-    updateIncludeMiniKits,
-    updateIncludeDestashed,
-    updateIncludeArchived,
-    updateSearchTerm,
-    updateTags,
-    toggleTag,
-    clearAllTags,
-    updateSort,
-    updatePage,
-    updatePageSize,
-    updateViewType,
-    resetAllFilters,
-    batchUpdateFilters,
-    getActiveFilterCount,
-  ]);
+  const contextValue: FilterActionsContextType = useMemo(
+    () => ({
+      updateStatus,
+      updateCompany,
+      updateArtist,
+      updateDrillShape,
+      updateYearFinished,
+      updateIncludeMiniKits,
+      updateIncludeDestashed,
+      updateIncludeArchived,
+      updateSearchTerm,
+      updateTags,
+      toggleTag,
+      clearAllTags,
+      updateSort,
+      updatePage,
+      updatePageSize,
+      updateViewType,
+      resetAllFilters,
+      batchUpdateFilters,
+      getActiveFilterCount,
+    }),
+    [
+      updateStatus,
+      updateCompany,
+      updateArtist,
+      updateDrillShape,
+      updateYearFinished,
+      updateIncludeMiniKits,
+      updateIncludeDestashed,
+      updateIncludeArchived,
+      updateSearchTerm,
+      updateTags,
+      toggleTag,
+      clearAllTags,
+      updateSort,
+      updatePage,
+      updatePageSize,
+      updateViewType,
+      resetAllFilters,
+      batchUpdateFilters,
+      getActiveFilterCount,
+    ]
+  );
 
   return (
-    <FilterActionsContext.Provider value={contextValue}>
-      {children}
-    </FilterActionsContext.Provider>
+    <FilterActionsContext.Provider value={contextValue}>{children}</FilterActionsContext.Provider>
   );
 };
 

@@ -63,9 +63,7 @@ const FilterDropdown = React.memo(
             <SelectValue placeholder={placeholder} />
           </SelectTrigger>
           <SelectContent>
-            {showAllOption && (
-              <SelectItem value="all">All {getPluralLabel(label)}</SelectItem>
-            )}
+            {showAllOption && <SelectItem value="all">All {getPluralLabel(label)}</SelectItem>}
             {formattedOptions.map(option => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}
@@ -84,13 +82,13 @@ FilterDropdown.displayName = 'FilterDropdown';
 export const CompanyFilter = React.memo(() => {
   const { companies, updateCompany } = useFilterActionsAndMeta();
   const { filters } = useFilterStateOnly();
-  
+
   return (
     <FilterDropdown
       label="Company"
       options={companies}
       value={filters.selectedCompany}
-      onChange={(value) => updateCompany(value === 'all' ? null : value)}
+      onChange={value => updateCompany(value === 'all' ? null : value)}
       placeholder="Select company..."
     />
   );
@@ -99,13 +97,13 @@ export const CompanyFilter = React.memo(() => {
 export const ArtistFilter = React.memo(() => {
   const { artists, updateArtist } = useFilterActionsAndMeta();
   const { filters } = useFilterStateOnly();
-  
+
   return (
     <FilterDropdown
       label="Artist"
       options={artists}
       value={filters.selectedArtist}
-      onChange={(value) => updateArtist(value === 'all' ? null : value)}
+      onChange={value => updateArtist(value === 'all' ? null : value)}
       placeholder="Select artist..."
     />
   );
@@ -114,13 +112,13 @@ export const ArtistFilter = React.memo(() => {
 export const DrillShapeFilter = React.memo(() => {
   const { drillShapes, updateDrillShape } = useFilterActionsAndMeta();
   const { filters } = useFilterStateOnly();
-  
+
   return (
     <FilterDropdown
       label="Drill Shape"
       options={drillShapes.map(shape => ({ label: shape, value: shape }))}
       value={filters.selectedDrillShape}
-      onChange={(value) => updateDrillShape(value === 'all' ? null : value)}
+      onChange={value => updateDrillShape(value === 'all' ? null : value)}
       placeholder="Select drill shape..."
     />
   );
@@ -129,16 +127,16 @@ export const DrillShapeFilter = React.memo(() => {
 export const TagFilter = React.memo(() => {
   const { allTags, updateTags } = useFilterActionsAndMeta();
   const { filters } = useFilterStateOnly();
-  
+
   const tagOptions = allTags.map(tag => ({ label: tag.name, value: tag.id }));
   const selectedTag = filters.selectedTags.length > 0 ? filters.selectedTags[0] : 'all';
-  
+
   return (
     <FilterDropdown
       label="Tag"
       options={tagOptions}
       value={selectedTag}
-      onChange={(value) => updateTags(value === 'all' ? [] : [value])}
+      onChange={value => updateTags(value === 'all' ? [] : [value])}
       placeholder="Select tag..."
     />
   );

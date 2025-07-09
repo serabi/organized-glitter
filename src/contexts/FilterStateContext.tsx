@@ -4,7 +4,16 @@
  * @created 2025-07-09
  */
 
-import React, { createContext, useContext, useReducer, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useReducer,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  ReactNode,
+} from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMetadata } from '@/contexts/MetadataContext';
 import { createLogger, performanceLogger } from '@/utils/secureLogger';
@@ -371,16 +380,16 @@ export const FilterStateProvider: React.FC<FilterStateProviderProps> = ({ childr
       }
 
       logger.info('🏁 Filter state initialization complete', { sourceOfTruth });
-      
+
       // BATCHED INITIALIZATION - Apply all initialization updates in a single React update cycle
       React.startTransition(() => {
         // Set filter state
         dispatch({ type: 'SET_INITIAL_STATE', payload: initialFilters });
-        
+
         // Set initialization flag
         setIsInitialized(true);
         initializationStateRef.current = 'complete';
-        
+
         logger.info('✅ Batched filter state initialization updates applied');
       });
 
@@ -409,11 +418,7 @@ export const FilterStateProvider: React.FC<FilterStateProviderProps> = ({ childr
     dispatch,
   };
 
-  return (
-    <FilterStateContext.Provider value={contextValue}>
-      {children}
-    </FilterStateContext.Provider>
-  );
+  return <FilterStateContext.Provider value={contextValue}>{children}</FilterStateContext.Provider>;
 };
 
 /**

@@ -20,6 +20,31 @@ import { DashboardValidSortField } from '@/features/dashboard/dashboard.constant
 import { SortDirectionType } from '@/contexts/FilterProvider';
 
 /**
+ * Creates stable query keys by serializing object parameters
+ * This prevents unnecessary re-fetches when object references change but values remain the same
+ */
+const createStableKey = (obj: Record<string, any>): string => {
+  // Sort keys to ensure consistent serialization
+  const sortedKeys = Object.keys(obj).sort();
+  const stableObj: Record<string, any> = {};
+
+  sortedKeys.forEach(key => {
+    const value = obj[key];
+    if (Array.isArray(value)) {
+      // Sort arrays to ensure consistent serialization
+      stableObj[key] = [...value].sort();
+    } else if (typeof value === 'object' && value !== null) {
+      // Recursively handle nested objects
+      stableObj[key] = createStableKey(value);
+    } else {
+      stableObj[key] = value;
+    }
+  });
+
+  return JSON.stringify(stableObj);
+};
+
+/**
  * Parameters for project list queries
  * Used to create unique cache keys for different filter/sort combinations
  */
@@ -60,9 +85,9 @@ export const queryKeys = {
     all: ['projects'] as const,
     /** Base key for project list queries */
     lists: () => [...queryKeys.projects.all, 'list'] as const,
-    /** Specific project list with user and parameters */
+    /** Specific project list with user and parameters - uses stable serialization */
     list: (userId: string, params: ProjectQueryParams) =>
-      [...queryKeys.projects.lists(), userId, params] as const,
+      [...queryKeys.projects.lists(), userId, createStableKey(params)] as const,
     /** Base key for project detail queries */
     details: () => [...queryKeys.projects.all, 'detail'] as const,
     /** Specific project detail by ID */

@@ -10,6 +10,10 @@ import { useDashboardStatsStable } from '@/hooks/queries/useDashboardStatsStable
 import { useAvailableYears } from '@/hooks/queries/useAvailableYears';
 import { FilterState } from '@/contexts/FilterProvider';
 import { createLogger } from '@/utils/secureLogger';
+import { useRenderGuard, useThrottledLogger } from '@/utils/renderGuards';
+
+// Create logger outside component scope to ensure stable reference
+const logger = createLogger('useDashboardData');
 
 export const useDashboardData = (
   userId: string,
@@ -48,38 +52,29 @@ export const useDashboardData = (
     ]
   );
 
-  // Debug logging to track dashboard data calls (only when filters change)
-  const logger = createLogger('useDashboardData');
-
-  // Add render counting to detect excessive re-renders
-  const renderCountRef = useRef(0);
-  renderCountRef.current += 1;
+  // Use render guard to track excessive re-renders
+  const { renderCount, isExcessive } = useRenderGuard('useDashboardData', 8);
+  const { shouldLog } = useThrottledLogger('useDashboardData', 1000);
 
   // Only fetch data if user exists and initialization is complete
   const shouldFetchData = Boolean(userId && userId !== 'guest' && isInitialized);
 
+  // Optimized debug logging - only log significant changes and throttle excessive logs
   useEffect(() => {
-    logger.debug('🎯 useDashboardData called', {
-      userId,
-      serverFilters,
-      sortField: filters.sortField,
-      sortDirection: filters.sortDirection,
-      currentPage: filters.currentPage,
-      pageSize: filters.pageSize,
-      isInitialized,
-      shouldFetchData,
-      caller: new Error().stack?.split('\n')[1]?.trim(),
-      timestamp: new Date().toISOString(),
-      renderCount: renderCountRef.current,
-    });
-
-    // Warn if called too many times in a short period
-    if (renderCountRef.current > 10) {
-      logger.warn('🚨 useDashboardData called excessively:', {
-        renderCount: renderCountRef.current,
+    if (shouldLog()) {
+      logger.debug('🎯 useDashboardData called', {
         userId,
+        serverFilters,
         sortField: filters.sortField,
+        sortDirection: filters.sortDirection,
         currentPage: filters.currentPage,
+        pageSize: filters.pageSize,
+        isInitialized,
+        shouldFetchData,
+        caller: new Error().stack?.split('\n')[1]?.trim(),
+        timestamp: new Date().toISOString(),
+        renderCount,
+        isExcessive,
       });
     }
   }, [
@@ -91,7 +86,9 @@ export const useDashboardData = (
     filters.pageSize,
     isInitialized,
     shouldFetchData,
-    logger,
+    renderCount,
+    isExcessive,
+    shouldLog,
   ]);
 
   // Memoize useProjects parameters to prevent unnecessary re-executions

@@ -30,9 +30,7 @@ export const FilterProvider: React.FC<FilterProviderProps> = ({ children, user }
   return (
     <FilterMetaProvider>
       <FilterStateProvider user={user}>
-        <FilterActionsProvider user={user}>
-          {children}
-        </FilterActionsProvider>
+        <FilterActionsProvider user={user}>{children}</FilterActionsProvider>
       </FilterStateProvider>
     </FilterMetaProvider>
   );

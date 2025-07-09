@@ -46,13 +46,8 @@ ViewToggle.displayName = 'ViewToggle';
 export const ViewToggleWithContext = React.memo(() => {
   const { filters } = useFilterStateOnly();
   const { updateViewType } = useFilterActionsOnly();
-  
-  return (
-    <ViewToggle
-      activeView={filters.viewType}
-      onViewChange={updateViewType}
-    />
-  );
+
+  return <ViewToggle activeView={filters.viewType} onViewChange={updateViewType} />;
 });
 
 ViewToggleWithContext.displayName = 'ViewToggleWithContext';

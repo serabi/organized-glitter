@@ -16,14 +16,17 @@ import { useMemo } from 'react';
 export const useFilters = () => {
   const { filters, debouncedSearchTerm, isInitialized, isSearchPending } = useFilterState();
   const actions = useFilterActions();
-  
-  return useMemo(() => ({
-    filters,
-    debouncedSearchTerm,
-    isInitialized,
-    isSearchPending,
-    ...actions,
-  }), [filters, debouncedSearchTerm, isInitialized, isSearchPending, actions]);
+
+  return useMemo(
+    () => ({
+      filters,
+      debouncedSearchTerm,
+      isInitialized,
+      isSearchPending,
+      ...actions,
+    }),
+    [filters, debouncedSearchTerm, isInitialized, isSearchPending, actions]
+  );
 };
 
 /**
@@ -31,15 +34,19 @@ export const useFilters = () => {
  * Used by: ProjectsSection, pagination components
  */
 export const useFilterStateOnly = () => {
-  const { filters, debouncedSearchTerm, isInitialized, isSearchPending, isMetadataLoading } = useFilterState();
-  
-  return useMemo(() => ({
-    filters,
-    debouncedSearchTerm,
-    isInitialized,
-    isSearchPending,
-    isMetadataLoading,
-  }), [filters, debouncedSearchTerm, isInitialized, isSearchPending, isMetadataLoading]);
+  const { filters, debouncedSearchTerm, isInitialized, isSearchPending, isMetadataLoading } =
+    useFilterState();
+
+  return useMemo(
+    () => ({
+      filters,
+      debouncedSearchTerm,
+      isInitialized,
+      isSearchPending,
+      isMetadataLoading,
+    }),
+    [filters, debouncedSearchTerm, isInitialized, isSearchPending, isMetadataLoading]
+  );
 };
 
 /**
@@ -63,20 +70,34 @@ export const useFilterMetaOnly = () => {
  * Used by: display components, read-only filters
  */
 export const useFilterStateAndMeta = () => {
-  const { filters, debouncedSearchTerm, isInitialized, isSearchPending, isMetadataLoading } = useFilterState();
+  const { filters, debouncedSearchTerm, isInitialized, isSearchPending, isMetadataLoading } =
+    useFilterState();
   const { companies, artists, drillShapes, allTags } = useFilterMeta();
-  
-  return useMemo(() => ({
-    filters,
-    debouncedSearchTerm,
-    isInitialized,
-    isSearchPending,
-    isMetadataLoading,
-    companies,
-    artists,
-    drillShapes,
-    allTags,
-  }), [filters, debouncedSearchTerm, isInitialized, isSearchPending, isMetadataLoading, companies, artists, drillShapes, allTags]);
+
+  return useMemo(
+    () => ({
+      filters,
+      debouncedSearchTerm,
+      isInitialized,
+      isSearchPending,
+      isMetadataLoading,
+      companies,
+      artists,
+      drillShapes,
+      allTags,
+    }),
+    [
+      filters,
+      debouncedSearchTerm,
+      isInitialized,
+      isSearchPending,
+      isMetadataLoading,
+      companies,
+      artists,
+      drillShapes,
+      allTags,
+    ]
+  );
 };
 
 /**
@@ -86,15 +107,18 @@ export const useFilterStateAndMeta = () => {
 export const useFilterActionsAndMeta = () => {
   const actions = useFilterActions();
   const { companies, artists, drillShapes, allTags, searchInputRef } = useFilterMeta();
-  
-  return useMemo(() => ({
-    ...actions,
-    companies,
-    artists,
-    drillShapes,
-    allTags,
-    searchInputRef,
-  }), [actions, companies, artists, drillShapes, allTags, searchInputRef]);
+
+  return useMemo(
+    () => ({
+      ...actions,
+      companies,
+      artists,
+      drillShapes,
+      allTags,
+      searchInputRef,
+    }),
+    [actions, companies, artists, drillShapes, allTags, searchInputRef]
+  );
 };
 
 /**
@@ -102,35 +126,39 @@ export const useFilterActionsAndMeta = () => {
  * Used by: main dashboard wrapper, complex filter components
  */
 export const useFiltersFull = () => {
-  const { filters, debouncedSearchTerm, isInitialized, isSearchPending, isMetadataLoading } = useFilterState();
+  const { filters, debouncedSearchTerm, isInitialized, isSearchPending, isMetadataLoading } =
+    useFilterState();
   const actions = useFilterActions();
   const { companies, artists, drillShapes, allTags, searchInputRef } = useFilterMeta();
-  
-  return useMemo(() => ({
-    filters,
-    debouncedSearchTerm,
-    isInitialized,
-    isSearchPending,
-    isMetadataLoading,
-    companies,
-    artists,
-    drillShapes,
-    allTags,
-    searchInputRef,
-    ...actions,
-  }), [
-    filters,
-    debouncedSearchTerm,
-    isInitialized,
-    isSearchPending,
-    isMetadataLoading,
-    companies,
-    artists,
-    drillShapes,
-    allTags,
-    searchInputRef,
-    actions,
-  ]);
+
+  return useMemo(
+    () => ({
+      filters,
+      debouncedSearchTerm,
+      isInitialized,
+      isSearchPending,
+      isMetadataLoading,
+      companies,
+      artists,
+      drillShapes,
+      allTags,
+      searchInputRef,
+      ...actions,
+    }),
+    [
+      filters,
+      debouncedSearchTerm,
+      isInitialized,
+      isSearchPending,
+      isMetadataLoading,
+      companies,
+      artists,
+      drillShapes,
+      allTags,
+      searchInputRef,
+      actions,
+    ]
+  );
 };
 
 /**
@@ -140,13 +168,16 @@ export const useFiltersFull = () => {
 export const usePagination = () => {
   const { filters } = useFilterState();
   const { updatePage, updatePageSize } = useFilterActions();
-  
-  return useMemo(() => ({
-    currentPage: filters.currentPage,
-    pageSize: filters.pageSize,
-    updatePage,
-    updatePageSize,
-  }), [filters.currentPage, filters.pageSize, updatePage, updatePageSize]);
+
+  return useMemo(
+    () => ({
+      currentPage: filters.currentPage,
+      pageSize: filters.pageSize,
+      updatePage,
+      updatePageSize,
+    }),
+    [filters.currentPage, filters.pageSize, updatePage, updatePageSize]
+  );
 };
 
 /**
@@ -156,12 +187,15 @@ export const usePagination = () => {
 export const useSorting = () => {
   const { filters } = useFilterState();
   const { updateSort } = useFilterActions();
-  
-  return useMemo(() => ({
-    sortField: filters.sortField,
-    sortDirection: filters.sortDirection,
-    updateSort,
-  }), [filters.sortField, filters.sortDirection, updateSort]);
+
+  return useMemo(
+    () => ({
+      sortField: filters.sortField,
+      sortDirection: filters.sortDirection,
+      updateSort,
+    }),
+    [filters.sortField, filters.sortDirection, updateSort]
+  );
 };
 
 /**
@@ -172,14 +206,17 @@ export const useSearch = () => {
   const { filters, debouncedSearchTerm, isSearchPending } = useFilterState();
   const { updateSearchTerm } = useFilterActions();
   const { searchInputRef } = useFilterMeta();
-  
-  return useMemo(() => ({
-    searchTerm: filters.searchTerm,
-    debouncedSearchTerm,
-    isSearchPending,
-    updateSearchTerm,
-    searchInputRef,
-  }), [filters.searchTerm, debouncedSearchTerm, isSearchPending, updateSearchTerm, searchInputRef]);
+
+  return useMemo(
+    () => ({
+      searchTerm: filters.searchTerm,
+      debouncedSearchTerm,
+      isSearchPending,
+      updateSearchTerm,
+      searchInputRef,
+    }),
+    [filters.searchTerm, debouncedSearchTerm, isSearchPending, updateSearchTerm, searchInputRef]
+  );
 };
 
 /**
@@ -189,11 +226,14 @@ export const useSearch = () => {
 export const useStatusFilter = () => {
   const { filters } = useFilterState();
   const { updateStatus } = useFilterActions();
-  
-  return useMemo(() => ({
-    activeStatus: filters.activeStatus,
-    updateStatus,
-  }), [filters.activeStatus, updateStatus]);
+
+  return useMemo(
+    () => ({
+      activeStatus: filters.activeStatus,
+      updateStatus,
+    }),
+    [filters.activeStatus, updateStatus]
+  );
 };
 
 /**
@@ -204,12 +244,15 @@ export const useTagFilter = () => {
   const { filters } = useFilterState();
   const { updateTags, toggleTag, clearAllTags } = useFilterActions();
   const { allTags } = useFilterMeta();
-  
-  return useMemo(() => ({
-    selectedTags: filters.selectedTags,
-    allTags,
-    updateTags,
-    toggleTag,
-    clearAllTags,
-  }), [filters.selectedTags, allTags, updateTags, toggleTag, clearAllTags]);
+
+  return useMemo(
+    () => ({
+      selectedTags: filters.selectedTags,
+      allTags,
+      updateTags,
+      toggleTag,
+      clearAllTags,
+    }),
+    [filters.selectedTags, allTags, updateTags, toggleTag, clearAllTags]
+  );
 };

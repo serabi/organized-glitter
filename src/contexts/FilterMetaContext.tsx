@@ -65,18 +65,16 @@ export const FilterMetaProvider: React.FC<FilterMetaProviderProps> = ({ children
   const drillShapes = useMemo(() => ['round', 'square'], []);
 
   // Stable context value - metadata values change infrequently
-  const contextValue: FilterMetaContextType = useMemo(() => ({
-    companies,
-    artists,
-    drillShapes,
-    allTags,
-    searchInputRef,
-  }), [
-    companies,
-    artists,
-    drillShapes,
-    allTags,
-  ]);
+  const contextValue: FilterMetaContextType = useMemo(
+    () => ({
+      companies,
+      artists,
+      drillShapes,
+      allTags,
+      searchInputRef,
+    }),
+    [companies, artists, drillShapes, allTags]
+  );
 
   logger.debug('FilterMetaContext value updated:', {
     companiesCount: companies.length,
@@ -85,11 +83,7 @@ export const FilterMetaProvider: React.FC<FilterMetaProviderProps> = ({ children
     drillShapesCount: drillShapes.length,
   });
 
-  return (
-    <FilterMetaContext.Provider value={contextValue}>
-      {children}
-    </FilterMetaContext.Provider>
-  );
+  return <FilterMetaContext.Provider value={contextValue}>{children}</FilterMetaContext.Provider>;
 };
 
 /**
