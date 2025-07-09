@@ -90,7 +90,6 @@ const ConfirmEmailChange = lazy(() => import('@/pages/ConfirmEmailChange'));
 const Overview = createLazyComponent(() => import('@/pages/Overview'), 'Overview');
 const Dashboard = createLazyComponent(() => import('@/pages/Dashboard'), 'Dashboard');
 const Profile = createLazyComponent(() => import('@/pages/Profile'), 'Profile');
-const AdvancedView = createLazyComponent(() => import('@/pages/AdvancedView'), 'AdvancedView');
 const AdvancedEdit = createLazyComponent(() => import('@/pages/AdvancedEdit'), 'AdvancedEdit');
 
 // Lazy load project-related pages with enhanced error handling
@@ -343,20 +342,7 @@ export const AppRoutes: React.FC = () => {
         }
       />
 
-      {/* Advanced view routes with metadata provider */}
-      <Route
-        path="/advanced"
-        element={
-          <ProtectedRoute>
-            <MetadataProvider>
-              <Suspense fallback={<PageLoading />}>
-                <AdvancedView />
-              </Suspense>
-            </MetadataProvider>
-          </ProtectedRoute>
-        }
-      />
-
+      {/* Advanced edit route with metadata provider */}
       <Route
         path="/advanced-edit"
         element={
