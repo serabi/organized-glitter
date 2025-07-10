@@ -108,15 +108,23 @@ export const MetadataProvider = React.memo(({ children }: MetadataProviderProps)
 
   const artistNames = useMemo(() => artists.map(artist => artist.name).filter(Boolean), [artists]);
 
-  // Memoize loading and error objects to prevent recreation
-  const isLoading = useMemo(
-    () => ({
+  // Batch loading states to prevent cascade re-renders - only change when ALL queries complete
+  const isLoading = useMemo(() => {
+    const loading = {
       companies: companiesQuery.isLoading,
       artists: artistsQuery.isLoading,
       tags: tagsQuery.isLoading,
-    }),
-    [companiesQuery.isLoading, artistsQuery.isLoading, tagsQuery.isLoading]
-  );
+    };
+
+    // Prevent unnecessary re-renders by batching state changes
+    const anyLoading = loading.companies || loading.artists || loading.tags;
+    if (anyLoading) {
+      // Return a stable loading state object while any query is loading
+      return { companies: true, artists: true, tags: true };
+    }
+
+    return loading;
+  }, [companiesQuery.isLoading, artistsQuery.isLoading, tagsQuery.isLoading]);
 
   const error = useMemo(
     () => ({

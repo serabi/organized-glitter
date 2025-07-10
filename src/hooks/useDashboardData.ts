@@ -8,8 +8,6 @@
 
 import { useMemo, useEffect, useRef, useCallback } from 'react';
 import { useProjects, ServerFilters } from '@/hooks/queries/useProjects';
-import { useDashboardStatsStable } from '@/hooks/queries/useDashboardStatsStable';
-import { useAvailableYears } from '@/hooks/queries/useAvailableYears';
 import { FilterState } from '@/contexts/FilterProvider';
 import { useMetadata } from '@/contexts/MetadataContext';
 import { createLogger } from '@/utils/secureLogger';
@@ -30,9 +28,40 @@ export const useDashboardData = (
   // Get metadata for consistent query key generation across all useProjects calls
   const { companies, artists } = useMetadata();
 
-  // Memoize metadata arrays to prevent unnecessary re-renders
-  const allCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
-  const allArtists = useMemo(() => (Array.isArray(artists) ? artists : []), [artists]);
+  // Stabilize metadata arrays with optimized ID-based memoization
+  const companiesSignature = useMemo(
+    () =>
+      companies
+        ?.map(c => c.id)
+        .sort()
+        .join(',') || '',
+    [companies]
+  );
+
+  const artistsSignature = useMemo(
+    () =>
+      artists
+        ?.map(a => a.id)
+        .sort()
+        .join(',') || '',
+    [artists]
+  );
+
+  const allCompanies = useMemo(() => {
+    if (!Array.isArray(companies)) return [];
+    return companies;
+  }, [companiesSignature]);
+
+  const allArtists = useMemo(() => {
+    if (!Array.isArray(artists)) return [];
+    return artists;
+  }, [artistsSignature]);
+
+  // Stabilize selectedTags array with content-based signature
+  const selectedTagsSignature = useMemo(
+    () => filters.selectedTags?.sort().join(',') || '',
+    [filters.selectedTags]
+  );
 
   // Memoize server filters to prevent unnecessary re-executions
   const serverFilters: ServerFilters = useMemo(
@@ -45,6 +74,7 @@ export const useDashboardData = (
       includeMiniKits: filters.includeMiniKits,
       includeDestashed: filters.includeDestashed,
       includeArchived: filters.includeArchived,
+      includeWishlist: filters.includeWishlist,
       searchTerm: debouncedSearchTerm, // Use the debounced version from context
       selectedTags: filters.selectedTags,
     }),
@@ -57,49 +87,30 @@ export const useDashboardData = (
       filters.includeMiniKits,
       filters.includeDestashed,
       filters.includeArchived,
+      filters.includeWishlist,
       debouncedSearchTerm,
-      filters.selectedTags,
+      selectedTagsSignature, // Use signature instead of array reference
     ]
   );
 
-  // Use render guard to track excessive re-renders
-  const { renderCount, isExcessive } = useRenderGuard('useDashboardData', 8);
+  // Use render guard to track excessive re-renders (lowered threshold after optimizations)
+  const { renderCount, isExcessive } = useRenderGuard('useDashboardData', 5);
   const { shouldLog } = useThrottledLogger('useDashboardData', 1000);
 
   // Only fetch data if user exists and initialization is complete
   const shouldFetchData = Boolean(userId && userId !== 'guest' && isInitialized);
 
-  // Optimized debug logging - only log significant changes and throttle excessive logs
+  // Stable logging with minimal dependencies to prevent re-render loops
   useEffect(() => {
-    if (shouldLog()) {
-      logger.debug('🎯 useDashboardData called', {
-        userId,
-        serverFilters,
-        sortField: filters.sortField,
-        sortDirection: filters.sortDirection,
-        currentPage: filters.currentPage,
-        pageSize: filters.pageSize,
-        isInitialized,
-        shouldFetchData,
-        caller: new Error().stack?.split('\n')[1]?.trim(),
-        timestamp: new Date().toISOString(),
+    if (shouldLog() && isExcessive) {
+      logger.debug('🎯 useDashboardData excessive re-renders detected', {
         renderCount,
         isExcessive,
+        isInitialized,
+        hasUserId: !!userId,
       });
     }
-  }, [
-    userId,
-    serverFilters,
-    filters.sortField,
-    filters.sortDirection,
-    filters.currentPage,
-    filters.pageSize,
-    isInitialized,
-    shouldFetchData,
-    renderCount,
-    isExcessive,
-    shouldLog,
-  ]);
+  }, [isExcessive, shouldLog, renderCount, isInitialized, userId]);
 
   // Memoize useProjects parameters to prevent unnecessary re-executions
   const projectsParams = useMemo(
@@ -133,19 +144,13 @@ export const useDashboardData = (
   // Pass metadata to useProjects for consistent query key generation
   const projectsQuery = useProjects(projectsParamsWithEnabled, allCompanies, allArtists);
 
-  const statsQuery = useDashboardStatsStable();
-  const yearsQuery = useAvailableYears();
-
   return {
     projects: projectsQuery.data?.projects || [],
     totalItems: projectsQuery.data?.totalItems || 0,
     totalPages: projectsQuery.data?.totalPages || 0,
+    statusCounts: projectsQuery.data?.statusCounts, // Enhanced status counts from useProjects - single source of truth
     isLoadingProjects: projectsQuery.isLoading,
     errorProjects: projectsQuery.error,
     refetchProjects: projectsQuery.refetch,
-    dashboardStats: statsQuery.stats,
-    isLoadingStats: statsQuery.isLoading,
-    errorStats: statsQuery.error,
-    availableYears: yearsQuery.data || [],
   };
 };

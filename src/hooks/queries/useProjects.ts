@@ -15,6 +15,7 @@ import { createLogger } from '@/utils/secureLogger';
 import { DashboardValidSortField } from '@/features/dashboard/dashboard.constants';
 import { SortDirectionType } from '@/contexts/FilterProvider';
 import { ProjectsResponse } from '@/types/pocketbase.types';
+import { StatusBreakdown } from '@/types/dashboard';
 import { queryKeys, ProjectQueryParams } from './queryKeys';
 import { useRenderGuard, useThrottledLogger } from '@/utils/renderGuards';
 
@@ -46,6 +47,7 @@ export interface ProjectsResult {
   projects: Project[];
   totalItems: number;
   totalPages: number;
+  statusCounts: StatusBreakdown;
 }
 
 const POCKETBASE_SORT_MAP: Record<DashboardValidSortField, string> = {
@@ -65,6 +67,62 @@ const POCKETBASE_SORT_MAP: Record<DashboardValidSortField, string> = {
 };
 
 const logger = createLogger('useProjects');
+
+// Build filter string for status counts - excludes status-specific filters
+const buildFilterStringForCounts = (userId: string, serverFilters: ServerFilters): string => {
+  const filterParts: string[] = [];
+
+  // Always filter by user for data isolation - use pb.filter() for security
+  if (userId) {
+    filterParts.push(pb.filter('user = {:userId}', { userId }));
+  }
+
+  // Include all non-status filters
+  if (serverFilters.company && serverFilters.company !== 'all') {
+    filterParts.push(pb.filter('company = {:company}', { company: serverFilters.company }));
+  }
+  if (serverFilters.artist && serverFilters.artist !== 'all') {
+    filterParts.push(pb.filter('artist = {:artist}', { artist: serverFilters.artist }));
+  }
+  if (serverFilters.drillShape && serverFilters.drillShape !== 'all') {
+    filterParts.push(
+      pb.filter('drill_shape = {:drillShape}', { drillShape: serverFilters.drillShape })
+    );
+  }
+  if (serverFilters.yearFinished && serverFilters.yearFinished !== 'all') {
+    const year = parseInt(serverFilters.yearFinished, 10);
+    if (!isNaN(year)) {
+      filterParts.push(
+        pb.filter('date_completed >= {:startDate} && date_completed <= {:endDate}', {
+          startDate: `${year}-01-01 00:00:00`,
+          endDate: `${year}-12-31 23:59:59`,
+        })
+      );
+    }
+  }
+  if (serverFilters.includeMiniKits === false) {
+    filterParts.push('kit_category != "mini"');
+  }
+
+  // Add search term filtering using secure pb.filter() method
+  if (serverFilters.searchTerm && serverFilters.searchTerm.trim()) {
+    const searchTerm = serverFilters.searchTerm.trim();
+    const searchFilter = pb.filter('(title ~ {:term} || general_notes ~ {:term})', {
+      term: searchTerm,
+    });
+    filterParts.push(searchFilter);
+  }
+
+  // Add tag filtering using secure parameter injection
+  if (serverFilters.selectedTags && serverFilters.selectedTags.length > 0) {
+    const tagFilters = serverFilters.selectedTags.map((tagId, index) =>
+      pb.filter(`project_tags_via_project.tag ?= {:tagId${index}}`, { [`tagId${index}`]: tagId })
+    );
+    filterParts.push(`(${tagFilters.join(' || ')})`);
+  }
+
+  return filterParts.join(' && ');
+};
 
 // Build filter string using PocketBase best practices for secure parameter injection
 const buildFilterString = (userId: string, serverFilters: ServerFilters): string => {
@@ -269,10 +327,102 @@ const fetchProjects = async (
 
   logger.info(`Projects fetched: ${projectsData.length} of ${resultList.totalItems}`);
 
+  // Calculate status counts using the same filter logic (excluding status-specific filters)
+  const baseFilterForCounts = buildFilterStringForCounts(userId, filters);
+
+  const statusCountPromises = [
+    pb
+      .collection('projects')
+      .getList(1, 1, {
+        filter: baseFilterForCounts
+          ? `${baseFilterForCounts} && status = "wishlist"`
+          : 'status = "wishlist"',
+        skipTotal: false,
+      })
+      .then(result => ({ status: 'wishlist', count: result.totalItems })),
+
+    pb
+      .collection('projects')
+      .getList(1, 1, {
+        filter: baseFilterForCounts
+          ? `${baseFilterForCounts} && status = "purchased"`
+          : 'status = "purchased"',
+        skipTotal: false,
+      })
+      .then(result => ({ status: 'purchased', count: result.totalItems })),
+
+    pb
+      .collection('projects')
+      .getList(1, 1, {
+        filter: baseFilterForCounts
+          ? `${baseFilterForCounts} && status = "stash"`
+          : 'status = "stash"',
+        skipTotal: false,
+      })
+      .then(result => ({ status: 'stash', count: result.totalItems })),
+
+    pb
+      .collection('projects')
+      .getList(1, 1, {
+        filter: baseFilterForCounts
+          ? `${baseFilterForCounts} && status = "progress"`
+          : 'status = "progress"',
+        skipTotal: false,
+      })
+      .then(result => ({ status: 'progress', count: result.totalItems })),
+
+    pb
+      .collection('projects')
+      .getList(1, 1, {
+        filter: baseFilterForCounts
+          ? `${baseFilterForCounts} && status = "completed"`
+          : 'status = "completed"',
+        skipTotal: false,
+      })
+      .then(result => ({ status: 'completed', count: result.totalItems })),
+
+    pb
+      .collection('projects')
+      .getList(1, 1, {
+        filter: baseFilterForCounts
+          ? `${baseFilterForCounts} && status = "archived"`
+          : 'status = "archived"',
+        skipTotal: false,
+      })
+      .then(result => ({ status: 'archived', count: result.totalItems })),
+
+    pb
+      .collection('projects')
+      .getList(1, 1, {
+        filter: baseFilterForCounts
+          ? `${baseFilterForCounts} && status = "destashed"`
+          : 'status = "destashed"',
+        skipTotal: false,
+      })
+      .then(result => ({ status: 'destashed', count: result.totalItems })),
+  ];
+
+  const statusCountResults = await Promise.all(statusCountPromises);
+
+  const statusCounts: StatusBreakdown = {
+    wishlist: 0,
+    purchased: 0,
+    stash: 0,
+    progress: 0,
+    completed: 0,
+    archived: 0,
+    destashed: 0,
+  };
+
+  for (const { status, count } of statusCountResults) {
+    statusCounts[status as keyof StatusBreakdown] = count;
+  }
+
   return {
     projects: projectsData,
     totalItems: resultList.totalItems,
     totalPages: resultList.totalPages,
+    statusCounts,
   };
 };
 
@@ -301,44 +451,79 @@ export const useProjects = (
 ) => {
   const queryClient = useQueryClient();
 
-  // Memoize query parameters to prevent unnecessary re-computations
+  // Stabilize filters with content-based memoization to prevent unnecessary re-computations
+  const stableFilters = useMemo(
+    () => filters,
+    [
+      filters.status,
+      filters.company,
+      filters.artist,
+      filters.drillShape,
+      filters.yearFinished,
+      filters.includeMiniKits,
+      filters.includeDestashed,
+      filters.includeArchived,
+      filters.includeWishlist,
+      filters.searchTerm,
+      JSON.stringify(filters.selectedTags?.sort() || []),
+    ]
+  );
+
+  // Memoize query parameters with stable filter reference
   const queryParams: ProjectQueryParams = useMemo(
     () => ({
-      filters,
+      filters: stableFilters,
       sortField,
       sortDirection,
       currentPage,
       pageSize,
     }),
-    [filters, sortField, sortDirection, currentPage, pageSize]
+    [stableFilters, sortField, sortDirection, currentPage, pageSize]
   );
 
-  // Use render guard to track excessive re-renders
-  const { renderCount, isExcessive } = useRenderGuard('useProjects', 6);
+  // Use render guard to track excessive re-renders (lowered threshold after optimizations)
+  const { renderCount, isExcessive } = useRenderGuard('useProjects', 4);
   const { shouldLog } = useThrottledLogger('useProjects', 1000);
 
-  // Optimized debug logging - throttle excessive logs
+  // Optimized debug logging - only log when excessive renders are detected
   useEffect(() => {
-    if (shouldLog()) {
+    if (shouldLog() && isExcessive) {
       logger.debug('🔄 useProjects called', {
         userId,
-        status: filters.status,
+        status: stableFilters.status,
         queryKey: queryKeys.projects.list(userId || '', queryParams),
         enabled: !!userId && enabled,
         initializationGated: !enabled,
-        caller: new Error().stack?.split('\n')[1]?.trim(), // Get caller info for debugging
         fullQueryParams: queryParams,
         renderCount,
         isExcessive,
       });
     }
-  }, [userId, queryParams, enabled, filters.status, renderCount, isExcessive, shouldLog]);
+  }, [userId, queryParams, enabled, stableFilters.status, isExcessive, shouldLog]);
+
+  // Stabilize metadata signatures for query key
+  const companiesSignature = useMemo(
+    () =>
+      availableCompanies
+        ?.map(c => c.id)
+        .sort()
+        .join(',') || '',
+    [availableCompanies]
+  );
+  const artistsSignature = useMemo(
+    () =>
+      availableArtists
+        ?.map(a => a.id)
+        .sort()
+        .join(',') || '',
+    [availableArtists]
+  );
 
   const query = useQuery({
     queryKey: [
       ...queryKeys.projects.list(userId || '', queryParams),
-      availableCompanies?.length || 0,
-      availableArtists?.length || 0,
+      companiesSignature,
+      artistsSignature,
     ],
     queryFn: () =>
       fetchProjects({ userId: userId!, ...queryParams }, availableCompanies, availableArtists),
@@ -371,14 +556,17 @@ export const useProjects = (
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
-  // Prefetch next page for better UX
-  useEffect(() => {
-    if (
-      userId &&
+  // Stabilize prefetch dependencies to prevent unnecessary re-renders
+  const shouldPrefetch = Boolean(
+    userId &&
       query.data?.totalPages &&
       currentPage < query.data.totalPages &&
       !query.isPlaceholderData
-    ) {
+  );
+
+  // Prefetch next page for better UX with stabilized dependencies
+  useEffect(() => {
+    if (shouldPrefetch) {
       const nextPageParams: ProjectQueryParams = {
         ...queryParams,
         currentPage: currentPage + 1,
@@ -387,8 +575,8 @@ export const useProjects = (
       queryClient.prefetchQuery({
         queryKey: [
           ...queryKeys.projects.list(userId, nextPageParams),
-          availableCompanies?.length || 0,
-          availableArtists?.length || 0,
+          companiesSignature,
+          artistsSignature,
         ],
         queryFn: () =>
           fetchProjects({ userId, ...nextPageParams }, availableCompanies, availableArtists),
@@ -398,12 +586,12 @@ export const useProjects = (
       logger.debug('🔄 Prefetched next page:', currentPage + 1);
     }
   }, [
-    userId,
-    query.data?.totalPages,
-    currentPage,
-    query.isPlaceholderData,
+    shouldPrefetch,
     queryParams,
     queryClient,
+    companiesSignature,
+    artistsSignature,
+    userId,
     availableCompanies,
     availableArtists,
   ]);

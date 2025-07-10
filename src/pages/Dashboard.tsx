@@ -159,15 +159,15 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <StatsProvider>
-      <FilterProvider user={user}>
+    <FilterProvider user={user}>
+      <StatsProvider>
         <UIProvider>
           <RecentlyEditedProvider>
             <DashboardInternal />
           </RecentlyEditedProvider>
         </UIProvider>
-      </FilterProvider>
-    </StatsProvider>
+      </StatsProvider>
+    </FilterProvider>
   );
 };
 

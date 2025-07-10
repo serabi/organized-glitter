@@ -54,14 +54,23 @@ import React, {
   useState,
 } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useDashboardStatsStable } from '@/hooks/queries/useDashboardStatsStable';
 import { createLogger } from '@/utils/secureLogger';
-import { DashboardStats } from '@/types/dashboard';
+import { DashboardStats, StatusBreakdown } from '@/types/dashboard';
 import { queryKeys } from '@/hooks/queries/queryKeys';
 import { safeInvalidateQueries } from '@/utils/queryInvalidationGuard';
 import { useAuth } from '@/hooks/useAuth';
+import { useDashboardData } from '@/hooks/useDashboardData';
+import { useFilterStateOnly } from '@/contexts/FilterProvider';
 
 const logger = createLogger('StatsContext');
+
+// Network Information API interface
+interface NetworkInformation {
+  effectiveType?: '2g' | '3g' | '4g' | 'slow-2g';
+  downlink?: number;
+  addEventListener?: (event: string, handler: () => void) => void;
+  removeEventListener?: (event: string, handler: () => void) => void;
+}
 
 // Status counts interface for StatusTabs component
 export interface CountsForTabsType {
@@ -156,9 +165,9 @@ const useNetworkDetection = () => {
 
       // Network connection detection (if available)
       const connection =
-        (navigator as any).connection ||
-        (navigator as any).mozConnection ||
-        (navigator as any).webkitConnection;
+        (navigator as unknown as { connection?: NetworkInformation }).connection ||
+        (navigator as unknown as { mozConnection?: NetworkInformation }).mozConnection ||
+        (navigator as unknown as { webkitConnection?: NetworkInformation }).webkitConnection;
 
       const isSlowNetwork =
         connection &&
@@ -184,7 +193,7 @@ const useNetworkDetection = () => {
 
     // Re-detect on network change if supported
     if ('connection' in navigator) {
-      const connection = (navigator as any).connection;
+      const connection = (navigator as unknown as { connection?: NetworkInformation }).connection;
       if (connection && connection.addEventListener) {
         connection.addEventListener('change', detectNetworkConditions);
         return () => connection.removeEventListener('change', detectNetworkConditions);
@@ -214,7 +223,7 @@ interface StatsProviderProps {
  * @param props - Provider props containing children
  * @returns JSX element with stats context
  */
-export const StatsProvider: React.FC<StatsProviderProps> = ({ children }) => {
+export const StatsProvider: React.FC<StatsProviderProps> = React.memo(({ children }) => {
   // Network detection for mobile optimization
   const { isNetworkSlow, timeoutDuration } = useNetworkDetection();
 
@@ -224,64 +233,80 @@ export const StatsProvider: React.FC<StatsProviderProps> = ({ children }) => {
   // User authentication for query keys
   const { user } = useAuth();
 
-  // Dashboard stats query with error handling
-  const dashboardStats = useDashboardStatsStable();
+  // Use dashboard data directly - single source of truth from useProjects
+  const { filters, debouncedSearchTerm, isInitialized } = useFilterStateOnly();
+  const { statusCounts, isLoadingProjects, errorProjects } = useDashboardData(
+    user?.id || 'guest',
+    filters,
+    debouncedSearchTerm,
+    isInitialized
+  );
 
-  // Memoize status breakdown to prevent re-calculations
-  const statusBreakdown = useMemo(() => {
-    return dashboardStats.stats?.status_breakdown;
-  }, [dashboardStats.stats?.status_breakdown]);
+  // Determine if we should show loading state
+  const shouldShowLoading = !isInitialized || isLoadingProjects;
 
-  // Memoize counts calculation to prevent infinite loops
+  // Simplified counts calculation using statusCounts directly
   const countsForTabs = useMemo((): CountsForTabsType | BadgeLoadingState => {
-    // Return loading state when data is being fetched
-    if (dashboardStats.isLoading) {
+    logger.debug('StatsContext countsForTabs calculation:', {
+      isInitialized,
+      isLoadingProjects,
+      shouldShowLoading,
+      hasStatusCounts: !!statusCounts,
+      isError: !!errorProjects,
+    });
+
+    // Return loading state when filters aren't initialized yet or data is being fetched
+    if (!isInitialized) {
+      logger.debug('Returning loading state - filters not initialized yet');
+      return 'loading';
+    }
+
+    if (isLoadingProjects) {
+      logger.debug('Returning loading state - projects are loading');
       return 'loading';
     }
 
     // Return error state when fetch has failed
-    if (dashboardStats.isError) {
+    if (errorProjects) {
       logger.warn('Stats fetch failed, returning error state for badges', {
-        error: dashboardStats.error,
+        error: errorProjects,
         isNetworkSlow,
       });
       return 'error';
     }
 
-    // Return loading state if no data is available
-    if (!statusBreakdown) {
+    // Return loading state if no data is available after initialization
+    if (!statusCounts) {
+      logger.debug('Returning loading state - no statusCounts available after initialization');
       return 'loading';
     }
 
-    // Calculate total count for "all" tab
-    const all = Object.values(statusBreakdown).reduce(
-      (sum, count) => sum + (Number(count) || 0),
-      0
-    );
+    // Calculate total count for "all" tab from statusCounts directly
+    const all = Object.values(statusCounts).reduce((sum, count) => sum + (Number(count) || 0), 0);
 
     const counts: CountsForTabsType = {
       all,
-      wishlist: statusBreakdown.wishlist || 0,
-      purchased: statusBreakdown.purchased || 0,
-      stash: statusBreakdown.stash || 0,
-      progress: statusBreakdown.progress || 0,
-      completed: statusBreakdown.completed || 0,
-      destashed: statusBreakdown.destashed || 0,
-      archived: statusBreakdown.archived || 0,
+      wishlist: statusCounts.wishlist || 0,
+      purchased: statusCounts.purchased || 0,
+      stash: statusCounts.stash || 0,
+      progress: statusCounts.progress || 0,
+      completed: statusCounts.completed || 0,
+      destashed: statusCounts.destashed || 0,
+      archived: statusCounts.archived || 0,
     };
 
     // Only log when counts actually change (not on every render)
     if (typeof counts.all === 'number' && counts.all > 0) {
-      logger.debug('Stats counts calculated', { counts, source: dashboardStats.source });
+      logger.debug('Stats counts calculated', { counts, source: 'optimized' });
     }
 
     return counts;
   }, [
-    dashboardStats.isLoading,
-    dashboardStats.isError,
-    dashboardStats.error,
-    dashboardStats.source,
-    statusBreakdown,
+    isInitialized,
+    isLoadingProjects,
+    shouldShowLoading,
+    statusCounts,
+    errorProjects,
     isNetworkSlow,
   ]);
 
@@ -355,26 +380,39 @@ export const StatsProvider: React.FC<StatsProviderProps> = ({ children }) => {
     }
   }, [queryClient, user?.id]);
 
+  // Create simplified DashboardStats from statusCounts
+  const simplifiedStats: DashboardStats | null = useMemo(() => {
+    if (!statusCounts) return null;
+
+    return {
+      completed_count: statusCounts.completed,
+      started_count: statusCounts.progress,
+      in_progress_count: statusCounts.progress,
+      total_diamonds: 0, // Not needed for current functionality
+      estimated_drills: 0, // Not needed for current functionality
+      status_breakdown: statusCounts,
+      available_years: [], // Not needed for current functionality
+    };
+  }, [statusCounts]);
+
   // Memoized context value to prevent unnecessary re-renders
   const contextValue: StatsContextType = useMemo(
     () => ({
-      stats: dashboardStats.stats,
-      isLoading: dashboardStats.isLoading,
-      isError: dashboardStats.isError,
-      error: dashboardStats.error,
+      stats: simplifiedStats,
+      isLoading: shouldShowLoading,
+      isError: !!errorProjects,
+      error: errorProjects,
       getCountsForTabs,
       getBadgeContent,
       isNetworkSlow,
       timeoutDuration,
       retry,
-      source: dashboardStats.source,
+      source: 'optimized',
     }),
     [
-      dashboardStats.stats,
-      dashboardStats.isLoading,
-      dashboardStats.isError,
-      dashboardStats.error,
-      dashboardStats.source,
+      simplifiedStats,
+      shouldShowLoading,
+      errorProjects,
       getCountsForTabs,
       getBadgeContent,
       isNetworkSlow,
@@ -384,7 +422,7 @@ export const StatsProvider: React.FC<StatsProviderProps> = ({ children }) => {
   );
 
   return <StatsContext.Provider value={contextValue}>{children}</StatsContext.Provider>;
-};
+});
 
 /**
  * Hook to use the StatsContext
