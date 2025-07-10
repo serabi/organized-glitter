@@ -27,6 +27,7 @@ export interface ServerFilters {
   includeMiniKits?: boolean;
   includeDestashed?: boolean;
   includeArchived?: boolean;
+  includeWishlist?: boolean;
   searchTerm?: string;
   selectedTags?: string[];
 }
@@ -115,6 +116,11 @@ const buildFilterString = (userId: string, serverFilters: ServerFilters): string
   // Include archived filtering - exclude archived projects unless specifically viewing archived tab
   if (serverFilters.includeArchived === false && serverFilters.status !== 'archived') {
     filterParts.push('status != "archived"');
+  }
+
+  // Include wishlist filtering - exclude wishlist projects unless specifically viewing wishlist tab
+  if (serverFilters.includeWishlist === false && serverFilters.status !== 'wishlist') {
+    filterParts.push('status != "wishlist"');
   }
 
   // Add search term filtering using secure pb.filter() method
@@ -227,14 +233,14 @@ const fetchProjects = async (
       company: (() => {
         const companyId = projectRecord.company;
         if (!companyId || !availableCompanies) return undefined;
-        
+
         const company = availableCompanies.find(c => c.id === companyId);
         return company?.name;
       })(),
       artist: (() => {
         const artistId = projectRecord.artist;
         if (!artistId || !availableArtists) return undefined;
-        
+
         const artist = availableArtists.find(a => a.id === artistId);
         return artist?.name;
       })(),
@@ -261,7 +267,6 @@ const fetchProjects = async (
     };
   });
 
-
   logger.info(`Projects fetched: ${projectsData.length} of ${resultList.totalItems}`);
 
   return {
@@ -275,21 +280,25 @@ const fetchProjects = async (
  * React Query hook for fetching projects with filtering, sorting, and pagination
  * Ensures consistent query key generation across all components to prevent cache issues
  * Performs automatic ID-to-name resolution for companies and artists
- * 
+ *
  * @param params Object containing userId, filters, sorting, and pagination options
  * @param availableCompanies Array of company metadata for consistent query keys and name resolution
  * @param availableArtists Array of artist metadata for consistent query keys and name resolution
  * @returns React Query result with projects data, loading state, and error handling
  */
-export const useProjects = ({
-  userId,
-  filters,
-  sortField,
-  sortDirection,
-  currentPage,
-  pageSize,
-  enabled = true,
-}: UseProjectsParams, availableCompanies?: any[], availableArtists?: any[]) => {
+export const useProjects = (
+  {
+    userId,
+    filters,
+    sortField,
+    sortDirection,
+    currentPage,
+    pageSize,
+    enabled = true,
+  }: UseProjectsParams,
+  availableCompanies?: any[],
+  availableArtists?: any[]
+) => {
   const queryClient = useQueryClient();
 
   // Memoize query parameters to prevent unnecessary re-computations
@@ -326,8 +335,13 @@ export const useProjects = ({
   }, [userId, queryParams, enabled, filters.status, renderCount, isExcessive, shouldLog]);
 
   const query = useQuery({
-    queryKey: [...queryKeys.projects.list(userId || '', queryParams), availableCompanies?.length || 0, availableArtists?.length || 0],
-    queryFn: () => fetchProjects({ userId: userId!, ...queryParams }, availableCompanies, availableArtists),
+    queryKey: [
+      ...queryKeys.projects.list(userId || '', queryParams),
+      availableCompanies?.length || 0,
+      availableArtists?.length || 0,
+    ],
+    queryFn: () =>
+      fetchProjects({ userId: userId!, ...queryParams }, availableCompanies, availableArtists),
     enabled: !!userId && enabled, // Only run when userId is available AND hook is enabled
     staleTime: 2 * 60 * 1000, // 2 minutes (increased from 30 seconds)
     gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
@@ -371,8 +385,13 @@ export const useProjects = ({
       };
 
       queryClient.prefetchQuery({
-        queryKey: [...queryKeys.projects.list(userId, nextPageParams), availableCompanies?.length || 0, availableArtists?.length || 0],
-        queryFn: () => fetchProjects({ userId, ...nextPageParams }, availableCompanies, availableArtists),
+        queryKey: [
+          ...queryKeys.projects.list(userId, nextPageParams),
+          availableCompanies?.length || 0,
+          availableArtists?.length || 0,
+        ],
+        queryFn: () =>
+          fetchProjects({ userId, ...nextPageParams }, availableCompanies, availableArtists),
         staleTime: 2 * 60 * 1000, // Same as main query
       });
 

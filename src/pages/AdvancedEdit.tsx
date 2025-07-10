@@ -81,20 +81,23 @@ const AdvancedEdit = () => {
     data,
     isLoading: loading,
     error,
-  } = useProjects({
-    userId: user?.id,
-    filters: memoizedFilters,
-    sortField: filters.sortField,
-    sortDirection: filters.sortDirection,
-    currentPage,
-    pageSize,
-    enabled: isInitialized && !!user?.id,
-  }, allCompanies, allArtists);
+  } = useProjects(
+    {
+      userId: user?.id,
+      filters: memoizedFilters,
+      sortField: filters.sortField,
+      sortDirection: filters.sortDirection,
+      currentPage,
+      pageSize,
+      enabled: isInitialized && !!user?.id,
+    },
+    allCompanies,
+    allArtists
+  );
 
   const projects = data?.projects || [];
   const totalItems = data?.totalItems || 0;
   const totalPages = data?.totalPages || 0;
-
 
   // View state
   const [showImages, setShowImages] = useState(false);

@@ -62,6 +62,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
     updateIncludeMiniKits,
     updateIncludeDestashed,
     updateIncludeArchived,
+    updateIncludeWishlist,
     updateViewType,
     companiesOptions, // Use computed options for DashboardFilters
     artistsOptions, // Use computed options for DashboardFilters
@@ -96,6 +97,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
   const includeMiniKits = filters.includeMiniKits;
   const includeDestashed = filters.includeDestashed;
   const includeArchived = filters.includeArchived;
+  const includeWishlist = filters.includeWishlist;
   const viewType = filters.viewType;
   const sortField = filters.sortField;
   const sortDirection = filters.sortDirection;
@@ -214,6 +216,18 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
           />
           <Label htmlFor="include-archived-kits" className="text-sm font-medium">
             Include Archived Kits?
+          </Label>
+        </div>
+
+        <div className="mt-4 flex items-center space-x-2">
+          <Checkbox
+            id="include-wishlist-kits"
+            checked={includeWishlist}
+            onCheckedChange={checked => updateIncludeWishlist(Boolean(checked))}
+            data-testid="include-wishlist-checkbox"
+          />
+          <Label htmlFor="include-wishlist-kits" className="text-sm font-medium">
+            Include Wishlisted Kits?
           </Label>
         </div>
 

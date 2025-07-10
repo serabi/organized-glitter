@@ -52,6 +52,7 @@ export interface FilterState {
   includeMiniKits: boolean;
   includeDestashed: boolean;
   includeArchived: boolean;
+  includeWishlist: boolean;
   searchTerm: string;
   selectedTags: string[];
 
@@ -105,6 +106,7 @@ export const getDefaultFilters = (): FilterState => ({
   includeMiniKits: true,
   includeDestashed: false,
   includeArchived: false,
+  includeWishlist: false,
   searchTerm: '',
   selectedTags: [],
   sortField: 'last_updated',
@@ -129,6 +131,7 @@ export const validateAndSanitizeFilters = (filters: Partial<FilterState>): Filte
     includeMiniKits: filters.includeMiniKits ?? defaults.includeMiniKits,
     includeDestashed: filters.includeDestashed ?? defaults.includeDestashed,
     includeArchived: filters.includeArchived ?? defaults.includeArchived,
+    includeWishlist: filters.includeWishlist ?? defaults.includeWishlist,
     searchTerm: filters.searchTerm ?? defaults.searchTerm,
     selectedTags: Array.isArray(filters.selectedTags)
       ? filters.selectedTags
@@ -153,6 +156,7 @@ export type FilterAction =
   | { type: 'SET_INCLUDE_MINI_KITS'; payload: boolean }
   | { type: 'SET_INCLUDE_DESTASHED'; payload: boolean }
   | { type: 'SET_INCLUDE_ARCHIVED'; payload: boolean }
+  | { type: 'SET_INCLUDE_WISHLIST'; payload: boolean }
   | { type: 'SET_SEARCH_TERM'; payload: string }
   | { type: 'SET_TAGS'; payload: string[] }
   | { type: 'TOGGLE_TAG'; payload: string }
@@ -196,6 +200,9 @@ const filtersReducer = (state: FilterState, action: FilterAction): FilterState =
       break;
     case 'SET_INCLUDE_ARCHIVED':
       newState = { ...state, includeArchived: action.payload, currentPage: 1 };
+      break;
+    case 'SET_INCLUDE_WISHLIST':
+      newState = { ...state, includeWishlist: action.payload, currentPage: 1 };
       break;
     case 'SET_SEARCH_TERM':
       newState = { ...state, searchTerm: action.payload, currentPage: 1 };
@@ -338,6 +345,7 @@ export const FilterStateProvider: React.FC<FilterStateProviderProps> = ({ childr
               includeMiniKits: savedContext.filters?.includeMiniKits,
               includeDestashed: savedContext.filters?.includeDestashed,
               includeArchived: savedContext.filters?.includeArchived,
+              includeWishlist: savedContext.filters?.includeWishlist,
               searchTerm: savedContext.filters?.searchTerm,
               selectedTags: savedContext.filters?.selectedTags,
               sortField: savedContext.sortField,

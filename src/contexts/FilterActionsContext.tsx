@@ -48,6 +48,7 @@ export interface FilterActionsContextType {
   updateIncludeMiniKits: (include: boolean, source?: ChangeSource) => void;
   updateIncludeDestashed: (include: boolean, source?: ChangeSource) => void;
   updateIncludeArchived: (include: boolean, source?: ChangeSource) => void;
+  updateIncludeWishlist: (include: boolean, source?: ChangeSource) => void;
   updateSearchTerm: (term: string, source?: ChangeSource) => void;
   updateTags: (tags: string[], source?: ChangeSource) => void;
   toggleTag: (tagId: string, source?: ChangeSource) => void;
@@ -93,7 +94,7 @@ export const FilterActionsProvider: React.FC<FilterActionsProviderProps> = ({ ch
   const lastSavedFiltersRef = useRef<FilterState | null>(null);
   const [isAutoSaveEnabled, setIsAutoSaveEnabled] = React.useState(false);
 
-  // State ref for avoiding stale closures  
+  // State ref for avoiding stale closures
   const latestStateRef = useRef({
     filters,
     user,
@@ -191,6 +192,13 @@ export const FilterActionsProvider: React.FC<FilterActionsProviderProps> = ({ ch
     [dispatchWithSource]
   );
 
+  const updateIncludeWishlist = useCallback(
+    (include: boolean, source?: ChangeSource) => {
+      dispatchWithSource({ type: 'SET_INCLUDE_WISHLIST', payload: include }, source);
+    },
+    [dispatchWithSource]
+  );
+
   const updateSearchTerm = useCallback(
     (term: string, source?: ChangeSource) => {
       dispatchWithSource({ type: 'SET_SEARCH_TERM', payload: term }, source);
@@ -274,6 +282,7 @@ export const FilterActionsProvider: React.FC<FilterActionsProviderProps> = ({ ch
     if (filters.selectedYearFinished !== 'all') count++;
     if (!filters.includeMiniKits) count++;
     if (!filters.includeDestashed) count++;
+    if (filters.includeWishlist) count++;
     if (filters.searchTerm) count++;
     if (filters.selectedTags.length > 0) count++;
     return count;
@@ -334,6 +343,7 @@ export const FilterActionsProvider: React.FC<FilterActionsProviderProps> = ({ ch
           includeMiniKits: filters.includeMiniKits,
           includeDestashed: filters.includeDestashed,
           includeArchived: filters.includeArchived,
+          includeWishlist: filters.includeWishlist,
           searchTerm: filters.searchTerm,
           selectedTags: filters.selectedTags,
         },
@@ -397,6 +407,7 @@ export const FilterActionsProvider: React.FC<FilterActionsProviderProps> = ({ ch
       updateIncludeMiniKits,
       updateIncludeDestashed,
       updateIncludeArchived,
+      updateIncludeWishlist,
       updateSearchTerm,
       updateTags,
       toggleTag,
@@ -418,6 +429,7 @@ export const FilterActionsProvider: React.FC<FilterActionsProviderProps> = ({ ch
       updateIncludeMiniKits,
       updateIncludeDestashed,
       updateIncludeArchived,
+      updateIncludeWishlist,
       updateSearchTerm,
       updateTags,
       toggleTag,

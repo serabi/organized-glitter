@@ -29,7 +29,7 @@ export const useDashboardData = (
 
   // Get metadata for consistent query key generation across all useProjects calls
   const { companies, artists } = useMetadata();
-  
+
   // Memoize metadata arrays to prevent unnecessary re-renders
   const allCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
   const allArtists = useMemo(() => (Array.isArray(artists) ? artists : []), [artists]);
