@@ -27,6 +27,14 @@ export const SortableHeader: React.FC<SortableHeaderProps> = ({
     dateReceived: 'date_received',
     dateStarted: 'date_started',
     dateCompleted: 'date_finished',
+    artist: 'artist',
+    company: 'company',
+    status: 'status',
+    drillShape: 'drill_shape',
+    kit_category: 'kit_category',
+    width: 'width',
+    height: 'height',
+    tags: 'last_updated', // Tags don't have a direct sort field, use last_updated
   };
 
   const mappedSortKey = sortKeyMapping[sortKey] || 'last_updated';

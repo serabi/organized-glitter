@@ -1,3 +1,12 @@
+/**
+ * Projects data fetching hook with consistent metadata integration
+ * Provides unified project queries with proper ID-to-name resolution for companies and artists
+ * Fixed infinite loop issues by standardizing query key generation across all components
+ * @author @serabi
+ * @created 2025-07-04
+ * @updated 2025-07-10
+ */
+
 import { useMemo, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { pb } from '@/lib/pocketbase';
@@ -131,8 +140,18 @@ const buildFilterString = (userId: string, serverFilters: ServerFilters): string
   return filterParts.join(' && ');
 };
 
+/**
+ * Fetches projects from PocketBase with server-side filtering, sorting, and pagination
+ * Performs ID-to-name resolution for companies and artists using provided metadata
+ * @param params Query parameters including filters, sorting, and pagination
+ * @param availableCompanies Array of company metadata for ID-to-name resolution
+ * @param availableArtists Array of artist metadata for ID-to-name resolution
+ * @returns Promise resolving to ProjectsResult with projects, totalItems, and totalPages
+ */
 const fetchProjects = async (
-  params: ProjectQueryParams & { userId: string }
+  params: ProjectQueryParams & { userId: string },
+  availableCompanies?: any[],
+  availableArtists?: any[]
 ): Promise<ProjectsResult> => {
   const { userId, filters, sortField, sortDirection, currentPage, pageSize } = params;
 
@@ -149,35 +168,30 @@ const fetchProjects = async (
   const startTime = performance.now();
   const requestKey = `dashboard-projects-${userId}-page${currentPage}-size${pageSize}-sort${pbSort}-filter${pbFilter}`;
 
-  // Enhanced debug logging to track query execution
-  logger.debug('🚀 fetchProjects execution details:', {
-    userId,
-    queryParams: { filters, sortField, sortDirection, currentPage, pageSize },
-    pbFilter,
-    pbSort,
+  logger.debug('Fetching projects:', { userId, currentPage, pageSize });
+
+  const requestParams = {
+    filter: pbFilter,
+    sort: pbSort,
+    expand: 'project_tags_via_project.tag', // Only expand tags (company/artist expand was failing)
+    fields:
+      'id,title,status,user,image,width,height,drill_shape,kit_category,date_purchased,date_received,date_started,date_completed,total_diamonds,general_notes,source_url,updated,created,company,artist',
     requestKey,
-    caller: new Error().stack?.split('\n')[1]?.trim(), // Get caller info
-    timestamp: new Date().toISOString(),
-  });
+  };
 
   // Use optimized query with minimal field selection and targeted relation expansion
   // Following PocketBase best practices: https://pocketbase.io/docs/api-records/#query-parameters
-  const resultList = await pb.collection('projects').getList(currentPage, pageSize, {
-    filter: pbFilter,
-    sort: pbSort,
-    // Expand relations - PocketBase returns full records, not individual fields
-    expand: 'company,artist,project_tags_via_project.tag',
-    // Select only essential fields for dashboard display (includes all fields used in transformation)
-    fields:
-      'id,title,status,user,image,width,height,drill_shape,kit_category,date_purchased,date_received,date_started,date_completed,total_diamonds,general_notes,source_url,updated,created,company,artist',
-    // Enable request deduplication for performance
-    requestKey,
-  });
+  const resultList = await pb.collection('projects').getList(currentPage, pageSize, requestParams);
 
   const endTime = performance.now();
   logger.debug(
     `Query completed in ${Math.round(endTime - startTime)}ms - ${resultList.items.length} items`
   );
+
+  logger.debug('Query results:', {
+    totalItems: resultList.totalItems,
+    itemsReturned: resultList.items.length,
+  });
 
   const projectsData: Project[] = (
     resultList.items as ProjectsResponse<Record<string, unknown>>[]
@@ -210,18 +224,20 @@ const fetchProjects = async (
       id: projectRecord.id as string,
       userId: projectRecord.user as string,
       title: projectRecord.title as string,
-      company:
-        typeof recordExpand?.company === 'object' &&
-        recordExpand.company &&
-        'name' in recordExpand.company
-          ? String(recordExpand.company.name)
-          : undefined,
-      artist:
-        typeof recordExpand?.artist === 'object' &&
-        recordExpand.artist &&
-        'name' in recordExpand.artist
-          ? String(recordExpand.artist.name)
-          : undefined,
+      company: (() => {
+        const companyId = projectRecord.company;
+        if (!companyId || !availableCompanies) return undefined;
+        
+        const company = availableCompanies.find(c => c.id === companyId);
+        return company?.name;
+      })(),
+      artist: (() => {
+        const artistId = projectRecord.artist;
+        if (!artistId || !availableArtists) return undefined;
+        
+        const artist = availableArtists.find(a => a.id === artistId);
+        return artist?.name;
+      })(),
       status: (projectRecord.status as ProjectStatus) || 'wishlist',
       kit_category: projectRecord.kit_category || undefined,
       drillShape: projectRecord.drill_shape || undefined,
@@ -245,11 +261,6 @@ const fetchProjects = async (
     };
   });
 
-  // Log all project statuses returned from server for debugging
-  logger.debug(
-    '[Debug] Project statuses from server:',
-    projectsData.map(p => ({ id: p.id, status: p.status, title: p.title }))
-  );
 
   logger.info(`Projects fetched: ${projectsData.length} of ${resultList.totalItems}`);
 
@@ -260,6 +271,16 @@ const fetchProjects = async (
   };
 };
 
+/**
+ * React Query hook for fetching projects with filtering, sorting, and pagination
+ * Ensures consistent query key generation across all components to prevent cache issues
+ * Performs automatic ID-to-name resolution for companies and artists
+ * 
+ * @param params Object containing userId, filters, sorting, and pagination options
+ * @param availableCompanies Array of company metadata for consistent query keys and name resolution
+ * @param availableArtists Array of artist metadata for consistent query keys and name resolution
+ * @returns React Query result with projects data, loading state, and error handling
+ */
 export const useProjects = ({
   userId,
   filters,
@@ -268,7 +289,7 @@ export const useProjects = ({
   currentPage,
   pageSize,
   enabled = true,
-}: UseProjectsParams) => {
+}: UseProjectsParams, availableCompanies?: any[], availableArtists?: any[]) => {
   const queryClient = useQueryClient();
 
   // Memoize query parameters to prevent unnecessary re-computations
@@ -305,8 +326,8 @@ export const useProjects = ({
   }, [userId, queryParams, enabled, filters.status, renderCount, isExcessive, shouldLog]);
 
   const query = useQuery({
-    queryKey: queryKeys.projects.list(userId || '', queryParams),
-    queryFn: () => fetchProjects({ userId: userId!, ...queryParams }),
+    queryKey: [...queryKeys.projects.list(userId || '', queryParams), availableCompanies?.length || 0, availableArtists?.length || 0],
+    queryFn: () => fetchProjects({ userId: userId!, ...queryParams }, availableCompanies, availableArtists),
     enabled: !!userId && enabled, // Only run when userId is available AND hook is enabled
     staleTime: 2 * 60 * 1000, // 2 minutes (increased from 30 seconds)
     gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
@@ -350,8 +371,8 @@ export const useProjects = ({
       };
 
       queryClient.prefetchQuery({
-        queryKey: queryKeys.projects.list(userId, nextPageParams),
-        queryFn: () => fetchProjects({ userId, ...nextPageParams }),
+        queryKey: [...queryKeys.projects.list(userId, nextPageParams), availableCompanies?.length || 0, availableArtists?.length || 0],
+        queryFn: () => fetchProjects({ userId, ...nextPageParams }, availableCompanies, availableArtists),
         staleTime: 2 * 60 * 1000, // Same as main query
       });
 
@@ -364,6 +385,8 @@ export const useProjects = ({
     query.isPlaceholderData,
     queryParams,
     queryClient,
+    availableCompanies,
+    availableArtists,
   ]);
 
   return query;

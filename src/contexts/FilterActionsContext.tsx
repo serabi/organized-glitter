@@ -1,7 +1,10 @@
 /**
  * Filter Actions Context - Stable action functions for dashboard filters
+ * Provides memoized filter action handlers and auto-save functionality
+ * Fixed infinite loop issue by stabilizing mutation dependencies
  * @author @serabi
  * @created 2025-07-09
+ * @updated 2025-07-10
  */
 
 import React, {
@@ -78,7 +81,7 @@ interface FilterActionsProviderProps {
  * FilterActionsProvider component that provides stable filter actions
  */
 export const FilterActionsProvider: React.FC<FilterActionsProviderProps> = ({ children, user }) => {
-  const saveNavigationContext = useSaveNavigationContext();
+  const saveNavigationContextMutation = useSaveNavigationContext();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Access filter state and dispatch for computed values and auto-save
@@ -90,18 +93,18 @@ export const FilterActionsProvider: React.FC<FilterActionsProviderProps> = ({ ch
   const lastSavedFiltersRef = useRef<FilterState | null>(null);
   const [isAutoSaveEnabled, setIsAutoSaveEnabled] = React.useState(false);
 
-  // State ref for avoiding stale closures
+  // State ref for avoiding stale closures  
   const latestStateRef = useRef({
     filters,
     user,
     isInitialized,
-    saveNavigationContext: saveNavigationContext.mutate,
+    saveNavigationContext: saveNavigationContextMutation.mutate,
   });
   latestStateRef.current = {
     filters,
     user,
     isInitialized,
-    saveNavigationContext: saveNavigationContext.mutate,
+    saveNavigationContext: saveNavigationContextMutation.mutate,
   };
 
   /**
@@ -344,7 +347,8 @@ export const FilterActionsProvider: React.FC<FilterActionsProviderProps> = ({ ch
         },
       };
 
-      saveNavigationContext.mutate(
+      // Use latestStateRef to avoid stale closures and dependency issues
+      latestStateRef.current.saveNavigationContext(
         {
           userId: user.id,
           navigationContext,
@@ -368,7 +372,7 @@ export const FilterActionsProvider: React.FC<FilterActionsProviderProps> = ({ ch
 
     saveFilters();
     performanceLogger.end(perfId);
-  }, [filters, isInitialized, user?.id, isAutoSaveEnabled, saveNavigationContext]);
+  }, [filters, isInitialized, user?.id, isAutoSaveEnabled]);
 
   // Enable auto-save after initialization
   React.useEffect(() => {

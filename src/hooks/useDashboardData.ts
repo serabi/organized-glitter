@@ -1,7 +1,9 @@
 /**
- * Dashboard data fetching hook
+ * Dashboard data fetching hook with consistent metadata integration
+ * Provides unified data fetching for Dashboard components with proper query key consistency
  * @author @serabi
  * @created 2025-07-04
+ * @updated 2025-07-10
  */
 
 import { useMemo, useEffect, useRef, useCallback } from 'react';
@@ -9,6 +11,7 @@ import { useProjects, ServerFilters } from '@/hooks/queries/useProjects';
 import { useDashboardStatsStable } from '@/hooks/queries/useDashboardStatsStable';
 import { useAvailableYears } from '@/hooks/queries/useAvailableYears';
 import { FilterState } from '@/contexts/FilterProvider';
+import { useMetadata } from '@/contexts/MetadataContext';
 import { createLogger } from '@/utils/secureLogger';
 import { useRenderGuard, useThrottledLogger } from '@/utils/renderGuards';
 
@@ -23,6 +26,13 @@ export const useDashboardData = (
 ) => {
   // Use the debounced search term passed from context to avoid double debouncing
   // Only fetch data once filter initialization is complete
+
+  // Get metadata for consistent query key generation across all useProjects calls
+  const { companies, artists } = useMetadata();
+  
+  // Memoize metadata arrays to prevent unnecessary re-renders
+  const allCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
+  const allArtists = useMemo(() => (Array.isArray(artists) ? artists : []), [artists]);
 
   // Memoize server filters to prevent unnecessary re-executions
   const serverFilters: ServerFilters = useMemo(
@@ -120,7 +130,8 @@ export const useDashboardData = (
     [projectsParams, shouldFetchData]
   );
 
-  const projectsQuery = useProjects(projectsParamsWithEnabled);
+  // Pass metadata to useProjects for consistent query key generation
+  const projectsQuery = useProjects(projectsParamsWithEnabled, allCompanies, allArtists);
 
   const statsQuery = useDashboardStatsStable();
   const yearsQuery = useAvailableYears();
