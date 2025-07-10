@@ -36,7 +36,6 @@ import {
 interface ArtistTableProps {
   artists: ArtistsResponse[];
   loading: boolean;
-  onArtistUpdated: () => void;
 }
 
 /**
@@ -45,7 +44,7 @@ interface ArtistTableProps {
  * Renders a data table displaying user artists with management functionality.
  * Features include editing capabilities and secure deletion.
  */
-const ArtistTable = ({ artists, loading, onArtistUpdated }: ArtistTableProps) => {
+const ArtistTable = ({ artists, loading }: ArtistTableProps) => {
   const [showDeleteConfirmDialog, setShowDeleteConfirmDialog] = useState(false);
   const [artistToDelete, setArtistToDelete] = useState<ArtistsResponse | null>(null);
   const deleteArtistMutation = useDeleteArtist();
@@ -107,7 +106,7 @@ const ArtistTable = ({ artists, loading, onArtistUpdated }: ArtistTableProps) =>
               </TableCell>
               <TableCell>
                 <div className="flex space-x-1">
-                  <EditArtistDialog artist={artist} onArtistUpdated={onArtistUpdated} />
+                  <EditArtistDialog artist={artist} />
                   <Button
                     variant="ghost"
                     size="sm"

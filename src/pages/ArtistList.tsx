@@ -65,15 +65,12 @@ const ArtistList = () => {
     }
   }, [error, toast]);
 
-  const handleArtistUpdated = () => {
-    // React Query will automatically refetch when invalidated by the mutation
-  };
   return (
     <MainLayout>
       <div className="container mx-auto px-4 py-8">
         <ArtistPageHeader artists={artists} />
         <div className="rounded-lg bg-card text-card-foreground shadow">
-          <ArtistTable artists={artists} loading={loading} onArtistUpdated={handleArtistUpdated} />
+          <ArtistTable artists={artists} loading={loading} />
         </div>
       </div>
     </MainLayout>

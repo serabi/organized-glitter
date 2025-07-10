@@ -103,7 +103,7 @@ export const getDefaultFilters = (): FilterState => ({
   selectedDrillShape: 'all',
   selectedYearFinished: 'all',
   includeMiniKits: true,
-  includeDestashed: true,
+  includeDestashed: false,
   includeArchived: false,
   searchTerm: '',
   selectedTags: [],

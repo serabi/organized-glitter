@@ -45,6 +45,13 @@ const POCKETBASE_SORT_MAP: Record<DashboardValidSortField, string> = {
   date_started: 'date_started',
   date_received: 'date_received',
   kit_name: 'title',
+  company: 'company',
+  artist: 'artist',
+  status: 'status',
+  width: 'width',
+  height: 'height',
+  kit_category: 'kit_category',
+  drill_shape: 'drill_shape',
 };
 
 const logger = createLogger('useProjects');

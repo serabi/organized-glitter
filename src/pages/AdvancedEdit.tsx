@@ -91,9 +91,31 @@ const AdvancedEdit = () => {
   const totalPages = data?.totalPages || 0;
 
   // Metadata from FilterProvider (already in consistent ID-based format)
-  const allCompanies = Array.isArray(companies) ? companies : [];
-  const allArtists = Array.isArray(artists) ? artists : [];
+  const allCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
+  const allArtists = useMemo(() => (Array.isArray(artists) ? artists : []), [artists]);
   const allTags = useMemo(() => (Array.isArray(tags) ? tags : []), [tags]);
+
+  // DIAGNOSTIC LOGGING - Add logs to validate assumptions
+  useEffect(() => {
+    logger.debug('AdvancedEdit: Metadata received from FilterProvider', {
+      companiesCount: allCompanies.length,
+      artistsCount: allArtists.length,
+      tagsCount: allTags.length,
+      isMetadataLoading,
+      companiesData: allCompanies.slice(0, 3), // Show first 3 companies for debugging
+      artistsData: allArtists.slice(0, 3), // Show first 3 artists for debugging
+    });
+  }, [allCompanies, allArtists, allTags, isMetadataLoading]);
+
+  // Log when companies/artists arrays are empty
+  useEffect(() => {
+    if (!isMetadataLoading && allCompanies.length === 0) {
+      logger.warn('AdvancedEdit: No companies data received from FilterProvider');
+    }
+    if (!isMetadataLoading && allArtists.length === 0) {
+      logger.warn('AdvancedEdit: No artists data received from FilterProvider');
+    }
+  }, [allCompanies.length, allArtists.length, isMetadataLoading]);
 
   // View state
   const [showImages, setShowImages] = useState(false);

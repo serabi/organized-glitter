@@ -1,6 +1,4 @@
 import { ProjectType } from '@/types/project';
-import { Tag } from '@/types/tag';
-import { ArtistsResponse, CompaniesResponse } from '@/types/pocketbase.types';
 
 export interface AdvancedEditTableProps {
   projects: ProjectType[];
@@ -11,9 +9,9 @@ export interface AdvancedEditTableProps {
   onSelectAll: () => void;
   onProjectUpdate: (projectId: string, updates: Partial<ProjectType>) => void;
   onBulkDelete: () => void;
-  availableCompanies?: CompaniesResponse[];
-  availableArtists?: ArtistsResponse[];
-  availableTags?: Tag[];
+  availableCompanies?: Array<{ id: string; name: string }>;
+  availableArtists?: Array<{ id: string; name: string }>;
+  availableTags?: Array<{ id: string; name: string; color: string }>;
 }
 
 export interface EditingState {
@@ -33,7 +31,7 @@ export interface EditCellProps {
   onCancelEdit: () => void;
   onEditValueChange: (value: string) => void;
   onProjectUpdate: (projectId: string, updates: Partial<ProjectType>) => void;
-  availableCompanies?: CompaniesResponse[];
-  availableArtists?: ArtistsResponse[];
-  availableTags?: Tag[];
+  availableCompanies?: Array<{ id: string; name: string }>;
+  availableArtists?: Array<{ id: string; name: string }>;
+  availableTags?: Array<{ id: string; name: string; color: string }>;
 }

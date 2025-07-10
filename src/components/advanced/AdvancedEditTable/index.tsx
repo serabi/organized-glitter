@@ -56,11 +56,18 @@ const AdvancedEditTable: React.FC<AdvancedEditTableProps> = ({
       // Map the sort key to dashboard sort field
       const sortKeyMapping: Record<string, DashboardValidSortField> = {
         title: 'kit_name',
+        company: 'company',
+        artist: 'artist',
+        status: 'status',
+        tags: 'last_updated', // Special case: tags are complex relations, use last_updated
+        width: 'width',
+        height: 'height',
+        kit_category: 'kit_category',
+        drillShape: 'drill_shape',
         datePurchased: 'date_purchased',
         dateReceived: 'date_received',
         dateStarted: 'date_started',
         dateCompleted: 'date_finished',
-        // Add other mappings as needed
       };
 
       const dashboardSortField = sortKeyMapping[key] || 'last_updated';
