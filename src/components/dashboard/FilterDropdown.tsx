@@ -12,9 +12,14 @@ interface OptionType {
   value: string;
 }
 
+interface MetadataType {
+  id: string;
+  name: string;
+}
+
 interface FilterDropdownProps {
   label: string;
-  options: OptionType[] | string[] | undefined; // Can be undefined during loading
+  options: OptionType[] | string[] | MetadataType[] | undefined; // Can be undefined during loading
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
@@ -62,6 +67,18 @@ const FilterDropdown = React.memo(
       );
     };
 
+    // Check if this is raw metadata format {id, name}
+    const isMetadataTypeArray = (opts: unknown[] | undefined | null): opts is MetadataType[] => {
+      return (
+        Array.isArray(opts) &&
+        opts.length > 0 &&
+        typeof opts[0] === 'object' &&
+        opts[0] !== null &&
+        'id' in opts[0] &&
+        'name' in opts[0]
+      );
+    };
+
     return (
       <div className="space-y-2">
         <h3 className="text-sm font-medium">{label}</h3>
@@ -79,16 +96,25 @@ const FilterDropdown = React.memo(
           <SelectContent className="bg-popover dark:bg-gray-800 dark:text-gray-100">
             {showAllOption && <SelectItem value="all">All {getPluralLabel(label)}</SelectItem>}
             {isOptionTypeArray(safeOptions)
-              ? safeOptions.map(option => (
+              ? // Standard {label, value} format
+                safeOptions.map(option => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>
                 ))
-              : (safeOptions as string[]).map(option => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
+              : isMetadataTypeArray(safeOptions)
+                ? // Raw metadata {id, name} format - transform to {label, value}
+                  safeOptions.map(option => (
+                    <SelectItem key={option.id} value={option.name}>
+                      {option.name}
+                    </SelectItem>
+                  ))
+                : // String array format
+                  (safeOptions as string[]).map(option => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
           </SelectContent>
         </Select>
       </div>

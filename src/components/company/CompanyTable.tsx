@@ -5,7 +5,7 @@
  * including viewing, editing, and deleting companies. Uses secure FilterBuilder
  * utility for PocketBase queries to count projects and ensure data integrity.
  *
- * @author Generated with Claude Code
+ * @author @serabi
  * @version 1.0.0
  * @since 2024-06-29
  */
@@ -23,7 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Trash2, Link2, Loader2, FileText } from 'lucide-react';
 import { pb } from '@/lib/pocketbase';
 import { createFilter } from '@/utils/filterBuilder';
-import { logger } from '@/utils/logger';
+import { createLogger } from '@/utils/secureLogger';
 import EditCompanyDialog from './EditCompanyDialog';
 import { Link } from 'react-router-dom';
 import { CompaniesResponse } from '@/types/pocketbase.types';
@@ -140,6 +140,7 @@ const CompanyTable = ({ companies, loading, onCompanyUpdated }: CompanyTableProp
               });
               counts[company.id] = result.totalItems;
             } catch (error) {
+              const logger = createLogger('CompanyTable');
               logger.error(`Error fetching count for company ${company.id}:`, error);
               counts[company.id] = 0;
             }
@@ -148,6 +149,7 @@ const CompanyTable = ({ companies, loading, onCompanyUpdated }: CompanyTableProp
 
         setProjectCounts(counts);
       } catch (error) {
+        const logger = createLogger('CompanyTable');
         logger.error('Error fetching project counts:', error);
       } finally {
         setLoadingCounts(false);

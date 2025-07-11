@@ -6,7 +6,7 @@
  * The tabs are responsive and adapt to different screen sizes.
  *
  * Key Features:
- * - Dynamic status counts from dashboard statistics
+ * - Dynamic status counts from dashboard statistics with spinner loading
  * - Color-coded badges for visual status differentiation
  * - Enhanced tab design with borders, backgrounds, and elevation
  * - Active state styling with subtle shadows and borders
@@ -17,8 +17,15 @@
  * - Enhanced touch targets (min 44px) for mobile accessibility
  * - Backdrop blur and glassmorphism effects
  * - Real-time count updates when projects change
- * - Integrated with DashboardFiltersContext for state management
+ * - Spinner-based loading states for improved mobile experience
+ * - Mobile network timeout handling and adaptive loading
  * - Keyboard accessible tab navigation
+ *
+ * Performance Optimizations:
+ * - Uses focused StatsContext instead of monolithic context
+ * - Implements spinner loading instead of showing "0" on mobile
+ * - Mobile-optimized network handling with timeouts
+ * - Reduced re-renders through context splitting
  *
  * Status Categories:
  * - All: Shows total project count
@@ -32,7 +39,7 @@
  *
  * @author serabi
  * @since 2025-07-03
- * @version 1.4.0 - Vertical stacking layout for mobile with enhanced tab design
+ * @version 2.0.0 - Migrated to focused contexts with spinner loading
  */
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -42,7 +49,8 @@ import ResponsiveTabText, {
   useWindowDimensions,
 } from '@/components/ui/responsive-tab-text';
 import { ProjectFilterStatus } from '@/types/project';
-import { useDashboardFilters, CountsForTabsType } from '@/contexts/DashboardFiltersContext';
+import { useStats, CountsForTabsType } from '@/contexts/StatsContext';
+import { useStatusFilter } from '@/contexts/FilterProvider';
 import { createLogger } from '@/utils/secureLogger';
 
 // Tab configuration for dynamic rendering
@@ -124,9 +132,9 @@ const isValidProjectFilterStatus = (value: string): value is ProjectFilterStatus
 };
 
 const StatusTabsComponent = () => {
-  // Removed unused props
-  const { getCountsForTabs, filters, updateStatus } = useDashboardFilters();
-  const activeStatus = filters.activeStatus;
+  // Use focused contexts instead of monolithic DashboardFiltersContext
+  const { getCountsForTabs, getBadgeContent, isError, isLoading } = useStats();
+  const { activeStatus, updateStatus } = useStatusFilter();
 
   // Fallback counts object with all required properties
   const fallbackCounts: CountsForTabsType = {
@@ -140,16 +148,25 @@ const StatusTabsComponent = () => {
     archived: 0,
   };
 
-  // Get counts with error handling
+  // Get counts with error handling and loading state consideration
   const counts = (() => {
     try {
       const result = getCountsForTabs();
-      return result || fallbackCounts;
+
+      // If result is a loading state string, return fallback counts
+      if (typeof result === 'string') {
+        logger.debug('Stats are in loading state:', result);
+        return fallbackCounts;
+      }
+
+      // Return actual counts
+      return result;
     } catch (error) {
       logger.error('Error getting counts for tabs:', error);
       return fallbackCounts;
     }
   })();
+
   const { width } = useWindowDimensions();
 
   // Responsive layout logic
@@ -209,8 +226,8 @@ const StatusTabsComponent = () => {
               abbreviatedText={tab.abbreviatedText}
               breakpoint={375}
             />
-            <Badge variant={getBadgeVariant(tab.value)} className="text-xs">
-              {tab.getCount(counts)}
+            <Badge variant={getBadgeVariant(tab.value)} className="text-[11px]">
+              {getBadgeContent(tab.getCount(counts))}
             </Badge>
           </TabsTrigger>
         ))}

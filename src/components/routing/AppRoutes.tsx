@@ -2,10 +2,11 @@ import React, { Suspense, lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { RootRoute } from '@/components/auth/RootRoute';
-import { MetadataProvider } from '@/contexts/MetadataContext';
+import { FilterProvider } from '@/contexts/FilterProvider';
 import { PageLoading } from '@/components/ui/page-loading';
 import { usePostHogPageTracking } from '@/hooks/usePostHogPageTracking';
 import { useNavigationMonitoring } from '@/hooks/useNavigationMonitoring';
+import { useAuth } from '@/hooks/useAuth';
 import { createLogger } from '@/utils/secureLogger';
 import RouteErrorBoundary from '@/components/error/RouteErrorBoundary';
 
@@ -88,7 +89,6 @@ const ConfirmEmailChange = lazy(() => import('@/pages/ConfirmEmailChange'));
 const Overview = createLazyComponent(() => import('@/pages/Overview'), 'Overview');
 const Dashboard = createLazyComponent(() => import('@/pages/Dashboard'), 'Dashboard');
 const Profile = createLazyComponent(() => import('@/pages/Profile'), 'Profile');
-const AdvancedView = createLazyComponent(() => import('@/pages/AdvancedView'), 'AdvancedView');
 const AdvancedEdit = createLazyComponent(() => import('@/pages/AdvancedEdit'), 'AdvancedEdit');
 
 // Lazy load project-related pages with enhanced error handling
@@ -130,6 +130,17 @@ const ProjectDetailWrapper: React.FC = () => {
   });
 
   return <ProjectDetail />;
+};
+
+// Wrapper for AdvancedEdit route with FilterProvider
+const AdvancedEditWrapper: React.FC = () => {
+  const { user } = useAuth();
+
+  return (
+    <FilterProvider user={user}>
+      <AdvancedEdit />
+    </FilterProvider>
+  );
 };
 
 /**
@@ -197,9 +208,7 @@ export const AppRoutes: React.FC = () => {
         element={
           <ProtectedRoute>
             <Suspense fallback={<PageLoading />}>
-              <MetadataProvider>
-                <NewProject />
-              </MetadataProvider>
+              <NewProject />
             </Suspense>
           </ProtectedRoute>
         }
@@ -328,29 +337,14 @@ export const AppRoutes: React.FC = () => {
         }
       />
 
-      {/* Advanced view routes with metadata provider */}
-      <Route
-        path="/advanced"
-        element={
-          <ProtectedRoute>
-            <MetadataProvider>
-              <Suspense fallback={<PageLoading />}>
-                <AdvancedView />
-              </Suspense>
-            </MetadataProvider>
-          </ProtectedRoute>
-        }
-      />
-
+      {/* Advanced edit route with metadata provider */}
       <Route
         path="/advanced-edit"
         element={
           <ProtectedRoute>
-            <MetadataProvider>
-              <Suspense fallback={<PageLoading />}>
-                <AdvancedEdit />
-              </Suspense>
-            </MetadataProvider>
+            <Suspense fallback={<PageLoading />}>
+              <AdvancedEditWrapper />
+            </Suspense>
           </ProtectedRoute>
         }
       />

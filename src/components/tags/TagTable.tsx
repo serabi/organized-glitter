@@ -1,4 +1,10 @@
-import { useState } from 'react';
+/**
+ * Tag Management Table Component
+ * @author @serabi
+ * @created 2025-01-09
+ */
+
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   Table,
   TableBody,
@@ -27,12 +33,17 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
+/**
+ * Props interface for the TagTable component
+ */
 interface TagTableProps {
   tags: Tag[];
   loading: boolean;
 }
 
-// Skeleton component for the projects column while loading
+/**
+ * Skeleton component for the projects column while loading
+ */
 const ProjectCountSkeleton = () => (
   <div className="flex items-center space-x-2">
     <Skeleton className="h-4 w-4 rounded" />
@@ -40,7 +51,9 @@ const ProjectCountSkeleton = () => (
   </div>
 );
 
-// Skeleton row for the entire table while loading
+/**
+ * Skeleton row for the entire table while loading
+ */
 const TagTableRowSkeleton = () => (
   <TableRow>
     <TableCell>
@@ -70,13 +83,19 @@ const TagTableRowSkeleton = () => (
   </TableRow>
 );
 
+/**
+ * TagTable Component
+ *
+ * Renders a data table displaying user tags with management functionality.
+ * Features include project count display, editing capabilities, and secure deletion.
+ */
 const TagTable = ({ tags, loading }: TagTableProps) => {
   const [showDeleteConfirmDialog, setShowDeleteConfirmDialog] = useState(false);
   const [tagToDelete, setTagToDelete] = useState<Tag | null>(null);
   const deleteTagMutation = useDeleteTag();
 
-  // Use the optimized tag stats hook
-  const tagIds = tags.map(tag => tag.id);
+  // Use the optimized tag stats hook with memoized tagIds
+  const tagIds = useMemo(() => tags.map(tag => tag.id), [tags]);
   const { data: projectCounts, isLoading: loadingCounts, error: statsError } = useTagStats(tagIds);
 
   // Log any errors for debugging but don't break the UI
@@ -84,12 +103,12 @@ const TagTable = ({ tags, loading }: TagTableProps) => {
     secureLogger.error('[TagTable] Tag stats error:', { statsError });
   }
 
-  const handleDeleteTag = (tag: Tag) => {
+  const handleDeleteTag = useCallback((tag: Tag) => {
     setTagToDelete(tag);
     setShowDeleteConfirmDialog(true);
-  };
+  }, []);
 
-  const confirmDeleteTag = async () => {
+  const confirmDeleteTag = useCallback(async () => {
     if (!tagToDelete) return;
 
     deleteTagMutation.mutate(
@@ -101,7 +120,7 @@ const TagTable = ({ tags, loading }: TagTableProps) => {
         },
       }
     );
-  };
+  }, [tagToDelete, deleteTagMutation]);
 
   // Show skeleton loading for table structure while loading tags
   if (loading) {
@@ -232,4 +251,4 @@ const TagTable = ({ tags, loading }: TagTableProps) => {
   );
 };
 
-export default TagTable;
+export default React.memo(TagTable);

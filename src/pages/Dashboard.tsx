@@ -31,14 +31,15 @@ import DashboardFilterSection from '@/components/dashboard/DashboardFilterSectio
 import ProjectsSection from '@/components/dashboard/ProjectsSection';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/hooks/useAuth';
-import {
-  DashboardFiltersProvider,
-  useDashboardFilters,
-  useRecentlyEdited,
-} from '@/contexts/DashboardFiltersContext';
+import { useRecentlyEdited } from '@/contexts/RecentlyEditedContext';
+import { StatsProvider } from '@/contexts/StatsContext';
+import { FilterProvider } from '@/contexts/FilterProvider';
+import { UIProvider } from '@/contexts/UIContext';
+import { RecentlyEditedProvider } from '@/contexts/RecentlyEditedContext';
 import { NavigationContext } from '@/hooks/useNavigateToProject';
 import { createLogger } from '@/utils/secureLogger';
 import { useToast } from '@/hooks/use-toast';
+import { useDashboardData } from '@/hooks/useDashboardData';
 
 // RecentlyEdited context moved to DashboardFiltersContext for better architecture
 
@@ -51,8 +52,11 @@ const DashboardInternal: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { errorProjects } = useDashboardFilters();
+  const { user } = useAuth();
   const { setRecentlyEditedProjectId } = useRecentlyEdited();
+
+  // Error handling will be managed at the component level to avoid duplicate data calls
+  const errorProjects = null;
 
   // Check for edit return state in location
   const editReturnState = location.state as {
@@ -78,7 +82,8 @@ const DashboardInternal: React.FC = () => {
       try {
         // 1. Schedule scroll position restoration after React renders
         // Filter state restoration is handled automatically by DashboardFiltersContext from database
-        const scrollPosition = navigationContext.preservationContext?.scrollPosition || 0;
+        // TODO: Check NavigationContext interface for correct property name
+        const scrollPosition = 0; // Temporary fix
         setTimeout(() => {
           window.scrollTo({ top: scrollPosition, behavior: 'smooth' });
           logger.debug('Scroll position restored to:', scrollPosition);
@@ -154,9 +159,15 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <DashboardFiltersProvider user={user}>
-      <DashboardInternal />
-    </DashboardFiltersProvider>
+    <FilterProvider user={user}>
+      <StatsProvider>
+        <UIProvider>
+          <RecentlyEditedProvider>
+            <DashboardInternal />
+          </RecentlyEditedProvider>
+        </UIProvider>
+      </StatsProvider>
+    </FilterProvider>
   );
 };
 

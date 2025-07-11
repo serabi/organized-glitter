@@ -19,10 +19,9 @@ interface EditArtistDialogProps {
     id: string;
     name: string;
   };
-  onArtistUpdated: () => void;
 }
 
-const EditArtistDialog = ({ artist, onArtistUpdated }: EditArtistDialogProps) => {
+const EditArtistDialog = ({ artist }: EditArtistDialogProps) => {
   const [artistName, setArtistName] = useState(artist.name);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const updateArtistMutation = useUpdateArtist();
@@ -44,7 +43,6 @@ const EditArtistDialog = ({ artist, onArtistUpdated }: EditArtistDialogProps) =>
       {
         onSuccess: () => {
           setIsDialogOpen(false);
-          onArtistUpdated();
         },
       }
     );

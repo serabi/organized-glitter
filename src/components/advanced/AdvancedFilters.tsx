@@ -1,4 +1,10 @@
-import React, { useState, useEffect } from 'react';
+/**
+ * Advanced filters component for project filtering with server-side state management
+ * @author @serabi
+ * @created 2025-07-09
+ */
+
+import React from 'react';
 import {
   Select,
   SelectContent,
@@ -10,131 +16,102 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { AdvancedFilters, AvailableFilters } from '@/hooks/useAdvancedFilters';
+import { useFilters } from '@/contexts/FilterHooks';
 import { ProjectFilterStatus } from '@/types/project';
-import { TagService } from '@/lib/tags';
-import { secureLogger } from '@/utils/secureLogger';
-import { Tag } from '@/types/tag';
 
 interface AdvancedFiltersProps {
-  filters: AdvancedFilters;
-  setFilters: (filters: AdvancedFilters) => void;
-  availableFilters: AvailableFilters;
-  loading: boolean;
   showImages: boolean;
   onShowImagesChange: (value: boolean) => void;
-  showMiniKits: boolean;
-  onShowMiniKitsChange: (value: boolean) => void;
-  showArchived: boolean;
-  onShowArchivedChange: (value: boolean) => void;
-  showDestashed: boolean;
-  onShowDestashedChange: (value: boolean) => void;
 }
 
-const getStatusOptions = (
-  showArchived: boolean,
-  showDestashed: boolean
-): { value: ProjectFilterStatus; label: string }[] => {
-  const baseOptions: { value: ProjectFilterStatus; label: string }[] = [
+const getStatusOptions = (): { value: ProjectFilterStatus; label: string }[] => {
+  return [
     { value: 'all' as ProjectFilterStatus, label: 'All Statuses' },
     { value: 'wishlist' as ProjectFilterStatus, label: 'Wishlist' },
     { value: 'purchased' as ProjectFilterStatus, label: 'Purchased' },
     { value: 'stash' as ProjectFilterStatus, label: 'In Stash' },
     { value: 'progress' as ProjectFilterStatus, label: 'In Progress' },
     { value: 'completed' as ProjectFilterStatus, label: 'Completed' },
+    { value: 'archived' as ProjectFilterStatus, label: 'Archived' },
+    { value: 'destashed' as ProjectFilterStatus, label: 'Destashed' },
   ];
-
-  if (showArchived) {
-    baseOptions.push({ value: 'archived' as ProjectFilterStatus, label: 'Archived' });
-  }
-
-  if (showDestashed) {
-    baseOptions.push({ value: 'destashed' as ProjectFilterStatus, label: 'Destashed' });
-  }
-
-  return baseOptions;
 };
 
 const AdvancedFiltersComponent: React.FC<AdvancedFiltersProps> = ({
-  filters,
-  setFilters,
-  availableFilters,
-  loading,
   showImages,
   onShowImagesChange,
-  showMiniKits,
-  onShowMiniKitsChange,
-  showArchived,
-  onShowArchivedChange,
-  showDestashed,
-  onShowDestashedChange,
 }) => {
-  // State for available tags
-  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
-  const [tagsLoading, setTagsLoading] = useState(false);
+  // Use consolidated FilterProvider hooks
+  const {
+    filters,
+    isSearchPending,
+    companies,
+    artists,
+    drillShapes,
+    tags,
+    updateStatus,
+    updateCompany,
+    updateArtist,
+    updateDrillShape,
+    updateSearchTerm,
+    updateTags,
+    toggleTag,
+    updateIncludeMiniKits,
+    updateIncludeArchived,
+    updateIncludeDestashed,
+  } = useFilters();
 
-  // Fetch available tags on component mount
-  useEffect(() => {
-    const fetchTags = async () => {
-      setTagsLoading(true);
-      try {
-        const response = await TagService.getUserTags();
-        if (response.status === 'success' && response.data) {
-          setAvailableTags(response.data);
-        }
-      } catch (error) {
-        secureLogger.error('Failed to fetch tags:', error);
-      } finally {
-        setTagsLoading(false);
-      }
-    };
+  // Custom reset function
+  const resetFilters = () => {
+    updateStatus('all');
+    updateCompany(null);
+    updateArtist(null);
+    updateDrillShape(null);
+    updateSearchTerm('');
+    updateTags([]);
+    updateIncludeMiniKits(true);
+    updateIncludeArchived(false);
+    updateIncludeDestashed(true);
+  };
 
-    fetchTags();
-  }, []);
   // Handle search input
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFilters({ ...filters, searchTerm: e.target.value });
+    updateSearchTerm(e.target.value);
   };
 
   // Handle status change
   const handleStatusChange = (value: string) => {
-    setFilters({ ...filters, status: value as ProjectFilterStatus });
+    updateStatus(value as ProjectFilterStatus);
   };
 
-  // Handle company change
+  // Handle company change (now using IDs instead of names)
   const handleCompanyChange = (value: string) => {
-    setFilters({ ...filters, company: value });
+    updateCompany(value === 'all' ? null : value);
   };
 
-  // Handle artist change
+  // Handle artist change (now using IDs instead of names)
   const handleArtistChange = (value: string) => {
-    setFilters({ ...filters, artist: value });
+    updateArtist(value === 'all' ? null : value);
   };
 
   // Handle drill shape change
   const handleDrillShapeChange = (value: string) => {
-    setFilters({ ...filters, drillShape: value });
+    updateDrillShape(value === 'all' ? null : value);
   };
 
-  // Handle tag change
+  // Handle tag change (now using IDs instead of names)
   const handleTagChange = (value: string) => {
-    setFilters({ ...filters, tag: value });
+    if (value === 'all') {
+      updateTags([]);
+    } else {
+      const tag = tags.find(t => t.name === value);
+      if (tag) {
+        toggleTag(tag.id);
+      }
+    }
   };
 
-  // Clear all filters
-  const clearFilters = () => {
-    setFilters({
-      status: 'all',
-      searchTerm: '',
-      company: 'all',
-      artist: 'all',
-      drillShape: 'all',
-      tag: 'all',
-      hasDates: false,
-    });
-  };
-
-  const statusOptions = getStatusOptions(showArchived, showDestashed);
+  const statusOptions = getStatusOptions();
 
   return (
     <div className="mb-6 space-y-4 rounded-lg border bg-background p-4">
@@ -145,13 +122,13 @@ const AdvancedFiltersComponent: React.FC<AdvancedFiltersProps> = ({
             placeholder="Search projects..."
             value={filters.searchTerm}
             onChange={handleSearchChange}
-            disabled={loading}
+            disabled={isSearchPending}
           />
         </div>
 
         {/* Status filter */}
         <div>
-          <Select value={filters.status} onValueChange={handleStatusChange} disabled={loading}>
+          <Select value={filters.activeStatus} onValueChange={handleStatusChange}>
             <SelectTrigger>
               <SelectValue placeholder="Status" />
             </SelectTrigger>
@@ -168,18 +145,18 @@ const AdvancedFiltersComponent: React.FC<AdvancedFiltersProps> = ({
         {/* Company filter */}
         <div>
           <Select
-            value={filters.company}
+            value={filters.selectedCompany}
             onValueChange={handleCompanyChange}
-            disabled={loading || !availableFilters.companies.length}
+            disabled={!companies.length}
           >
             <SelectTrigger>
               <SelectValue placeholder="Company" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Companies</SelectItem>
-              {availableFilters.companies.map(company => (
-                <SelectItem key={company} value={company}>
-                  {company}
+              {companies.map(company => (
+                <SelectItem key={company.id} value={company.id}>
+                  {company.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -189,18 +166,18 @@ const AdvancedFiltersComponent: React.FC<AdvancedFiltersProps> = ({
         {/* Artist filter */}
         <div>
           <Select
-            value={filters.artist}
+            value={filters.selectedArtist}
             onValueChange={handleArtistChange}
-            disabled={loading || !availableFilters.artists.length}
+            disabled={!artists.length}
           >
             <SelectTrigger>
               <SelectValue placeholder="Artist" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Artists</SelectItem>
-              {availableFilters.artists.map(artist => (
-                <SelectItem key={artist} value={artist}>
-                  {artist}
+              {artists.map(artist => (
+                <SelectItem key={artist.id} value={artist.id}>
+                  {artist.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -210,16 +187,16 @@ const AdvancedFiltersComponent: React.FC<AdvancedFiltersProps> = ({
         {/* Tag filter */}
         <div>
           <Select
-            value={filters.tag}
+            value={filters.selectedTags.length > 0 ? filters.selectedTags[0] : 'all'}
             onValueChange={handleTagChange}
-            disabled={loading || tagsLoading || !availableTags.length}
+            disabled={!tags.length}
           >
             <SelectTrigger>
               <SelectValue placeholder="Tag" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Tags</SelectItem>
-              {availableTags.map(tag => (
+              {tags.map(tag => (
                 <SelectItem key={tag.id} value={tag.name}>
                   {tag.name}
                 </SelectItem>
@@ -230,23 +207,19 @@ const AdvancedFiltersComponent: React.FC<AdvancedFiltersProps> = ({
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-6">
-        {' '}
-        {/* Parent grid, still 6 columns */}
         {/* Drill Shape filter */}
         <div className="md:col-span-1">
-          {' '}
-          {/* Stays as col-span-1 */}
           <Select
-            value={filters.drillShape}
+            value={filters.selectedDrillShape}
             onValueChange={handleDrillShapeChange}
-            disabled={loading || !availableFilters.drillShapes.length}
+            disabled={!drillShapes.length}
           >
             <SelectTrigger>
               <SelectValue placeholder="Drill Shape" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Shapes</SelectItem>
-              {availableFilters.drillShapes.map(shape => (
+              {drillShapes.map(shape => (
                 <SelectItem key={shape} value={shape}>
                   {shape === 'round' ? 'Round' : 'Square'}
                 </SelectItem>
@@ -266,8 +239,8 @@ const AdvancedFiltersComponent: React.FC<AdvancedFiltersProps> = ({
           <div className="flex items-center space-x-2">
             <Switch
               id="show-mini-kits"
-              checked={showMiniKits}
-              onCheckedChange={onShowMiniKitsChange}
+              checked={filters.includeMiniKits}
+              onCheckedChange={updateIncludeMiniKits}
             />
             <Label htmlFor="show-mini-kits">Show mini kits</Label>
           </div>
@@ -277,8 +250,8 @@ const AdvancedFiltersComponent: React.FC<AdvancedFiltersProps> = ({
             <div className="flex items-center space-x-2">
               <Switch
                 id="show-archived"
-                checked={showArchived}
-                onCheckedChange={onShowArchivedChange}
+                checked={filters.includeArchived}
+                onCheckedChange={updateIncludeArchived}
               />
               <Label htmlFor="show-archived">Show archived</Label>
             </div>
@@ -286,8 +259,8 @@ const AdvancedFiltersComponent: React.FC<AdvancedFiltersProps> = ({
             <div className="flex items-center space-x-2">
               <Switch
                 id="show-destashed"
-                checked={showDestashed}
-                onCheckedChange={onShowDestashedChange}
+                checked={filters.includeDestashed}
+                onCheckedChange={updateIncludeDestashed}
               />
               <Label htmlFor="show-destashed">Show destashed</Label>
             </div>
@@ -295,15 +268,11 @@ const AdvancedFiltersComponent: React.FC<AdvancedFiltersProps> = ({
         </div>
         {/* Clear filters Button */}
         <div className="flex items-center justify-end md:col-span-2">
-          {' '}
-          {/* New col-span-2 and alignment */}
-          <Button variant="ghost" onClick={clearFilters} disabled={loading}>
+          <Button variant="ghost" onClick={resetFilters}>
             Clear filters
           </Button>
         </div>
       </div>
-
-      {/* Selected tags display removed */}
     </div>
   );
 };

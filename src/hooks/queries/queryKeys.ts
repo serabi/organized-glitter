@@ -17,7 +17,32 @@
 
 import { ServerFilters } from './useProjects';
 import { DashboardValidSortField } from '@/features/dashboard/dashboard.constants';
-import { SortDirectionType } from '@/contexts/DashboardFiltersContext';
+import { SortDirectionType } from '@/contexts/FilterProvider';
+
+/**
+ * Creates stable query keys by serializing object parameters
+ * This prevents unnecessary re-fetches when object references change but values remain the same
+ */
+const createStableKey = (obj: Record<string, any>): string => {
+  // Sort keys to ensure consistent serialization
+  const sortedKeys = Object.keys(obj).sort();
+  const stableObj: Record<string, any> = {};
+
+  sortedKeys.forEach(key => {
+    const value = obj[key];
+    if (Array.isArray(value)) {
+      // Sort arrays to ensure consistent serialization
+      stableObj[key] = [...value].sort();
+    } else if (typeof value === 'object' && value !== null) {
+      // Recursively handle nested objects
+      stableObj[key] = createStableKey(value);
+    } else {
+      stableObj[key] = value;
+    }
+  });
+
+  return JSON.stringify(stableObj);
+};
 
 /**
  * Parameters for project list queries
@@ -27,6 +52,15 @@ export interface ProjectQueryParams {
   filters: ServerFilters;
   sortField: DashboardValidSortField;
   sortDirection: SortDirectionType;
+  currentPage: number;
+  pageSize: number;
+}
+
+/**
+ * Parameters for company list queries
+ * Used to create unique cache keys for different pagination combinations
+ */
+export interface CompanyQueryParams {
   currentPage: number;
   pageSize: number;
 }
@@ -51,9 +85,9 @@ export const queryKeys = {
     all: ['projects'] as const,
     /** Base key for project list queries */
     lists: () => [...queryKeys.projects.all, 'list'] as const,
-    /** Specific project list with user and parameters */
+    /** Specific project list with user and parameters - uses stable serialization */
     list: (userId: string, params: ProjectQueryParams) =>
-      [...queryKeys.projects.lists(), userId, params] as const,
+      [...queryKeys.projects.lists(), userId, createStableKey(params)] as const,
     /** Base key for project detail queries */
     details: () => [...queryKeys.projects.all, 'detail'] as const,
     /** Specific project detail by ID */
@@ -72,7 +106,9 @@ export const queryKeys = {
   companies: {
     all: ['companies'] as const,
     lists: () => [...queryKeys.companies.all, 'list'] as const,
-    list: (userId: string) => [...queryKeys.companies.lists(), userId] as const,
+    list: (userId: string, params: CompanyQueryParams) =>
+      [...queryKeys.companies.lists(), userId, params] as const,
+    allForUser: (userId: string) => [...queryKeys.companies.all, 'all-for-user', userId] as const,
     details: () => [...queryKeys.companies.all, 'detail'] as const,
     detail: (id: string) => [...queryKeys.companies.details(), id] as const,
   },

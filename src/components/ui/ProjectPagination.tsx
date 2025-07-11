@@ -25,6 +25,7 @@ interface ProjectPaginationProps {
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
   className?: string;
+  disabled?: boolean;
 }
 
 const ProjectPagination: React.FC<ProjectPaginationProps> = React.memo(
@@ -36,6 +37,7 @@ const ProjectPagination: React.FC<ProjectPaginationProps> = React.memo(
     onPageChange,
     onPageSizeChange,
     className,
+    disabled = false,
   }) => {
     const isMobile = useIsMobile();
 
@@ -65,7 +67,11 @@ const ProjectPagination: React.FC<ProjectPaginationProps> = React.memo(
       if (startPage > 1) {
         pages.push(
           <PaginationItem key={1}>
-            <PaginationLink onClick={() => onPageChange(1)} isActive={currentPage === 1}>
+            <PaginationLink
+              onClick={() => !disabled && onPageChange(1)}
+              isActive={currentPage === 1}
+              className={disabled ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+            >
               1
             </PaginationLink>
           </PaginationItem>
@@ -83,7 +89,11 @@ const ProjectPagination: React.FC<ProjectPaginationProps> = React.memo(
       for (let i = startPage; i <= endPage; i++) {
         pages.push(
           <PaginationItem key={i}>
-            <PaginationLink onClick={() => onPageChange(i)} isActive={currentPage === i}>
+            <PaginationLink
+              onClick={() => !disabled && onPageChange(i)}
+              isActive={currentPage === i}
+              className={disabled ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+            >
               {i}
             </PaginationLink>
           </PaginationItem>
@@ -102,8 +112,9 @@ const ProjectPagination: React.FC<ProjectPaginationProps> = React.memo(
         pages.push(
           <PaginationItem key={totalPages}>
             <PaginationLink
-              onClick={() => onPageChange(totalPages)}
+              onClick={() => !disabled && onPageChange(totalPages)}
               isActive={currentPage === totalPages}
+              className={disabled ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
             >
               {totalPages}
             </PaginationLink>
@@ -112,13 +123,35 @@ const ProjectPagination: React.FC<ProjectPaginationProps> = React.memo(
       }
 
       return pages;
-    }, [currentPage, totalPages, isMobile, onPageChange]);
+    }, [currentPage, totalPages, isMobile, onPageChange, disabled]);
 
     if (totalPages <= 1) {
       return (
-        <div className={`flex items-center justify-center ${className}`}>
-          <div className="text-sm text-muted-foreground">
+        <div
+          className={`flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 ${className}`}
+        >
+          {/* Status text - showing total items */}
+          <div className="text-center text-sm text-muted-foreground sm:text-left">
             Showing {totalItems} {totalItems === 1 ? 'project' : 'projects'}
+          </div>
+
+          {/* Page size selector - still useful for single page */}
+          <div className="flex items-center justify-center space-x-2 sm:justify-start">
+            <span className="whitespace-nowrap text-sm text-muted-foreground">Items per page:</span>
+            <Select
+              value={pageSize.toString()}
+              onValueChange={value => onPageSizeChange(parseInt(value))}
+              disabled={disabled}
+            >
+              <SelectTrigger className="w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
       );
@@ -141,6 +174,7 @@ const ProjectPagination: React.FC<ProjectPaginationProps> = React.memo(
             <Select
               value={pageSize.toString()}
               onValueChange={value => onPageSizeChange(parseInt(value))}
+              disabled={disabled}
             >
               <SelectTrigger className="w-20">
                 <SelectValue />
@@ -159,12 +193,14 @@ const ProjectPagination: React.FC<ProjectPaginationProps> = React.memo(
               <PaginationContent className="flex-wrap justify-center gap-1">
                 <PaginationItem>
                   <PaginationPrevious
-                    onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+                    onClick={() => !disabled && onPageChange(Math.max(1, currentPage - 1))}
                     className={
-                      currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'
+                      currentPage === 1 || disabled
+                        ? 'pointer-events-none opacity-50'
+                        : 'cursor-pointer'
                     }
-                    aria-disabled={currentPage === 1}
-                    tabIndex={currentPage === 1 ? -1 : undefined}
+                    aria-disabled={currentPage === 1 || disabled}
+                    tabIndex={currentPage === 1 || disabled ? -1 : undefined}
                   />
                 </PaginationItem>
 
@@ -172,14 +208,14 @@ const ProjectPagination: React.FC<ProjectPaginationProps> = React.memo(
 
                 <PaginationItem>
                   <PaginationNext
-                    onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+                    onClick={() => !disabled && onPageChange(Math.min(totalPages, currentPage + 1))}
                     className={
-                      currentPage === totalPages
+                      currentPage === totalPages || disabled
                         ? 'pointer-events-none opacity-50'
                         : 'cursor-pointer'
                     }
-                    aria-disabled={currentPage === totalPages}
-                    tabIndex={currentPage === totalPages ? -1 : undefined}
+                    aria-disabled={currentPage === totalPages || disabled}
+                    tabIndex={currentPage === totalPages || disabled ? -1 : undefined}
                   />
                 </PaginationItem>
               </PaginationContent>

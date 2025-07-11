@@ -1,3 +1,9 @@
+/**
+ * Tag List page component
+ * @author @serabi
+ * @created 2025-01-09
+ */
+
 import { useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useToast } from '@/hooks/use-toast';
@@ -12,24 +18,29 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { Home } from 'lucide-react';
-import { useTags } from '@/hooks/queries/useTags';
+import { useMetadata } from '@/contexts/MetadataContext';
 
+/**
+ * TagList Component
+ *
+ * Main page component for managing tags. Uses MetadataContext to access
+ * cached tags data, preventing duplicate API calls.
+ */
 const TagList = () => {
   const { toast } = useToast();
-
-  // React Query hooks
-  const { data: tags = [], isLoading: loading, error } = useTags();
+  const { tags, isLoading, error } = useMetadata();
+  const loading = isLoading.tags;
 
   // Handle errors from React Query - only fire toast when error state changes
   useEffect(() => {
-    if (error) {
+    if (error.tags) {
       toast({
         title: 'Error',
         description: 'Could not load tags',
         variant: 'destructive',
       });
     }
-  }, [error, toast]);
+  }, [error.tags, toast]);
 
   const handleTagAdded = () => {
     // React Query will automatically refetch when invalidated by the mutation

@@ -8,7 +8,7 @@ import { createLogger } from '@/utils/secureLogger';
 
 const authLogger = createLogger('AuthProvider');
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export const AuthProvider: React.FC<AuthProviderProps> = React.memo(({ children }) => {
   authLogger.debug('AuthProvider component rendering/re-rendering...');
   const [user, setUser] = useState<PocketBaseUser | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -219,4 +219,4 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
+});

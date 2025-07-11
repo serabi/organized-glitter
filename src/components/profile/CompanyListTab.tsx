@@ -1,3 +1,10 @@
+/**
+ * Company list tab component with pagination support
+ * @author @serabi
+ * @created 2025-01-08
+ */
+
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,9 +17,38 @@ import {
 } from '@/components/ui/table';
 import { Loader2, Link2, Search } from 'lucide-react';
 import { useCompanies } from '@/hooks/queries/useCompanies';
+import { useAuth } from '@/hooks/useAuth';
+import ProjectPagination from '@/components/ui/ProjectPagination';
 
+/**
+ * Company list tab component with server-side pagination
+ * @author @serabi
+ * @returns JSX element containing paginated company list
+ */
 const CompanyListTab = () => {
-  const { data: companies = [], isLoading: loading } = useCompanies();
+  const { user } = useAuth();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+
+  const { data, isLoading } = useCompanies({
+    userId: user?.id,
+    currentPage,
+    pageSize,
+  });
+
+  const companies = data?.companies || [];
+  const totalItems = data?.totalItems || 0;
+  const totalPages = data?.totalPages || 0;
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1); // Reset to first page when changing page size
+  };
+
   return (
     <div className="dark:glass-card rounded-lg bg-diamond-100 text-diamond-900 shadow dark:text-foreground">
       <div className="border-b border-gray-200 p-6">
@@ -23,7 +59,7 @@ const CompanyListTab = () => {
       </div>
 
       <div className="p-6">
-        {loading ? (
+        {isLoading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
@@ -69,6 +105,19 @@ const CompanyListTab = () => {
                 ))}
               </TableBody>
             </Table>
+
+            {totalPages > 1 && (
+              <div className="mt-6">
+                <ProjectPagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  pageSize={pageSize}
+                  totalItems={totalItems}
+                  onPageChange={handlePageChange}
+                  onPageSizeChange={handlePageSizeChange}
+                />
+              </div>
+            )}
           </div>
         ) : (
           <div className="mb-6 py-4 text-center">

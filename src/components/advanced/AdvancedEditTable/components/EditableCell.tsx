@@ -50,7 +50,7 @@ export const EditableCell: React.FC<EditCellProps> = ({
   const handleSelectChange = (newValue: string, fieldName: string) => {
     const updates: Partial<ProjectType> = {};
 
-    // Map display names to record IDs for foreign key fields
+    // For company and artist fields, use the same pattern as the main table
     if (fieldName === 'company') {
       if (newValue) {
         const company = availableCompanies?.find(c => c.name === newValue);
@@ -59,9 +59,10 @@ export const EditableCell: React.FC<EditCellProps> = ({
           onCancelEdit();
           return;
         }
+        // Send ID to backend but update frontend with name (matching useProjects mapping)
         updates.company = company.id;
       } else {
-        updates.company = '';
+        updates.company = undefined;
       }
     } else if (fieldName === 'artist') {
       if (newValue) {
@@ -71,9 +72,10 @@ export const EditableCell: React.FC<EditCellProps> = ({
           onCancelEdit();
           return;
         }
+        // Send ID to backend but update frontend with name (matching useProjects mapping)
         updates.artist = artist.id;
       } else {
-        updates.artist = '';
+        updates.artist = undefined;
       }
     } else {
       // For non-foreign key fields, use the value directly
@@ -252,6 +254,16 @@ export const EditableCell: React.FC<EditCellProps> = ({
         ) : (
           '—'
         )
+      ) : field === 'company' ? (
+        (() => {
+          // Project data contains company name, not ID
+          return (value as string) || '—';
+        })()
+      ) : field === 'artist' ? (
+        (() => {
+          // Project data contains artist name, not ID
+          return (value as string) || '—';
+        })()
       ) : (
         displayValue || '—'
       )}

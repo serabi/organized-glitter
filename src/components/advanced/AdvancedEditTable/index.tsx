@@ -3,7 +3,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { ProjectType } from '@/types/project';
-import { SortKey } from '@/hooks/useAdvancedFilters';
+import { useSorting } from '@/contexts/FilterHooks';
+import { DashboardValidSortField } from '@/features/dashboard/dashboard.constants';
 
 import { useEditingState } from './hooks/useEditingState';
 import { SortableHeader } from './components/SortableHeader';
@@ -16,8 +17,6 @@ import { isDateField, getBackendFieldName } from './constants';
 const AdvancedEditTable: React.FC<AdvancedEditTableProps> = ({
   projects,
   loading,
-  sortConfig,
-  onSortChange,
   showImages,
   selectedProjects,
   onSelectProject,
@@ -28,6 +27,8 @@ const AdvancedEditTable: React.FC<AdvancedEditTableProps> = ({
   availableArtists = [],
   availableTags = [],
 }) => {
+  // Use server-side sorting from FilterProvider
+  const { sortField, sortDirection, updateSort } = useSorting();
   const {
     editingCell,
     editValue,
@@ -51,19 +52,35 @@ const AdvancedEditTable: React.FC<AdvancedEditTableProps> = ({
 
   // Handle column header click for sorting
   const handleSort = useCallback(
-    (key: SortKey) => {
-      if (sortConfig.key === key) {
+    (key: string) => {
+      // Map the sort key to dashboard sort field
+      const sortKeyMapping: Record<string, DashboardValidSortField> = {
+        title: 'kit_name',
+        company: 'company',
+        artist: 'artist',
+        status: 'status',
+        tags: 'last_updated', // Special case: tags are complex relations, use last_updated
+        width: 'width',
+        height: 'height',
+        kit_category: 'kit_category',
+        drillShape: 'drill_shape',
+        datePurchased: 'date_purchased',
+        dateReceived: 'date_received',
+        dateStarted: 'date_started',
+        dateCompleted: 'date_finished',
+      };
+
+      const dashboardSortField = sortKeyMapping[key] || 'last_updated';
+
+      if (sortField === dashboardSortField) {
         // Toggle direction if clicking the same column
-        onSortChange({
-          key,
-          direction: sortConfig.direction === 'asc' ? 'desc' : 'asc',
-        });
+        updateSort(dashboardSortField, sortDirection === 'asc' ? 'desc' : 'asc');
       } else {
         // Default to ascending order for a new column
-        onSortChange({ key, direction: 'asc' });
+        updateSort(dashboardSortField, 'asc');
       }
     },
-    [sortConfig, onSortChange]
+    [sortField, sortDirection, updateSort]
   );
 
   const saveEdit = useCallback(
@@ -186,7 +203,8 @@ const AdvancedEditTable: React.FC<AdvancedEditTableProps> = ({
                 <SortableHeader
                   label="Title"
                   sortKey="title"
-                  sortConfig={sortConfig}
+                  currentSortField={sortField}
+                  currentSortDirection={sortDirection}
                   onSort={handleSort}
                 />
               </TableHead>
@@ -194,7 +212,8 @@ const AdvancedEditTable: React.FC<AdvancedEditTableProps> = ({
                 <SortableHeader
                   label="Company"
                   sortKey="company"
-                  sortConfig={sortConfig}
+                  currentSortField={sortField}
+                  currentSortDirection={sortDirection}
                   onSort={handleSort}
                 />
               </TableHead>
@@ -202,7 +221,8 @@ const AdvancedEditTable: React.FC<AdvancedEditTableProps> = ({
                 <SortableHeader
                   label="Artist"
                   sortKey="artist"
-                  sortConfig={sortConfig}
+                  currentSortField={sortField}
+                  currentSortDirection={sortDirection}
                   onSort={handleSort}
                 />
               </TableHead>
@@ -210,7 +230,8 @@ const AdvancedEditTable: React.FC<AdvancedEditTableProps> = ({
                 <SortableHeader
                   label="Status"
                   sortKey="status"
-                  sortConfig={sortConfig}
+                  currentSortField={sortField}
+                  currentSortDirection={sortDirection}
                   onSort={handleSort}
                 />
               </TableHead>
@@ -218,7 +239,8 @@ const AdvancedEditTable: React.FC<AdvancedEditTableProps> = ({
                 <SortableHeader
                   label="Tags"
                   sortKey="tags"
-                  sortConfig={sortConfig}
+                  currentSortField={sortField}
+                  currentSortDirection={sortDirection}
                   onSort={handleSort}
                 />
               </TableHead>
@@ -226,7 +248,8 @@ const AdvancedEditTable: React.FC<AdvancedEditTableProps> = ({
                 <SortableHeader
                   label="Width"
                   sortKey="width"
-                  sortConfig={sortConfig}
+                  currentSortField={sortField}
+                  currentSortDirection={sortDirection}
                   onSort={handleSort}
                 />
               </TableHead>
@@ -234,7 +257,8 @@ const AdvancedEditTable: React.FC<AdvancedEditTableProps> = ({
                 <SortableHeader
                   label="Height"
                   sortKey="height"
-                  sortConfig={sortConfig}
+                  currentSortField={sortField}
+                  currentSortDirection={sortDirection}
                   onSort={handleSort}
                 />
               </TableHead>
@@ -242,7 +266,8 @@ const AdvancedEditTable: React.FC<AdvancedEditTableProps> = ({
                 <SortableHeader
                   label="Type"
                   sortKey="kit_category"
-                  sortConfig={sortConfig}
+                  currentSortField={sortField}
+                  currentSortDirection={sortDirection}
                   onSort={handleSort}
                 />
               </TableHead>
@@ -250,7 +275,8 @@ const AdvancedEditTable: React.FC<AdvancedEditTableProps> = ({
                 <SortableHeader
                   label="Shape"
                   sortKey="drillShape"
-                  sortConfig={sortConfig}
+                  currentSortField={sortField}
+                  currentSortDirection={sortDirection}
                   onSort={handleSort}
                 />
               </TableHead>
@@ -258,7 +284,8 @@ const AdvancedEditTable: React.FC<AdvancedEditTableProps> = ({
                 <SortableHeader
                   label="Purchased"
                   sortKey="datePurchased"
-                  sortConfig={sortConfig}
+                  currentSortField={sortField}
+                  currentSortDirection={sortDirection}
                   onSort={handleSort}
                 />
               </TableHead>
@@ -266,7 +293,8 @@ const AdvancedEditTable: React.FC<AdvancedEditTableProps> = ({
                 <SortableHeader
                   label="Received"
                   sortKey="dateReceived"
-                  sortConfig={sortConfig}
+                  currentSortField={sortField}
+                  currentSortDirection={sortDirection}
                   onSort={handleSort}
                 />
               </TableHead>
@@ -274,7 +302,8 @@ const AdvancedEditTable: React.FC<AdvancedEditTableProps> = ({
                 <SortableHeader
                   label="Started"
                   sortKey="dateStarted"
-                  sortConfig={sortConfig}
+                  currentSortField={sortField}
+                  currentSortDirection={sortDirection}
                   onSort={handleSort}
                 />
               </TableHead>
@@ -282,7 +311,8 @@ const AdvancedEditTable: React.FC<AdvancedEditTableProps> = ({
                 <SortableHeader
                   label="Completed"
                   sortKey="dateCompleted"
-                  sortConfig={sortConfig}
+                  currentSortField={sortField}
+                  currentSortDirection={sortDirection}
                   onSort={handleSort}
                 />
               </TableHead>
@@ -329,4 +359,4 @@ const AdvancedEditTable: React.FC<AdvancedEditTableProps> = ({
   );
 };
 
-export default AdvancedEditTable;
+export default React.memo(AdvancedEditTable);

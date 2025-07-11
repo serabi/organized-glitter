@@ -1,6 +1,20 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
+// Mock import.meta.env for secureLogger and other utilities
+Object.defineProperty(import.meta, 'env', {
+  value: {
+    DEV: true,
+    PROD: false,
+    MODE: 'test',
+    NODE_ENV: 'test',
+    VITE_POCKETBASE_URL: 'http://127.0.0.1:8090',
+    VITE_APP_VERSION: '1.0.0',
+    VITE_APP_URL: 'http://localhost:3000',
+  },
+  writable: true,
+});
+
 // Mock environment variables
 vi.mock('@/utils/env', () => ({
   env: {

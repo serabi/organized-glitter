@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Table, Edit } from 'lucide-react';
+import { PlusCircle, Edit } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const DashboardHeader = () => {
@@ -14,15 +14,9 @@ const DashboardHeader = () => {
       </div>
       <div className="flex flex-row gap-2">
         <Button asChild variant="outline">
-          <Link to="/advanced">
-            <Table className="mr-2 h-4 w-4" />
-            {isMobile ? 'Table View' : 'Advanced View'}
-          </Link>
-        </Button>
-        <Button asChild variant="outline">
           <Link to="/advanced-edit">
             <Edit className="mr-2 h-4 w-4" />
-            {isMobile ? 'Edit' : 'Advanced Edit'}
+            {isMobile ? 'Editor' : 'Advanced Project Editor'}
           </Link>
         </Button>
         <Button asChild>
