@@ -68,64 +68,13 @@ const POCKETBASE_SORT_MAP: Record<DashboardValidSortField, string> = {
 
 const logger = createLogger('useProjects');
 
-// Build filter string for status counts - excludes status-specific filters
-const buildFilterStringForCounts = (userId: string, serverFilters: ServerFilters): string => {
-  const filterParts: string[] = [];
-
-  // Always filter by user for data isolation - use pb.filter() for security
-  if (userId) {
-    filterParts.push(pb.filter('user = {:userId}', { userId }));
-  }
-
-  // Include all non-status filters
-  if (serverFilters.company && serverFilters.company !== 'all') {
-    filterParts.push(pb.filter('company = {:company}', { company: serverFilters.company }));
-  }
-  if (serverFilters.artist && serverFilters.artist !== 'all') {
-    filterParts.push(pb.filter('artist = {:artist}', { artist: serverFilters.artist }));
-  }
-  if (serverFilters.drillShape && serverFilters.drillShape !== 'all') {
-    filterParts.push(
-      pb.filter('drill_shape = {:drillShape}', { drillShape: serverFilters.drillShape })
-    );
-  }
-  if (serverFilters.yearFinished && serverFilters.yearFinished !== 'all') {
-    const year = parseInt(serverFilters.yearFinished, 10);
-    if (!isNaN(year)) {
-      filterParts.push(
-        pb.filter('date_completed >= {:startDate} && date_completed <= {:endDate}', {
-          startDate: `${year}-01-01 00:00:00`,
-          endDate: `${year}-12-31 23:59:59`,
-        })
-      );
-    }
-  }
-  if (serverFilters.includeMiniKits === false) {
-    filterParts.push('kit_category != "mini"');
-  }
-
-  // Add search term filtering using secure pb.filter() method
-  if (serverFilters.searchTerm && serverFilters.searchTerm.trim()) {
-    const searchTerm = serverFilters.searchTerm.trim();
-    const searchFilter = pb.filter('(title ~ {:term} || general_notes ~ {:term})', {
-      term: searchTerm,
-    });
-    filterParts.push(searchFilter);
-  }
-
-  // Add tag filtering using secure parameter injection
-  if (serverFilters.selectedTags && serverFilters.selectedTags.length > 0) {
-    const tagFilters = serverFilters.selectedTags.map((tagId, index) =>
-      pb.filter(`project_tags_via_project.tag ?= {:tagId${index}}`, { [`tagId${index}`]: tagId })
-    );
-    filterParts.push(`(${tagFilters.join(' || ')})`);
-  }
-
-  return filterParts.join(' && ');
-};
-
 // Build filter string using PocketBase best practices for secure parameter injection
-const buildFilterString = (userId: string, serverFilters: ServerFilters): string => {
+// Unified function that handles both main queries and status counting with smart exclusions
+const buildFilterString = (
+  userId: string,
+  serverFilters: ServerFilters,
+  excludeStatus?: string
+): string => {
   const filterParts: string[] = [];
 
   // Always filter by user for data isolation - use pb.filter() for security
@@ -162,22 +111,26 @@ const buildFilterString = (userId: string, serverFilters: ServerFilters): string
       );
     }
   }
+  // Apply kit category filter
   if (serverFilters.includeMiniKits === false) {
-    filterParts.push('kit_category != "mini"'); // Simple literal is fine here
+    filterParts.push('kit_category != "mini"');
   }
 
-  // Include destashed filtering - exclude destashed projects unless specifically viewing destashed tab
-  if (serverFilters.includeDestashed === false && serverFilters.status !== 'destashed') {
+  // Smart Boolean filter application - for main queries use status filter, for counting use excludeStatus parameter
+  const currentStatus = serverFilters.status || excludeStatus;
+
+  // Include destashed filtering - exclude destashed projects unless specifically viewing/counting destashed
+  if (serverFilters.includeDestashed === false && currentStatus !== 'destashed') {
     filterParts.push('status != "destashed"');
   }
 
-  // Include archived filtering - exclude archived projects unless specifically viewing archived tab
-  if (serverFilters.includeArchived === false && serverFilters.status !== 'archived') {
+  // Include archived filtering - exclude archived projects unless specifically viewing/counting archived
+  if (serverFilters.includeArchived === false && currentStatus !== 'archived') {
     filterParts.push('status != "archived"');
   }
 
-  // Include wishlist filtering - exclude wishlist projects unless specifically viewing wishlist tab
-  if (serverFilters.includeWishlist === false && serverFilters.status !== 'wishlist') {
+  // Include wishlist filtering - exclude wishlist projects unless specifically viewing/counting wishlist
+  if (serverFilters.includeWishlist === false && currentStatus !== 'wishlist') {
     filterParts.push('status != "wishlist"');
   }
 
@@ -214,8 +167,8 @@ const buildFilterString = (userId: string, serverFilters: ServerFilters): string
  */
 const fetchProjects = async (
   params: ProjectQueryParams & { userId: string },
-  availableCompanies?: any[],
-  availableArtists?: any[]
+  availableCompanies?: Array<{ id: string; name: string }>,
+  availableArtists?: Array<{ id: string; name: string }>
 ): Promise<ProjectsResult> => {
   const { userId, filters, sortField, sortDirection, currentPage, pageSize } = params;
 
@@ -327,16 +280,19 @@ const fetchProjects = async (
 
   logger.info(`Projects fetched: ${projectsData.length} of ${resultList.totalItems}`);
 
-  // Calculate status counts using the same filter logic (excluding status-specific filters)
-  const baseFilterForCounts = buildFilterStringForCounts(userId, filters);
+  // Helper function to build safe filter strings for status counts
+  const buildStatusCountFilter = (status: string): string => {
+    const baseFilter = buildFilterString(userId, filters, status);
+    const statusFilter = `status = "${status}"`;
+    return baseFilter ? `${baseFilter} && ${statusFilter}` : statusFilter;
+  };
 
+  // Calculate status counts using the unified filter logic
   const statusCountPromises = [
     pb
       .collection('projects')
       .getList(1, 1, {
-        filter: baseFilterForCounts
-          ? `${baseFilterForCounts} && status = "wishlist"`
-          : 'status = "wishlist"',
+        filter: buildStatusCountFilter('wishlist'),
         skipTotal: false,
       })
       .then(result => ({ status: 'wishlist', count: result.totalItems })),
@@ -344,9 +300,7 @@ const fetchProjects = async (
     pb
       .collection('projects')
       .getList(1, 1, {
-        filter: baseFilterForCounts
-          ? `${baseFilterForCounts} && status = "purchased"`
-          : 'status = "purchased"',
+        filter: buildStatusCountFilter('purchased'),
         skipTotal: false,
       })
       .then(result => ({ status: 'purchased', count: result.totalItems })),
@@ -354,9 +308,7 @@ const fetchProjects = async (
     pb
       .collection('projects')
       .getList(1, 1, {
-        filter: baseFilterForCounts
-          ? `${baseFilterForCounts} && status = "stash"`
-          : 'status = "stash"',
+        filter: buildStatusCountFilter('stash'),
         skipTotal: false,
       })
       .then(result => ({ status: 'stash', count: result.totalItems })),
@@ -364,9 +316,7 @@ const fetchProjects = async (
     pb
       .collection('projects')
       .getList(1, 1, {
-        filter: baseFilterForCounts
-          ? `${baseFilterForCounts} && status = "progress"`
-          : 'status = "progress"',
+        filter: buildStatusCountFilter('progress'),
         skipTotal: false,
       })
       .then(result => ({ status: 'progress', count: result.totalItems })),
@@ -374,9 +324,7 @@ const fetchProjects = async (
     pb
       .collection('projects')
       .getList(1, 1, {
-        filter: baseFilterForCounts
-          ? `${baseFilterForCounts} && status = "completed"`
-          : 'status = "completed"',
+        filter: buildStatusCountFilter('completed'),
         skipTotal: false,
       })
       .then(result => ({ status: 'completed', count: result.totalItems })),
@@ -384,9 +332,7 @@ const fetchProjects = async (
     pb
       .collection('projects')
       .getList(1, 1, {
-        filter: baseFilterForCounts
-          ? `${baseFilterForCounts} && status = "archived"`
-          : 'status = "archived"',
+        filter: buildStatusCountFilter('archived'),
         skipTotal: false,
       })
       .then(result => ({ status: 'archived', count: result.totalItems })),
@@ -394,9 +340,7 @@ const fetchProjects = async (
     pb
       .collection('projects')
       .getList(1, 1, {
-        filter: baseFilterForCounts
-          ? `${baseFilterForCounts} && status = "destashed"`
-          : 'status = "destashed"',
+        filter: buildStatusCountFilter('destashed'),
         skipTotal: false,
       })
       .then(result => ({ status: 'destashed', count: result.totalItems })),
@@ -446,27 +390,15 @@ export const useProjects = (
     pageSize,
     enabled = true,
   }: UseProjectsParams,
-  availableCompanies?: any[],
-  availableArtists?: any[]
+  availableCompanies?: Array<{ id: string; name: string }>,
+  availableArtists?: Array<{ id: string; name: string }>
 ) => {
   const queryClient = useQueryClient();
 
   // Stabilize filters with content-based memoization to prevent unnecessary re-computations
   const stableFilters = useMemo(
     () => filters,
-    [
-      filters.status,
-      filters.company,
-      filters.artist,
-      filters.drillShape,
-      filters.yearFinished,
-      filters.includeMiniKits,
-      filters.includeDestashed,
-      filters.includeArchived,
-      filters.includeWishlist,
-      filters.searchTerm,
-      JSON.stringify(filters.selectedTags?.sort() || []),
-    ]
+    [filters]
   );
 
   // Memoize query parameters with stable filter reference
@@ -499,7 +431,7 @@ export const useProjects = (
         isExcessive,
       });
     }
-  }, [userId, queryParams, enabled, stableFilters.status, isExcessive, shouldLog]);
+  }, [userId, queryParams, enabled, stableFilters.status, isExcessive, shouldLog, renderCount]);
 
   // Stabilize metadata signatures for query key
   const companiesSignature = useMemo(
@@ -592,6 +524,7 @@ export const useProjects = (
     companiesSignature,
     artistsSignature,
     userId,
+    currentPage,
     availableCompanies,
     availableArtists,
   ]);

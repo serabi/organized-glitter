@@ -235,7 +235,7 @@ export const StatsProvider: React.FC<StatsProviderProps> = React.memo(({ childre
 
   // Use dashboard data directly - single source of truth from useProjects
   const { filters, debouncedSearchTerm, isInitialized } = useFilterStateOnly();
-  const { statusCounts, isLoadingProjects, errorProjects } = useDashboardData(
+  const { statusCounts, totalItems, isLoadingProjects, errorProjects } = useDashboardData(
     user?.id || 'guest',
     filters,
     debouncedSearchTerm,
@@ -281,11 +281,9 @@ export const StatsProvider: React.FC<StatsProviderProps> = React.memo(({ childre
       return 'loading';
     }
 
-    // Calculate total count for "all" tab from statusCounts directly
-    const all = Object.values(statusCounts).reduce((sum, count) => sum + (Number(count) || 0), 0);
-
+    // Use totalItems from main query as authoritative "All" count (single source of truth)
     const counts: CountsForTabsType = {
-      all,
+      all: totalItems || 0,
       wishlist: statusCounts.wishlist || 0,
       purchased: statusCounts.purchased || 0,
       stash: statusCounts.stash || 0,
@@ -306,6 +304,7 @@ export const StatsProvider: React.FC<StatsProviderProps> = React.memo(({ childre
     isLoadingProjects,
     shouldShowLoading,
     statusCounts,
+    totalItems,
     errorProjects,
     isNetworkSlow,
   ]);
