@@ -226,7 +226,7 @@ const StatusTabsComponent = () => {
               abbreviatedText={tab.abbreviatedText}
               breakpoint={375}
             />
-            <Badge variant={getBadgeVariant(tab.value)} className="text-xs">
+            <Badge variant={getBadgeVariant(tab.value)} className="text-[11px]">
               {getBadgeContent(tab.getCount(counts))}
             </Badge>
           </TabsTrigger>

@@ -396,10 +396,7 @@ export const useProjects = (
   const queryClient = useQueryClient();
 
   // Stabilize filters with content-based memoization to prevent unnecessary re-computations
-  const stableFilters = useMemo(
-    () => filters,
-    [filters]
-  );
+  const stableFilters = useMemo(() => filters, [filters]);
 
   // Memoize query parameters with stable filter reference
   const queryParams: ProjectQueryParams = useMemo(
