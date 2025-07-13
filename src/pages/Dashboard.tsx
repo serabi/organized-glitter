@@ -37,6 +37,7 @@ import { FilterProvider } from '@/contexts/FilterProvider';
 import { UIProvider } from '@/contexts/UIContext';
 import { RecentlyEditedProvider } from '@/contexts/RecentlyEditedContext';
 import { NavigationContext } from '@/hooks/useNavigateToProject';
+import { DashboardFilterContext } from '@/hooks/mutations/useSaveNavigationContext';
 import { createLogger } from '@/utils/secureLogger';
 import { useToast } from '@/hooks/use-toast';
 import { useDashboardData } from '@/hooks/useDashboardData';
@@ -64,7 +65,7 @@ const DashboardInternal: React.FC = () => {
     editedProjectId?: string;
     editedProjectData?: unknown;
     timestamp?: number;
-    navigationContext?: NavigationContext;
+    navigationContext?: DashboardFilterContext;
     preservePosition?: boolean;
   } | null;
 
@@ -82,8 +83,7 @@ const DashboardInternal: React.FC = () => {
       try {
         // 1. Schedule scroll position restoration after React renders
         // Filter state restoration is handled automatically by DashboardFiltersContext from database
-        // TODO: Check NavigationContext interface for correct property name
-        const scrollPosition = 0; // Temporary fix
+        const scrollPosition = navigationContext.preservationContext?.scrollPosition || 0;
         setTimeout(() => {
           window.scrollTo({ top: scrollPosition, behavior: 'smooth' });
           logger.debug('Scroll position restored to:', scrollPosition);
