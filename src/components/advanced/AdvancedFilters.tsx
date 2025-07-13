@@ -4,7 +4,7 @@
  * @created 2025-07-09
  */
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   Select,
   SelectContent,
@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import MultipleSelector, { Option } from '@/components/ui/multiple-selector';
 import { useFilters } from '@/contexts/FilterHooks';
 import { ProjectFilterStatus } from '@/types/project';
 
@@ -35,6 +36,31 @@ const getStatusOptions = (): { value: ProjectFilterStatus; label: string }[] => 
     { value: 'archived' as ProjectFilterStatus, label: 'Archived' },
     { value: 'destashed' as ProjectFilterStatus, label: 'Destashed' },
   ];
+};
+
+/**
+ * Convert tag objects to Option format for MultipleSelector
+ */
+const convertTagsToOptions = (tags: Array<{ id: string; name: string }>): Option[] => {
+  return tags.map(tag => ({
+    value: tag.id,
+    label: tag.name,
+  }));
+};
+
+/**
+ * Convert selected tag IDs to Option format for MultipleSelector
+ */
+const convertSelectedTagsToOptions = (
+  selectedTagIds: string[],
+  availableTags: Array<{ id: string; name: string }>
+): Option[] => {
+  return selectedTagIds
+    .map(tagId => {
+      const tag = availableTags.find(t => t.id === tagId);
+      return tag ? { value: tag.id, label: tag.name } : null;
+    })
+    .filter((option): option is Option => option !== null);
 };
 
 const AdvancedFiltersComponent: React.FC<AdvancedFiltersProps> = ({
@@ -60,6 +86,13 @@ const AdvancedFiltersComponent: React.FC<AdvancedFiltersProps> = ({
     updateIncludeArchived,
     updateIncludeDestashed,
   } = useFilters();
+
+  // Convert tags to MultipleSelector format
+  const tagOptions = useMemo(() => convertTagsToOptions(tags), [tags]);
+  const selectedTagOptions = useMemo(
+    () => convertSelectedTagsToOptions(filters.selectedTags, tags),
+    [filters.selectedTags, tags]
+  );
 
   // Custom reset function
   const resetFilters = useCallback(() => {
@@ -109,13 +142,10 @@ const AdvancedFiltersComponent: React.FC<AdvancedFiltersProps> = ({
     updateDrillShape(value === 'all' ? null : value);
   };
 
-  // Handle tag change (now using IDs directly)
-  const handleTagChange = (value: string) => {
-    if (value === 'all') {
-      updateTags([]);
-    } else {
-      toggleTag(value); // value is now the tag ID directly
-    }
+  // Handle tag change for MultipleSelector
+  const handleTagChange = (selectedOptions: Option[]) => {
+    const selectedTagIds = selectedOptions.map(option => option.value);
+    updateTags(selectedTagIds);
   };
 
   const statusOptions = getStatusOptions();
@@ -193,23 +223,15 @@ const AdvancedFiltersComponent: React.FC<AdvancedFiltersProps> = ({
 
         {/* Tag filter */}
         <div>
-          <Select
-            value={filters.selectedTags.length > 0 ? filters.selectedTags[0] : 'all'}
-            onValueChange={handleTagChange}
+          <MultipleSelector
+            value={selectedTagOptions}
+            onChange={handleTagChange}
+            options={tagOptions}
+            placeholder="Tags"
             disabled={!tags.length}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Tag" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Tags</SelectItem>
-              {tags.map(tag => (
-                <SelectItem key={tag.id} value={tag.id}>
-                  {tag.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            hidePlaceholderWhenSelected
+            className="w-full"
+          />
         </div>
       </div>
 
