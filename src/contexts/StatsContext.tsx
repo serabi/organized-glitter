@@ -196,7 +196,7 @@ const useNetworkDetection = () => {
       const connection = (navigator as unknown as { connection?: NetworkInformation }).connection;
       if (connection && connection.addEventListener) {
         connection.addEventListener('change', detectNetworkConditions);
-        return () => connection.removeEventListener('change', detectNetworkConditions);
+        return () => connection.removeEventListener?.('change', detectNetworkConditions);
       }
     }
   }, []);
@@ -223,7 +223,7 @@ interface StatsProviderProps {
  * @param props - Provider props containing children
  * @returns JSX element with stats context
  */
-export const StatsProvider: React.FC<StatsProviderProps> = React.memo(({ children }) => {
+export const StatsProvider: React.FC<StatsProviderProps> = ({ children }) => {
   // Network detection for mobile optimization
   const { isNetworkSlow, timeoutDuration } = useNetworkDetection();
 
@@ -421,7 +421,7 @@ export const StatsProvider: React.FC<StatsProviderProps> = React.memo(({ childre
   );
 
   return <StatsContext.Provider value={contextValue}>{children}</StatsContext.Provider>;
-});
+};
 
 /**
  * Hook to use the StatsContext
