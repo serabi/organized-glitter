@@ -462,34 +462,4 @@
       transition: none !important;
     }
   }
-
-  /* Additional iOS Safari specific fixes for form interactions */
-  @supports (-webkit-touch-callout: none) {
-    /* Improve touch responsiveness for select dropdowns on iOS */
-    [data-radix-select-trigger],
-    [data-radix-select-content] {
-      -webkit-tap-highlight-color: transparent;
-      -webkit-touch-callout: none;
-      -webkit-user-select: none;
-      user-select: none;
-    }
-
-    /* Prevent iOS Safari zoom on form focus */
-    input[type='text'],
-    input[type='email'],
-    input[type='url'],
-    input[type='tel'],
-    textarea,
-    select {
-      font-size: 16px; /* Fallback for browsers that don't support max() */
-      font-size: max(16px, 1rem);
-    }
-
-    /* Optimize rendering performance for complex dropdowns */
-    [data-radix-select-content] {
-      -webkit-overflow-scrolling: touch;
-      transform: translateZ(0);
-      will-change: transform;
-    }
-  }
 }
