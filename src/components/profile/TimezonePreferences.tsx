@@ -115,7 +115,15 @@ export function TimezonePreferences({ onTimezoneUpdate }: TimezonePreferencesPro
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Timezone</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select
+                    onValueChange={value => {
+                      // Ignore header values that start with __header_
+                      if (!value.startsWith('__header_')) {
+                        field.onChange(value);
+                      }
+                    }}
+                    value={field.value}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select your timezone" />
@@ -125,7 +133,7 @@ export function TimezonePreferences({ onTimezoneUpdate }: TimezonePreferencesPro
                       {Object.entries(timezonesByRegion).map(([region, timezones]) => (
                         <React.Fragment key={region}>
                           <SelectItem
-                            value=""
+                            value={`__header_${region}`}
                             disabled
                             className="font-semibold text-muted-foreground"
                           >
