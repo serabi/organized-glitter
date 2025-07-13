@@ -109,15 +109,12 @@ const AdvancedFiltersComponent: React.FC<AdvancedFiltersProps> = ({
     updateDrillShape(value === 'all' ? null : value);
   };
 
-  // Handle tag change (now using IDs instead of names)
+  // Handle tag change (now using IDs directly)
   const handleTagChange = (value: string) => {
     if (value === 'all') {
       updateTags([]);
     } else {
-      const tag = tags.find(t => t.name === value);
-      if (tag) {
-        toggleTag(tag.id);
-      }
+      toggleTag(value); // value is now the tag ID directly
     }
   };
 
@@ -207,7 +204,7 @@ const AdvancedFiltersComponent: React.FC<AdvancedFiltersProps> = ({
             <SelectContent>
               <SelectItem value="all">All Tags</SelectItem>
               {tags.map(tag => (
-                <SelectItem key={tag.id} value={tag.name}>
+                <SelectItem key={tag.id} value={tag.id}>
                   {tag.name}
                 </SelectItem>
               ))}

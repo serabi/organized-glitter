@@ -56,7 +56,6 @@ const DashboardInternal: React.FC = () => {
   const { user } = useAuth();
   const { setRecentlyEditedProjectId } = useRecentlyEdited();
 
-
   // Check for edit return state in location
   const editReturnState = location.state as {
     fromEdit?: boolean;

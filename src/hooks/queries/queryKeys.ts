@@ -21,35 +21,35 @@ import { SortDirectionType } from '@/contexts/FilterProvider';
 
 /**
  * Creates stable, deterministic query keys by serializing object parameters.
- * 
+ *
  * This function ensures that React Query cache keys remain consistent even when
  * object references change but the underlying data values are identical. This
  * prevents unnecessary cache misses and re-fetches.
- * 
+ *
  * **Key behaviors:**
  * - Object keys are sorted alphabetically for consistent serialization
  * - Arrays are sorted to ensure deterministic ordering (critical for cache consistency)
  * - Nested objects are recursively processed with the same stabilization logic
  * - Primitive values are preserved as-is
- * 
+ *
  * **Array sorting rationale:**
  * Arrays in query parameters (filters, tags, IDs) typically don't have semantic
  * ordering requirements for caching purposes. Sorting ensures that functionally
  * equivalent parameter sets produce identical cache keys:
- * 
+ *
  * @example
  * // These should produce the same cache key:
  * createStableKey({ tags: ['react', 'typescript'] })
  * createStableKey({ tags: ['typescript', 'react'] })
- * 
+ *
  * @example
  * // Usage in query keys:
  * const params = { filters: { status: 'active' }, tags: ['urgent', 'bug'] };
  * const key = ['projects', userId, createStableKey(params)];
- * 
+ *
  * @param obj - The object to serialize into a stable string representation
  * @returns A JSON string with consistent ordering for use as query cache key
- * 
+ *
  * @author @serabi
  * @since 2025-07-02
  */
