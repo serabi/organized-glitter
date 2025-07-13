@@ -440,8 +440,3 @@ export const useStats = (): StatsContextType => {
   return context;
 };
 
-/**
- * Default export for the StatsContext
- * @deprecated Use named exports instead
- */
-export default StatsContext;

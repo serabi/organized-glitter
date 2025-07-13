@@ -195,8 +195,3 @@ export const useRecentlyEdited = (): RecentlyEditedContextType => {
   return context;
 };
 
-/**
- * Default export for the RecentlyEditedContext
- * @deprecated Use named exports instead
- */
-export default RecentlyEditedContext;

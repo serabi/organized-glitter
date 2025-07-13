@@ -392,8 +392,3 @@ export const useUI = (): UIContextType => {
   return context;
 };
 
-/**
- * Default export for the UIContext
- * @deprecated Use named exports instead
- */
-export default UIContext;
