@@ -143,6 +143,9 @@ const Overview = () => {
             isLoadingProfile={!isProfileReady}
           />
 
+          {/* Thank You Message - Moved above Projects in Progress */}
+          <ThankYouMessage />
+
           {/* Enhanced loading/error states with graceful degradation */}
           {projectsLoading ? (
             <>
@@ -211,9 +214,6 @@ const Overview = () => {
 
           {/* Quick Actions - Always visible */}
           <QuickActionsSection />
-
-          {/* Thank You Message - Always visible */}
-          <ThankYouMessage />
         </div>
       </OverviewErrorBoundary>
     </MainLayout>

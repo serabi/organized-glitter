@@ -165,7 +165,8 @@ const buildFilterString = (
 
 /**
  * Fetches projects from PocketBase with server-side filtering, sorting, and pagination
- * Performs ID-to-name resolution for companies and artists using provided metadata
+ * Performs ID-to-name resolution for companies and artists using Map lookups for O(1) performance
+ * @author @serabi
  * @param params Query parameters including filters, sorting, and pagination
  * @param availableCompanies Array of company metadata for ID-to-name resolution
  * @param availableArtists Array of artist metadata for ID-to-name resolution
@@ -216,6 +217,15 @@ const fetchProjects = async (
     itemsReturned: resultList.items.length,
   });
 
+  // Create lookup maps for O(1) performance instead of O(n) Array.find()
+  const companyMap = availableCompanies
+    ? new Map(availableCompanies.map(c => [c.id, c.name]))
+    : new Map<string, string>();
+
+  const artistMap = availableArtists
+    ? new Map(availableArtists.map(a => [a.id, a.name]))
+    : new Map<string, string>();
+
   const projectsData: Project[] = (
     resultList.items as ProjectsResponse<Record<string, unknown>>[]
   ).map(record => {
@@ -249,17 +259,15 @@ const fetchProjects = async (
       title: projectRecord.title as string,
       company: (() => {
         const companyId = projectRecord.company;
-        if (!companyId || !availableCompanies) return undefined;
+        if (!companyId) return undefined;
 
-        const company = availableCompanies.find(c => c.id === companyId);
-        return company?.name;
+        return companyMap.get(companyId);
       })(),
       artist: (() => {
         const artistId = projectRecord.artist;
-        if (!artistId || !availableArtists) return undefined;
+        if (!artistId) return undefined;
 
-        const artist = availableArtists.find(a => a.id === artistId);
-        return artist?.name;
+        return artistMap.get(artistId);
       })(),
       status: (projectRecord.status as ProjectStatus) || 'wishlist',
       kit_category: projectRecord.kit_category || undefined,
