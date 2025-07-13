@@ -199,24 +199,23 @@
       min-height: 100dvh; /* Dynamic viewport height for mobile */
     }
 
-    /* Optimize form inputs for mobile */
-    input[type='text'],
-    input[type='email'],
-    input[type='password'],
-    input[type='number'],
-    input[type='tel'],
-    input[type='url'],
-    textarea,
-    select {
+    /* Optimize form inputs for mobile - but not custom components */
+    input[type='text']:not([data-radix-collection-item]),
+    input[type='email']:not([data-radix-collection-item]),
+    input[type='password']:not([data-radix-collection-item]),
+    input[type='number']:not([data-radix-collection-item]),
+    input[type='tel']:not([data-radix-collection-item]),
+    input[type='url']:not([data-radix-collection-item]),
+    textarea:not([data-radix-collection-item]),
+    select:not([data-radix-collection-item]) {
       /* Prevent zoom on input focus across mobile browsers */
       font-size: 16px !important;
       /* Better mobile touch handling */
       touch-action: manipulation;
     }
 
-    /* Improve mobile touch targets */
-    button,
-    [role='button'],
+    /* Improve mobile touch targets - but exclude Radix components */
+    button:not([data-radix-collection-item]):not([role='switch']):not([role='checkbox']),
     input[type='submit'],
     input[type='button'] {
       touch-action: manipulation;
