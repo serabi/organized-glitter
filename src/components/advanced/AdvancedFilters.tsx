@@ -88,7 +88,6 @@ const AdvancedFiltersComponent: React.FC<AdvancedFiltersProps> = ({
     updateDrillShape,
     updateSearchTerm,
     updateTags,
-    toggleTag,
     updateIncludeMiniKits,
     updateIncludeArchived,
     updateIncludeDestashed,
@@ -275,41 +274,49 @@ const AdvancedFiltersComponent: React.FC<AdvancedFiltersProps> = ({
           </Select>
         </div>
         {/* Toggle Group (Show Images, Show Mini Kits, Show Archived, Show Destashed) */}
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 md:col-span-3">
+        <div className="space-y-3 sm:flex sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-2 sm:space-y-0 md:col-span-3">
           {/* Show images toggle */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3 sm:space-x-2">
             <Switch id="show-images" checked={showImages} onCheckedChange={onShowImagesChange} />
-            <Label htmlFor="show-images">Show images</Label>
+            <Label htmlFor="show-images" className="text-sm font-medium">
+              Show images
+            </Label>
           </div>
 
           {/* Show mini kits toggle */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3 sm:space-x-2">
             <Switch
               id="show-mini-kits"
               checked={filters.includeMiniKits}
               onCheckedChange={updateIncludeMiniKits}
             />
-            <Label htmlFor="show-mini-kits">Show mini kits</Label>
+            <Label htmlFor="show-mini-kits" className="text-sm font-medium">
+              Show mini kits
+            </Label>
           </div>
 
-          {/* Show archived and Show destashed toggles grouped together */}
-          <div className="flex items-center gap-x-4">
-            <div className="flex items-center space-x-2">
+          {/* Show archived and Show destashed toggles */}
+          <div className="space-y-3 sm:flex sm:items-center sm:gap-x-4 sm:space-y-0">
+            <div className="flex items-center space-x-3 sm:space-x-2">
               <Switch
                 id="show-archived"
                 checked={filters.includeArchived}
                 onCheckedChange={updateIncludeArchived}
               />
-              <Label htmlFor="show-archived">Show archived</Label>
+              <Label htmlFor="show-archived" className="text-sm font-medium">
+                Show archived
+              </Label>
             </div>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-3 sm:space-x-2">
               <Switch
                 id="show-destashed"
                 checked={filters.includeDestashed}
                 onCheckedChange={updateIncludeDestashed}
               />
-              <Label htmlFor="show-destashed">Show destashed</Label>
+              <Label htmlFor="show-destashed" className="text-sm font-medium">
+                Show destashed
+              </Label>
             </div>
           </div>
         </div>

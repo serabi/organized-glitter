@@ -183,7 +183,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
           placeholder="All years"
         />
 
-        <div className="mt-4 flex items-center space-x-2">
+        <div className="mt-4 flex items-center space-x-3 sm:space-x-2">
           <Checkbox
             id="include-mini-kits"
             checked={includeMiniKits}
@@ -195,7 +195,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
           </Label>
         </div>
 
-        <div className="mt-4 flex items-center space-x-2">
+        <div className="mt-4 flex items-center space-x-3 sm:space-x-2">
           <Checkbox
             id="include-destashed-kits"
             checked={includeDestashed}
@@ -207,7 +207,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
           </Label>
         </div>
 
-        <div className="mt-4 flex items-center space-x-2">
+        <div className="mt-4 flex items-center space-x-3 sm:space-x-2">
           <Checkbox
             id="include-archived-kits"
             checked={includeArchived}
@@ -219,7 +219,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
           </Label>
         </div>
 
-        <div className="mt-4 flex items-center space-x-2">
+        <div className="mt-4 flex items-center space-x-3 sm:space-x-2">
           <Checkbox
             id="include-wishlist-kits"
             checked={includeWishlist}
