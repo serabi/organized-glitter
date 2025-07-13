@@ -58,7 +58,7 @@ const ArtistTable = ({ artists, loading }: ArtistTableProps) => {
     if (!artistToDelete) return;
 
     deleteArtistMutation.mutate(artistToDelete.id, {
-      onSettled: () => {
+      onSuccess: () => {
         setShowDeleteConfirmDialog(false);
         setArtistToDelete(null);
       },

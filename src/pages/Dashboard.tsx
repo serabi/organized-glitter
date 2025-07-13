@@ -56,8 +56,6 @@ const DashboardInternal: React.FC = () => {
   const { user } = useAuth();
   const { setRecentlyEditedProjectId } = useRecentlyEdited();
 
-  // Error handling will be managed at the component level to avoid duplicate data calls
-  const errorProjects = null;
 
   // Check for edit return state in location
   const editReturnState = location.state as {
@@ -137,12 +135,6 @@ const DashboardInternal: React.FC = () => {
             </div>
           )}
           <div className={`${isMobile ? 'col-span-1' : 'lg:col-span-3'}`}>
-            {errorProjects && (
-              <div className="rounded-md border border-red-500 p-4 text-red-500">
-                <p>Error loading projects: {errorProjects.message}</p>
-                <p>Please try refreshing the page or contact support if the issue persists.</p>
-              </div>
-            )}
             <ProjectsSection />
           </div>
         </div>
