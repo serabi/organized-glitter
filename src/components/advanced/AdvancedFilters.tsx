@@ -4,7 +4,7 @@
  * @created 2025-07-09
  */
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   Select,
   SelectContent,
@@ -62,7 +62,7 @@ const AdvancedFiltersComponent: React.FC<AdvancedFiltersProps> = ({
   } = useFilters();
 
   // Custom reset function
-  const resetFilters = () => {
+  const resetFilters = useCallback(() => {
     updateStatus('all');
     updateCompany(null);
     updateArtist(null);
@@ -72,7 +72,17 @@ const AdvancedFiltersComponent: React.FC<AdvancedFiltersProps> = ({
     updateIncludeMiniKits(true);
     updateIncludeArchived(false);
     updateIncludeDestashed(true);
-  };
+  }, [
+    updateStatus,
+    updateCompany,
+    updateArtist,
+    updateDrillShape,
+    updateSearchTerm,
+    updateTags,
+    updateIncludeMiniKits,
+    updateIncludeArchived,
+    updateIncludeDestashed,
+  ]);
 
   // Handle search input
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
