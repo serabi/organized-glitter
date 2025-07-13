@@ -1,10 +1,10 @@
 /**
  * Timezone-safe date utilities for handling date-only fields
  * @author @serabi
- * @created 2025-01-13
+ * @created 2025-07-13
  */
 
-import { fromZonedTime, toZonedTime, formatInTimeZone } from 'date-fns-tz';
+import { toZonedTime, formatInTimeZone, toDate } from 'date-fns-tz';
 import { format } from 'date-fns';
 import { createLogger } from '@/utils/secureLogger';
 
@@ -99,9 +99,7 @@ export function toUserDateString(
     if (typeof input === 'string') {
       // If already in YYYY-MM-DD format, parse it as midnight in user's timezone
       if (/^\d{4}-\d{2}-\d{2}$/.test(input)) {
-        date = new Date(`${input}T00:00:00`);
-        // Convert from user timezone to UTC for storage
-        date = fromZonedTime(date, userTimezone);
+        date = toDate(`${input}T00:00:00`, { timeZone: userTimezone });
       } else {
         // Parse other date formats normally
         date = new Date(input);
@@ -139,16 +137,15 @@ export function fromUserDateString(
   if (!dateStr) return null;
 
   try {
-    // Parse as midnight in user's timezone
-    const localDate = new Date(`${dateStr}T00:00:00`);
+    // Parse as midnight in user's timezone using toDate
+    const utcDate = toDate(`${dateStr}T00:00:00`, { timeZone: userTimezone });
 
-    if (isNaN(localDate.getTime())) {
+    if (isNaN(utcDate.getTime())) {
       logger.warn('Invalid date string', { dateStr, userTimezone });
       return null;
     }
 
-    // Convert from user timezone to UTC
-    return fromZonedTime(localDate, userTimezone);
+    return utcDate;
   } catch (error) {
     logger.error('Error parsing date from user timezone', { dateStr, userTimezone, error });
     return null;
@@ -187,7 +184,7 @@ export function formatDateInUserTimezone(
  */
 export function getCurrentDateInUserTimezone(userTimezone: string = 'UTC'): string {
   const now = new Date();
-  return toUserDateString(now, userTimezone) || format(now, 'yyyy-MM-dd');
+  return toUserDateString(now, userTimezone) || formatInTimeZone(now, userTimezone, 'yyyy-MM-dd');
 }
 
 /**
