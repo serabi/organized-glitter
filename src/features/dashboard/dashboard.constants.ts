@@ -7,7 +7,14 @@ export type DashboardValidSortField =
   | 'date_finished'
   | 'date_started'
   | 'date_received'
-  | 'kit_name';
+  | 'kit_name'
+  | 'company'
+  | 'artist'
+  | 'status'
+  | 'width'
+  | 'height'
+  | 'kit_category'
+  | 'drill_shape';
 
 export const DATE_SORT_FIELDS: DashboardValidSortField[] = [
   'date_purchased',
@@ -32,4 +39,11 @@ export const SORT_FIELD_TO_FRIENDLY_NAME: Partial<Record<DashboardValidSortField
   date_received: 'Received Date',
   last_updated: 'Last Updated',
   kit_name: 'Kit Name',
+  company: 'Company',
+  artist: 'Artist',
+  status: 'Status',
+  width: 'Width',
+  height: 'Height',
+  kit_category: 'Type',
+  drill_shape: 'Shape',
 };

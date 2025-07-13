@@ -22,6 +22,7 @@ export interface DashboardFilterContext {
     includeMiniKits: boolean;
     includeDestashed: boolean;
     includeArchived: boolean;
+    includeWishlist: boolean;
     searchTerm: string;
     selectedTags: string[];
   };

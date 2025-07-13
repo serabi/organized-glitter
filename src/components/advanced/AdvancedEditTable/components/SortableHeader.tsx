@@ -1,28 +1,49 @@
 import React from 'react';
 import { ArrowUpAZ, ArrowDownAZ } from 'lucide-react';
-import { SortConfig, SortKey } from '@/hooks/useAdvancedFilters';
 
 interface SortableHeaderProps {
   label: string;
-  sortKey: SortKey;
-  sortConfig: SortConfig;
-  onSort: (key: SortKey) => void;
+  sortKey: string;
+  currentSortField: string;
+  currentSortDirection: 'asc' | 'desc';
+  onSort: (key: string) => void;
 }
 
 export const SortableHeader: React.FC<SortableHeaderProps> = ({
   label,
   sortKey,
-  sortConfig,
+  currentSortField,
+  currentSortDirection,
   onSort,
 }) => {
   const handleClick = () => {
     onSort(sortKey);
   };
 
-  const renderSortIcon = () => {
-    if (sortConfig.key !== sortKey) return null;
+  // Map sort keys to backend sort fields for comparison
+  const sortKeyMapping: Record<string, string> = {
+    title: 'kit_name',
+    datePurchased: 'date_purchased',
+    dateReceived: 'date_received',
+    dateStarted: 'date_started',
+    dateCompleted: 'date_finished',
+    artist: 'artist',
+    company: 'company',
+    status: 'status',
+    drillShape: 'drill_shape',
+    kit_category: 'kit_category',
+    width: 'width',
+    height: 'height',
+    tags: 'last_updated', // Tags don't have a direct sort field, use last_updated
+  };
 
-    return sortConfig.direction === 'asc' ? (
+  const mappedSortKey = sortKeyMapping[sortKey] || 'last_updated';
+  const isActive = currentSortField === mappedSortKey;
+
+  const renderSortIcon = () => {
+    if (!isActive) return null;
+
+    return currentSortDirection === 'asc' ? (
       <ArrowUpAZ className="ml-1 h-4 w-4" />
     ) : (
       <ArrowDownAZ className="ml-1 h-4 w-4" />

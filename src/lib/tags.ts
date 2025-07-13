@@ -79,6 +79,7 @@ export class TagService {
         const records = await pb.collection(Collections.Tags).getList(1, 200, {
           filter,
           sort: 'name',
+          requestKey: `tags-all-${userId}`, // Enable request deduplication with user context
         });
 
         // Transform PocketBase records to frontend format

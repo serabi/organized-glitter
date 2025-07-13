@@ -35,28 +35,47 @@ import { Button } from '@/components/ui/button';
 import ProjectCard from '@/components/dashboard/ProjectCard';
 import { ProjectType } from '@/types/project'; // Still needed for ProjectCard and internal logic
 import { Separator } from '@/components/ui/separator';
-import { useDashboardFilters } from '@/contexts/DashboardFiltersContext';
-import { useDashboardData } from '@/hooks/useDashboardData';
+import { useFilters } from '@/contexts/FilterProvider';
+// import { useDashboardData } from '@/hooks/useDashboardData'; // Now passed as prop
 import { useDynamicSeparatorProps } from '@/hooks/useDynamicSeparatorProps';
 import { useAuth } from '@/hooks/useAuth';
 import ProjectPagination from '@/components/ui/ProjectPagination';
 import { useNavigateToProject } from '@/hooks/useNavigateToProject';
-import { useRecentlyEdited } from '@/contexts/DashboardFiltersContext';
+import { useRecentlyEdited } from '@/contexts/RecentlyEditedContext';
 import { secureLogger } from '@/utils/secureLogger';
+import { useTabAwareErrorMessage } from '@/hooks/useTabAwareErrorMessage';
 
-// Interface ProjectsGridProps removed as it's no longer needed.
-// All data is sourced from DashboardFiltersContext.
+// Interface for ProjectsGrid props - now accepts dashboard data to prevent duplicate calls
+interface ProjectsGridProps {
+  dashboardData: {
+    projects: ProjectType[];
+    totalItems: number;
+    totalPages: number;
+    isLoadingProjects: boolean;
+    errorProjects: Error | null;
+    refetchProjects: () => void;
+  };
+}
 
-const ProjectsGridComponent = () => {
+const ProjectsGridComponent: React.FC<ProjectsGridProps> = ({ dashboardData }) => {
   const navigateToProject = useNavigateToProject();
   const { user } = useAuth();
   const { recentlyEditedProjectId } = useRecentlyEdited();
   const { filters, debouncedSearchTerm, resetAllFilters, updatePage, updatePageSize } =
-    useDashboardFilters();
+    useFilters();
 
-  // Get dashboard data using the new hook with debounced search term
-  const dashboardData = useDashboardData(user?.id || 'guest', filters, debouncedSearchTerm);
+  // Get dynamic error message based on active tab
+  const tabAwareErrorMessage = useTabAwareErrorMessage();
+
+  // Dashboard data is now passed as prop to avoid duplicate useProjects calls
   const { projects, isLoadingProjects: loading, totalItems, totalPages } = dashboardData;
+
+  // Extract individual properties from filters
+  const viewType = filters.viewType;
+  const searchTerm = filters.searchTerm;
+  const sortField = filters.sortField;
+  const currentPage = filters.currentPage;
+  const pageSize = filters.pageSize;
 
   // Compute dynamic separator props
   const dynamicSeparatorProps = useDynamicSeparatorProps(filters.sortField, projects);
@@ -71,12 +90,76 @@ const ProjectsGridComponent = () => {
     }
   }, [filters.activeStatus, loading, projects]);
 
-  // Extract individual properties from filters
-  const viewType = filters.viewType;
-  const searchTerm = filters.searchTerm;
-  const sortField = filters.sortField;
-  const currentPage = filters.currentPage;
-  const pageSize = filters.pageSize;
+  // Debug log: pagination visibility debugging
+  React.useEffect(() => {
+    secureLogger.debug('🔍 Pagination Debug:', {
+      loading,
+      totalItems,
+      totalPages,
+      currentPage,
+      pageSize,
+      projectsLength: projects.length,
+      paginationCondition: !loading && totalItems > 0,
+      willShowPagination: !loading && totalItems > 0,
+    });
+  }, [loading, totalItems, totalPages, currentPage, pageSize, projects.length]);
+
+  // Debug log: Track data source and query params
+  React.useEffect(() => {
+    secureLogger.debug('📊 ProjectsGrid Data Source Debug:', {
+      userId: user?.id,
+      dashboardDataResult: {
+        projects: projects.length,
+        totalItems,
+        totalPages,
+        loading,
+        currentPage,
+        pageSize,
+      },
+      filtersContext: {
+        activeStatus: filters.activeStatus,
+        searchTerm: filters.searchTerm,
+        debouncedSearchTerm,
+        sortField: filters.sortField,
+        sortDirection: filters.sortDirection,
+        selectedCompany: filters.selectedCompany,
+        selectedArtist: filters.selectedArtist,
+        selectedDrillShape: filters.selectedDrillShape,
+        selectedYearFinished: filters.selectedYearFinished,
+        includeMiniKits: filters.includeMiniKits,
+        includeDestashed: filters.includeDestashed,
+        includeArchived: filters.includeArchived,
+        selectedTags: filters.selectedTags,
+      },
+      expectedQueryKey: `projects.list(${user?.id}, filters=${JSON.stringify({
+        status: filters.activeStatus,
+        company: filters.selectedCompany,
+        artist: filters.selectedArtist,
+        drillShape: filters.selectedDrillShape,
+        yearFinished: filters.selectedYearFinished,
+        includeMiniKits: filters.includeMiniKits,
+        includeDestashed: filters.includeDestashed,
+        includeArchived: filters.includeArchived,
+        searchTerm: debouncedSearchTerm,
+        selectedTags: filters.selectedTags,
+      })}, sort=${filters.sortField}:${filters.sortDirection}, page=${currentPage}, size=${pageSize})`,
+      firstThreeProjects: projects
+        .slice(0, 3)
+        .map(p => ({ id: p.id, title: p.title, status: p.status })),
+      uniqueStatuses: [...new Set(projects.map(p => p.status))],
+      timestamp: new Date().toISOString(),
+    });
+  }, [
+    user?.id,
+    projects,
+    totalItems,
+    totalPages,
+    loading,
+    currentPage,
+    pageSize,
+    filters,
+    debouncedSearchTerm,
+  ]);
 
   const {
     isCurrentSortDateBased,
@@ -123,8 +206,8 @@ const ProjectsGridComponent = () => {
     // Condition updated as per task, though !loading is implicit due to prior check
     return (
       <div className="py-8 text-center">
-        <p className="text-muted-foreground">No projects match your current filters.</p>
-        <Button variant="outline" onClick={resetAllFilters} className="mt-2">
+        <p className="text-muted-foreground">{tabAwareErrorMessage}</p>
+        <Button variant="outline" onClick={() => resetAllFilters('user')} className="mt-2">
           Clear Filters
         </Button>
       </div>
@@ -195,7 +278,7 @@ const ProjectsGridComponent = () => {
         {renderProjectsWithDivider()}
       </div>
 
-      {!loading && totalPages > 1 && (
+      {!loading && totalItems > 0 && (
         <ProjectPagination
           currentPage={currentPage}
           totalPages={totalPages}
@@ -203,6 +286,7 @@ const ProjectsGridComponent = () => {
           totalItems={totalItems}
           onPageChange={updatePage}
           onPageSizeChange={updatePageSize}
+          disabled={totalPages <= 1}
         />
       )}
     </div>

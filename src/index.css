@@ -199,24 +199,23 @@
       min-height: 100dvh; /* Dynamic viewport height for mobile */
     }
 
-    /* Optimize form inputs for mobile */
-    input[type='text'],
-    input[type='email'],
-    input[type='password'],
-    input[type='number'],
-    input[type='tel'],
-    input[type='url'],
-    textarea,
-    select {
+    /* Optimize form inputs for mobile - but not custom components */
+    input[type='text']:not([data-radix-collection-item]),
+    input[type='email']:not([data-radix-collection-item]),
+    input[type='password']:not([data-radix-collection-item]),
+    input[type='number']:not([data-radix-collection-item]),
+    input[type='tel']:not([data-radix-collection-item]),
+    input[type='url']:not([data-radix-collection-item]),
+    textarea:not([data-radix-collection-item]),
+    select:not([data-radix-collection-item]) {
       /* Prevent zoom on input focus across mobile browsers */
       font-size: 16px !important;
       /* Better mobile touch handling */
       touch-action: manipulation;
     }
 
-    /* Improve mobile touch targets */
-    button,
-    [role='button'],
+    /* Improve mobile touch targets - but exclude Radix components */
+    button:not([data-radix-collection-item]):not([role='switch']):not([role='checkbox']),
     input[type='submit'],
     input[type='button'] {
       touch-action: manipulation;
@@ -460,36 +459,6 @@
     .slide-in-from-right-2 {
       animation: none !important;
       transition: none !important;
-    }
-  }
-
-  /* Additional iOS Safari specific fixes for form interactions */
-  @supports (-webkit-touch-callout: none) {
-    /* Improve touch responsiveness for select dropdowns on iOS */
-    [data-radix-select-trigger],
-    [data-radix-select-content] {
-      -webkit-tap-highlight-color: transparent;
-      -webkit-touch-callout: none;
-      -webkit-user-select: none;
-      user-select: none;
-    }
-
-    /* Prevent iOS Safari zoom on form focus */
-    input[type='text'],
-    input[type='email'],
-    input[type='url'],
-    input[type='tel'],
-    textarea,
-    select {
-      font-size: 16px; /* Fallback for browsers that don't support max() */
-      font-size: max(16px, 1rem);
-    }
-
-    /* Optimize rendering performance for complex dropdowns */
-    [data-radix-select-content] {
-      -webkit-overflow-scrolling: touch;
-      transform: translateZ(0);
-      will-change: transform;
     }
   }
 }

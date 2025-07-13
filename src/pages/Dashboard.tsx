@@ -31,14 +31,16 @@ import DashboardFilterSection from '@/components/dashboard/DashboardFilterSectio
 import ProjectsSection from '@/components/dashboard/ProjectsSection';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/hooks/useAuth';
-import {
-  DashboardFiltersProvider,
-  useDashboardFilters,
-  useRecentlyEdited,
-} from '@/contexts/DashboardFiltersContext';
+import { useRecentlyEdited } from '@/contexts/RecentlyEditedContext';
+import { StatsProvider } from '@/contexts/StatsContext';
+import { FilterProvider } from '@/contexts/FilterProvider';
+import { UIProvider } from '@/contexts/UIContext';
+import { RecentlyEditedProvider } from '@/contexts/RecentlyEditedContext';
 import { NavigationContext } from '@/hooks/useNavigateToProject';
+import { DashboardFilterContext } from '@/hooks/mutations/useSaveNavigationContext';
 import { createLogger } from '@/utils/secureLogger';
 import { useToast } from '@/hooks/use-toast';
+import { useDashboardData } from '@/hooks/useDashboardData';
 
 // RecentlyEdited context moved to DashboardFiltersContext for better architecture
 
@@ -51,7 +53,7 @@ const DashboardInternal: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { errorProjects } = useDashboardFilters();
+  const { user } = useAuth();
   const { setRecentlyEditedProjectId } = useRecentlyEdited();
 
   // Check for edit return state in location
@@ -60,7 +62,7 @@ const DashboardInternal: React.FC = () => {
     editedProjectId?: string;
     editedProjectData?: unknown;
     timestamp?: number;
-    navigationContext?: NavigationContext;
+    navigationContext?: DashboardFilterContext;
     preservePosition?: boolean;
   } | null;
 
@@ -132,12 +134,6 @@ const DashboardInternal: React.FC = () => {
             </div>
           )}
           <div className={`${isMobile ? 'col-span-1' : 'lg:col-span-3'}`}>
-            {errorProjects && (
-              <div className="rounded-md border border-red-500 p-4 text-red-500">
-                <p>Error loading projects: {errorProjects.message}</p>
-                <p>Please try refreshing the page or contact support if the issue persists.</p>
-              </div>
-            )}
             <ProjectsSection />
           </div>
         </div>
@@ -154,9 +150,15 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <DashboardFiltersProvider user={user}>
-      <DashboardInternal />
-    </DashboardFiltersProvider>
+    <FilterProvider user={user}>
+      <StatsProvider>
+        <UIProvider>
+          <RecentlyEditedProvider>
+            <DashboardInternal />
+          </RecentlyEditedProvider>
+        </UIProvider>
+      </StatsProvider>
+    </FilterProvider>
   );
 };
 

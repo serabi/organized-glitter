@@ -34,7 +34,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { useDashboardFilters } from '@/contexts/DashboardFiltersContext';
+import { useFiltersFull } from '@/contexts/FilterProvider';
+import { useAvailableYears } from '@/hooks/queries/useAvailableYears';
+import { useDashboardData } from '@/hooks/useDashboardData';
+import { useAuth } from '@/hooks/useAuth';
 import { secureLogger } from '@/utils/secureLogger';
 import { DashboardValidSortField } from '@/features/dashboard/dashboard.constants'; // Import type from constants
 
@@ -43,12 +46,10 @@ import { DashboardValidSortField } from '@/features/dashboard/dashboard.constant
 
 // No longer need DATE_SORT_FIELDS_FOR_LABELS here, logic will be direct
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface DashboardFiltersProps {
-  // All props will be removed as they come from context
-}
+export type DashboardFiltersProps = Record<string, never>;
 
 const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(() => {
+  const { user } = useAuth();
   const {
     filters,
     updateSearchTerm,
@@ -61,19 +62,30 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
     updateIncludeMiniKits,
     updateIncludeDestashed,
     updateIncludeArchived,
+    updateIncludeWishlist,
     updateViewType,
-    companies,
-    artists,
-    drillShapes,
-    allTags,
-    yearFinishedOptions,
-    isLoadingProjects,
+    companiesOptions, // Use computed options for DashboardFilters
+    artistsOptions, // Use computed options for DashboardFilters
+    drillShapesOptions,
+    tags: allTags, // Raw tags for tag filtering (already has id, name)
     updateSort,
     resetAllFilters,
     getActiveFilterCount,
     searchInputRef,
     isSearchPending,
-  } = useDashboardFilters();
+    debouncedSearchTerm,
+  } = useFiltersFull();
+
+  // Get available years from the appropriate hook
+  const { data: availableYears = [] } = useAvailableYears();
+
+  // Loading state is no longer needed here since we removed duplicate useDashboardData calls
+
+  // Transform available years to the expected format for the dropdown
+  const yearFinishedOptions = availableYears.map(year => ({
+    label: year.toString(),
+    value: year.toString(),
+  }));
 
   // Extract values from filters with defaults
   const searchTerm = filters.searchTerm;
@@ -85,6 +97,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
   const includeMiniKits = filters.includeMiniKits;
   const includeDestashed = filters.includeDestashed;
   const includeArchived = filters.includeArchived;
+  const includeWishlist = filters.includeWishlist;
   const viewType = filters.viewType;
   const sortField = filters.sortField;
   const sortDirection = filters.sortDirection;
@@ -112,10 +125,6 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
         )}
       </div>
 
-      {isLoadingProjects && (
-        <div className="mb-4 text-sm text-muted-foreground">Loading filters...</div>
-      )}
-
       <SearchProjects
         searchTerm={searchTerm}
         onSearchChange={updateSearchTerm}
@@ -126,7 +135,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
       <div className="mt-6 space-y-4">
         <FilterDropdown
           label="Company"
-          options={companies}
+          options={companiesOptions}
           value={selectedCompany}
           onChange={updateCompany}
           placeholder="All companies"
@@ -134,7 +143,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
 
         <FilterDropdown
           label="Artist"
-          options={artists}
+          options={artistsOptions}
           value={selectedArtist}
           onChange={updateArtist}
           placeholder="All artists"
@@ -142,7 +151,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
 
         <FilterDropdown
           label="Drill Shape"
-          options={drillShapes}
+          options={drillShapesOptions}
           value={selectedDrillShape}
           onChange={updateDrillShape}
           placeholder="All drill shapes"
@@ -174,7 +183,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
           placeholder="All years"
         />
 
-        <div className="mt-4 flex items-center space-x-2">
+        <div className="mt-4 flex items-center space-x-3 sm:space-x-2">
           <Checkbox
             id="include-mini-kits"
             checked={includeMiniKits}
@@ -186,7 +195,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
           </Label>
         </div>
 
-        <div className="mt-4 flex items-center space-x-2">
+        <div className="mt-4 flex items-center space-x-3 sm:space-x-2">
           <Checkbox
             id="include-destashed-kits"
             checked={includeDestashed}
@@ -198,7 +207,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
           </Label>
         </div>
 
-        <div className="mt-4 flex items-center space-x-2">
+        <div className="mt-4 flex items-center space-x-3 sm:space-x-2">
           <Checkbox
             id="include-archived-kits"
             checked={includeArchived}
@@ -210,9 +219,21 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
           </Label>
         </div>
 
+        <div className="mt-4 flex items-center space-x-3 sm:space-x-2">
+          <Checkbox
+            id="include-wishlist-kits"
+            checked={includeWishlist}
+            onCheckedChange={checked => updateIncludeWishlist(Boolean(checked))}
+            data-testid="include-wishlist-checkbox"
+          />
+          <Label htmlFor="include-wishlist-kits" className="text-sm font-medium">
+            Include Wishlisted Kits?
+          </Label>
+        </div>
+
         <Button
           variant="outline"
-          onClick={resetAllFilters}
+          onClick={() => resetAllFilters('user')}
           className="mt-4 w-full"
           data-testid="reset-filters-button"
         >
