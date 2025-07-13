@@ -1,8 +1,4 @@
-// DIAGNOSTIC: Adding console logs to track import loading
-console.log('DEBUG: Starting RecentlyEditedContext test imports...');
-
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-console.log('DEBUG: Vitest imports loaded');
 
 // Mock logger - MUST be defined before any imports that use it
 const mockLogger = {
@@ -15,21 +11,14 @@ const mockLogger = {
 vi.mock('@/utils/secureLogger', () => ({
   createLogger: () => mockLogger,
 }));
-console.log('DEBUG: secureLogger mock set up');
 
 import React, { ReactNode } from 'react';
-console.log('DEBUG: React imported successfully');
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-console.log('DEBUG: Testing library imports loaded');
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-console.log('DEBUG: React Query imports loaded');
 
 import { RecentlyEditedProvider, useRecentlyEdited } from '../RecentlyEditedContext';
-console.log(
-  'DEBUG: RecentlyEditedContext imports loaded - this should appear if secureLogger resolves'
-);
 
 // Test component to consume context
 const TestRecentlyEditedConsumer = () => {

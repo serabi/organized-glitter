@@ -143,18 +143,22 @@ export const RecentlyEditedProvider: React.FC<RecentlyEditedProviderProps> = ({ 
    * Enhanced setRecentlyEditedProjectId with logging
    *
    * Wraps the state setter with logging for debugging purposes.
+   * Uses state updater function pattern for optimal performance - prevents
+   * unnecessary callback recreations by eliminating dependencies.
    *
    * @param id - Project ID to set as recently edited, or null to clear
    */
   const setRecentlyEditedProjectIdWithLogging = useCallback(
     (id: string | null) => {
-      logger.debug('Setting recently edited project', {
-        previousId: recentlyEditedProjectId,
-        newId: id,
+      setRecentlyEditedProjectId(prevId => {
+        logger.debug('Setting recently edited project', {
+          previousId: prevId,
+          newId: id,
+        });
+        return id;
       });
-      setRecentlyEditedProjectId(id);
     },
-    [recentlyEditedProjectId]
+    [] // Empty dependency array - optimal performance with no recreations
   );
 
   // Memoized context value to prevent unnecessary re-renders

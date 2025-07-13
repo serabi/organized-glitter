@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useFilterActionsAndMeta, useFilterStateOnly } from '@/contexts/FilterProvider';
+import { useFilterActionsAndMeta, useFilterStateOnly } from '@/contexts/FilterHooks';
 
 interface OptionType {
   label: string;

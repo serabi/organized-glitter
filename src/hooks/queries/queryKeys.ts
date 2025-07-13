@@ -20,23 +20,55 @@ import { DashboardValidSortField } from '@/features/dashboard/dashboard.constant
 import { SortDirectionType } from '@/contexts/FilterProvider';
 
 /**
- * Creates stable query keys by serializing object parameters
- * This prevents unnecessary re-fetches when object references change but values remain the same
+ * Creates stable, deterministic query keys by serializing object parameters.
+ * 
+ * This function ensures that React Query cache keys remain consistent even when
+ * object references change but the underlying data values are identical. This
+ * prevents unnecessary cache misses and re-fetches.
+ * 
+ * **Key behaviors:**
+ * - Object keys are sorted alphabetically for consistent serialization
+ * - Arrays are sorted to ensure deterministic ordering (critical for cache consistency)
+ * - Nested objects are recursively processed with the same stabilization logic
+ * - Primitive values are preserved as-is
+ * 
+ * **Array sorting rationale:**
+ * Arrays in query parameters (filters, tags, IDs) typically don't have semantic
+ * ordering requirements for caching purposes. Sorting ensures that functionally
+ * equivalent parameter sets produce identical cache keys:
+ * 
+ * @example
+ * // These should produce the same cache key:
+ * createStableKey({ tags: ['react', 'typescript'] })
+ * createStableKey({ tags: ['typescript', 'react'] })
+ * 
+ * @example
+ * // Usage in query keys:
+ * const params = { filters: { status: 'active' }, tags: ['urgent', 'bug'] };
+ * const key = ['projects', userId, createStableKey(params)];
+ * 
+ * @param obj - The object to serialize into a stable string representation
+ * @returns A JSON string with consistent ordering for use as query cache key
+ * 
+ * @author @serabi
+ * @since 2025-07-02
  */
 const createStableKey = (obj: Record<string, any>): string => {
-  // Sort keys to ensure consistent serialization
+  // Sort object keys alphabetically to ensure consistent property ordering
   const sortedKeys = Object.keys(obj).sort();
   const stableObj: Record<string, any> = {};
 
   sortedKeys.forEach(key => {
     const value = obj[key];
     if (Array.isArray(value)) {
-      // Sort arrays to ensure consistent serialization
+      // Sort arrays to ensure deterministic serialization regardless of input order
+      // This is essential for React Query cache consistency
       stableObj[key] = [...value].sort();
     } else if (typeof value === 'object' && value !== null) {
-      // Recursively handle nested objects
+      // Recursively stabilize nested objects using the same logic
       stableObj[key] = createStableKey(value);
     } else {
+      // Preserve primitive values (string, number, boolean, null) as-is
       stableObj[key] = value;
     }
   });

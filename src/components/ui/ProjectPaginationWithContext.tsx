@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { usePagination } from '@/contexts/FilterProvider';
+import { usePagination } from '@/contexts/FilterHooks';
 
 interface ProjectPaginationProps {
   currentPage: number;
