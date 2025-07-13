@@ -73,7 +73,8 @@ const logger = createLogger('useProjects');
 const buildFilterString = (
   userId: string,
   serverFilters: ServerFilters,
-  excludeStatus?: string
+  excludeStatus?: string,
+  skipCheckboxFilters?: boolean
 ): string => {
   const filterParts: string[] = [];
 
@@ -117,21 +118,24 @@ const buildFilterString = (
   }
 
   // Smart Boolean filter application - for main queries use status filter, for counting use excludeStatus parameter
-  const currentStatus = serverFilters.status || excludeStatus;
+  // Skip checkbox filters when counting individual status tabs to show true counts
+  if (!skipCheckboxFilters) {
+    const currentStatus = serverFilters.status || excludeStatus;
 
-  // Include destashed filtering - exclude destashed projects unless specifically viewing/counting destashed
-  if (serverFilters.includeDestashed === false && currentStatus !== 'destashed') {
-    filterParts.push('status != "destashed"');
-  }
+    // Include destashed filtering - exclude destashed projects unless specifically viewing/counting destashed
+    if (serverFilters.includeDestashed === false && currentStatus !== 'destashed') {
+      filterParts.push('status != "destashed"');
+    }
 
-  // Include archived filtering - exclude archived projects unless specifically viewing/counting archived
-  if (serverFilters.includeArchived === false && currentStatus !== 'archived') {
-    filterParts.push('status != "archived"');
-  }
+    // Include archived filtering - exclude archived projects unless specifically viewing/counting archived
+    if (serverFilters.includeArchived === false && currentStatus !== 'archived') {
+      filterParts.push('status != "archived"');
+    }
 
-  // Include wishlist filtering - exclude wishlist projects unless specifically viewing/counting wishlist
-  if (serverFilters.includeWishlist === false && currentStatus !== 'wishlist') {
-    filterParts.push('status != "wishlist"');
+    // Include wishlist filtering - exclude wishlist projects unless specifically viewing/counting wishlist
+    if (serverFilters.includeWishlist === false && currentStatus !== 'wishlist') {
+      filterParts.push('status != "wishlist"');
+    }
   }
 
   // Add search term filtering using secure pb.filter() method
@@ -281,8 +285,9 @@ const fetchProjects = async (
   logger.info(`Projects fetched: ${projectsData.length} of ${resultList.totalItems}`);
 
   // Helper function to build safe filter strings for status counts
+  // Skip checkbox filters for individual status counts to show true totals
   const buildStatusCountFilter = (status: string): string => {
-    const baseFilter = buildFilterString(userId, filters, status);
+    const baseFilter = buildFilterString(userId, filters, status, true);
     const statusFilter = `status = "${status}"`;
     return baseFilter ? `${baseFilter} && ${statusFilter}` : statusFilter;
   };
