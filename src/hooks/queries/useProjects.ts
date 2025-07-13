@@ -83,8 +83,10 @@ const buildFilterString = (
     filterParts.push(pb.filter('user = {:userId}', { userId }));
   }
 
-  if (serverFilters.status && serverFilters.status !== 'all') {
-    filterParts.push(pb.filter('status = {:status}', { status: serverFilters.status }));
+  // Use excludeStatus for status counting, otherwise use serverFilters.status for main queries
+  const statusToFilter = excludeStatus || serverFilters.status;
+  if (statusToFilter && statusToFilter !== 'all') {
+    filterParts.push(pb.filter('status = {:status}', { status: statusToFilter }));
   }
   if (serverFilters.company && serverFilters.company !== 'all') {
     // Company filter should use the company ID directly, not company.name
@@ -287,9 +289,7 @@ const fetchProjects = async (
   // Helper function to build safe filter strings for status counts
   // Skip checkbox filters for individual status counts to show true totals
   const buildStatusCountFilter = (status: string): string => {
-    const baseFilter = buildFilterString(userId, filters, status, true);
-    const statusFilter = `status = "${status}"`;
-    return baseFilter ? `${baseFilter} && ${statusFilter}` : statusFilter;
+    return buildFilterString(userId, filters, status, true);
   };
 
   // Calculate status counts using the unified filter logic
