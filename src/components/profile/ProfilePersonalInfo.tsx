@@ -162,7 +162,7 @@ const ProfilePersonalInfo: React.FC<ProfilePersonalInfoProps> = ({
                 </div>
                 <hr className="my-6 border-border/60" />
                 <div className="text-sm text-muted-foreground">
-                  You can change these settings in the Account Settings section below.
+                  You can change these settings on the Preferences tab.
                 </div>
               </CardContent>
             </Card>

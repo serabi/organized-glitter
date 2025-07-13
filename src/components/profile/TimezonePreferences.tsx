@@ -8,7 +8,6 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -27,7 +26,7 @@ import {
   FormDescription,
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { Globe, Clock } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import {
   COMMON_TIMEZONES,
   getTimezonesByRegion,
@@ -95,18 +94,15 @@ export function TimezonePreferences({ onTimezoneUpdate }: TimezonePreferencesPro
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Globe className="h-5 w-5" />
-          Timezone Preferences
-        </CardTitle>
-        <CardDescription>
-          Set your preferred timezone for displaying dates in your projects. This ensures dates like
-          "purchased" and "completed" show correctly for your location.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+    <div className="dark:glass-card mt-8 rounded-lg border border-border bg-card text-card-foreground shadow">
+      <div className="border-b border-border p-6">
+        <h2 className="text-xl font-semibold">Time Zone Preferences</h2>
+        <p className="text-muted-foreground">
+          Set your preferred time zone for displaying dates in your projects. This ensures dates
+          like "purchased" and "completed" show correctly for your location.
+        </p>
+      </div>
+      <div className="p-6">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
@@ -114,7 +110,7 @@ export function TimezonePreferences({ onTimezoneUpdate }: TimezonePreferencesPro
               name="timezone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Timezone</FormLabel>
+                  <FormLabel>Time Zone</FormLabel>
                   <Select
                     onValueChange={value => {
                       // Ignore header values that start with __header_
@@ -126,7 +122,7 @@ export function TimezonePreferences({ onTimezoneUpdate }: TimezonePreferencesPro
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select your timezone" />
+                        <SelectValue placeholder="Select your time zone" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className="max-h-[300px]">
@@ -149,7 +145,7 @@ export function TimezonePreferences({ onTimezoneUpdate }: TimezonePreferencesPro
                     </SelectContent>
                   </Select>
                   <FormDescription>
-                    Current timezone: <strong>{currentTimezone}</strong>
+                    Current time zone: <strong>{currentTimezone}</strong>
                     {detectedTimezone !== currentTimezone && (
                       <span className="text-muted-foreground"> (Detected: {detectedTimezone})</span>
                     )}
@@ -161,7 +157,7 @@ export function TimezonePreferences({ onTimezoneUpdate }: TimezonePreferencesPro
 
             <div className="flex gap-3">
               <Button type="submit" disabled={form.formState.isSubmitting} className="flex-1">
-                {form.formState.isSubmitting ? 'Saving...' : 'Save Timezone'}
+                {form.formState.isSubmitting ? 'Saving...' : 'Save Time Zone'}
               </Button>
 
               <Button
@@ -178,15 +174,18 @@ export function TimezonePreferences({ onTimezoneUpdate }: TimezonePreferencesPro
         </Form>
 
         <div className="mt-6 rounded-lg bg-muted p-4">
-          <h4 className="mb-2 font-medium">How Timezones Work</h4>
+          <h4 className="mb-2 font-medium">How Time Zones Work In Organized Glitter</h4>
           <ul className="space-y-1 text-sm text-muted-foreground">
-            <li>• Date fields (purchased, completed, started) will display in your timezone</li>
-            <li>• Existing project dates won't change - only how they're displayed</li>
-            <li>• Auto-detect uses your browser's timezone setting</li>
+            <li>• Date fields (purchased, completed, started) will display in your time zone</li>
+            <li>
+              • Your project dates will display in your selected time zone - no data is changed,
+              just the format you see
+            </li>
+            <li>• Auto-detect uses your browser's time zone setting</li>
             <li>• Changes take effect immediately for all date displays</li>
           </ul>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
