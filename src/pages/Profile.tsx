@@ -10,9 +10,11 @@ import ProfilePersonalInfo from '@/components/profile/ProfilePersonalInfo';
 import AccountSettings from '@/components/profile/AccountSettings';
 import DataImportExportSettings from '@/components/profile/DataImportExportSettings';
 import PayPalSupportSection from '@/components/profile/PayPalSupportSection';
+import { TimezonePreferences } from '@/components/profile/TimezonePreferences';
 import { useToast } from '@/hooks/use-toast';
 import type { AvatarConfig } from '@/types/avatar';
 import { logger } from '@/utils/logger';
+import { useUpdateTimezoneMutation } from '@/hooks/mutations/useUpdateTimezoneMutation';
 
 // Lazy load tab components for better performance
 const CompanyListTab = lazy(() => import('@/components/profile/CompanyListTab'));
@@ -39,6 +41,7 @@ const Profile = () => {
   } = useProfileReactQuery();
 
   const updateBetaTesterMutation = useUpdateBetaTesterStatusMutation();
+  const updateTimezoneMutation = useUpdateTimezoneMutation();
 
   // Helper function to update beta tester status (replaces setIsBetaTester)
   const setIsBetaTester = async (newStatus: boolean) => {
@@ -55,6 +58,25 @@ const Profile = () => {
         description: 'Failed to update beta tester status',
         variant: 'destructive',
       });
+    }
+  };
+
+  // Helper function to update timezone preference
+  const handleTimezoneUpdate = async (timezone: string) => {
+    if (!user?.id) return;
+    try {
+      await updateTimezoneMutation.mutateAsync({
+        userId: user.id,
+        timezone: timezone,
+      });
+    } catch (error) {
+      logger.error('Error updating timezone:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update timezone preference',
+        variant: 'destructive',
+      });
+      throw error; // Re-throw to let the component handle it
     }
   };
 
@@ -134,9 +156,12 @@ const Profile = () => {
           <Tabs defaultValue="profile" className="w-full">
             <div className="sticky top-16 z-10 -mx-4 border-b border-border/50 bg-background px-4 pb-4 pt-2 md:top-0 md:mx-0 md:px-0">
               <div className="overflow-x-auto">
-                <TabsList className="grid w-full min-w-fit grid-cols-4">
+                <TabsList className="grid w-full min-w-fit grid-cols-5">
                   <TabsTrigger value="profile" className="px-2 text-xs sm:px-4 sm:text-sm">
                     Profile Settings
+                  </TabsTrigger>
+                  <TabsTrigger value="preferences" className="px-2 text-xs sm:px-4 sm:text-sm">
+                    Preferences
                   </TabsTrigger>
                   <TabsTrigger value="companies" className="px-2 text-xs sm:px-4 sm:text-sm">
                     Company List
@@ -184,6 +209,10 @@ const Profile = () => {
 
                 {/* Support Section */}
                 <PayPalSupportSection />
+              </TabsContent>
+
+              <TabsContent value="preferences">
+                <TimezonePreferences onTimezoneUpdate={handleTimezoneUpdate} />
               </TabsContent>
 
               <TabsContent value="companies">
