@@ -108,6 +108,9 @@ export const MetadataProvider = React.memo(({ children }: MetadataProviderProps)
 
   const artistNames = useMemo(() => artists.map(artist => artist.name).filter(Boolean), [artists]);
 
+  // Stable loading state objects to prevent reference changes
+  const stableLoadingState = useMemo(() => ({ companies: true, artists: true, tags: true }), []);
+
   // Batch loading states to prevent cascade re-renders - only change when ALL queries complete
   const isLoading = useMemo(() => {
     const loading = {
@@ -120,11 +123,11 @@ export const MetadataProvider = React.memo(({ children }: MetadataProviderProps)
     const anyLoading = loading.companies || loading.artists || loading.tags;
     if (anyLoading) {
       // Return a stable loading state object while any query is loading
-      return { companies: true, artists: true, tags: true };
+      return stableLoadingState;
     }
 
     return loading;
-  }, [companiesQuery.isLoading, artistsQuery.isLoading, tagsQuery.isLoading]);
+  }, [companiesQuery.isLoading, artistsQuery.isLoading, tagsQuery.isLoading, stableLoadingState]);
 
   const error = useMemo(
     () => ({
@@ -135,7 +138,7 @@ export const MetadataProvider = React.memo(({ children }: MetadataProviderProps)
     [companiesQuery.error, artistsQuery.error, tagsQuery.error]
   );
 
-  // Memoize callback functions to prevent recreation
+  // Memoize callback functions to prevent recreation - use refetch functions directly
   const refresh = useMemo(
     () => async () => {
       await Promise.all([companiesQuery.refetch(), artistsQuery.refetch(), tagsQuery.refetch()]);

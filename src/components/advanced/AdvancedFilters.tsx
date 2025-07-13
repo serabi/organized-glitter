@@ -5,6 +5,8 @@
  */
 
 import React, { useCallback, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { RotateCcw } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -19,6 +21,8 @@ import { Label } from '@/components/ui/label';
 import MultipleSelector, { Option } from '@/components/ui/multiple-selector';
 import { useFilters } from '@/contexts/FilterHooks';
 import { ProjectFilterStatus } from '@/types/project';
+import { queryKeys } from '@/hooks/queries/queryKeys';
+import { useToast } from '@/hooks/use-toast';
 
 interface AdvancedFiltersProps {
   showImages: boolean;
@@ -67,6 +71,9 @@ const AdvancedFiltersComponent: React.FC<AdvancedFiltersProps> = ({
   showImages,
   onShowImagesChange,
 }) => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
   // Use consolidated FilterProvider hooks
   const {
     filters,
@@ -116,6 +123,17 @@ const AdvancedFiltersComponent: React.FC<AdvancedFiltersProps> = ({
     updateIncludeArchived,
     updateIncludeDestashed,
   ]);
+
+  // Manual refresh function to get fresh sorted data
+  const handleManualRefresh = useCallback(() => {
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.projects.lists(),
+    });
+    toast({
+      title: 'Refreshed',
+      description: 'Project list updated with latest sort order',
+    });
+  }, [queryClient, toast]);
 
   // Handle search input
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -295,8 +313,16 @@ const AdvancedFiltersComponent: React.FC<AdvancedFiltersProps> = ({
             </div>
           </div>
         </div>
-        {/* Clear filters Button */}
-        <div className="flex items-center justify-end md:col-span-2">
+        {/* Action buttons */}
+        <div className="flex items-center justify-end gap-2 md:col-span-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleManualRefresh}
+            title="Refresh to get latest sort order"
+          >
+            <RotateCcw className="h-4 w-4" />
+          </Button>
           <Button variant="ghost" onClick={resetFilters}>
             Clear filters
           </Button>

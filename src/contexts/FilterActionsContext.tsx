@@ -16,6 +16,7 @@ import React, {
   useEffect,
   ReactNode,
 } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { createLogger, performanceLogger } from '@/utils/secureLogger';
 import { ProjectFilterStatus } from '@/types/project';
 import { DashboardValidSortField } from '@/features/dashboard/dashboard.constants';
@@ -28,6 +29,7 @@ import {
   ChangeSource,
   useFilterState,
 } from '@/contexts/FilterStateContext';
+import { queryKeys } from '@/hooks/queries/queryKeys';
 import {
   useSaveNavigationContext,
   DashboardFilterContext,
@@ -84,6 +86,7 @@ interface FilterActionsProviderProps {
  */
 export const FilterActionsProvider: React.FC<FilterActionsProviderProps> = React.memo(
   ({ children, user }) => {
+    const queryClient = useQueryClient();
     const saveNavigationContextMutation = useSaveNavigationContext();
     const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -232,8 +235,19 @@ export const FilterActionsProvider: React.FC<FilterActionsProviderProps> = React
     const updateSort = useCallback(
       (field: DashboardValidSortField, direction: SortDirectionType, source?: ChangeSource) => {
         dispatchWithSource({ type: 'SET_SORT', payload: { field, direction } }, source);
+
+        // When user explicitly changes sort, invalidate project list caches to get fresh sorted data
+        if (source === 'user') {
+          logger.info('🔄 Invalidating project list cache due to user sort change', {
+            field,
+            direction,
+          });
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.projects.lists(),
+          });
+        }
       },
-      [dispatchWithSource]
+      [dispatchWithSource, queryClient]
     );
 
     const updatePage = useCallback(

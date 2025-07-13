@@ -197,15 +197,69 @@ const fetchProjects = async (
   const requestParams = {
     filter: pbFilter,
     sort: pbSort,
-    expand: 'project_tags_via_project.tag', // Only expand tags (company/artist expand was failing)
-    fields:
-      'id,title,status,user,image,width,height,drill_shape,kit_category,date_purchased,date_received,date_started,date_completed,total_diamonds,general_notes,source_url,updated,created,company,artist',
+    expand: 'project_tags_via_project.tag', // Expand junction table tags (removed fields to include expand data)
+    // Removed fields parameter to allow expand data to be included (matches working pattern in useProjectExport)
     requestKey,
   };
 
-  // Use optimized query with minimal field selection and targeted relation expansion
-  // Following PocketBase best practices: https://pocketbase.io/docs/api-records/#query-parameters
-  const resultList = await pb.collection('projects').getList(currentPage, pageSize, requestParams);
+  // Use query with junction table expand - removed fields parameter to include expand data
+  // Following working pattern from useProjectExport.ts for successful tag expansion
+  let resultList;
+
+  try {
+    // Try the full expand query first
+    resultList = await pb.collection('projects').getList(currentPage, pageSize, requestParams);
+  } catch (error) {
+    // If expand fails, try without expand to get basic project data
+    logger.warn('Tags expand failed, trying without expand:', error);
+
+    const fallbackParams = {
+      filter: pbFilter,
+      sort: pbSort,
+      requestKey: `${requestParams.requestKey}-fallback`,
+      // No expand for fallback to get basic data only
+    };
+
+    resultList = await pb.collection('projects').getList(currentPage, pageSize, fallbackParams);
+
+    // Try to add tags data separately for each project
+    if (resultList.items.length > 0) {
+      logger.debug('Attempting to fetch tags separately for projects');
+
+      const projectsWithTags = await Promise.allSettled(
+        resultList.items.map(async (project: ProjectsResponse) => {
+          try {
+            const projectWithTags = (await pb.collection('projects').getOne(project.id, {
+              expand: 'project_tags_via_project.tag',
+              requestKey: `project-tags-fallback-${project.id}`,
+            })) as ProjectsResponse<Record<string, unknown>>;
+
+            return {
+              ...project,
+              expand: projectWithTags.expand,
+            } as ProjectsResponse<Record<string, unknown>>;
+          } catch (tagError) {
+            logger.warn(`Failed to fetch tags for project ${project.id}:`, tagError);
+            return project as ProjectsResponse<Record<string, unknown>>; // Return project without tags if tag fetch fails
+          }
+        })
+      );
+
+      // Update resultList with projects that successfully got their tags
+      resultList.items = projectsWithTags.map((result, index) => {
+        if (result.status === 'fulfilled') {
+          return result.value;
+        } else {
+          logger.warn(`Tag fetch failed for project at index ${index}:`, result.reason);
+          return resultList.items[index]; // Fallback to original project data
+        }
+      });
+
+      logger.info(
+        `Successfully fetched tags for ${projectsWithTags.filter(r => r.status === 'fulfilled').length} of ${resultList.items.length} projects`
+      );
+    }
+  }
 
   const endTime = performance.now();
   logger.debug(
@@ -215,6 +269,20 @@ const fetchProjects = async (
   logger.debug('Query results:', {
     totalItems: resultList.totalItems,
     itemsReturned: resultList.items.length,
+  });
+
+  // Enhanced logging for expand data analysis
+  logger.debug('Raw expand data analysis:', {
+    sampleProjectIds: resultList.items.slice(0, 3).map((item: any) => item.id),
+    sampleExpands: resultList.items.slice(0, 3).map((item: any) => ({
+      projectId: item.id,
+      hasExpand: !!item.expand,
+      expandKeys: item.expand ? Object.keys(item.expand) : [],
+      projectTagsViaProject: item.expand?.['project_tags_via_project'],
+    })),
+    allProjectsWithTags: resultList.items.filter(
+      (item: any) => item.expand?.['project_tags_via_project']
+    ).length,
   });
 
   // Create lookup maps for O(1) performance instead of O(n) Array.find()
@@ -232,13 +300,33 @@ const fetchProjects = async (
     const projectRecord = record;
     const recordExpand = record.expand as Record<string, unknown> | undefined;
     const projectTags = recordExpand?.['project_tags_via_project'];
+
+    // Enhanced debug logging for tag processing
+    logger.debug(`Processing tags for project ${projectRecord.id}:`, {
+      hasExpand: !!recordExpand,
+      expandKeys: recordExpand ? Object.keys(recordExpand) : [],
+      hasProjectTags: !!projectTags,
+      projectTagsType: Array.isArray(projectTags) ? 'array' : typeof projectTags,
+      projectTagsLength: Array.isArray(projectTags) ? projectTags.length : 'N/A',
+      rawProjectTags: projectTags,
+    });
+
     const tags = Array.isArray(projectTags)
       ? projectTags
-          .map((pt: Record<string, unknown>) => {
+          .map((pt: Record<string, unknown>, index: number) => {
             const ptExpand = pt.expand as Record<string, unknown>;
+
+            logger.debug(`Processing project tag ${index} for project ${projectRecord.id}:`, {
+              hasExpand: !!ptExpand,
+              expandKeys: ptExpand ? Object.keys(ptExpand) : [],
+              hasTag: !!ptExpand?.tag,
+              rawPt: pt,
+              rawTag: ptExpand?.tag,
+            });
+
             if (ptExpand?.tag) {
               const tag = ptExpand.tag as Record<string, unknown>;
-              return {
+              const processedTag = {
                 id: tag.id as string,
                 userId: tag.user as string,
                 name: tag.name as string,
@@ -247,11 +335,33 @@ const fetchProjects = async (
                 createdAt: tag.created as string,
                 updatedAt: tag.updated as string,
               };
+
+              logger.debug(
+                `Successfully processed tag for project ${projectRecord.id}:`,
+                processedTag
+              );
+              return processedTag;
+            } else {
+              logger.warn(
+                `Failed to process tag ${index} for project ${projectRecord.id} - missing tag data`
+              );
+              return null;
             }
-            return null;
           })
-          .filter((tag): tag is NonNullable<typeof tag> => tag !== null)
+          .filter((tag): tag is NonNullable<typeof tag> => {
+            const isValid = tag !== null;
+            if (!isValid) {
+              logger.warn(`Filtered out null tag for project ${projectRecord.id}`);
+            }
+            return isValid;
+          })
       : [];
+
+    logger.debug(`Final processed tags for project ${projectRecord.id}:`, {
+      tagCount: tags.length,
+      tagNames: tags.map(t => t.name),
+      tags: tags,
+    });
 
     return {
       id: projectRecord.id as string,
@@ -441,7 +551,7 @@ export const useProjects = (
         isExcessive,
       });
     }
-  }, [userId, queryParams, enabled, stableFilters.status, isExcessive, shouldLog, renderCount]);
+  }, [userId, queryParams, enabled, stableFilters.status, isExcessive, shouldLog]);
 
   // Stabilize metadata signatures for query key
   const companiesSignature = useMemo(
@@ -470,7 +580,7 @@ export const useProjects = (
     queryFn: () =>
       fetchProjects({ userId: userId!, ...queryParams }, availableCompanies, availableArtists),
     enabled: !!userId && enabled, // Only run when userId is available AND hook is enabled
-    staleTime: 2 * 60 * 1000, // 2 minutes (increased from 30 seconds)
+    staleTime: 5 * 60 * 1000, // 5 minutes (increased for better performance)
     gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
     // Prevent blinking by keeping previous data while fetching new data
     placeholderData: previousData => previousData,
@@ -535,8 +645,6 @@ export const useProjects = (
     artistsSignature,
     userId,
     currentPage,
-    availableCompanies,
-    availableArtists,
   ]);
 
   return query;

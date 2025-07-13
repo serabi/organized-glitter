@@ -19,8 +19,6 @@ import { AdvancedEditHeader } from '@/components/advanced/AdvancedEditHeader';
 import { AdvancedEditSummary } from '@/components/advanced/AdvancedEditSummary';
 
 // Custom hooks
-import { useAdvancedEditSelection } from '@/hooks/useAdvancedEditSelection';
-import { useAdvancedEditActions } from '@/hooks/useAdvancedEditActions';
 import { createLogger } from '@/utils/secureLogger';
 
 const logger = createLogger('AdvancedEdit');
@@ -32,15 +30,8 @@ const AdvancedEdit = () => {
   const [searchParams] = useSearchParams();
 
   // Server-side filter state and metadata
-  const {
-    filters,
-    debouncedSearchTerm,
-    isInitialized,
-    isMetadataLoading,
-    companies,
-    artists,
-    tags,
-  } = useFilterStateOnly();
+  const { filters, debouncedSearchTerm, isInitialized, isMetadataLoading, companies, artists } =
+    useFilterStateOnly();
   const { currentPage, pageSize, updatePage, updatePageSize } = usePagination();
 
   // Memoized filter dependencies to prevent excessive re-renders
@@ -72,9 +63,14 @@ const AdvancedEdit = () => {
   );
 
   // Metadata from FilterProvider (already in consistent ID-based format)
-  const allCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
-  const allArtists = useMemo(() => (Array.isArray(artists) ? artists : []), [artists]);
-  const allTags = useMemo(() => (Array.isArray(tags) ? tags : []), [tags]);
+  const allCompanies = useMemo(
+    () => (Array.isArray(companies) ? companies.map(c => ({ id: c.id, name: c.name })) : []),
+    [companies]
+  );
+  const allArtists = useMemo(
+    () => (Array.isArray(artists) ? artists.map(a => ({ id: a.id, name: a.name })) : []),
+    [artists]
+  );
 
   // Data fetching with server-side filtering
   const {
@@ -101,10 +97,6 @@ const AdvancedEdit = () => {
 
   // View state
   const [showImages, setShowImages] = useState(false);
-
-  // Custom hooks
-  const selection = useAdvancedEditSelection();
-  const actions = useAdvancedEditActions(selection, projects);
 
   // Handle React Query error state
   useEffect(() => {
@@ -136,36 +128,40 @@ const AdvancedEdit = () => {
   return (
     <MainLayout>
       <div className="flex-1 space-y-6 p-4 md:p-6">
-        <AdvancedEditHeader
-          onNavigateToNewProject={actions.navigateToNewProject}
-          onNavigateToCompanies={actions.navigateToCompanies}
-          onNavigateToArtists={actions.navigateToArtists}
-          onNavigateToTags={actions.navigateToTags}
-        />
+        {/* Read-only notice banner */}
+        <div className="rounded-md border border-blue-200 bg-blue-50 p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                <path
+                  fillRule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-blue-700">
+                Currently read-only - editing features coming soon! Click on individual projects to
+                edit them.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <AdvancedEditHeader />
 
         <AdvancedFilters showImages={showImages} onShowImagesChange={setShowImages} />
 
-        <AdvancedEditSummary
-          totalItems={totalItems}
-          paginatedProjects={projects}
-          selectedCount={selection.selectedCount}
-          onClearSelection={selection.clearSelection}
-          onSelectAll={() => selection.selectAllOnPage(projects)}
-        />
+        <AdvancedEditSummary totalItems={totalItems} paginatedProjects={projects} />
 
         <div className="rounded-md border">
           <AdvancedEditTable
             projects={projects}
             loading={loading}
             showImages={showImages}
-            selectedProjects={selection.selectedProjects}
-            onSelectProject={selection.selectProject}
-            onSelectAll={() => selection.toggleSelectAll(projects)}
-            onProjectUpdate={actions.handleProjectUpdate}
-            onBulkDelete={actions.handleBulkDelete}
             availableCompanies={allCompanies}
             availableArtists={allArtists}
-            availableTags={allTags}
           />
         </div>
 

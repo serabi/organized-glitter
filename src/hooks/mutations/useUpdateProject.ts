@@ -6,6 +6,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { createLogger } from '@/utils/secureLogger';
 import { ClientResponseError } from 'pocketbase';
+import { updateProjectInCache } from '@/utils/cacheUtils';
+import { useMetadata } from '@/contexts/MetadataContext';
+import type { Project } from '@/types/project';
 
 const logger = createLogger('useUpdateProject');
 
@@ -45,12 +48,16 @@ interface UpdateProjectData {
   [key: string]: unknown;
 }
 
+interface MutationContext {
+  previousProject?: unknown;
+}
+
 export const useUpdateProject = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
 
-  return useMutation({
+  return useMutation<ProjectsResponse, Error, UpdateProjectData, MutationContext>({
     mutationFn: async (data: UpdateProjectData): Promise<ProjectsResponse> => {
       const { id, ...updateData } = data;
       logger.debug('Updating project:', id, updateData);
@@ -67,7 +74,7 @@ export const useUpdateProject = () => {
       // Create FormData for file upload if image is present
       const formData = new FormData();
 
-      // Add all fields except image first
+      // Add all fields except image
       Object.entries(updateData).forEach(([key, value]) => {
         if (key !== 'image' && value !== undefined && value !== null) {
           formData.append(key, String(value));
@@ -79,6 +86,7 @@ export const useUpdateProject = () => {
         formData.append('image', data.image);
       }
 
+      // Update the project
       const result = await pb.collection(Collections.Projects).update(id, formData);
       logger.info('Project updated successfully:', result.id);
 
@@ -91,7 +99,7 @@ export const useUpdateProject = () => {
         queryKey: queryKeys.projects.detail(variables.id),
       });
 
-      // Snapshot the previous value for rollback
+      // Snapshot the previous values for rollback
       const previousProject = queryClient.getQueryData(queryKeys.projects.detail(variables.id));
 
       // Optimistically update the project detail if it exists in cache
@@ -103,26 +111,45 @@ export const useUpdateProject = () => {
       }
 
       // Return context for rollback
-      return { previousProject };
+      return {
+        previousProject,
+      };
     },
 
     onSuccess: async (data, variables) => {
       // Update the project detail in cache
       queryClient.setQueryData(queryKeys.projects.detail(data.id), data);
 
-      // Invalidate all project lists to refresh data
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.projects.lists(),
+      // Use optimistic updates for immediate feedback
+      logger.debug('Using optimistic in-place cache update');
+
+      queryClient.setQueriesData({ queryKey: queryKeys.projects.lists() }, (oldData: unknown) => {
+        if (!oldData || typeof oldData !== 'object' || !('items' in oldData)) {
+          return oldData;
+        }
+
+        const typedData = oldData as { items?: ProjectsResponse[]; [key: string]: unknown };
+        if (!typedData.items || !Array.isArray(typedData.items)) {
+          return oldData;
+        }
+
+        // Update the specific project in the list while preserving order
+        return {
+          ...typedData,
+          items: typedData.items.map((project: ProjectsResponse) => {
+            if (project.id === data.id) {
+              // Merge the updated data with the existing project
+              return { ...project, ...data };
+            }
+            return project;
+          }),
+        };
       });
 
-      // Invalidate advanced projects query to update the Advanced Edit page
-      if (user?.id) {
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.projects.advanced(user.id),
-        });
-      }
+      // NOTE: Using optimistic updates to prevent position jumping during edits.
+      // The visual order remains stable for all updates until user explicitly changes sorting.
 
-      // Invalidate dashboard stats cache when project is updated (especially status changes)
+      // Only invalidate dashboard stats cache when project is updated (especially status changes)
       if (user?.id) {
         const currentYear = new Date().getFullYear();
         queryClient.invalidateQueries({
@@ -145,13 +172,29 @@ export const useUpdateProject = () => {
         });
       }
 
-      logger.info('Project update successful, cache update initiated');
+      logger.info('Project updated: fields updated in-place to preserve position');
     },
 
     onError: (error, variables, context) => {
-      // Rollback optimistic update
-      if (context?.previousProject) {
-        queryClient.setQueryData(queryKeys.projects.detail(variables.id), context.previousProject);
+      // Comprehensive rollback for failed mutations
+      logger.error('Project update failed, performing rollback:', error);
+
+      try {
+        // Rollback project detail cache
+        if (context?.previousProject) {
+          queryClient.setQueryData(
+            queryKeys.projects.detail(variables.id),
+            context.previousProject
+          );
+          logger.debug('Rolled back project detail cache');
+        }
+      } catch (rollbackError) {
+        logger.error('Rollback failed, falling back to cache invalidation:', rollbackError);
+
+        // If rollback fails, invalidate caches to ensure consistency
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.projects.detail(variables.id),
+        });
       }
 
       logger.error('Project update failed:', error);

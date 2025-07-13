@@ -18,7 +18,7 @@ export function ThankYouMessage() {
           Thank You for Testing! ✨
         </h3>
         <p className="mb-6 text-gray-700 dark:text-gray-300">
-          Thank you so much for testing out Organized Glitter! Organized Glitter is in active
+          Thank you so much for testing out Organized Glitter! This web app is in active
           development. As always, please don't hesitate to{' '}
           <button
             onClick={() =>
@@ -77,13 +77,14 @@ export function ThankYouMessage() {
                       from the "All" tab count. Also merged the Advanced View and the Advanced Edit
                       pages together into the{' '}
                       <Link
-                        to="/projects/advanced"
+                        to="/advanced-edit"
                         className="inline-flex items-center gap-1 font-medium text-pink-600 underline decoration-pink-300 transition-colors hover:text-pink-700 hover:decoration-pink-500 dark:text-pink-400 dark:hover:text-pink-300"
                       >
                         Advanced Project Editor page
                         <ExternalLink className="h-3 w-3" />
                       </Link>
-                      .
+                      . The Advanced Project Editor page is currently read-only - I will add edit
+                      functionality in the next update.
                     </p>
                   </div>
                 </div>
