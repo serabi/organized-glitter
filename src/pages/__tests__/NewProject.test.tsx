@@ -87,7 +87,7 @@ import { useMetadata } from '@/contexts/MetadataContext';
 const useCreateProject = vi.fn();
 const useCreateProjectWithRedirect = vi.fn();
 const mockNavigateToProject = vi.fn();
-const pb = { authStore: { model: null as any } };
+const pb = { authStore: { model: null as unknown } };
 const useUserMetadata = vi.fn();
 const useCreateCompany = vi.fn();
 const useCreateArtist = vi.fn();
@@ -1472,7 +1472,7 @@ describe('NewProject', () => {
     });
 
     it('should maintain referential stability of callback functions', async () => {
-      const callbackRefs: Record<string, any> = {};
+      const callbackRefs: Record<string, unknown> = {};
 
       mockProjectForm.mockImplementation(props => {
         if (!callbackRefs.onSubmit) {

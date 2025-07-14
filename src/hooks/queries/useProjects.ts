@@ -273,15 +273,15 @@ const fetchProjects = async (
 
   // Enhanced logging for expand data analysis
   logger.debug('Raw expand data analysis:', {
-    sampleProjectIds: resultList.items.slice(0, 3).map((item: any) => item.id),
-    sampleExpands: resultList.items.slice(0, 3).map((item: any) => ({
+    sampleProjectIds: resultList.items.slice(0, 3).map((item: ProjectsResponse) => item.id),
+    sampleExpands: resultList.items.slice(0, 3).map((item: ProjectsResponse) => ({
       projectId: item.id,
       hasExpand: !!item.expand,
       expandKeys: item.expand ? Object.keys(item.expand) : [],
       projectTagsViaProject: item.expand?.['project_tags_via_project'],
     })),
     allProjectsWithTags: resultList.items.filter(
-      (item: any) => item.expand?.['project_tags_via_project']
+      (item: ProjectsResponse) => item.expand?.['project_tags_via_project']
     ).length,
   });
 

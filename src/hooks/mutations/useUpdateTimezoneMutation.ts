@@ -6,7 +6,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { pb } from '@/lib/pocketbase';
-import { Collections } from '@/types/pocketbase.types';
+import { Collections, UsersResponse } from '@/types/pocketbase.types';
 import { queryKeys } from '@/hooks/queries/queryKeys';
 import { createLogger } from '@/utils/secureLogger';
 import { isValidTimezone } from '@/utils/timezoneUtils';
@@ -46,7 +46,7 @@ export const useUpdateTimezoneMutation = () => {
       const previousUser = queryClient.getQueryData(queryKeys.user.profile(userId));
 
       // Optimistically update the user data with new timezone
-      queryClient.setQueryData(queryKeys.user.profile(userId), (old: any) => {
+      queryClient.setQueryData(queryKeys.user.profile(userId), (old: UsersResponse | undefined) => {
         if (!old) return old;
         return {
           ...old,

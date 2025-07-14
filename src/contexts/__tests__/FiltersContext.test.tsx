@@ -28,7 +28,7 @@ vi.mock('@/hooks/use-toast', () => ({
 
 // Mock useDebounce
 vi.mock('@/hooks/useDebounce', () => ({
-  default: (value: any) => value,
+  default: (value: unknown) => value,
 }));
 
 // Mock MetadataContext

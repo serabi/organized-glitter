@@ -3,6 +3,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { useQuery } from '@tanstack/react-query';
 import { useSpinHistory } from '../useSpinHistory';
 import { getSpinHistory } from '@/services/pocketbase/randomizerService';
+import type { MockUseQueryResult } from '@/types/test-mocks';
 
 // Mock dependencies
 vi.mock('@tanstack/react-query');
@@ -52,7 +53,8 @@ describe('useSpinHistory', () => {
         data: mockSpinHistory,
         isLoading: false,
         error: null,
-      } as any);
+        refetch: vi.fn(),
+      });
 
       renderHook(() => useSpinHistory({ userId: 'user1' }));
 
@@ -73,7 +75,8 @@ describe('useSpinHistory', () => {
         data: mockSpinHistory,
         isLoading: false,
         error: null,
-      } as any);
+        refetch: vi.fn(),
+      });
 
       const { result } = renderHook(() => useSpinHistory({ userId: 'user1' }));
 
@@ -85,7 +88,12 @@ describe('useSpinHistory', () => {
 
   describe('Query Key Generation', () => {
     it('generates correct query key with default parameters', () => {
-      mockUseQuery.mockReturnValue({} as any);
+      mockUseQuery.mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+      });
 
       renderHook(() => useSpinHistory({ userId: 'user1' }));
 
@@ -97,7 +105,12 @@ describe('useSpinHistory', () => {
     });
 
     it('generates correct query key with custom limit', () => {
-      mockUseQuery.mockReturnValue({} as any);
+      mockUseQuery.mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+      });
 
       renderHook(() => useSpinHistory({ userId: 'user1', limit: 50 }));
 
@@ -109,7 +122,12 @@ describe('useSpinHistory', () => {
     });
 
     it('handles undefined userId in query key', () => {
-      mockUseQuery.mockReturnValue({} as any);
+      mockUseQuery.mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+      });
 
       renderHook(() => useSpinHistory({ userId: undefined }));
 
@@ -124,11 +142,16 @@ describe('useSpinHistory', () => {
   describe('Query Function', () => {
     it('calls getSpinHistory with correct parameters', async () => {
       mockGetSpinHistory.mockResolvedValue(mockSpinHistory);
-      let queryFn: any;
+      let queryFn: () => Promise<unknown>;
 
-      mockUseQuery.mockImplementation((config: any) => {
-        queryFn = config.queryFn;
-        return {} as any;
+      mockUseQuery.mockImplementation((config) => {
+        queryFn = config.queryFn as typeof queryFn;
+        return {
+          data: undefined,
+          isLoading: false,
+          error: null,
+          refetch: vi.fn(),
+        };
       });
 
       renderHook(() => useSpinHistory({ userId: 'user1', limit: 10 }));
@@ -140,11 +163,16 @@ describe('useSpinHistory', () => {
     });
 
     it('returns empty array when userId is not provided', async () => {
-      let queryFn: any;
+      let queryFn: () => Promise<unknown>;
 
-      mockUseQuery.mockImplementation((config: any) => {
-        queryFn = config.queryFn;
-        return {} as any;
+      mockUseQuery.mockImplementation((config) => {
+        queryFn = config.queryFn as typeof queryFn;
+        return {
+          data: undefined,
+          isLoading: false,
+          error: null,
+          refetch: vi.fn(),
+        };
       });
 
       renderHook(() => useSpinHistory({ userId: undefined }));
@@ -158,11 +186,16 @@ describe('useSpinHistory', () => {
     it('handles getSpinHistory errors', async () => {
       const error = new Error('Database error');
       mockGetSpinHistory.mockRejectedValue(error);
-      let queryFn: any;
+      let queryFn: () => Promise<unknown>;
 
-      mockUseQuery.mockImplementation((config: any) => {
-        queryFn = config.queryFn;
-        return {} as any;
+      mockUseQuery.mockImplementation((config) => {
+        queryFn = config.queryFn as typeof queryFn;
+        return {
+          data: undefined,
+          isLoading: false,
+          error: null,
+          refetch: vi.fn(),
+        };
       });
 
       renderHook(() => useSpinHistory({ userId: 'user1' }));
@@ -173,7 +206,12 @@ describe('useSpinHistory', () => {
 
   describe('Enabled State', () => {
     it('is enabled by default when userId is provided', () => {
-      mockUseQuery.mockReturnValue({} as any);
+      mockUseQuery.mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+      });
 
       renderHook(() => useSpinHistory({ userId: 'user1' }));
 
@@ -185,7 +223,12 @@ describe('useSpinHistory', () => {
     });
 
     it('is disabled when enabled is explicitly false', () => {
-      mockUseQuery.mockReturnValue({} as any);
+      mockUseQuery.mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+      });
 
       renderHook(() => useSpinHistory({ userId: 'user1', enabled: false }));
 
@@ -197,7 +240,12 @@ describe('useSpinHistory', () => {
     });
 
     it('is disabled when userId is not provided even if enabled is true', () => {
-      mockUseQuery.mockReturnValue({} as any);
+      mockUseQuery.mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+      });
 
       renderHook(() => useSpinHistory({ userId: undefined, enabled: true }));
 
@@ -211,7 +259,12 @@ describe('useSpinHistory', () => {
 
   describe('Caching Configuration', () => {
     it('uses correct stale time', () => {
-      mockUseQuery.mockReturnValue({} as any);
+      mockUseQuery.mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+      });
 
       renderHook(() => useSpinHistory({ userId: 'user1' }));
 
@@ -223,7 +276,12 @@ describe('useSpinHistory', () => {
     });
 
     it('uses correct garbage collection time', () => {
-      mockUseQuery.mockReturnValue({} as any);
+      mockUseQuery.mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+      });
 
       renderHook(() => useSpinHistory({ userId: 'user1' }));
 
@@ -235,7 +293,12 @@ describe('useSpinHistory', () => {
     });
 
     it('disables refetch on window focus', () => {
-      mockUseQuery.mockReturnValue({} as any);
+      mockUseQuery.mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+      });
 
       renderHook(() => useSpinHistory({ userId: 'user1' }));
 
@@ -249,11 +312,16 @@ describe('useSpinHistory', () => {
 
   describe('Retry Logic', () => {
     it('does not retry on 4xx errors', () => {
-      let retryFn: any;
+      let retryFn: (failureCount: number, error: unknown) => boolean;
 
-      mockUseQuery.mockImplementation((config: any) => {
-        retryFn = config.retry;
-        return {} as any;
+      mockUseQuery.mockImplementation((config) => {
+        retryFn = config.retry as typeof retryFn;
+        return {
+          data: undefined,
+          isLoading: false,
+          error: null,
+          refetch: vi.fn(),
+        };
       });
 
       renderHook(() => useSpinHistory({ userId: 'user1' }));
@@ -276,11 +344,16 @@ describe('useSpinHistory', () => {
     });
 
     it('retries on 5xx errors up to 2 times', () => {
-      let retryFn: any;
+      let retryFn: (failureCount: number, error: unknown) => boolean;
 
-      mockUseQuery.mockImplementation((config: any) => {
-        retryFn = config.retry;
-        return {} as any;
+      mockUseQuery.mockImplementation((config) => {
+        retryFn = config.retry as typeof retryFn;
+        return {
+          data: undefined,
+          isLoading: false,
+          error: null,
+          refetch: vi.fn(),
+        };
       });
 
       renderHook(() => useSpinHistory({ userId: 'user1' }));
@@ -293,11 +366,16 @@ describe('useSpinHistory', () => {
     });
 
     it('retries on network errors up to 2 times', () => {
-      let retryFn: any;
+      let retryFn: (failureCount: number, error: unknown) => boolean;
 
-      mockUseQuery.mockImplementation((config: any) => {
-        retryFn = config.retry;
-        return {} as any;
+      mockUseQuery.mockImplementation((config) => {
+        retryFn = config.retry as typeof retryFn;
+        return {
+          data: undefined,
+          isLoading: false,
+          error: null,
+          refetch: vi.fn(),
+        };
       });
 
       renderHook(() => useSpinHistory({ userId: 'user1' }));
@@ -310,11 +388,16 @@ describe('useSpinHistory', () => {
     });
 
     it('handles errors without message property', () => {
-      let retryFn: any;
+      let retryFn: (failureCount: number, error: unknown) => boolean;
 
-      mockUseQuery.mockImplementation((config: any) => {
-        retryFn = config.retry;
-        return {} as any;
+      mockUseQuery.mockImplementation((config) => {
+        retryFn = config.retry as typeof retryFn;
+        return {
+          data: undefined,
+          isLoading: false,
+          error: null,
+          refetch: vi.fn(),
+        };
       });
 
       renderHook(() => useSpinHistory({ userId: 'user1' }));
@@ -329,11 +412,16 @@ describe('useSpinHistory', () => {
 
   describe('Retry Delay', () => {
     it('calculates exponential backoff correctly', () => {
-      let retryDelayFn: any;
+      let retryDelayFn: (attemptIndex: number) => number;
 
-      mockUseQuery.mockImplementation((config: any) => {
-        retryDelayFn = config.retryDelay;
-        return {} as any;
+      mockUseQuery.mockImplementation((config) => {
+        retryDelayFn = config.retryDelay as typeof retryDelayFn;
+        return {
+          data: undefined,
+          isLoading: false,
+          error: null,
+          refetch: vi.fn(),
+        };
       });
 
       renderHook(() => useSpinHistory({ userId: 'user1' }));
@@ -344,11 +432,16 @@ describe('useSpinHistory', () => {
     });
 
     it('caps retry delay at 30 seconds', () => {
-      let retryDelayFn: any;
+      let retryDelayFn: (attemptIndex: number) => number;
 
-      mockUseQuery.mockImplementation((config: any) => {
-        retryDelayFn = config.retryDelay;
-        return {} as any;
+      mockUseQuery.mockImplementation((config) => {
+        retryDelayFn = config.retryDelay as typeof retryDelayFn;
+        return {
+          data: undefined,
+          isLoading: false,
+          error: null,
+          refetch: vi.fn(),
+        };
       });
 
       renderHook(() => useSpinHistory({ userId: 'user1' }));
@@ -360,7 +453,12 @@ describe('useSpinHistory', () => {
 
   describe('Default Parameters', () => {
     it('uses default limit of 8', () => {
-      mockUseQuery.mockReturnValue({} as any);
+      mockUseQuery.mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+      });
 
       renderHook(() => useSpinHistory({ userId: 'user1' }));
 
@@ -372,7 +470,12 @@ describe('useSpinHistory', () => {
     });
 
     it('uses default enabled of true', () => {
-      mockUseQuery.mockReturnValue({} as any);
+      mockUseQuery.mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+      });
 
       renderHook(() => useSpinHistory({ userId: 'user1' }));
 
@@ -391,7 +494,8 @@ describe('useSpinHistory', () => {
         data: undefined,
         isLoading: false,
         error: serviceError,
-      } as any);
+        refetch: vi.fn(),
+      });
 
       const { result } = renderHook(() => useSpinHistory({ userId: 'user1' }));
 
@@ -404,7 +508,8 @@ describe('useSpinHistory', () => {
         data: undefined,
         isLoading: true,
         error: null,
-      } as any);
+        refetch: vi.fn(),
+      });
 
       const { result } = renderHook(() => useSpinHistory({ userId: 'user1' }));
 
@@ -416,11 +521,16 @@ describe('useSpinHistory', () => {
   describe('Integration with Service Layer', () => {
     it('passes correct parameters to service layer', async () => {
       mockGetSpinHistory.mockResolvedValue(mockSpinHistory);
-      let queryFn: any;
+      let queryFn: () => Promise<unknown>;
 
-      mockUseQuery.mockImplementation((config: any) => {
-        queryFn = config.queryFn;
-        return {} as any;
+      mockUseQuery.mockImplementation((config) => {
+        queryFn = config.queryFn as typeof queryFn;
+        return {
+          data: undefined,
+          isLoading: false,
+          error: null,
+          refetch: vi.fn(),
+        };
       });
 
       renderHook(() => useSpinHistory({ userId: 'test-user', limit: 25 }));
@@ -445,11 +555,16 @@ describe('useSpinHistory', () => {
       ];
 
       mockGetSpinHistory.mockResolvedValue(customSpinHistory);
-      let queryFn: any;
+      let queryFn: () => Promise<unknown>;
 
-      mockUseQuery.mockImplementation((config: any) => {
-        queryFn = config.queryFn;
-        return {} as any;
+      mockUseQuery.mockImplementation((config) => {
+        queryFn = config.queryFn as typeof queryFn;
+        return {
+          data: undefined,
+          isLoading: false,
+          error: null,
+          refetch: vi.fn(),
+        };
       });
 
       renderHook(() => useSpinHistory({ userId: 'user1' }));

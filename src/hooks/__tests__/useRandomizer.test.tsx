@@ -6,6 +6,7 @@ import { useCreateSpin } from '@/hooks/mutations/useCreateSpin';
 import { useSpinHistoryCount } from '@/hooks/queries/useSpinHistoryCount';
 import { useAuth } from '@/hooks/useAuth';
 import { Project } from '@/types/project';
+import type { MockUseMutationResult, MockUseQueryResult, MockUser } from '@/types/test-mocks';
 
 // Mock dependencies
 vi.mock('@/hooks/queries/useProjects');
@@ -66,7 +67,11 @@ describe('useRandomizer', () => {
       user: mockUser,
       isLoading: false,
       isAuthenticated: true,
-    } as any);
+      error: null,
+      login: vi.fn(),
+      logout: vi.fn(),
+      register: vi.fn(),
+    });
 
     mockUseProjects.mockReturnValue({
       data: {
@@ -76,19 +81,25 @@ describe('useRandomizer', () => {
       },
       isLoading: false,
       error: null,
-    } as any);
+      refetch: vi.fn(),
+    });
 
     mockUseSpinHistoryCount.mockReturnValue({
       data: 0, // Default to zero spin count
       isLoading: false,
       error: null,
-    } as any);
+      refetch: vi.fn(),
+    });
 
     mockUseCreateSpin.mockReturnValue({
       mutateAsync: mockMutateAsync,
+      mutate: vi.fn(),
       isPending: false,
+      isError: false,
       error: null,
-    } as any);
+      data: undefined,
+      isLoading: false,
+    });
   });
 
   describe('Initial State', () => {
@@ -229,7 +240,11 @@ describe('useRandomizer', () => {
         user: null,
         isLoading: false,
         isAuthenticated: false,
-      } as any);
+        error: null,
+        login: vi.fn(),
+        logout: vi.fn(),
+        register: vi.fn(),
+      });
 
       const { result } = renderHook(() => useRandomizer());
 
@@ -289,7 +304,8 @@ describe('useRandomizer', () => {
         data: { projects: [], totalCount: 0, hasNextPage: false },
         isLoading: true,
         error: null,
-      } as any);
+        refetch: vi.fn(),
+      });
 
       const { result } = renderHook(() => useRandomizer());
 
@@ -300,9 +316,13 @@ describe('useRandomizer', () => {
     it('reflects spin creation loading state', () => {
       mockUseCreateSpin.mockReturnValue({
         mutateAsync: mockMutateAsync,
+        mutate: vi.fn(),
         isPending: true,
+        isError: false,
         error: null,
-      } as any);
+        data: undefined,
+        isLoading: true,
+      });
 
       const { result } = renderHook(() => useRandomizer());
 
@@ -317,7 +337,8 @@ describe('useRandomizer', () => {
         data: { projects: [], totalCount: 0, hasNextPage: false },
         isLoading: false,
         error: projectsError,
-      } as any);
+        refetch: vi.fn(),
+      });
 
       const { result } = renderHook(() => useRandomizer());
 
@@ -328,9 +349,13 @@ describe('useRandomizer', () => {
       const spinError = new Error('Failed to create spin');
       mockUseCreateSpin.mockReturnValue({
         mutateAsync: mockMutateAsync,
+        mutate: vi.fn(),
         isPending: false,
+        isError: true,
         error: spinError,
-      } as any);
+        data: undefined,
+        isLoading: false,
+      });
 
       const { result } = renderHook(() => useRandomizer());
 
@@ -344,7 +369,8 @@ describe('useRandomizer', () => {
         data: { projects: [], totalCount: 0, hasNextPage: false },
         isLoading: false,
         error: null,
-      } as any);
+        refetch: vi.fn(),
+      });
 
       const { result } = renderHook(() => useRandomizer());
 
@@ -417,7 +443,8 @@ describe('useRandomizer', () => {
         },
         isLoading: false,
         error: null,
-      } as any);
+        refetch: vi.fn(),
+      });
 
       const { result } = renderHook(() => useRandomizer());
 

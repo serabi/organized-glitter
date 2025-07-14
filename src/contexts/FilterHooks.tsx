@@ -5,7 +5,7 @@
  */
 
 import { useFilterState } from '@/contexts/FilterStateContext';
-import { useFilterActions } from '@/contexts/FilterActionsContext';
+import { useFilterActions } from '@/hooks/useFilterActions';
 import { useMemo } from 'react';
 
 /**

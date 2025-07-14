@@ -8,6 +8,7 @@ import {
   type CreateSpinParams,
   type SpinRecord,
 } from '../randomizerService';
+import type { MockPocketBaseCollection } from '@/types/test-utils';
 import { pb } from '@/lib/pocketbase';
 
 // Mock PocketBase
@@ -27,7 +28,10 @@ vi.mock('@/utils/secureLogger', () => ({
   }),
 }));
 
-const mockCollection = {
+const mockCollection: Partial<MockPocketBaseCollection> & {
+  getFullList: vi.MockedFunction<() => Promise<SpinRecord[]>>;
+  getFirstListItem: vi.MockedFunction<() => Promise<SpinRecord>>;
+} = {
   create: vi.fn(),
   getList: vi.fn(),
   getFullList: vi.fn(),
@@ -61,10 +65,10 @@ describe('randomizerService', () => {
     // Reset all mock functions on the collection
     Object.values(mockCollection).forEach(mockFn => {
       if (typeof mockFn === 'function' && 'mockReset' in mockFn) {
-        (mockFn as any).mockReset();
+        (mockFn as { mockReset: () => void }).mockReset();
       }
     });
-    mockPb.collection.mockReturnValue(mockCollection as any);
+    mockPb.collection.mockReturnValue(mockCollection);
   });
 
   describe('createSpin', () => {
