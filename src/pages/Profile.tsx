@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useProfileReactQuery } from '@/hooks/useProfileReactQuery';
@@ -10,9 +11,11 @@ import ProfilePersonalInfo from '@/components/profile/ProfilePersonalInfo';
 import AccountSettings from '@/components/profile/AccountSettings';
 import DataImportExportSettings from '@/components/profile/DataImportExportSettings';
 import PayPalSupportSection from '@/components/profile/PayPalSupportSection';
+import { TimezonePreferences } from '@/components/profile/TimezonePreferences';
 import { useToast } from '@/hooks/use-toast';
 import type { AvatarConfig } from '@/types/avatar';
 import { logger } from '@/utils/logger';
+import { useUpdateTimezoneMutation } from '@/hooks/mutations/useUpdateTimezoneMutation';
 
 // Lazy load tab components for better performance
 const CompanyListTab = lazy(() => import('@/components/profile/CompanyListTab'));
@@ -20,6 +23,10 @@ const ArtistListTab = lazy(() => import('@/components/profile/ArtistListTab'));
 const TagListTab = lazy(() => import('@/components/profile/TagListTab'));
 
 const Profile = () => {
+  // URL query parameter handling for tabs
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'profile';
+
   // Authentication handling
   const { user, isLoading: authLoading } = useAuth();
 
@@ -39,6 +46,7 @@ const Profile = () => {
   } = useProfileReactQuery();
 
   const updateBetaTesterMutation = useUpdateBetaTesterStatusMutation();
+  const updateTimezoneMutation = useUpdateTimezoneMutation();
 
   // Helper function to update beta tester status (replaces setIsBetaTester)
   const setIsBetaTester = async (newStatus: boolean) => {
@@ -55,6 +63,25 @@ const Profile = () => {
         description: 'Failed to update beta tester status',
         variant: 'destructive',
       });
+    }
+  };
+
+  // Helper function to update timezone preference
+  const handleTimezoneUpdate = async (timezone: string) => {
+    if (!user?.id) return;
+    try {
+      await updateTimezoneMutation.mutateAsync({
+        userId: user.id,
+        timezone: timezone,
+      });
+    } catch (error) {
+      logger.error('Error updating timezone:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update timezone preference',
+        variant: 'destructive',
+      });
+      throw error; // Re-throw to let the component handle it
     }
   };
 
@@ -131,12 +158,29 @@ const Profile = () => {
         <div className="space-y-6">
           <ProfileHeader />
 
-          <Tabs defaultValue="profile" className="w-full">
+          <Tabs
+            value={activeTab}
+            onValueChange={value => {
+              setSearchParams(prev => {
+                const newParams = new URLSearchParams(prev);
+                if (value === 'profile') {
+                  newParams.delete('tab'); // Clean URL for default tab
+                } else {
+                  newParams.set('tab', value);
+                }
+                return newParams;
+              });
+            }}
+            className="w-full"
+          >
             <div className="sticky top-16 z-10 -mx-4 border-b border-border/50 bg-background px-4 pb-4 pt-2 md:top-0 md:mx-0 md:px-0">
               <div className="overflow-x-auto">
-                <TabsList className="grid w-full min-w-fit grid-cols-4">
+                <TabsList className="grid w-full min-w-fit grid-cols-5">
                   <TabsTrigger value="profile" className="px-2 text-xs sm:px-4 sm:text-sm">
-                    Profile Settings
+                    Data
+                  </TabsTrigger>
+                  <TabsTrigger value="preferences" className="px-2 text-xs sm:px-4 sm:text-sm">
+                    Preferences
                   </TabsTrigger>
                   <TabsTrigger value="companies" className="px-2 text-xs sm:px-4 sm:text-sm">
                     Company List
@@ -145,7 +189,7 @@ const Profile = () => {
                     Artist List
                   </TabsTrigger>
                   <TabsTrigger value="tags" className="px-2 text-xs sm:px-4 sm:text-sm">
-                    Tags
+                    Tag List
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -171,6 +215,14 @@ const Profile = () => {
                   onAvatarUpdate={handleAvatarUpdate}
                 />
 
+                {/* Use existing DataImportExportSettings component */}
+                <DataImportExportSettings profileLoading={profileLoading} />
+
+                {/* Support Section */}
+                <PayPalSupportSection />
+              </TabsContent>
+
+              <TabsContent value="preferences" className="space-y-6">
                 <AccountSettings
                   loading={profileActionLoading}
                   email={email}
@@ -179,11 +231,7 @@ const Profile = () => {
                   userId={user?.id}
                 />
 
-                {/* Use existing DataImportExportSettings component */}
-                <DataImportExportSettings profileLoading={profileLoading} />
-
-                {/* Support Section */}
-                <PayPalSupportSection />
+                <TimezonePreferences onTimezoneUpdate={handleTimezoneUpdate} />
               </TabsContent>
 
               <TabsContent value="companies">

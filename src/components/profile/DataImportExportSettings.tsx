@@ -37,7 +37,7 @@ const DataImportExportSettings = ({ profileLoading }: DataImportExportSettingsPr
   return (
     <div className="dark:glass-card mt-8 rounded-lg border border-border bg-card text-card-foreground shadow">
       <div className="border-b border-border p-6">
-        <h2 className="text-xl font-semibold">Data Import/Export Settings</h2>
+        <h2 className="text-xl font-semibold">Data Import/Export</h2>
         <p className="text-muted-foreground">Manage importing and exporting your project data.</p>
       </div>
 

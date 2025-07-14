@@ -1,6 +1,7 @@
 import { ProjectType, ProjectStatus } from '@/types/project';
 import Papa from 'papaparse';
 import { logger } from './logger';
+import { safeDateString } from '@/utils/dateHelpers';
 
 export interface ParsedCsvData {
   projects: Partial<ProjectType>[];
@@ -416,14 +417,7 @@ const validateKitCategory = (categoryStr: string): 'full' | 'mini' | undefined =
 const validateDate = (dateStr: string): string | undefined => {
   if (!dateStr) return undefined;
 
-  // Try to parse the date
-  const date = new Date(dateStr);
-
-  // Check if the date is valid
-  if (isNaN(date.getTime())) {
-    return undefined;
-  }
-
-  // Format as YYYY-MM-DD
-  return date.toISOString().split('T')[0];
+  // Use timezone-safe conversion (defaults to UTC for backwards compatibility)
+  const result = safeDateString(dateStr);
+  return result || undefined;
 };

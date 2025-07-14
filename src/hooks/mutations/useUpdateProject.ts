@@ -9,6 +9,8 @@ import { ClientResponseError } from 'pocketbase';
 import { updateProjectInCache } from '@/utils/cacheUtils';
 import { useMetadata } from '@/contexts/MetadataContext';
 import type { Project } from '@/types/project';
+import { getCurrentDateString } from '@/utils/dateHelpers';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
 
 const logger = createLogger('useUpdateProject');
 
@@ -55,6 +57,7 @@ interface MutationContext {
 export const useUpdateProject = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const userTimezone = useUserTimezone();
   const { user } = useAuth();
 
   return useMutation<ProjectsResponse, Error, UpdateProjectData, MutationContext>({
@@ -64,7 +67,7 @@ export const useUpdateProject = () => {
 
       // Auto-set date_completed when status changes to 'completed'
       if (updateData.status === 'completed' && !updateData.date_completed) {
-        updateData.date_completed = new Date().toISOString().split('T')[0];
+        updateData.date_completed = getCurrentDateString(userTimezone);
         logger.debug(
           'Auto-setting date_completed for completed project:',
           updateData.date_completed

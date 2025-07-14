@@ -18,6 +18,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { CalendarIcon, Upload, X } from 'lucide-react';
+import { safeDateString } from '@/utils/dateHelpers';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -36,6 +38,7 @@ export const ProjectMainTab = ({
   isSubmitting,
   project,
 }: ProjectMainTabProps) => {
+  const userTimezone = useUserTimezone();
   const [imagePreview, setImagePreview] = useState<string | null>(project.imageUrl || null);
   // selectedTags now stores tag IDs
   const [selectedTags, setSelectedTags] = useState<string[]>(
@@ -342,7 +345,9 @@ export const ProjectMainTab = ({
                       <Calendar
                         mode="single"
                         selected={field.value ? new Date(field.value) : undefined}
-                        onSelect={date => field.onChange(date?.toISOString().split('T')[0])}
+                        onSelect={date =>
+                          field.onChange(date ? safeDateString(date, userTimezone) : '')
+                        }
                         disabled={date => date > new Date() || date < new Date('1900-01-01')}
                         initialFocus
                       />
@@ -383,7 +388,9 @@ export const ProjectMainTab = ({
                       <Calendar
                         mode="single"
                         selected={field.value ? new Date(field.value) : undefined}
-                        onSelect={date => field.onChange(date?.toISOString().split('T')[0])}
+                        onSelect={date =>
+                          field.onChange(date ? safeDateString(date, userTimezone) : '')
+                        }
                         disabled={date => date > new Date() || date < new Date('1900-01-01')}
                         initialFocus
                       />
@@ -424,7 +431,9 @@ export const ProjectMainTab = ({
                       <Calendar
                         mode="single"
                         selected={field.value ? new Date(field.value) : undefined}
-                        onSelect={date => field.onChange(date?.toISOString().split('T')[0])}
+                        onSelect={date =>
+                          field.onChange(date ? safeDateString(date, userTimezone) : '')
+                        }
                         disabled={date => date > new Date() || date < new Date('1900-01-01')}
                         initialFocus
                       />
@@ -465,7 +474,9 @@ export const ProjectMainTab = ({
                       <Calendar
                         mode="single"
                         selected={field.value ? new Date(field.value) : undefined}
-                        onSelect={date => field.onChange(date?.toISOString().split('T')[0])}
+                        onSelect={date =>
+                          field.onChange(date ? safeDateString(date, userTimezone) : '')
+                        }
                         disabled={date => date > new Date() || date < new Date('1900-01-01')}
                         initialFocus
                       />

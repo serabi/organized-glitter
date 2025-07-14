@@ -5,13 +5,17 @@
 
 import type { ProjectFormValues } from '@/types/shared';
 import type { ProjectUpdateData } from '@/types/file-upload';
+import { toUserDateString } from '@/utils/timezoneUtils';
 
 /**
  * Maps camelCase form fields to snake_case PocketBase fields
  * Handles type conversion and null values appropriately
  * Preserves proper data types for PocketBase API
  */
-export function mapFormDataToPocketBase(formData: ProjectFormValues): ProjectUpdateData {
+export function mapFormDataToPocketBase(
+  formData: ProjectFormValues,
+  userTimezone?: string
+): ProjectUpdateData {
   // Helper function to safely parse integers
   const safeParseInt = (value: string | number | undefined): number | null => {
     if (value === undefined || value === null || value === '') return null;
@@ -25,22 +29,14 @@ export function mapFormDataToPocketBase(formData: ProjectFormValues): ProjectUpd
   };
 
   // Helper function to format dates for PocketBase (YYYY-MM-DD format only)
-  const formatDateForPocketBase = (value: string | undefined): string | null => {
+  const formatDateForPocketBase = (
+    value: string | undefined,
+    userTimezone?: string
+  ): string | null => {
     if (!value || value === '') return null;
 
-    // If it's already in YYYY-MM-DD format, return as is
-    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-      return value;
-    }
-
-    // If it's an ISO string or other date format, extract just the date part
-    try {
-      const date = new Date(value);
-      if (isNaN(date.getTime())) return null;
-      return date.toISOString().split('T')[0]; // Extract YYYY-MM-DD part
-    } catch {
-      return null;
-    }
+    // Use timezone-safe conversion
+    return toUserDateString(value, userTimezone);
   };
 
   // Helper function to check if a value looks like a PocketBase ID (15 characters)
@@ -59,10 +55,10 @@ export function mapFormDataToPocketBase(formData: ProjectFormValues): ProjectUpd
     status: formData.status,
     kit_category: safeString(formData.kit_category),
     drill_shape: safeString(formData.drillShape),
-    date_purchased: formatDateForPocketBase(formData.datePurchased),
-    date_started: formatDateForPocketBase(formData.dateStarted),
-    date_completed: formatDateForPocketBase(formData.dateCompleted),
-    date_received: formatDateForPocketBase(formData.dateReceived),
+    date_purchased: formatDateForPocketBase(formData.datePurchased, userTimezone),
+    date_started: formatDateForPocketBase(formData.dateStarted, userTimezone),
+    date_completed: formatDateForPocketBase(formData.dateCompleted, userTimezone),
+    date_received: formatDateForPocketBase(formData.dateReceived, userTimezone),
     width: safeParseInt(formData.width),
     height: safeParseInt(formData.height),
     total_diamonds: safeParseInt(formData.totalDiamonds),

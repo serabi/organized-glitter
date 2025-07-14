@@ -6,6 +6,7 @@ export interface PocketBaseUser {
   name?: string;
   avatar?: string;
   beta_tester?: boolean;
+  timezone?: string;
   created: string;
   updated: string;
   verified?: boolean;

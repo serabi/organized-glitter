@@ -83,8 +83,20 @@ export function ThankYouMessage() {
                         Advanced Project Editor page
                         <ExternalLink className="h-3 w-3" />
                       </Link>
-                      . The Advanced Project Editor page is currently read-only - I will add edit
-                      functionality in the next update.
+                      . (The Advanced Project Editor page is currently read-only - I will re-add
+                      edit functionality in the next update.)
+                    </p>
+                    <p>
+                      Added time zone support in order to fix a bug where some users saw dates
+                      displayed incorrectly. You can set your preferred time zone in your{' '}
+                      <Link
+                        to="/profile?tab=preferences"
+                        className="inline-flex items-center gap-1 font-medium text-pink-600 underline decoration-pink-300 transition-colors hover:text-pink-700 hover:decoration-pink-500 dark:text-pink-400 dark:hover:text-pink-300"
+                      >
+                        profile
+                        <ExternalLink className="h-3 w-3" />
+                      </Link>
+                      .
                     </p>
                   </div>
                 </div>

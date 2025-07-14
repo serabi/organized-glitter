@@ -1,6 +1,7 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { logger } from '@/utils/logger';
+import { toUserDateString } from '@/utils/timezoneUtils';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -29,25 +30,13 @@ export function formatDate(dateString: string): string {
   }
 }
 
-export function extractDateOnly(dateString: string): string | undefined {
+export function extractDateOnly(dateString: string, userTimezone?: string): string | undefined {
   if (!dateString) return undefined;
 
   try {
-    // If it's already in YYYY-MM-DD format, return as-is
-    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-      return dateString;
-    }
-
-    // Parse the date and extract just the date portion
-    const date = new Date(dateString);
-
-    // Check if date is valid
-    if (isNaN(date.getTime())) {
-      return undefined;
-    }
-
-    // Return in YYYY-MM-DD format
-    return date.toISOString().split('T')[0];
+    // Use timezone-safe conversion
+    const result = toUserDateString(dateString, userTimezone);
+    return result || undefined;
   } catch (error) {
     logger.error('Error extracting date:', error);
     return undefined;
