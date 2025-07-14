@@ -15,52 +15,31 @@
  * @since 2.0.0 - Migrated to React Query patterns to fix 404 authentication race conditions
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, startTransition } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ProjectType, ProjectFormValues } from '@/types/project';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigationWithWarning } from '@/hooks/useNavigationWithWarning';
 import { useConfirmationDialog } from '@/hooks/useConfirmationDialog';
-import { useNavigateToProject } from '@/hooks/useNavigateToProject';
+import { useNavigateToProject, NavigationContext } from '@/hooks/useNavigateToProject';
 import { useProjectDetailQuery } from '@/hooks/queries/useProjectDetailQuery';
 import {
   useArchiveProjectMutation,
   useDeleteProjectMutation,
 } from '@/hooks/mutations/useProjectDetailMutations';
-import { useProjectUpdateUnified } from '@/hooks/mutations/useProjectUpdateUnified';
 import { useMetadata } from '@/contexts/MetadataContext';
-import { extractDateOnly } from '@/lib/utils';
 import { useServiceToast } from '@/utils/toast-adapter';
+import { useQueryClient } from '@tanstack/react-query';
+import { pb } from '@/lib/pocketbase';
+import { Collections } from '@/types/pocketbase.types';
+import { updateProjectInCache } from '@/utils/cacheUtils';
 import { createLogger } from '@/utils/secureLogger';
+import { prepareProjectFormData, getChangedFields, transformProjectFromPocketBase } from '@/utils/projectTransformers';
+import { buildProjectFormData } from '@/utils/field-mapping';
+import { useTagSync } from '@/hooks/useTagSync';
+import type { ProjectWithExpand } from '@/utils/projectTransformers';
 
 const logger = createLogger('useEditProject');
-
-/**
- * Prepare initial form data from project
- *
- * @param project - Project data from useProjectDetailQuery
- * @returns Form data prepared for editing
- */
-const prepareFormInitialData = (project: ProjectType): ProjectFormValues => {
-  return {
-    title: project.title || '',
-    userId: project.userId,
-    company: project.company || '',
-    artist: project.artist || '',
-    status: project.status || 'wishlist',
-    kit_category: project.kit_category || undefined,
-    drillShape: project.drillShape || '',
-    datePurchased: project.datePurchased || '',
-    dateStarted: project.dateStarted || '',
-    dateCompleted: project.dateCompleted || '',
-    dateReceived: project.dateReceived || '',
-    width: project.width?.toString() || '',
-    height: project.height?.toString() || '',
-    totalDiamonds: project.totalDiamonds || 0,
-    generalNotes: project.generalNotes || '',
-    sourceUrl: project.sourceUrl || '',
-    tags: project.tags || [],
-  };
-};
 
 /**
  * Enhanced project editing hook using React Query patterns
@@ -81,7 +60,6 @@ export const useEditProject = (projectId: string | undefined) => {
   } = useProjectDetailQuery(projectId, isAuthenticated, initialCheckComplete);
 
   // Mutations for project operations
-  const updateProjectMutation = useProjectUpdateUnified();
   const deleteProjectMutation = useDeleteProjectMutation();
   const archiveProjectMutation = useArchiveProjectMutation();
 
@@ -91,12 +69,29 @@ export const useEditProject = (projectId: string | undefined) => {
   // Form state
   const [formData, setFormData] = useState<ProjectFormValues | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [hasSelectedNewImage, setHasSelectedNewImage] = useState(false);
 
-  // Navigation state with proper isDirty check
+  // Tag synchronization
+  const { syncProjectTags } = useTagSync();
+
+  // Navigation and routing
+  const navigate = useNavigate();
+  const location = useLocation();
+  const queryClient = useQueryClient();
+
+  // Extract navigation state from location
+  const locationState = location.state as {
+    fromNavigation?: boolean;
+    projectId?: string;
+    timestamp?: number;
+    navigationContext?: NavigationContext;
+  } | null;
+
+  // Navigation state with proper isDirty check using modular utility
   const isDirty = Boolean(
     formData &&
       project &&
-      JSON.stringify(formData) !== JSON.stringify(prepareFormInitialData(project))
+      getChangedFields(prepareProjectFormData(project), formData).length > 0
   );
   const { ConfirmationDialog: NavigationDialog, confirmUnsavedChanges } = useConfirmationDialog();
   const { navigationState, clearNavigationError } = useNavigationWithWarning({
@@ -124,7 +119,7 @@ export const useEditProject = (projectId: string | undefined) => {
   // Initialize form data when project loads
   useEffect(() => {
     if (project && !formData) {
-      const initialData = prepareFormInitialData(project);
+      const initialData = prepareProjectFormData(project);
       setFormData(initialData);
       logger.debug('Form data initialized from project', { projectId: project.id });
     }
@@ -143,13 +138,25 @@ export const useEditProject = (projectId: string | undefined) => {
     []
   );
 
-  // Form data change handler (full data)
+  // Form data change handler (full data) - enhanced with image tracking
   const handleFormDataChange = useCallback((data: ProjectFormValues) => {
-    setFormData(data);
-    logger.debug('Form data updated', { data });
+    setFormData(prevData => {
+      const newData = { ...prevData, ...data };
+
+      // Track image file selection
+      if (data.imageFile !== undefined) {
+        setHasSelectedNewImage(!!data.imageFile);
+      }
+
+      logger.debug('Form data updated', {
+        fieldsChanged: Object.keys(data),
+        hasImageFile: !!data.imageFile,
+      });
+      return newData;
+    });
   }, []);
 
-  // Submit handler with unified mutation
+  // Enhanced submit handler with modular utilities
   const handleSubmit = useCallback(
     async (data: ProjectFormValues) => {
       if (!project || !data) {
@@ -159,22 +166,140 @@ export const useEditProject = (projectId: string | undefined) => {
 
       try {
         setSubmitting(true);
-        logger.debug('Starting project update', { projectId: project.id });
+        logger.debug('Starting enhanced project update', { projectId: project.id });
 
-        // Use unified mutation with proper typing
-        const formWithFile = { ...data, id: project.id };
-        await updateProjectMutation.mutateAsync(formWithFile);
+        // Prepare data for submission with proper typing
+        const dataToSubmit: ProjectFormValues = {
+          ...data,
+          totalDiamonds:
+            typeof data.totalDiamonds === 'string' && data.totalDiamonds
+              ? Number(data.totalDiamonds)
+              : data.totalDiamonds,
+          tagIds: data.tags?.map(tag => tag.id) ?? [],
+        };
 
-        // Navigate back to project detail
-        navigateToProject(project.id);
+        // Resolve company and artist names to IDs if provided
+        let companyId = null;
+        let artistId = null;
+
+        if (dataToSubmit.company) {
+          try {
+            const companyRecord = await pb.collection('companies').getFirstListItem(
+              pb.filter('name = {:name} && user = {:user}', {
+                name: dataToSubmit.company,
+                user: user?.id,
+              })
+            );
+            companyId = companyRecord?.id || null;
+          } catch (error) {
+            logger.warn('Company not found:', dataToSubmit.company);
+            toast({
+              title: 'Company Not Found',
+              description: `The company "${dataToSubmit.company}" was not found. The project will be updated without a company association.`,
+              variant: 'destructive',
+            });
+            companyId = null;
+          }
+        }
+
+        if (dataToSubmit.artist) {
+          try {
+            const artistRecord = await pb.collection('artists').getFirstListItem(
+              pb.filter('name = {:name} && user = {:user}', {
+                name: dataToSubmit.artist,
+                user: user?.id,
+              })
+            );
+            artistId = artistRecord?.id || null;
+          } catch (error) {
+            logger.warn('Artist not found:', dataToSubmit.artist);
+            toast({
+              title: 'Artist Not Found',
+              description: `The artist "${dataToSubmit.artist}" was not found. The project will be updated without an artist association.`,
+              variant: 'destructive',
+            });
+            artistId = null;
+          }
+        }
+
+        // Build FormData using modular utility
+        const formData = buildProjectFormData(dataToSubmit, {
+          companyId,
+          artistId,
+          userTimezone: user?.timezone,
+        });
+
+        // Update the project in PocketBase with field mapping
+        const updatedProjectRecord = await pb
+          .collection(Collections.Projects)
+          .update(project.id, formData);
+
+        // Transform the updated project record to ProjectType format
+        const transformedProject = transformProjectFromPocketBase(updatedProjectRecord as ProjectWithExpand);
+
+        // Handle tag synchronization using modular utility
+        const currentTags = data.tags || [];
+        const originalTags = project?.tags || [];
+        
+        const syncResult = await syncProjectTags(project.id, originalTags, currentTags);
+        
+        // Log sync result for debugging
+        logger.debug('Tag synchronization result', {
+          projectId: project.id,
+          success: syncResult.success,
+          added: syncResult.addedCount,
+          removed: syncResult.removedCount,
+          errors: syncResult.errors.length,
+        });
+
+        // Success feedback
+        toast({
+          title: 'Project Updated',
+          description: `"${project.title}" has been updated successfully.`,
+        });
+
+        // Reset form state
+        setHasSelectedNewImage(false);
+
+        // Check if we should return to dashboard with preserved position
+        const shouldReturnToDashboard = locationState?.navigationContext;
+
+        if (shouldReturnToDashboard) {
+          logger.info('Returning to dashboard with preserved position after edit');
+          navigate('/dashboard', {
+            replace: true,
+            state: {
+              fromEdit: true,
+              editedProjectId: project.id,
+              editedProjectData: transformedProject,
+              timestamp: Date.now(),
+              navigationContext: locationState.navigationContext,
+              preservePosition: true,
+            },
+          });
+        } else {
+          // Navigate back to project detail
+          logger.info('Navigating back to project detail page');
+          navigateToProject(project.id, { replace: true });
+        }
+
+        // Use optimistic updates to preserve sort order
+        startTransition(() => {
+          updateProjectInCache(queryClient, project.id, transformedProject, user?.id || '');
+          logger.info('Project update optimistic cache updates completed');
+        });
       } catch (error) {
         logger.error('Error updating project', { error, projectId: project.id });
-        // Error handling is already done in the mutation
+        toast({
+          title: 'Error updating project',
+          description: error instanceof Error ? error.message : 'Network error',
+          variant: 'destructive',
+        });
       } finally {
         setSubmitting(false);
       }
     },
-    [project, updateProjectMutation, navigateToProject]
+    [project, user, toast, navigate, navigateToProject, locationState, queryClient]
   );
 
   // Archive handler
@@ -244,6 +369,8 @@ export const useEditProject = (projectId: string | undefined) => {
 
     // State
     navigationState,
+    isDirty,
+    hasSelectedNewImage,
 
     // Handlers
     handleFormChange,
@@ -256,6 +383,7 @@ export const useEditProject = (projectId: string | undefined) => {
 
     // Components
     ConfirmationDialog,
+    NavigationDialog,
 
     // Error state
     error: projectError,

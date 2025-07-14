@@ -1,11 +1,17 @@
 /**
  * Utility functions for mapping between frontend (camelCase) and backend (snake_case) field names
- * Provides type-safe conversion for PocketBase operations
+ * Provides type-safe conversion for PocketBase operations and FormData building
+ * 
+ * @author @serabi
+ * @created 2025-01-14
  */
 
-import type { ProjectFormValues } from '@/types/shared';
+import type { ProjectFormValues } from '@/types/project';
 import type { ProjectUpdateData } from '@/types/file-upload';
 import { toUserDateString } from '@/utils/timezoneUtils';
+import { createLogger } from '@/utils/secureLogger';
+
+const logger = createLogger('field-mapping');
 
 /**
  * Maps camelCase form fields to snake_case PocketBase fields
@@ -146,4 +152,103 @@ export function snakeToCamelCase(obj: Record<string, unknown>): Record<string, u
   }
 
   return result;
+}
+
+/**
+ * Options for building FormData for PocketBase project updates
+ */
+export interface ProjectFormDataOptions {
+  /** Resolved company ID (if company name was resolved) */
+  companyId?: string | null;
+  /** Resolved artist ID (if artist name was resolved) */
+  artistId?: string | null;
+  /** User timezone for date formatting */
+  userTimezone?: string;
+}
+
+/**
+ * Builds FormData for PocketBase project update operations
+ * Handles field mapping, type conversion, and file uploads
+ * 
+ * @param formData - Form values to convert
+ * @param options - Additional options for FormData building
+ * @returns FormData ready for PocketBase submission
+ */
+export function buildProjectFormData(
+  formData: ProjectFormValues,
+  options: ProjectFormDataOptions = {}
+): FormData {
+  const { companyId, artistId, userTimezone } = options;
+  const pbFormData = new FormData();
+
+  // Fields to exclude from direct mapping
+  const fieldsToExclude = [
+    'id',
+    'tags',
+    'tagIds',
+    'imageFile',
+    '_imageReplacement',
+    'company',
+    'artist',
+    'tagNames', // CSV import compatibility field
+  ];
+
+  // Date fields that should allow empty strings (to clear the field in PocketBase)
+  const dateFields = ['datePurchased', 'dateReceived', 'dateStarted', 'dateCompleted'];
+
+  // Helper function to format dates for PocketBase (YYYY-MM-DD format only)
+  const formatDateForPocketBase = (value: string | undefined): string | null => {
+    if (!value || value === '') return null;
+    return toUserDateString(value, userTimezone);
+  };
+
+  // Map form fields to PocketBase fields with proper type conversion
+  Object.entries(formData).forEach(([key, value]) => {
+    if (!fieldsToExclude.includes(key) && value !== undefined && value !== null) {
+      // For date fields, allow empty strings (required to clear DateFields in PocketBase)
+      const shouldInclude = dateFields.includes(key) ? true : value !== '';
+
+      if (shouldInclude) {
+        // Convert camelCase field names to snake_case for PocketBase
+        const fieldName = FIELD_MAPPING[key as keyof typeof FIELD_MAPPING] || key;
+        
+        // Handle special date field formatting
+        if (dateFields.includes(key)) {
+          const formattedDate = formatDateForPocketBase(value as string);
+          if (formattedDate !== null) {
+            pbFormData.append(fieldName, formattedDate);
+          } else if (value === '') {
+            // Explicitly append empty string to clear the field
+            pbFormData.append(fieldName, '');
+          }
+        } else {
+          pbFormData.append(fieldName, String(value));
+        }
+
+        // Log field mapping for debugging
+        if (FIELD_MAPPING[key as keyof typeof FIELD_MAPPING]) {
+          logger.debug(`Field mapping: ${key} -> ${fieldName} = "${value}"`);
+        }
+      }
+    }
+  });
+
+  // Add resolved company and artist IDs if provided
+  if (companyId) {
+    pbFormData.append('company', companyId);
+    logger.debug(`Added resolved company ID: ${companyId}`);
+  }
+  
+  if (artistId) {
+    pbFormData.append('artist', artistId);
+    logger.debug(`Added resolved artist ID: ${artistId}`);
+  }
+
+  // Handle image upload if present
+  if (formData.imageFile && formData.imageFile instanceof File) {
+    pbFormData.append('image', formData.imageFile);
+    logger.debug(`Added image file: ${formData.imageFile.name}`);
+  }
+
+  return pbFormData;
 }
