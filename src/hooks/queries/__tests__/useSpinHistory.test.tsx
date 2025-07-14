@@ -144,7 +144,7 @@ describe('useSpinHistory', () => {
       mockGetSpinHistory.mockResolvedValue(mockSpinHistory);
       let queryFn: () => Promise<unknown>;
 
-      mockUseQuery.mockImplementation((config) => {
+      mockUseQuery.mockImplementation(config => {
         queryFn = config.queryFn as typeof queryFn;
         return {
           data: undefined,
@@ -165,7 +165,7 @@ describe('useSpinHistory', () => {
     it('returns empty array when userId is not provided', async () => {
       let queryFn: () => Promise<unknown>;
 
-      mockUseQuery.mockImplementation((config) => {
+      mockUseQuery.mockImplementation(config => {
         queryFn = config.queryFn as typeof queryFn;
         return {
           data: undefined,
@@ -188,7 +188,7 @@ describe('useSpinHistory', () => {
       mockGetSpinHistory.mockRejectedValue(error);
       let queryFn: () => Promise<unknown>;
 
-      mockUseQuery.mockImplementation((config) => {
+      mockUseQuery.mockImplementation(config => {
         queryFn = config.queryFn as typeof queryFn;
         return {
           data: undefined,
@@ -314,7 +314,7 @@ describe('useSpinHistory', () => {
     it('does not retry on 4xx errors', () => {
       let retryFn: (failureCount: number, error: unknown) => boolean;
 
-      mockUseQuery.mockImplementation((config) => {
+      mockUseQuery.mockImplementation(config => {
         retryFn = config.retry as typeof retryFn;
         return {
           data: undefined,
@@ -346,7 +346,7 @@ describe('useSpinHistory', () => {
     it('retries on 5xx errors up to 2 times', () => {
       let retryFn: (failureCount: number, error: unknown) => boolean;
 
-      mockUseQuery.mockImplementation((config) => {
+      mockUseQuery.mockImplementation(config => {
         retryFn = config.retry as typeof retryFn;
         return {
           data: undefined,
@@ -368,7 +368,7 @@ describe('useSpinHistory', () => {
     it('retries on network errors up to 2 times', () => {
       let retryFn: (failureCount: number, error: unknown) => boolean;
 
-      mockUseQuery.mockImplementation((config) => {
+      mockUseQuery.mockImplementation(config => {
         retryFn = config.retry as typeof retryFn;
         return {
           data: undefined,
@@ -390,7 +390,7 @@ describe('useSpinHistory', () => {
     it('handles errors without message property', () => {
       let retryFn: (failureCount: number, error: unknown) => boolean;
 
-      mockUseQuery.mockImplementation((config) => {
+      mockUseQuery.mockImplementation(config => {
         retryFn = config.retry as typeof retryFn;
         return {
           data: undefined,
@@ -414,7 +414,7 @@ describe('useSpinHistory', () => {
     it('calculates exponential backoff correctly', () => {
       let retryDelayFn: (attemptIndex: number) => number;
 
-      mockUseQuery.mockImplementation((config) => {
+      mockUseQuery.mockImplementation(config => {
         retryDelayFn = config.retryDelay as typeof retryDelayFn;
         return {
           data: undefined,
@@ -434,7 +434,7 @@ describe('useSpinHistory', () => {
     it('caps retry delay at 30 seconds', () => {
       let retryDelayFn: (attemptIndex: number) => number;
 
-      mockUseQuery.mockImplementation((config) => {
+      mockUseQuery.mockImplementation(config => {
         retryDelayFn = config.retryDelay as typeof retryDelayFn;
         return {
           data: undefined,
@@ -523,7 +523,7 @@ describe('useSpinHistory', () => {
       mockGetSpinHistory.mockResolvedValue(mockSpinHistory);
       let queryFn: () => Promise<unknown>;
 
-      mockUseQuery.mockImplementation((config) => {
+      mockUseQuery.mockImplementation(config => {
         queryFn = config.queryFn as typeof queryFn;
         return {
           data: undefined,
@@ -557,7 +557,7 @@ describe('useSpinHistory', () => {
       mockGetSpinHistory.mockResolvedValue(customSpinHistory);
       let queryFn: () => Promise<unknown>;
 
-      mockUseQuery.mockImplementation((config) => {
+      mockUseQuery.mockImplementation(config => {
         queryFn = config.queryFn as typeof queryFn;
         return {
           data: undefined,

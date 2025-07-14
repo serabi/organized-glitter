@@ -183,52 +183,57 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
           placeholder="All years"
         />
 
-        <div className="mt-4 flex items-center space-x-3 sm:space-x-2">
-          <Checkbox
-            id="include-mini-kits"
-            checked={includeMiniKits}
-            onCheckedChange={checked => updateIncludeMiniKits(Boolean(checked))}
-            data-testid="include-mini-kits-checkbox"
-          />
-          <Label htmlFor="include-mini-kits" className="text-sm font-medium">
-            Include Mini Kits?
-          </Label>
-        </div>
+        <div className="mt-6 rounded-md border border-gray-200 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
+          <h3 className="mb-2 text-sm font-medium">When displaying kits:</h3>
+          <div className="space-y-2">
+            <div className="flex items-center space-x-3 sm:space-x-2">
+              <Checkbox
+                id="include-mini-kits"
+                checked={includeMiniKits}
+                onCheckedChange={checked => updateIncludeMiniKits(Boolean(checked))}
+                data-testid="include-mini-kits-checkbox"
+              />
+              <Label htmlFor="include-mini-kits" className="text-sm font-medium">
+                Include Mini Kits?
+              </Label>
+            </div>
 
-        <div className="mt-4 flex items-center space-x-3 sm:space-x-2">
-          <Checkbox
-            id="include-destashed-kits"
-            checked={includeDestashed}
-            onCheckedChange={checked => updateIncludeDestashed(Boolean(checked))}
-            data-testid="include-destashed-checkbox"
-          />
-          <Label htmlFor="include-destashed-kits" className="text-sm font-medium">
-            Include Destashed Kits?
-          </Label>
-        </div>
+            <div className="flex items-center space-x-3 sm:space-x-2">
+              <Checkbox
+                id="include-destashed-kits"
+                checked={includeDestashed}
+                onCheckedChange={checked => updateIncludeDestashed(Boolean(checked))}
+                data-testid="include-destashed-checkbox"
+              />
+              <Label htmlFor="include-destashed-kits" className="text-sm font-medium">
+                Include Destashed Kits?
+              </Label>
+            </div>
 
-        <div className="mt-4 flex items-center space-x-3 sm:space-x-2">
-          <Checkbox
-            id="include-archived-kits"
-            checked={includeArchived}
-            onCheckedChange={checked => updateIncludeArchived(Boolean(checked))}
-            data-testid="include-archived-checkbox"
-          />
-          <Label htmlFor="include-archived-kits" className="text-sm font-medium">
-            Include Archived Kits?
-          </Label>
-        </div>
+            <div className="flex items-center space-x-3 sm:space-x-2">
+              <Checkbox
+                id="include-archived-kits"
+                checked={includeArchived}
+                onCheckedChange={checked => updateIncludeArchived(Boolean(checked))}
+                data-testid="include-archived-checkbox"
+              />
+              <Label htmlFor="include-archived-kits" className="text-sm font-medium">
+                Include Archived Kits?
+              </Label>
+            </div>
 
-        <div className="mt-4 flex items-center space-x-3 sm:space-x-2">
-          <Checkbox
-            id="include-wishlist-kits"
-            checked={includeWishlist}
-            onCheckedChange={checked => updateIncludeWishlist(Boolean(checked))}
-            data-testid="include-wishlist-checkbox"
-          />
-          <Label htmlFor="include-wishlist-kits" className="text-sm font-medium">
-            Include Wishlisted Kits?
-          </Label>
+            <div className="flex items-center space-x-3 sm:space-x-2">
+              <Checkbox
+                id="include-wishlist-kits"
+                checked={includeWishlist}
+                onCheckedChange={checked => updateIncludeWishlist(Boolean(checked))}
+                data-testid="include-wishlist-checkbox"
+              />
+              <Label htmlFor="include-wishlist-kits" className="text-sm font-medium">
+                Include Wishlisted Kits?
+              </Label>
+            </div>
+          </div>
         </div>
 
         <Button

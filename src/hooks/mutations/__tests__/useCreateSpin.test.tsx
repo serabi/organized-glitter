@@ -4,7 +4,11 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCreateSpin } from '../useCreateSpin';
 import { createSpin } from '@/services/pocketbase/randomizerService';
 import { toast } from 'sonner';
-import type { MockQueryClient, MockUseMutationResult, MockCreateSpinParams } from '@/types/test-mocks';
+import type {
+  MockQueryClient,
+  MockUseMutationResult,
+  MockCreateSpinParams,
+} from '@/types/test-mocks';
 import type { RandomizerSpinsResponse } from '@/types/pocketbase.types';
 
 // Mock dependencies
@@ -66,7 +70,7 @@ describe('useCreateSpin', () => {
         isPending: false,
         error: null,
       };
-      
+
       mockUseMutation.mockReturnValue(mockMutation);
 
       renderHook(() => useCreateSpin());
@@ -99,7 +103,7 @@ describe('useCreateSpin', () => {
       mockCreateSpin.mockResolvedValue(mockSpinRecord);
       let mutationFn: (data: MockCreateSpinParams) => Promise<RandomizerSpinsResponse>;
 
-      mockUseMutation.mockImplementation((config) => {
+      mockUseMutation.mockImplementation(config => {
         mutationFn = config.mutationFn as typeof mutationFn;
         return {} as MockUseMutationResult;
       });
@@ -117,7 +121,7 @@ describe('useCreateSpin', () => {
       mockCreateSpin.mockRejectedValue(serviceError);
       let mutationFn: (data: MockCreateSpinParams) => Promise<RandomizerSpinsResponse>;
 
-      mockUseMutation.mockImplementation((config) => {
+      mockUseMutation.mockImplementation(config => {
         mutationFn = config.mutationFn as typeof mutationFn;
         return {} as MockUseMutationResult;
       });
@@ -130,9 +134,12 @@ describe('useCreateSpin', () => {
 
   describe('Success Handler', () => {
     it('invalidates spin history queries on success', async () => {
-      let onSuccess: (data: RandomizerSpinsResponse, variables: MockCreateSpinParams) => Promise<void>;
+      let onSuccess: (
+        data: RandomizerSpinsResponse,
+        variables: MockCreateSpinParams
+      ) => Promise<void>;
 
-      mockUseMutation.mockImplementation((config) => {
+      mockUseMutation.mockImplementation(config => {
         onSuccess = config.onSuccess as typeof onSuccess;
         return {} as MockUseMutationResult;
       });
@@ -147,9 +154,12 @@ describe('useCreateSpin', () => {
     });
 
     it('shows success toast on successful spin creation', async () => {
-      let onSuccess: (data: RandomizerSpinsResponse, variables: MockCreateSpinParams) => Promise<void>;
+      let onSuccess: (
+        data: RandomizerSpinsResponse,
+        variables: MockCreateSpinParams
+      ) => Promise<void>;
 
-      mockUseMutation.mockImplementation((config) => {
+      mockUseMutation.mockImplementation(config => {
         onSuccess = config.onSuccess as typeof onSuccess;
         return {} as MockUseMutationResult;
       });
@@ -162,9 +172,12 @@ describe('useCreateSpin', () => {
     });
 
     it('handles success without errors', async () => {
-      let onSuccess: (data: RandomizerSpinsResponse, variables: MockCreateSpinParams) => Promise<void>;
+      let onSuccess: (
+        data: RandomizerSpinsResponse,
+        variables: MockCreateSpinParams
+      ) => Promise<void>;
 
-      mockUseMutation.mockImplementation((config) => {
+      mockUseMutation.mockImplementation(config => {
         onSuccess = config.onSuccess as typeof onSuccess;
         return {} as MockUseMutationResult;
       });
@@ -180,7 +193,7 @@ describe('useCreateSpin', () => {
     it('shows error toast on mutation failure', async () => {
       let onError: (error: Error, variables: MockCreateSpinParams) => Promise<void>;
 
-      mockUseMutation.mockImplementation((config) => {
+      mockUseMutation.mockImplementation(config => {
         onError = config.onError as typeof onError;
         return {} as MockUseMutationResult;
       });
@@ -196,7 +209,7 @@ describe('useCreateSpin', () => {
     it('handles different error types', async () => {
       let onError: (error: unknown, variables: MockCreateSpinParams) => Promise<void>;
 
-      mockUseMutation.mockImplementation((config) => {
+      mockUseMutation.mockImplementation(config => {
         onError = config.onError as typeof onError;
         return {} as MockUseMutationResult;
       });
@@ -219,7 +232,7 @@ describe('useCreateSpin', () => {
     it('handles errors without message', async () => {
       let onError: (error: unknown, variables: MockCreateSpinParams) => Promise<void>;
 
-      mockUseMutation.mockImplementation((config) => {
+      mockUseMutation.mockImplementation(config => {
         onError = config.onError as typeof onError;
         return {} as MockUseMutationResult;
       });
@@ -235,9 +248,12 @@ describe('useCreateSpin', () => {
 
   describe('Query Invalidation', () => {
     it('invalidates all randomizer history queries', async () => {
-      let onSuccess: (data: RandomizerSpinsResponse, variables: MockCreateSpinParams) => Promise<void>;
+      let onSuccess: (
+        data: RandomizerSpinsResponse,
+        variables: MockCreateSpinParams
+      ) => Promise<void>;
 
-      mockUseMutation.mockImplementation((config) => {
+      mockUseMutation.mockImplementation(config => {
         onSuccess = config.onSuccess as typeof onSuccess;
         return {} as MockUseMutationResult;
       });
@@ -252,10 +268,13 @@ describe('useCreateSpin', () => {
     });
 
     it('handles query invalidation errors gracefully', async () => {
-      let onSuccess: (data: RandomizerSpinsResponse, variables: MockCreateSpinParams) => Promise<void>;
+      let onSuccess: (
+        data: RandomizerSpinsResponse,
+        variables: MockCreateSpinParams
+      ) => Promise<void>;
       mockQueryClient.invalidateQueries.mockRejectedValue(new Error('Invalidation failed'));
 
-      mockUseMutation.mockImplementation((config) => {
+      mockUseMutation.mockImplementation(config => {
         onSuccess = config.onSuccess as typeof onSuccess;
         return {} as MockUseMutationResult;
       });
@@ -272,9 +291,12 @@ describe('useCreateSpin', () => {
       mockCreateSpin.mockResolvedValue(mockSpinRecord);
 
       let mutationFn: (data: MockCreateSpinParams) => Promise<RandomizerSpinsResponse>;
-      let onSuccess: (data: RandomizerSpinsResponse, variables: MockCreateSpinParams) => Promise<void>;
+      let onSuccess: (
+        data: RandomizerSpinsResponse,
+        variables: MockCreateSpinParams
+      ) => Promise<void>;
 
-      mockUseMutation.mockImplementation((config) => {
+      mockUseMutation.mockImplementation(config => {
         mutationFn = config.mutationFn as typeof mutationFn;
         onSuccess = config.onSuccess as typeof onSuccess;
         return {
@@ -305,7 +327,7 @@ describe('useCreateSpin', () => {
       let mutationFn: (data: MockCreateSpinParams) => Promise<RandomizerSpinsResponse>;
       let onError: (error: unknown, variables: MockCreateSpinParams) => Promise<void>;
 
-      mockUseMutation.mockImplementation((config) => {
+      mockUseMutation.mockImplementation(config => {
         mutationFn = config.mutationFn as typeof mutationFn;
         onError = config.onError as typeof onError;
         return {
@@ -335,7 +357,7 @@ describe('useCreateSpin', () => {
       mockCreateSpin.mockResolvedValue(mockSpinRecord);
       let mutationFn: (data: MockCreateSpinParams) => Promise<RandomizerSpinsResponse>;
 
-      mockUseMutation.mockImplementation((config) => {
+      mockUseMutation.mockImplementation(config => {
         mutationFn = config.mutationFn as typeof mutationFn;
         return {} as MockUseMutationResult;
       });
@@ -358,7 +380,7 @@ describe('useCreateSpin', () => {
       mockCreateSpin.mockResolvedValue(mockSpinRecord);
       let mutationFn: (data: MockCreateSpinParams) => Promise<RandomizerSpinsResponse>;
 
-      mockUseMutation.mockImplementation((config) => {
+      mockUseMutation.mockImplementation(config => {
         mutationFn = config.mutationFn as typeof mutationFn;
         return {} as MockUseMutationResult;
       });
@@ -380,9 +402,12 @@ describe('useCreateSpin', () => {
 
   describe('Toast Messages', () => {
     it('shows appropriate success message', async () => {
-      let onSuccess: (data: RandomizerSpinsResponse, variables: MockCreateSpinParams) => Promise<void>;
+      let onSuccess: (
+        data: RandomizerSpinsResponse,
+        variables: MockCreateSpinParams
+      ) => Promise<void>;
 
-      mockUseMutation.mockImplementation((config) => {
+      mockUseMutation.mockImplementation(config => {
         onSuccess = config.onSuccess as typeof onSuccess;
         return {} as MockUseMutationResult;
       });
@@ -398,7 +423,7 @@ describe('useCreateSpin', () => {
     it('shows appropriate error message', async () => {
       let onError: (error: Error, variables: MockCreateSpinParams) => Promise<void>;
 
-      mockUseMutation.mockImplementation((config) => {
+      mockUseMutation.mockImplementation(config => {
         onError = config.onError as typeof onError;
         return {} as MockUseMutationResult;
       });

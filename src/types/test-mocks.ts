@@ -30,7 +30,8 @@ export interface MockUseQueryResult<TData = unknown> extends Partial<UseQueryRes
   refetch?: MockFn<() => Promise<{ data: TData }>>;
 }
 
-export interface MockUseMutationResult<TData = unknown, TVariables = unknown> extends Partial<UseMutationResult<TData, Error, TVariables>> {
+export interface MockUseMutationResult<TData = unknown, TVariables = unknown>
+  extends Partial<UseMutationResult<TData, Error, TVariables>> {
   mutate?: MockFn<(variables: TVariables) => void>;
   mutateAsync?: MockFn<(variables: TVariables) => Promise<TData>>;
   isLoading?: boolean;
@@ -47,17 +48,33 @@ export interface MockNavigateFunction extends Partial<NavigateFunction> {
 // PocketBase Collection Mocks
 export interface MockPocketBaseCollection {
   getOne: MockFn<(id: string, options?: Record<string, unknown>) => Promise<ProjectsResponse>>;
-  getList: MockFn<(page?: number, perPage?: number, options?: Record<string, unknown>) => Promise<{
-    page: number;
-    perPage: number;
-    totalItems: number;
-    totalPages: number;
-    items: ProjectsResponse[];
-  }>>;
-  create: MockFn<(data: Record<string, unknown>, options?: Record<string, unknown>) => Promise<ProjectsResponse>>;
-  update: MockFn<(id: string, data: Record<string, unknown>, options?: Record<string, unknown>) => Promise<ProjectsResponse>>;
+  getList: MockFn<
+    (
+      page?: number,
+      perPage?: number,
+      options?: Record<string, unknown>
+    ) => Promise<{
+      page: number;
+      perPage: number;
+      totalItems: number;
+      totalPages: number;
+      items: ProjectsResponse[];
+    }>
+  >;
+  create: MockFn<
+    (data: Record<string, unknown>, options?: Record<string, unknown>) => Promise<ProjectsResponse>
+  >;
+  update: MockFn<
+    (
+      id: string,
+      data: Record<string, unknown>,
+      options?: Record<string, unknown>
+    ) => Promise<ProjectsResponse>
+  >;
   delete: MockFn<(id: string) => Promise<boolean>>;
-  getFirstListItem: MockFn<(filter: string, options?: Record<string, unknown>) => Promise<ProjectsResponse>>;
+  getFirstListItem: MockFn<
+    (filter: string, options?: Record<string, unknown>) => Promise<ProjectsResponse>
+  >;
   getFullList: MockFn<(options?: Record<string, unknown>) => Promise<ProjectsResponse[]>>;
   getURL: MockFn<(record: ProjectsResponse, filename: string) => string>;
 }
@@ -131,7 +148,9 @@ export interface MockRandomizerHook {
 }
 
 export interface MockNavigationHook {
-  navigateToProject: MockFn<(projectId: string, options?: { replace?: boolean; state?: unknown }) => void>;
+  navigateToProject: MockFn<
+    (projectId: string, options?: { replace?: boolean; state?: unknown }) => void
+  >;
   navigateToDashboard: MockFn<(options?: { replace?: boolean }) => void>;
 }
 
@@ -156,7 +175,9 @@ export interface MockAuthState {
   isLoading: boolean;
   login: MockFn<(email: string, password: string) => Promise<void>>;
   logout: MockFn<() => void>;
-  register: MockFn<(userData: { email: string; password: string; username: string }) => Promise<void>>;
+  register: MockFn<
+    (userData: { email: string; password: string; username: string }) => Promise<void>
+  >;
 }
 
 // Component Mock Props
