@@ -70,7 +70,7 @@ export interface FilterActionsContextType {
   getActiveFilterCount: () => number;
 }
 
-const FilterActionsContext = createContext<FilterActionsContextType | null>(null);
+export const FilterActionsContext = createContext<FilterActionsContextType | null>(null);
 
 /**
  * Props interface for FilterActionsProvider component
@@ -469,14 +469,3 @@ export const FilterActionsProvider: React.FC<FilterActionsProviderProps> = React
     return prevProps.user?.id === nextProps.user?.id;
   }
 );
-
-/**
- * Hook to use the FilterActionsContext
- */
-export const useFilterActions = (): FilterActionsContextType => {
-  const context = useContext(FilterActionsContext);
-  if (!context) {
-    throw new Error('useFilterActions must be used within a FilterActionsProvider');
-  }
-  return context;
-};

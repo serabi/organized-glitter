@@ -87,7 +87,7 @@ const ProjectDetail = () => {
   const navigationState = location.state as {
     fromNavigation?: boolean;
     projectId?: string;
-    projectData?: any;
+    projectData?: Project;
     timestamp?: number;
     navigationContext?: NavigationContext;
   } | null;
@@ -113,7 +113,15 @@ const ProjectDetail = () => {
     projectId,
     hasProject: !!project,
     loading,
-    error: error ? { message: error.message, status: (error as any)?.status } : null,
+    error: error
+      ? {
+          message: error.message,
+          status:
+            error && typeof error === 'object' && 'status' in error
+              ? (error as { status: unknown }).status
+              : undefined,
+        }
+      : null,
     isAuthenticated,
     initialCheckComplete,
     authLoading,

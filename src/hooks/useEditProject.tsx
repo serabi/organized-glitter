@@ -131,14 +131,17 @@ export const useEditProject = (projectId: string | undefined) => {
   }, [project, formData]);
 
   // Form change handler (field-by-field)
-  const handleFormChange = useCallback((field: keyof ProjectFormValues, value: any) => {
-    setFormData(prev => {
-      if (!prev) return null;
-      const updated = { ...prev, [field]: value };
-      logger.debug('Form field updated', { field, value });
-      return updated;
-    });
-  }, []);
+  const handleFormChange = useCallback(
+    (field: keyof ProjectFormValues, value: ProjectFormValues[keyof ProjectFormValues]) => {
+      setFormData(prev => {
+        if (!prev) return null;
+        const updated = { ...prev, [field]: value };
+        logger.debug('Form field updated', { field, value });
+        return updated;
+      });
+    },
+    []
+  );
 
   // Form data change handler (full data)
   const handleFormDataChange = useCallback((data: ProjectFormValues) => {

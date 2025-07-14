@@ -11,6 +11,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { pb } from '@/lib/pocketbase';
 import { createLogger } from '@/utils/secureLogger';
+import { UserDashboardSettingsResponse } from '@/types/pocketbase.types';
 // Dashboard filter context for persistence
 export interface DashboardFilterContext {
   filters: {
@@ -66,7 +67,7 @@ const saveNavigationContext = async ({
 
   try {
     // Try to find existing record
-    let record: any;
+    let record: UserDashboardSettingsResponse<DashboardFilterContext> | undefined;
     try {
       record = await pb.collection('user_dashboard_settings').getFirstListItem(`user="${userId}"`);
     } catch (error) {

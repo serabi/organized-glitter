@@ -53,10 +53,10 @@ import { SortDirectionType } from '@/contexts/FilterProvider';
  * @author @serabi
  * @since 2025-07-02
  */
-const createStableKey = (obj: Record<string, any>): string => {
+const createStableKey = (obj: Record<string, unknown>): string => {
   // Sort object keys alphabetically to ensure consistent property ordering
   const sortedKeys = Object.keys(obj).sort();
-  const stableObj: Record<string, any> = {};
+  const stableObj: Record<string, unknown> = {};
 
   sortedKeys.forEach(key => {
     const value = obj[key];
