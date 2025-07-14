@@ -181,7 +181,7 @@ describe('useSaveNavigationContext', () => {
         act(async () => {
           await result.current.mutateAsync({
             userId: 'user123',
-            navigationContext: null as any,
+            navigationContext: null as unknown,
           });
         })
       ).rejects.toThrow('Navigation context is required');

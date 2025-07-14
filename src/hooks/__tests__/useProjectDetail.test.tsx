@@ -39,7 +39,7 @@ vi.mock('@/lib/pocketbase', () => ({
       delete: mockDelete,
     })),
     files: {
-      getURL: vi.fn((record: any, filename: string) => `https://example.com/${filename}`),
+      getURL: vi.fn((record: unknown, filename: string) => `https://example.com/${filename}`),
     },
     authStore: {
       isValid: true,

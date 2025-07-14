@@ -256,7 +256,7 @@ describe('RecentlyEditedContext', () => {
               {isRecentlyEdited('').toString()}
             </div>
             <div data-testid="is-undefined-recently-edited">
-              {isRecentlyEdited(undefined as any).toString()}
+              {isRecentlyEdited(undefined as string | undefined).toString()}
             </div>
             <button onClick={() => setRecentlyEditedProjectId('')} data-testid="set-empty-string">
               Set Empty String

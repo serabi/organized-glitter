@@ -44,11 +44,11 @@ vi.mock('@/lib/pocketbase', () => ({
         getFullList: vi.fn().mockResolvedValue([]),
       };
     }),
-    filter: vi.fn((template: string, ...params: any[]) => {
+    filter: vi.fn((template: string, ...params: unknown[]) => {
       // Mock filter method for DashboardStatsService
       let result = template;
       let paramIndex = 0;
-      result = result.replace(/\{\s*\:\s*\w+\s*\}/g, () => {
+      result = result.replace(/\{\s*:\s*\w+\s*\}/g, () => {
         const param = params[paramIndex++];
         if (typeof param === 'string') {
           return `"${param}"`;

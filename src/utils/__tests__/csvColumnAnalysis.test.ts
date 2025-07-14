@@ -14,7 +14,6 @@ import {
   generateColumnValidationMessage,
   analyzeCSVFile,
   EXPECTED_COLUMNS,
-  EXPECTED_COLUMNS,
 } from '../csvColumnAnalysis';
 
 describe('csvColumnAnalysis', () => {
@@ -27,7 +26,6 @@ describe('csvColumnAnalysis', () => {
       expect(result.detectedColumns[0]).toEqual({
         csvHeader: 'title',
         mappedTo: 'title',
-        confidence: 'exact',
         confidence: 'exact',
       });
       expect(result.summary.hasAllRequired).toBe(true);
@@ -43,12 +41,10 @@ describe('csvColumnAnalysis', () => {
         csvHeader: 'project name',
         mappedTo: 'title',
         confidence: 'alias',
-        confidence: 'alias',
       });
       expect(result.detectedColumns[1]).toEqual({
         csvHeader: 'state',
         mappedTo: 'status',
-        confidence: 'alias',
         confidence: 'alias',
       });
     });
@@ -276,19 +272,11 @@ describe('csvColumnAnalysis', () => {
 
       const result = await analyzeCSVFile(file);
 
-      const result = await analyzeCSVFile(file);
-
       expect(result.detectedColumns).toHaveLength(3);
       expect(result.summary.hasAllRequired).toBe(true);
     });
 
     it('handles CSV files with quoted headers', async () => {
-      const csvContent =
-        '"Project Title","Project Status","Company Name"\n"Test","completed","TestCo"';
-      const file = new File([csvContent], 'test.csv', { type: 'text/csv' });
-
-      const result = await analyzeCSVFile(file);
-
       const csvContent =
         '"Project Title","Project Status","Company Name"\n"Test","completed","TestCo"';
       const file = new File([csvContent], 'test.csv', { type: 'text/csv' });
@@ -302,8 +290,6 @@ describe('csvColumnAnalysis', () => {
     it('handles files with irregular formatting', async () => {
       const csvContent = ' title , status,  company  \n"Test","done","TestCo"';
       const file = new File([csvContent], 'test.csv', { type: 'text/csv' });
-
-      const result = await analyzeCSVFile(file);
 
       const result = await analyzeCSVFile(file);
 

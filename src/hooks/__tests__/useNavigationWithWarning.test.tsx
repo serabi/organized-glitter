@@ -365,7 +365,7 @@ describe('useNavigationWithWarning', () => {
       );
 
       await act(async () => {
-        await result.current.navigateWithWarning(null as any);
+        await result.current.navigateWithWarning(null as string | number);
       });
 
       expect(mockNavigate).toHaveBeenCalledWith(null, undefined);
@@ -642,7 +642,7 @@ describe('useNavigationWithWarning', () => {
       );
 
       act(() => {
-        result.current.forceNavigate(null as any);
+        result.current.forceNavigate(null as string | number);
       });
 
       expect(mockNavigate).toHaveBeenCalledWith(null, {});
