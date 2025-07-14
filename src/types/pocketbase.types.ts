@@ -264,6 +264,7 @@ export type UsersRecord = {
 	emailVisibility?: boolean
 	id: string
 	password: string
+	timezone?: string
 	tokenKey: string
 	updated?: IsoDateString
 	username: string
