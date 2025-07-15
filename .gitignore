@@ -81,6 +81,11 @@ local-pb-db/
 *.sln
 *.sw?
 
+# Kiro 
+.kiro
+.kiro/*
+
+
 # OS generated files
 .DS_Store
 Thumbs.db
