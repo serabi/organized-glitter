@@ -1,10 +1,10 @@
 /**
  * Tag Synchronization Hook
- * 
+ *
  * Handles adding and removing tags from projects with proper error handling.
  * Extracted from useEditProject to enable reuse across project creation,
  * bulk operations, and other tag management scenarios.
- * 
+ *
  * @author @serabi
  * @created 2025-01-14
  */
@@ -41,10 +41,10 @@ export interface Tag {
 
 /**
  * Hook for synchronizing project tags
- * 
+ *
  * Provides functions to sync tags between form state and project state,
  * with proper error handling and user feedback.
- * 
+ *
  * @returns Object with tag synchronization functions
  */
 export function useTagSync() {
@@ -53,18 +53,14 @@ export function useTagSync() {
   /**
    * Synchronizes tags for a project
    * Compares current tags with new tags and adds/removes as needed
-   * 
+   *
    * @param projectId - Project ID to sync tags for
    * @param currentTags - Currently associated tags
    * @param newTags - New tags to associate
    * @returns Promise resolving to sync result
    */
   const syncProjectTags = useCallback(
-    async (
-      projectId: string,
-      currentTags: Tag[],
-      newTags: Tag[]
-    ): Promise<TagSyncResult> => {
+    async (projectId: string, currentTags: Tag[], newTags: Tag[]): Promise<TagSyncResult> => {
       logger.debug('Starting tag synchronization', {
         projectId,
         currentCount: currentTags.length,
@@ -131,7 +127,7 @@ export function useTagSync() {
         if (result.errors.length > 0) {
           const addErrors = result.errors.filter(e => e.operation === 'add').length;
           const removeErrors = result.errors.filter(e => e.operation === 'remove').length;
-          
+
           let description = 'The project was updated but some tags may not be saved properly.';
           if (addErrors > 0 && removeErrors > 0) {
             description = `Failed to add ${addErrors} tag(s) and remove ${removeErrors} tag(s). ${description}`;
@@ -160,7 +156,7 @@ export function useTagSync() {
       } catch (error) {
         logger.error('Tag synchronization failed', { projectId, error });
         result.success = false;
-        
+
         toast({
           title: 'Tag Synchronization Error',
           description: 'Failed to synchronize project tags. Please try again.',
@@ -175,35 +171,43 @@ export function useTagSync() {
 
   /**
    * Adds multiple tags to a project
-   * 
+   *
    * @param projectId - Project ID to add tags to
    * @param tagIds - Array of tag IDs to add
    * @returns Promise resolving to operation result
    */
   const addTagsToProject = useCallback(
     async (projectId: string, tagIds: string[]): Promise<TagSyncResult> => {
-      return syncProjectTags(projectId, [], tagIds.map(id => ({ id, name: '' })));
+      return syncProjectTags(
+        projectId,
+        [],
+        tagIds.map(id => ({ id, name: '' }))
+      );
     },
     [syncProjectTags]
   );
 
   /**
    * Removes multiple tags from a project
-   * 
+   *
    * @param projectId - Project ID to remove tags from
    * @param tagIds - Array of tag IDs to remove
    * @returns Promise resolving to operation result
    */
   const removeTagsFromProject = useCallback(
     async (projectId: string, tagIds: string[]): Promise<TagSyncResult> => {
-      return syncProjectTags(projectId, tagIds.map(id => ({ id, name: '' })), []);
+      return syncProjectTags(
+        projectId,
+        tagIds.map(id => ({ id, name: '' })),
+        []
+      );
     },
     [syncProjectTags]
   );
 
   /**
    * Bulk tag operations for multiple projects
-   * 
+   *
    * @param operations - Array of tag operations to perform
    * @returns Promise resolving to results for each operation
    */
@@ -226,11 +230,19 @@ export function useTagSync() {
           return result.value;
         } else {
           logger.error(`Bulk tag sync failed for operation ${index}`, result.reason);
+          const failedOperation = operations[index];
+          const tagId =
+            failedOperation.newTags.length > 0
+              ? failedOperation.newTags[0].id
+              : failedOperation.currentTags.length > 0
+                ? failedOperation.currentTags[0].id
+                : '';
+
           return {
             success: false,
             addedCount: 0,
             removedCount: 0,
-            errors: [{ operation: 'add' as const, tagId: '', error: result.reason }],
+            errors: [{ operation: 'add' as const, tagId, error: result.reason }],
           };
         }
       });

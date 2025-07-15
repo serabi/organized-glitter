@@ -1,13 +1,13 @@
 /**
  * Project Data Transformation Utilities
- * 
+ *
  * Provides functions for transforming project data between different formats:
  * - PocketBase records to ProjectType format
  * - ProjectType to form values
  * - Data validation and sanitization
- * 
+ *
  * Extracted from useEditProject for reusability across project operations.
- * 
+ *
  * @author @serabi
  * @created 2025-01-14
  */
@@ -15,11 +15,7 @@
 import { ProjectType, ProjectFormValues } from '@/types/project';
 import { extractDateOnly } from '@/lib/utils';
 import { pb } from '@/lib/pocketbase';
-import {
-  ProjectsResponse,
-  CompaniesResponse,
-  ArtistsResponse,
-} from '@/types/pocketbase.types';
+import { ProjectsResponse, CompaniesResponse, ArtistsResponse } from '@/types/pocketbase.types';
 
 /**
  * Extended project interface with PocketBase expand relations
@@ -43,21 +39,22 @@ export interface ProjectWithExpand extends ProjectsResponse {
 /**
  * Transforms PocketBase project record to ProjectType format
  * Handles field mapping, relation expansion, and data sanitization
- * 
+ *
  * @param record - PocketBase project record with optional expansions
  * @returns Transformed project in ProjectType format
  */
 export function transformProjectFromPocketBase(record: ProjectWithExpand): ProjectType {
   // Extract tags from expanded relations
-  const tags = record.expand?.project_tags_via_project?.map(pt => ({
-    id: pt.tag?.id || '',
-    name: pt.tag?.name || '',
-    color: pt.tag?.color || '#gray',
-    userId: '', // Will be populated by calling code if needed
-    slug: pt.tag?.name?.toLowerCase().replace(/\s+/g, '-') || '',
-    createdAt: '',
-    updatedAt: '',
-  })) || [];
+  const tags =
+    record.expand?.project_tags_via_project?.map(pt => ({
+      id: pt.tag?.id || '',
+      name: pt.tag?.name || '',
+      color: pt.tag?.color || '#gray',
+      userId: '', // Will be populated by calling code if needed
+      slug: pt.tag?.name?.toLowerCase().replace(/\s+/g, '-') || '',
+      createdAt: '',
+      updatedAt: '',
+    })) || [];
 
   return {
     id: record.id,
@@ -89,7 +86,7 @@ export function transformProjectFromPocketBase(record: ProjectWithExpand): Proje
 /**
  * Prepares initial form data from project data
  * Converts ProjectType to ProjectFormValues format for editing
- * 
+ *
  * @param project - Project data from database
  * @returns Form data prepared for editing
  */
@@ -119,7 +116,7 @@ export function prepareProjectFormData(project: ProjectType): ProjectFormValues 
 
 /**
  * Validates project form data for common issues
- * 
+ *
  * @param formData - Form data to validate
  * @returns Validation result with errors if any
  */
@@ -237,7 +234,7 @@ export function validateProjectFormData(formData: ProjectFormValues): Validation
 
 /**
  * Sanitizes form data by trimming strings and normalizing values
- * 
+ *
  * @param formData - Form data to sanitize
  * @returns Sanitized form data
  */
@@ -253,16 +250,17 @@ export function sanitizeProjectFormData(formData: ProjectFormValues): ProjectFor
     // Normalize numeric fields
     width: formData.width?.toString().trim() || '',
     height: formData.height?.toString().trim() || '',
-    totalDiamonds: typeof formData.totalDiamonds === 'string' 
-      ? Number(formData.totalDiamonds.trim()) || 0
-      : formData.totalDiamonds || 0,
+    totalDiamonds:
+      typeof formData.totalDiamonds === 'string'
+        ? Number(formData.totalDiamonds.trim()) || 0
+        : formData.totalDiamonds || 0,
   };
 }
 
 /**
  * Creates a default project form data structure
  * Useful for new project creation
- * 
+ *
  * @param userId - User ID for the new project
  * @param overrides - Optional field overrides
  * @returns Default project form data
@@ -298,7 +296,7 @@ export function createDefaultProjectFormData(
 /**
  * Compares two project form data objects for changes
  * Useful for dirty state detection
- * 
+ *
  * @param original - Original form data
  * @param current - Current form data
  * @returns Array of changed field names

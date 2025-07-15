@@ -1,6 +1,6 @@
 /**
  * Comprehensive test suite for useEditProject hook
- * 
+ *
  * Tests the consolidated project editing hook covering:
  * - Data loading with authentication dependencies
  * - Form state management and dirty tracking
@@ -10,7 +10,7 @@
  * - CRUD operations (update, archive, delete)
  * - Error handling and edge cases
  * - Navigation and cache management
- * 
+ *
  * @author @serabi
  * @created 2025-01-14
  */
@@ -96,11 +96,11 @@ vi.mock('@/contexts/MetadataContext', () => ({
   useMetadata: vi.fn(() => ({
     companies: [
       { id: 'company1', name: 'Test Company' },
-      { id: 'company2', name: 'Another Company' }
+      { id: 'company2', name: 'Another Company' },
     ],
     artists: [
       { id: 'artist1', name: 'Test Artist' },
-      { id: 'artist2', name: 'Another Artist' }
+      { id: 'artist2', name: 'Another Artist' },
     ],
     loading: false,
     error: null,
@@ -164,7 +164,10 @@ import { useEditProject } from '../useEditProject';
 import { ProjectType, ProjectFormValues } from '@/types/project';
 import { TagService } from '@/lib/tags';
 import { useProjectDetailQuery } from '@/hooks/queries/useProjectDetailQuery';
-import { useArchiveProjectMutation, useDeleteProjectMutation } from '@/hooks/mutations/useProjectDetailMutations';
+import {
+  useArchiveProjectMutation,
+  useDeleteProjectMutation,
+} from '@/hooks/mutations/useProjectDetailMutations';
 import { useProjectUpdateUnified } from '@/hooks/mutations/useProjectUpdateUnified';
 
 describe('useEditProject', () => {
@@ -193,7 +196,7 @@ describe('useEditProject', () => {
     progressImages: [],
     tags: [
       { id: 'tag1', name: 'Nature', color: '#green' },
-      { id: 'tag2', name: 'Landscape', color: '#blue' }
+      { id: 'tag2', name: 'Landscape', color: '#blue' },
     ],
   };
 
@@ -223,20 +226,20 @@ describe('useEditProject', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as any);
+    });
 
     // Setup default mutation mocks
     vi.mocked(useProjectUpdateUnified).mockReturnValue({
       mutateAsync: vi.fn(() => Promise.resolve()),
-    } as any);
+    });
 
     vi.mocked(useArchiveProjectMutation).mockReturnValue({
       mutateAsync: vi.fn(() => Promise.resolve()),
-    } as any);
+    });
 
     vi.mocked(useDeleteProjectMutation).mockReturnValue({
       mutateAsync: vi.fn(() => Promise.resolve()),
-    } as any);
+    });
   });
 
   it('should load project data successfully', async () => {

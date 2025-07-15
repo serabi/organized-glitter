@@ -1,7 +1,7 @@
 /**
  * Utility functions for mapping between frontend (camelCase) and backend (snake_case) field names
  * Provides type-safe conversion for PocketBase operations and FormData building
- * 
+ *
  * @author @serabi
  * @created 2025-01-14
  */
@@ -169,7 +169,7 @@ export interface ProjectFormDataOptions {
 /**
  * Builds FormData for PocketBase project update operations
  * Handles field mapping, type conversion, and file uploads
- * 
+ *
  * @param formData - Form values to convert
  * @param options - Additional options for FormData building
  * @returns FormData ready for PocketBase submission
@@ -211,7 +211,7 @@ export function buildProjectFormData(
       if (shouldInclude) {
         // Convert camelCase field names to snake_case for PocketBase
         const fieldName = FIELD_MAPPING[key as keyof typeof FIELD_MAPPING] || key;
-        
+
         // Handle special date field formatting
         if (dateFields.includes(key)) {
           const formattedDate = formatDateForPocketBase(value as string);
@@ -238,7 +238,7 @@ export function buildProjectFormData(
     pbFormData.append('company', companyId);
     logger.debug(`Added resolved company ID: ${companyId}`);
   }
-  
+
   if (artistId) {
     pbFormData.append('artist', artistId);
     logger.debug(`Added resolved artist ID: ${artistId}`);

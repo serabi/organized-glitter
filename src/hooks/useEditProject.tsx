@@ -34,7 +34,11 @@ import { pb } from '@/lib/pocketbase';
 import { Collections } from '@/types/pocketbase.types';
 import { updateProjectInCache } from '@/utils/cacheUtils';
 import { createLogger } from '@/utils/secureLogger';
-import { prepareProjectFormData, getChangedFields, transformProjectFromPocketBase } from '@/utils/projectTransformers';
+import {
+  prepareProjectFormData,
+  getChangedFields,
+  transformProjectFromPocketBase,
+} from '@/utils/projectTransformers';
 import { buildProjectFormData } from '@/utils/field-mapping';
 import { useTagSync } from '@/hooks/useTagSync';
 import type { ProjectWithExpand } from '@/utils/projectTransformers';
@@ -89,9 +93,7 @@ export const useEditProject = (projectId: string | undefined) => {
 
   // Navigation state with proper isDirty check using modular utility
   const isDirty = Boolean(
-    formData &&
-      project &&
-      getChangedFields(prepareProjectFormData(project), formData).length > 0
+    formData && project && getChangedFields(prepareProjectFormData(project), formData).length > 0
   );
   const { ConfirmationDialog: NavigationDialog, confirmUnsavedChanges } = useConfirmationDialog();
   const { navigationState, clearNavigationError } = useNavigationWithWarning({
@@ -168,13 +170,27 @@ export const useEditProject = (projectId: string | undefined) => {
         setSubmitting(true);
         logger.debug('Starting enhanced project update', { projectId: project.id });
 
+        // Helper function to safely convert string to number
+        const safeStringToNumber = (value: string | number | undefined): number => {
+          if (typeof value === 'number') return value;
+          if (typeof value === 'string' && value.trim() !== '') {
+            const numericValue = Number(value.trim());
+            if (!isNaN(numericValue) && isFinite(numericValue)) {
+              return numericValue;
+            }
+            logger.warn('Invalid numeric value encountered, defaulting to 0', {
+              value,
+              projectId: project?.id,
+            });
+            return 0;
+          }
+          return 0;
+        };
+
         // Prepare data for submission with proper typing
         const dataToSubmit: ProjectFormValues = {
           ...data,
-          totalDiamonds:
-            typeof data.totalDiamonds === 'string' && data.totalDiamonds
-              ? Number(data.totalDiamonds)
-              : data.totalDiamonds,
+          totalDiamonds: safeStringToNumber(data.totalDiamonds),
           tagIds: data.tags?.map(tag => tag.id) ?? [],
         };
 
@@ -235,14 +251,16 @@ export const useEditProject = (projectId: string | undefined) => {
           .update(project.id, formData);
 
         // Transform the updated project record to ProjectType format
-        const transformedProject = transformProjectFromPocketBase(updatedProjectRecord as ProjectWithExpand);
+        const transformedProject = transformProjectFromPocketBase(
+          updatedProjectRecord as ProjectWithExpand
+        );
 
         // Handle tag synchronization using modular utility
         const currentTags = data.tags || [];
         const originalTags = project?.tags || [];
-        
+
         const syncResult = await syncProjectTags(project.id, originalTags, currentTags);
-        
+
         // Log sync result for debugging
         logger.debug('Tag synchronization result', {
           projectId: project.id,
@@ -299,7 +317,7 @@ export const useEditProject = (projectId: string | undefined) => {
         setSubmitting(false);
       }
     },
-    [project, user, toast, navigate, navigateToProject, locationState, queryClient]
+    [project, user, toast, navigate, navigateToProject, locationState, queryClient, syncProjectTags]
   );
 
   // Archive handler
