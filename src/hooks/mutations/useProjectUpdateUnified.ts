@@ -158,13 +158,6 @@ export const useProjectUpdateUnified = () => {
         queryKey: queryKeys.projects.lists(),
       });
 
-      // Invalidate advanced projects query to update the Advanced Edit page
-      if (user?.id) {
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.projects.advanced(user.id),
-        });
-      }
-
       // Invalidate dashboard stats cache when project is updated
       if (user?.id) {
         const currentYear = new Date().getFullYear();

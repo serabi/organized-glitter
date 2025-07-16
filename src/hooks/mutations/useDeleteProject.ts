@@ -255,9 +255,6 @@ export const useDeleteProject = () => {
       // Snapshot data for rollback
       const previousData = {
         projectDetail: queryClient.getQueryData(queryKeys.projects.detail(variables.id)),
-        advancedProjects: user?.id
-          ? queryClient.getQueryData(queryKeys.projects.advanced(user.id))
-          : null,
         projectLists: new Map<unknown[], unknown>(),
       };
 
@@ -269,18 +266,6 @@ export const useDeleteProject = () => {
         });
 
       // Optimistic updates with better type safety
-      if (user?.id) {
-        // Remove from advanced projects
-        queryClient.setQueryData(queryKeys.projects.advanced(user.id), (oldData: unknown) => {
-          if (!oldData || typeof oldData !== 'object' || !('projects' in oldData)) return oldData;
-          const data = oldData as { projects: Array<{ id: string }>; totalItems?: number };
-          return {
-            ...data,
-            projects: data.projects.filter(p => p.id !== variables.id),
-            totalItems: Math.max(0, (data.totalItems || 0) - 1),
-          };
-        });
-      }
 
       // Remove from all project lists
       queryClient.setQueriesData({ queryKey: queryKeys.projects.lists() }, (oldData: unknown) => {
@@ -343,11 +328,6 @@ export const useDeleteProject = () => {
           });
         }
 
-        // Rollback advanced projects
-        if (context.advancedProjects && user?.id) {
-          queryClient.setQueryData(queryKeys.projects.advanced(user.id), context.advancedProjects);
-        }
-
         // Rollback project detail
         if (context.projectDetail) {
           queryClient.setQueryData(queryKeys.projects.detail(variables.id), context.projectDetail);
@@ -378,12 +358,6 @@ export const useDeleteProject = () => {
 
     onSettled: () => {
       // Minimal settled logic - only ensure critical queries are fresh
-      if (user?.id) {
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.projects.advanced(user.id),
-          refetchType: 'active',
-        });
-      }
     },
 
     retry: (failureCount, error) => {

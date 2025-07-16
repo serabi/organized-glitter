@@ -130,9 +130,6 @@ describe('Dashboard Status Synchronization', () => {
         queryKey: queryKeys.projects.detail(projectId),
       });
       expect(cancelQueriesSpy).toHaveBeenCalledWith({
-        queryKey: queryKeys.projects.advanced(userId),
-      });
-      expect(cancelQueriesSpy).toHaveBeenCalledWith({
         queryKey: queryKeys.projects.lists(),
       });
       expect(cancelQueriesSpy).toHaveBeenCalledWith({

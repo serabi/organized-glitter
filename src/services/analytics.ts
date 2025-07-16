@@ -154,10 +154,6 @@ export const analytics = {
       });
     },
 
-    advancedViewUsed: () => {
-      trackEvent('feature_advanced_view_used');
-    },
-
     imageUploaded: (context: 'project' | 'progress_note' | 'avatar', sizeKB: number) => {
       trackEvent('feature_image_uploaded', {
         context,

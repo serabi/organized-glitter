@@ -179,3 +179,4 @@ STEP_5_COMPLETION_SUMMARY.md
 .kiro/specs/codebase-simplification/requirements.md
 .kiro/specs/codebase-simplification/design.md
 .kiro/specs/codebase-simplification/tasks.md
+.vscode/extensions.json

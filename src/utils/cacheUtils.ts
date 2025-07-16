@@ -74,7 +74,7 @@ export const updateProjectInCache = (
         }
       });
 
-    // Advanced queries are invalidated by error handler and other mutations
+    // Project queries are invalidated by error handler and other mutations
     // to ensure data freshness without complex optimistic updates
 
     logger.debug(`Successfully updated project ${projectId} in cache`);
@@ -88,9 +88,6 @@ export const updateProjectInCache = (
     });
     queryClient.invalidateQueries({
       queryKey: queryKeys.projects.lists(),
-    });
-    queryClient.invalidateQueries({
-      queryKey: queryKeys.projects.advanced(userId),
     });
   }
 };
@@ -146,11 +143,6 @@ export const removeProjectFromCache = (
         }
       });
 
-    // Invalidate advanced queries to ensure accurate counts
-    queryClient.invalidateQueries({
-      queryKey: queryKeys.projects.advanced(userId),
-    });
-
     logger.debug(`Successfully removed project ${projectId} from cache`);
   } catch (error) {
     logger.error('Error removing project from cache:', error);
@@ -159,9 +151,6 @@ export const removeProjectFromCache = (
     logger.warn('Falling back to cache invalidation due to removal failure');
     queryClient.invalidateQueries({
       queryKey: queryKeys.projects.lists(),
-    });
-    queryClient.invalidateQueries({
-      queryKey: queryKeys.projects.advanced(userId),
     });
   }
 };
@@ -218,11 +207,6 @@ export const addProjectToCache = (
         }
       });
 
-    // Invalidate advanced queries to ensure accurate counts
-    queryClient.invalidateQueries({
-      queryKey: queryKeys.projects.advanced(userId),
-    });
-
     logger.debug(`Successfully added project ${newProject.id} to cache`);
   } catch (error) {
     logger.error('Error adding project to cache:', error);
@@ -231,9 +215,6 @@ export const addProjectToCache = (
     logger.warn('Falling back to cache invalidation due to addition failure');
     queryClient.invalidateQueries({
       queryKey: queryKeys.projects.lists(),
-    });
-    queryClient.invalidateQueries({
-      queryKey: queryKeys.projects.advanced(userId),
     });
   }
 };

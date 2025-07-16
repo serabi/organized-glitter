@@ -48,14 +48,6 @@ const invalidateProjectQueries = async (
 
   // Precisely invalidate project lists - avoid broad invalidation
   if (userId) {
-    invalidations.push(
-      // Only invalidate advanced projects for this specific user
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.projects.advanced(userId),
-        exact: true,
-      })
-    );
-
     // For paginated lists, we use exact: false but with specific user context
     invalidations.push(
       queryClient.invalidateQueries({
@@ -143,7 +135,6 @@ export const useUpdateProjectStatusMutation = () => {
       if (user?.id) {
         await Promise.all([
           queryClient.cancelQueries({ queryKey: queryKeys.projects.detail(projectId) }),
-          queryClient.cancelQueries({ queryKey: queryKeys.projects.advanced(user.id) }),
           queryClient.cancelQueries({ queryKey: queryKeys.projects.lists() }),
           queryClient.cancelQueries({ queryKey: queryKeys.stats.overview(user.id) }),
         ]);
@@ -151,9 +142,6 @@ export const useUpdateProjectStatusMutation = () => {
 
       // Snapshot the previous values for rollback
       const previousProjectDetail = queryClient.getQueryData(queryKeys.projects.detail(projectId));
-      const previousAdvancedProjects = user?.id
-        ? queryClient.getQueryData(queryKeys.projects.advanced(user.id))
-        : undefined;
       const previousDashboardStats = user?.id
         ? queryClient.getQueryData([
             ...queryKeys.stats.overview(user.id),
