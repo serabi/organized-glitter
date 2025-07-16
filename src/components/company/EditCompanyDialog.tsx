@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useUpdateCompany } from '@/hooks/mutations/useUpdateCompany';
+import { useUpdateCompany } from '@/hooks/mutations/useCompanyMutations';
 import FormField from '@/components/projects/form/FormField';
 
 interface EditCompanyDialogProps {

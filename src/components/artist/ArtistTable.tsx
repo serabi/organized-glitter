@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Trash2, FileText, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ArtistsResponse } from '@/types/pocketbase.types';
-import { useDeleteArtist } from '@/hooks/mutations/useDeleteArtist';
+import { useDeleteArtist } from '@/hooks/mutations/useArtistMutations';
 import EditArtistDialog from './EditArtistDialog';
 import {
   AlertDialog,

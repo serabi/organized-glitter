@@ -27,7 +27,7 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { useToast } from '@/hooks/use-toast';
-import { useCreateArtist } from '@/hooks/mutations/useCreateArtist';
+import { useCreateArtist } from '@/hooks/mutations/useArtistMutations';
 import { ArtistsResponse } from '@/types/pocketbase.types';
 
 /**

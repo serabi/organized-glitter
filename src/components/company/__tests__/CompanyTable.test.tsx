@@ -114,7 +114,7 @@ const mockDeleteCompanyMutation = {
   error: null,
 };
 
-vi.mock('@/hooks/mutations/useDeleteCompany', () => ({
+vi.mock('@/hooks/mutations/useCompanyMutations', () => ({
   useDeleteCompany: () => mockDeleteCompanyMutation,
 }));
 
