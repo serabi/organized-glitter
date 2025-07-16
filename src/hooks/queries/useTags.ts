@@ -7,7 +7,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { TagService } from '@/lib/tags';
 import { queryKeys } from './queryKeys';
-import { useUserAuth, getStandardQueryConfig, logQueryError, logQuerySuccess, createQueryTimer } from './shared/queryUtils';
+import {
+  useUserAuth,
+  getStandardQueryConfig,
+  logQueryError,
+  logQuerySuccess,
+  createQueryTimer,
+} from './shared/queryUtils';
 import type { Tag } from '@/types/tag';
 
 /**

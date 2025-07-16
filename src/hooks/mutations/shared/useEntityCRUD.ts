@@ -84,37 +84,38 @@ export function createEntityCreateMutation<TData extends Record<string, unknown>
         };
 
         const record = await pb.collection(config.collection).create(createData);
-        
-        logger.info(`${config.entityName} created successfully`, { 
-          entityId: record.id, 
-          userId 
+
+        logger.info(`${config.entityName} created successfully`, {
+          entityId: record.id,
+          userId,
         });
 
         return record as TData;
       },
-      onSuccess: (newEntity) => {
+      onSuccess: newEntity => {
         // Invalidate relevant queries
         queryClient.invalidateQueries({ queryKey: config.queryKeys.lists() });
         queryClient.invalidateQueries({ queryKey: config.queryKeys.list(user?.id || '') });
 
         // Show success toast
-        const entityName = ('name' in newEntity ? String(newEntity.name) : undefined) || config.entityName;
+        const entityName =
+          ('name' in newEntity ? String(newEntity.name) : undefined) || config.entityName;
         toast({
           title: 'Success!',
           description: `${config.entityName.charAt(0).toUpperCase() + config.entityName.slice(1)} "${entityName}" has been added`,
           variant: 'default',
         });
 
-        logger.info(`${config.entityName} creation success toast shown`, { 
+        logger.info(`${config.entityName} creation success toast shown`, {
           entityName,
-          userId: user?.id 
+          userId: user?.id,
         });
       },
       onError: (error: Error) => {
         logger.error(`Failed to create ${config.entityName}`, error);
 
         let errorMessage = `Failed to add ${config.entityName}`;
-        
+
         if (error instanceof ClientResponseError && error.status === 400) {
           errorMessage = `A ${config.entityName} with this name already exists`;
         }
@@ -151,7 +152,7 @@ export function createEntityUpdateMutation<TData extends Record<string, unknown>
 
         // Get existing record to verify ownership
         const existingRecord = await pb.collection(config.collection).getOne(id);
-        
+
         if (existingRecord.user !== userId) {
           throw new Error(`You don't have permission to update this ${config.entityName}`);
         }
@@ -187,10 +188,10 @@ export function createEntityUpdateMutation<TData extends Record<string, unknown>
         }
 
         const updatedRecord = await pb.collection(config.collection).update(id, processedData);
-        
-        logger.info(`${config.entityName} updated successfully`, { 
-          entityId: id, 
-          userId 
+
+        logger.info(`${config.entityName} updated successfully`, {
+          entityId: id,
+          userId,
         });
 
         return updatedRecord as TData;
@@ -202,23 +203,24 @@ export function createEntityUpdateMutation<TData extends Record<string, unknown>
         queryClient.invalidateQueries({ queryKey: config.queryKeys.detail(id) });
 
         // Show success toast
-        const entityName = ('name' in updatedEntity ? String(updatedEntity.name) : undefined) || config.entityName;
+        const entityName =
+          ('name' in updatedEntity ? String(updatedEntity.name) : undefined) || config.entityName;
         toast({
           title: 'Success!',
           description: `${config.entityName.charAt(0).toUpperCase() + config.entityName.slice(1)} "${entityName}" has been updated`,
           variant: 'default',
         });
 
-        logger.info(`${config.entityName} update success toast shown`, { 
+        logger.info(`${config.entityName} update success toast shown`, {
           entityName,
-          userId: user?.id 
+          userId: user?.id,
         });
       },
       onError: (error: Error) => {
         logger.error(`Failed to update ${config.entityName}`, error);
 
         let errorMessage = `Failed to update ${config.entityName}`;
-        
+
         if (error.message.includes('already exists')) {
           errorMessage = error.message;
         } else if (error.message.includes("don't have permission")) {
@@ -256,10 +258,10 @@ export function createEntityDeleteMutation<TData extends Record<string, unknown>
         logger.debug(`Deleting ${config.entityName}`, { id, userId });
 
         await pb.collection(config.collection).delete(id);
-        
-        logger.info(`${config.entityName} deleted successfully`, { 
-          entityId: id, 
-          userId 
+
+        logger.info(`${config.entityName} deleted successfully`, {
+          entityId: id,
+          userId,
         });
       },
       onSuccess: (_, { id, name }) => {
@@ -276,16 +278,16 @@ export function createEntityDeleteMutation<TData extends Record<string, unknown>
           variant: 'default',
         });
 
-        logger.info(`${config.entityName} deletion success toast shown`, { 
+        logger.info(`${config.entityName} deletion success toast shown`, {
           entityName,
-          userId: user?.id 
+          userId: user?.id,
         });
       },
       onError: (error: Error) => {
         logger.error(`Failed to delete ${config.entityName}`, error);
 
         let errorMessage = `Failed to delete ${config.entityName}`;
-        
+
         if (error instanceof ClientResponseError) {
           if (error.status === 404) {
             errorMessage = `${config.entityName.charAt(0).toUpperCase() + config.entityName.slice(1)} not found`;

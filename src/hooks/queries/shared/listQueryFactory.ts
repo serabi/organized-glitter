@@ -7,13 +7,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { pb } from '@/lib/pocketbase';
 import { Collections } from '@/types/pocketbase.types';
-import { 
-  useUserAuth, 
-  getStandardQueryConfig, 
-  createRequestKey, 
-  logQueryError, 
+import {
+  useUserAuth,
+  getStandardQueryConfig,
+  createRequestKey,
+  logQueryError,
   logQuerySuccess,
-  createQueryTimer 
+  createQueryTimer,
 } from './queryUtils';
 
 /**
@@ -46,45 +46,47 @@ export interface ListQueryConfig<TData> {
 export function createListQuery<TData = unknown>(config: ListQueryConfig<TData>) {
   return function useListQuery() {
     const { userId, requireAuth } = useUserAuth();
-    
+
     return useQuery<TData[], Error>({
       queryKey: config.queryKeyFactory(userId || ''),
       queryFn: async () => {
         const authenticatedUserId = requireAuth();
         const timer = createQueryTimer(config.hookName, 'list query');
-        
+
         try {
           // Build filter
           const filters = [`user = "${authenticatedUserId}"`];
           if (config.additionalFilters) {
             filters.push(config.additionalFilters);
           }
-          
+
           // Execute query
           const result = await pb.collection(config.collection).getList(1, 200, {
             filter: filters.join(' && '),
             sort: config.sortField || 'name',
             requestKey: createRequestKey(
-              config.collection, 
-              authenticatedUserId, 
+              config.collection,
+              authenticatedUserId,
               config.requestKeySuffix
             ),
           });
-          
+
           // Transform data if needed
-          const transformedData = config.transform ? config.transform(result.items) : result.items as TData[];
-          
+          const transformedData = config.transform
+            ? config.transform(result.items)
+            : (result.items as TData[]);
+
           timer.stop({
             itemsCount: transformedData.length,
             totalItems: result.totalItems,
           });
-          
+
           logQuerySuccess(config.hookName, 'list query', transformedData, {
             userId: authenticatedUserId,
             itemsCount: transformedData.length,
             totalItems: result.totalItems,
           });
-          
+
           return transformedData;
         } catch (error) {
           timer.stop({ error: true });
@@ -110,43 +112,43 @@ export function createListQuery<TData = unknown>(config: ListQueryConfig<TData>)
 export function createFullListQuery<TData = unknown>(config: ListQueryConfig<TData>) {
   return function useFullListQuery() {
     const { userId, requireAuth } = useUserAuth();
-    
+
     return useQuery<TData[], Error>({
       queryKey: config.queryKeyFactory(userId || ''),
       queryFn: async () => {
         const authenticatedUserId = requireAuth();
         const timer = createQueryTimer(config.hookName, 'full list query');
-        
+
         try {
           // Build filter
           const filters = [`user = "${authenticatedUserId}"`];
           if (config.additionalFilters) {
             filters.push(config.additionalFilters);
           }
-          
+
           // Execute query
           const result = await pb.collection(config.collection).getFullList({
             filter: filters.join(' && '),
             sort: config.sortField || 'name',
             requestKey: createRequestKey(
-              config.collection, 
-              authenticatedUserId, 
+              config.collection,
+              authenticatedUserId,
               config.requestKeySuffix || 'all'
             ),
           });
-          
+
           // Transform data if needed
-          const transformedData = config.transform ? config.transform(result) : result as TData[];
-          
+          const transformedData = config.transform ? config.transform(result) : (result as TData[]);
+
           timer.stop({
             itemsCount: transformedData.length,
           });
-          
+
           logQuerySuccess(config.hookName, 'full list query', transformedData, {
             userId: authenticatedUserId,
             itemsCount: transformedData.length,
           });
-          
+
           return transformedData;
         } catch (error) {
           timer.stop({ error: true });

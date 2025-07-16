@@ -105,6 +105,34 @@ export const useUpdateProjectStatusMutation = () => {
     mutationFn: async ({ projectId, status }: { projectId: string; status: ProjectStatus }) => {
       logger.debug('Updating project status:', { projectId, status });
 
+      // Validate status value
+      const validStatuses: ProjectStatus[] = [
+        'wishlist',
+        'purchased',
+        'stash',
+        'progress',
+        'completed',
+        'archived',
+        'destashed',
+      ];
+      if (!validStatuses.includes(status)) {
+        throw new Error(
+          `Invalid project status: ${status}. Must be one of: ${validStatuses.join(', ')}`
+        );
+      }
+
+      // Validate projectId
+      if (!projectId || typeof projectId !== 'string' || projectId.trim().length === 0) {
+        throw new Error('Invalid project ID: must be a non-empty string');
+      }
+
+      // Log the update attempt for debugging
+      logger.debug('Status update validation passed:', {
+        projectId: projectId.substring(0, 8) + '...',
+        status,
+        validStatuses,
+      });
+
       const updateData: { status: ProjectStatus; date_completed?: string } = { status };
 
       // Auto-set date_completed when status changes to 'completed'
@@ -121,12 +149,23 @@ export const useUpdateProjectStatusMutation = () => {
     onMutate: async ({ projectId, status }) => {
       const endTiming = dashboardSyncMonitor.startTiming('status-update-mutation');
 
+      // Defensive check for required data
+      if (!user?.id) {
+        logger.warn('Status update attempted without authenticated user');
+        throw new Error('User authentication required');
+      }
+
+      if (!projectId) {
+        logger.warn('Status update attempted without project ID');
+        throw new Error('Project ID required');
+      }
+
       // Record the mutation start
       dashboardSyncMonitor.recordEvent({
         type: 'status_update',
         projectId,
         status,
-        userId: user?.id,
+        userId: user.id,
         success: true,
         metadata: { phase: 'onMutate' },
       });
@@ -153,7 +192,6 @@ export const useUpdateProjectStatusMutation = () => {
       // Return context object for rollback
       return {
         previousProjectDetail,
-        previousAdvancedProjects,
         previousDashboardStats,
         projectId,
         status,
@@ -161,6 +199,19 @@ export const useUpdateProjectStatusMutation = () => {
       };
     },
     onError: (err, variables, context) => {
+      // Enhanced error logging to capture more details
+      const errorDetails = {
+        message: err instanceof Error ? err.message : 'Unknown error',
+        name: err instanceof Error ? err.name : undefined,
+        stack: err instanceof Error ? err.stack : undefined,
+        errorObject: err,
+        projectId: variables.projectId,
+        status: variables.status,
+        userId: user?.id,
+      };
+
+      logger.error('Status update mutation failed with detailed error:', errorDetails);
+
       // Record the error
       dashboardSyncMonitor.recordEvent({
         type: 'status_update',
@@ -168,8 +219,12 @@ export const useUpdateProjectStatusMutation = () => {
         status: variables.status,
         userId: user?.id,
         success: false,
-        error: err instanceof Error ? err.message : 'Unknown error',
-        metadata: { phase: 'onError' },
+        error: err instanceof Error ? err.message : String(err),
+        metadata: {
+          phase: 'onError',
+          errorName: err instanceof Error ? err.name : undefined,
+          errorDetails: errorDetails,
+        },
       });
 
       // Roll back the optimistic updates using snapshots
@@ -178,12 +233,6 @@ export const useUpdateProjectStatusMutation = () => {
           queryClient.setQueryData(
             queryKeys.projects.detail(context.projectId),
             context.previousProjectDetail
-          );
-        }
-        if (context.previousAdvancedProjects && user?.id) {
-          queryClient.setQueryData(
-            queryKeys.projects.advanced(user.id),
-            context.previousAdvancedProjects
           );
         }
         if (context.previousDashboardStats && user?.id) {

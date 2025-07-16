@@ -23,20 +23,20 @@ export const standardRetryConfig = (failureCount: number, error: Error): boolean
     logger.debug('Not retrying client error', { status: error.status, message: error.message });
     return false;
   }
-  
+
   // Also check error message for 4xx status codes (for non-ClientResponseError cases)
   const errorMessage = error?.message || '';
-  const isClientError = 
+  const isClientError =
     errorMessage.includes('400') ||
     errorMessage.includes('401') ||
     errorMessage.includes('403') ||
     errorMessage.includes('404');
-  
+
   if (isClientError) {
     logger.debug('Not retrying client error (from message)', { message: errorMessage });
     return false;
   }
-  
+
   // Retry up to 3 times for server errors
   const shouldRetry = failureCount < 3;
   logger.debug('Retry decision', { failureCount, shouldRetry, errorMessage });
@@ -93,7 +93,7 @@ export const getPaginatedQueryConfig = () => ({
  */
 export const useUserAuth = () => {
   const { user } = useAuth();
-  
+
   return {
     user,
     userId: user?.id,
@@ -169,7 +169,7 @@ export const logQuerySuccess = (
 export const createQueryTimer = (hookName: string, operation: string) => {
   const startTime = performance.now();
   const queryLogger = createLogger(hookName);
-  
+
   return {
     stop: (context?: Record<string, unknown>) => {
       const duration = performance.now() - startTime;

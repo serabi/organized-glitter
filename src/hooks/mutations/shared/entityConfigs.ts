@@ -25,19 +25,23 @@ export const artistConfig: EntityConfig<ArtistsResponse> = {
     optional: ['website_url'],
   },
   validation: {
-    beforeCreate: (data) => {
+    beforeCreate: data => {
       if (!data.name || typeof data.name !== 'string' || data.name.trim().length === 0) {
         return 'Artist name is required';
       }
       if (data.name.trim().length > 100) {
         return 'Artist name must be 100 characters or less';
       }
-      if (data.website_url && typeof data.website_url === 'string' && data.website_url.length > 500) {
+      if (
+        data.website_url &&
+        typeof data.website_url === 'string' &&
+        data.website_url.length > 500
+      ) {
         return 'Website URL must be 500 characters or less';
       }
       return null;
     },
-    beforeUpdate: (data) => {
+    beforeUpdate: data => {
       if (data.name !== undefined) {
         if (!data.name || typeof data.name !== 'string' || data.name.trim().length === 0) {
           return 'Artist name is required';
@@ -46,7 +50,11 @@ export const artistConfig: EntityConfig<ArtistsResponse> = {
           return 'Artist name must be 100 characters or less';
         }
       }
-      if (data.website_url && typeof data.website_url === 'string' && data.website_url.length > 500) {
+      if (
+        data.website_url &&
+        typeof data.website_url === 'string' &&
+        data.website_url.length > 500
+      ) {
         return 'Website URL must be 500 characters or less';
       }
       return null;
@@ -71,19 +79,23 @@ export const companyConfig: EntityConfig<CompaniesResponse> = {
     optional: ['website_url'],
   },
   validation: {
-    beforeCreate: (data) => {
+    beforeCreate: data => {
       if (!data.name || typeof data.name !== 'string' || data.name.trim().length === 0) {
         return 'Company name is required';
       }
       if (data.name.trim().length > 100) {
         return 'Company name must be 100 characters or less';
       }
-      if (data.website_url && typeof data.website_url === 'string' && data.website_url.length > 500) {
+      if (
+        data.website_url &&
+        typeof data.website_url === 'string' &&
+        data.website_url.length > 500
+      ) {
         return 'Website URL must be 500 characters or less';
       }
       return null;
     },
-    beforeUpdate: (data) => {
+    beforeUpdate: data => {
       if (data.name !== undefined) {
         if (!data.name || typeof data.name !== 'string' || data.name.trim().length === 0) {
           return 'Company name is required';
@@ -92,7 +104,11 @@ export const companyConfig: EntityConfig<CompaniesResponse> = {
           return 'Company name must be 100 characters or less';
         }
       }
-      if (data.website_url && typeof data.website_url === 'string' && data.website_url.length > 500) {
+      if (
+        data.website_url &&
+        typeof data.website_url === 'string' &&
+        data.website_url.length > 500
+      ) {
         return 'Website URL must be 500 characters or less';
       }
       return null;
