@@ -144,6 +144,57 @@ export const useDashboardData = (
   // Pass metadata to useProjects for consistent query key generation
   const projectsQuery = useProjects(projectsParamsWithEnabled, allCompanies, allArtists);
 
+  // Enhanced dev logging for Dashboard performance monitoring
+  useEffect(() => {
+    if (import.meta.env.DEV && projectsQuery.data && !projectsQuery.isLoading) {
+      logger.info('🎉 [DASHBOARD] useDashboardData: Projects loaded successfully', {
+        projectsCount: projectsQuery.data.projects.length,
+        totalItems: projectsQuery.data.totalItems,
+        totalPages: projectsQuery.data.totalPages,
+        currentPage: filters.currentPage,
+        pageSize: filters.pageSize,
+        activeStatus: filters.activeStatus,
+        hasStatusCounts: !!projectsQuery.data.statusCounts,
+        queryState: {
+          isLoading: projectsQuery.isLoading,
+          isFetching: projectsQuery.isFetching,
+          isStale: projectsQuery.isStale,
+          dataUpdatedAt: projectsQuery.dataUpdatedAt,
+        },
+      });
+    }
+  }, [
+    projectsQuery.data,
+    projectsQuery.isLoading,
+    projectsQuery.isFetching,
+    projectsQuery.isStale,
+    projectsQuery.dataUpdatedAt,
+    filters.currentPage,
+    filters.pageSize,
+    filters.activeStatus,
+  ]);
+
+  // Enhanced dev logging for loading states
+  useEffect(() => {
+    if (import.meta.env.DEV && projectsQuery.isLoading) {
+      logger.info('⏳ [DASHBOARD] useDashboardData: Loading projects...', {
+        currentPage: filters.currentPage,
+        activeStatus: filters.activeStatus,
+        sortField: filters.sortField,
+        sortDirection: filters.sortDirection,
+        hasSearchTerm: !!debouncedSearchTerm,
+        searchTerm: debouncedSearchTerm,
+      });
+    }
+  }, [
+    projectsQuery.isLoading,
+    filters.currentPage,
+    filters.activeStatus,
+    filters.sortField,
+    filters.sortDirection,
+    debouncedSearchTerm,
+  ]);
+
   return {
     projects: projectsQuery.data?.projects || [],
     totalItems: projectsQuery.data?.totalItems || 0,
