@@ -1,60 +1,55 @@
+/**
+ * React Query hook for fetching tags data
+ * @author @serabi
+ * @created 2025-01-16
+ */
+
 import { useQuery } from '@tanstack/react-query';
 import { TagService } from '@/lib/tags';
 import { queryKeys } from './queryKeys';
-import { useAuth } from '@/hooks/useAuth';
+import { useUserAuth, getStandardQueryConfig, logQueryError, logQuerySuccess, createQueryTimer } from './shared/queryUtils';
 import type { Tag } from '@/types/tag';
-import { ClientResponseError } from 'pocketbase';
-import { createLogger } from '@/utils/secureLogger';
 
-const logger = createLogger('useTags');
-
+/**
+ * Hook for fetching all tags for the current user using TagService
+ * @author @serabi
+ * @returns React Query result with tags data
+ */
 export function useTags() {
-  const { user } = useAuth();
-
-  logger.debug('useTags called', { userId: user?.id });
+  const { userId, requireAuth } = useUserAuth();
 
   return useQuery<Tag[], Error>({
-    queryKey: queryKeys.tags.list(user?.id || ''),
+    queryKey: queryKeys.tags.list(userId || ''),
     queryFn: async () => {
-      if (!user?.id) {
-        throw new Error('User not authenticated');
-      }
-
-      logger.debug('Executing tags query', { userId: user.id });
+      const authenticatedUserId = requireAuth();
+      const timer = createQueryTimer('useTags', 'tags query');
 
       try {
         // Use secure TagService instead of direct PocketBase calls
         const result = await TagService.getUserTags();
 
         if (result.status === 'error') {
-          logger.error('Tags query failed:', result.error);
+          logQueryError('useTags', 'tags query', result.error, { userId: authenticatedUserId });
           throw new Error(result.error || 'Failed to fetch tags');
         }
 
-        logger.debug('Tags query successful:', {
-          userId: user.id,
+        timer.stop({
+          itemsCount: result.data.length,
+        });
+
+        logQuerySuccess('useTags', 'tags query', result.data, {
+          userId: authenticatedUserId,
           itemsCount: result.data.length,
         });
 
         return result.data;
       } catch (error) {
-        logger.error('Tags query failed:', error);
+        timer.stop({ error: true });
+        logQueryError('useTags', 'tags query', error, { userId: authenticatedUserId });
         throw error;
       }
     },
-    enabled: !!user?.id,
-    staleTime: 10 * 60 * 1000, // 10 minutes - tags don't change often
-    gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
-    refetchOnWindowFocus: false, // Reduce unnecessary refetches
-    refetchOnReconnect: false, // Reduce blinking on reconnect
-    // Add specific notification optimization
-    notifyOnChangeProps: ['data', 'error', 'isLoading', 'isError'] as const,
-    retry: (failureCount, error: Error) => {
-      // Don't retry on client errors (4xx)
-      if (error instanceof ClientResponseError && error.status >= 400 && error.status < 500) {
-        return false;
-      }
-      return failureCount < 3;
-    },
+    enabled: !!userId,
+    ...getStandardQueryConfig(),
   });
 }

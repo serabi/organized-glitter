@@ -12,6 +12,7 @@ import { queryKeys, CompanyQueryParams } from './queryKeys';
 import { ClientResponseError } from 'pocketbase';
 import { createLogger } from '@/utils/secureLogger';
 import { useAuth } from '@/hooks/useAuth';
+import { createFullListQuery } from './shared/listQueryFactory';
 
 const logger = createLogger('useCompanies');
 
@@ -126,51 +127,10 @@ export const useCompanies = (params: UseCompaniesParams) => {
  * @author @serabi
  * @returns React Query result with all companies data
  */
-export const useAllCompanies = () => {
-  const { user } = useAuth();
-
-  logger.debug('useAllCompanies called', { userId: user?.id });
-
-  return useQuery({
-    queryKey: queryKeys.companies.allForUser(user?.id || ''),
-    queryFn: async () => {
-      if (!user?.id) {
-        throw new Error('User not authenticated');
-      }
-
-      logger.debug('Executing all companies query', { userId: user.id });
-
-      try {
-        const result = await pb.collection(Collections.Companies).getFullList({
-          filter: `user = "${user.id}"`,
-          sort: 'name',
-          requestKey: `companies-all-${user.id}`, // Enable request deduplication with user context
-        });
-
-        logger.debug('All companies query successful:', {
-          userId: user.id,
-          itemsCount: result.length,
-        });
-
-        return result;
-      } catch (error) {
-        logger.error('All companies query failed:', error);
-        throw error;
-      }
-    },
-    enabled: !!user?.id, // Only run when user is authenticated
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
-    retry: (failureCount, error) => {
-      // Don't retry on client errors (4xx)
-      if (error instanceof ClientResponseError && error.status >= 400 && error.status < 500) {
-        return false;
-      }
-      return failureCount < 3;
-    },
-    refetchOnWindowFocus: false, // Reduce unnecessary refetches
-    refetchOnReconnect: false, // Reduce blinking on reconnect
-    // Add specific notification optimization
-    notifyOnChangeProps: ['data', 'error', 'isLoading', 'isError'] as const,
-  });
-};
+export const useAllCompanies = createFullListQuery<CompaniesResponse>({
+  collection: Collections.Companies,
+  queryKeyFactory: (userId: string) => queryKeys.companies.allForUser(userId),
+  sortField: 'name',
+  requestKeySuffix: 'all',
+  hookName: 'useAllCompanies',
+});
