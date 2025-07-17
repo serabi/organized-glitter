@@ -180,13 +180,14 @@ export const createQueryTimer = (hookName: string, operation: string) => {
 };
 
 /**
- * Aggressive status count caching configuration for optimal performance
+ * Moderate caching configuration for dashboard data and status counts
+ * Provides balanced performance and accuracy for real-time updates
  * @author @serabi
- * @returns Query configuration with long-term caching and stale-while-revalidate
+ * @returns Query configuration with 30-second stale time for accurate data
  */
 export const getStatusCountQueryConfig = () => ({
-  staleTime: 20 * 60 * 1000, // 20 minutes - aggressive caching for status counts
-  gcTime: 30 * 60 * 1000, // 30 minutes garbage collection
+  staleTime: 30 * 1000, // 30 seconds - moderate caching for accuracy
+  gcTime: 5 * 60 * 1000, // 5 minutes garbage collection
   refetchOnWindowFocus: false, // Never refetch on focus - rely on invalidation
   refetchOnReconnect: false, // Never refetch on reconnect - rely on invalidation
   placeholderData: (previousData: unknown) => previousData, // Show stale data immediately (stale-while-revalidate)

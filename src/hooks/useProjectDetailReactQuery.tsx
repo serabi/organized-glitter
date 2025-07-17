@@ -1,6 +1,5 @@
 import { useProjectDetailQuery } from '@/hooks/queries/useProjectDetailQuery';
 import {
-  useUpdateProjectStatusMutation,
   useUpdateProjectNotesMutation,
   useAddProgressNoteMutation,
   useUpdateProgressNoteMutation,
@@ -9,6 +8,7 @@ import {
   useArchiveProjectMutation,
   useDeleteProjectMutation,
 } from '@/hooks/mutations/useProjectDetailMutations';
+import { useUpdateProjectStatus } from '@/hooks/mutations/useUpdateProjectStatus';
 import { useAuth } from '@/hooks/useAuth';
 import { ProjectStatus } from '@/types/project';
 import { secureLogger } from '@/utils/secureLogger';
@@ -40,7 +40,7 @@ export const useProjectDetailReactQuery = (projectId: string | undefined) => {
   } = useProjectDetailQuery(projectId, isAuthenticated, initialCheckComplete);
 
   // Mutation hooks
-  const updateStatusMutation = useUpdateProjectStatusMutation();
+  const updateStatusMutation = useUpdateProjectStatus();
   const updateNotesMutation = useUpdateProjectNotesMutation();
   const addProgressNoteMutation = useAddProgressNoteMutation();
   const updateProgressNoteMutation = useUpdateProgressNoteMutation();
@@ -61,13 +61,17 @@ export const useProjectDetailReactQuery = (projectId: string | undefined) => {
     deleteProjectMutation.isPending;
 
   /**
-   * Update a project's status
+   * Update a project's status with optimistic updates
    */
   const handleUpdateStatus = async (newStatus: ProjectStatus): Promise<boolean> => {
     if (!projectId || !project) return false;
 
     try {
-      await updateStatusMutation.mutateAsync({ projectId, status: newStatus });
+      await updateStatusMutation.mutateAsync({ 
+        projectId, 
+        newStatus, 
+        currentStatus: project.status 
+      });
       return true;
     } catch (error) {
       return false;
