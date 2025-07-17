@@ -230,7 +230,10 @@ const performanceLogger = (() => {
  * Tracks before/after performance comparisons for optimization work
  */
 const batchApiLogger = (() => {
-  const operations = new Map<string, { startTime: number; queryCount: number; description: string }>();
+  const operations = new Map<
+    string,
+    { startTime: number; queryCount: number; description: string }
+  >();
 
   const startBatchOperation = (id: string, queryCount: number, description: string): string => {
     if (!isDevelopment) return id;
@@ -249,7 +252,11 @@ const batchApiLogger = (() => {
     return id;
   };
 
-  const endBatchOperation = (id: string, resultCount?: number, metadata?: Record<string, unknown>) => {
+  const endBatchOperation = (
+    id: string,
+    resultCount?: number,
+    metadata?: Record<string, unknown>
+  ) => {
     if (!isDevelopment || !operations.has(id)) return;
 
     const operation = operations.get(id)!;
@@ -257,7 +264,10 @@ const batchApiLogger = (() => {
     operations.delete(id);
 
     const color = duration < 500 ? '#4caf50' : duration < 2000 ? '#ff9800' : '#f44336';
-    const efficiency = operation.queryCount > 1 ? `(${(duration / operation.queryCount).toFixed(1)}ms per query)` : '';
+    const efficiency =
+      operation.queryCount > 1
+        ? `(${(duration / operation.queryCount).toFixed(1)}ms per query)`
+        : '';
     const results = resultCount !== undefined ? ` → ${resultCount} results` : '';
 
     console.log(
@@ -272,10 +282,10 @@ const batchApiLogger = (() => {
 
   const logOptimization = (before: number, after: number, description: string) => {
     if (!isDevelopment) return;
-    
+
     const improvement = ((before - after) / before) * 100;
     const color = improvement > 50 ? '#4caf50' : improvement > 25 ? '#ff9800' : '#f44336';
-    
+
     console.log(
       `%cOPTIMIZATION%c %c${description}%c - ${before.toFixed(0)}ms → ${after.toFixed(0)}ms (${improvement.toFixed(1)}% improvement)`,
       'background-color: #9c27b0; color: white; padding: 2px 4px; border-radius: 3px;',
@@ -298,12 +308,16 @@ const dashboardLogger = (() => {
     return createLogger(prefix);
   };
 
-  const logQueryDuration = (queryType: string, duration: number, metadata?: Record<string, unknown>) => {
+  const logQueryDuration = (
+    queryType: string,
+    duration: number,
+    metadata?: Record<string, unknown>
+  ) => {
     if (!isDevelopment) return;
-    
+
     const color = duration < 100 ? '#4caf50' : duration < 1000 ? '#ff9800' : '#f44336';
     const threshold = queryType.includes('status') ? 1000 : 500; // Status queries expected to be slower
-    
+
     if (duration > threshold) {
       console.warn(
         `%cSLOW QUERY%c %c${queryType}%c - ${duration.toFixed(2)}ms (threshold: ${threshold}ms)`,
@@ -318,7 +332,7 @@ const dashboardLogger = (() => {
 
   const logRenderCount = (componentName: string, renderCount: number, isExcessive: boolean) => {
     if (!isDevelopment || !isExcessive) return;
-    
+
     console.warn(
       `%cREPEAT RENDER%c %c${componentName}%c - ${renderCount} renders`,
       'background-color: #ff9800; color: white; padding: 2px 4px; border-radius: 3px;',

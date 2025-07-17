@@ -77,6 +77,21 @@ export function createEntityCreateMutation<TData extends Record<string, unknown>
           processedData.name = processedData.name.trim() as TData[keyof TData];
         }
 
+        // Check for duplicate names before creating
+        if ('name' in processedData && processedData.name) {
+          const filterBuilder = new FilterBuilder();
+          filterBuilder.equals('user', userId);
+          filterBuilder.equals('name', processedData.name as string);
+
+          const duplicates = await pb.collection(config.collection).getList(1, 1, {
+            filter: filterBuilder.build(),
+          });
+
+          if (duplicates.items.length > 0) {
+            throw new Error(`A ${config.entityName} with this name already exists`);
+          }
+        }
+
         // Add user reference
         const createData = {
           ...processedData,

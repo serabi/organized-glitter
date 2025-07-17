@@ -21,6 +21,7 @@ import {
   ProjectExpandOptions,
 } from '@/types/projectFilters';
 import { Project, ProjectFilterStatus } from '@/types/project';
+import { getStatusCountQueryConfig } from './shared/queryUtils';
 
 // Re-export for backward compatibility
 export interface ServerFilters {
@@ -243,31 +244,7 @@ export const useProjects = (
     queryFn: () =>
       fetchProjects({ userId: userId!, ...queryParams }, availableCompanies, availableArtists),
     enabled: !!userId && enabled, // Only run when userId is available AND hook is enabled
-    staleTime: 5 * 60 * 1000, // 5 minutes (increased for better performance)
-    gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
-    // Prevent blinking by keeping previous data while fetching new data
-    placeholderData: previousData => previousData,
-    // Alternative to placeholderData - keeps previous data during refetches
-    refetchOnWindowFocus: false, // Reduce unnecessary refetches that cause blinking
-    refetchOnReconnect: false, // Reduce blinking on reconnect
-    // Optimize re-renders by only notifying on specific prop changes
-    notifyOnChangeProps: ['data', 'error', 'isLoading', 'isError'],
-    retry: (failureCount, error) => {
-      // Don't retry on 4xx errors (client errors)
-      const errorMessage = error?.message || '';
-      const isClientError =
-        errorMessage.includes('400') ||
-        errorMessage.includes('401') ||
-        errorMessage.includes('403') ||
-        errorMessage.includes('404');
-
-      if (isClientError) {
-        return false;
-      }
-
-      // Retry up to 2 times for other errors
-      return failureCount < 2;
-    },
+    ...getStatusCountQueryConfig(), // Use optimized caching with smart invalidation
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 

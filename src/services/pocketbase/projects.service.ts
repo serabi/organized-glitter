@@ -93,6 +93,126 @@ export class ProjectsService {
   }
 
   /**
+   * Build base PocketBase filter string excluding status filters (used for aggregated queries)
+   */
+  private buildBaseFilter(filters: ProjectFilters): string {
+    logger.debug('🏗️ Building base filter (excluding status)', { inputFilters: filters });
+
+    const conditions: string[] = [];
+
+    // Always filter by user for data isolation - this is critical
+    if (filters.userId) {
+      conditions.push(`user = "${filters.userId}"`);
+      logger.debug('👤 Added user filter:', filters.userId);
+    } else {
+      logger.warn('⚠️ No userId provided - this will return all users data!');
+    }
+
+    // Company filter (uses ID directly)
+    if (filters.company && filters.company !== 'all') {
+      conditions.push(`company = "${filters.company}"`);
+      logger.debug('🏢 Added company filter:', filters.company);
+    }
+
+    // Artist filter (uses ID directly)
+    if (filters.artist && filters.artist !== 'all') {
+      conditions.push(`artist = "${filters.artist}"`);
+      logger.debug('🎨 Added artist filter:', filters.artist);
+    }
+
+    // Drill shape filter
+    if (filters.drillShape && filters.drillShape !== 'all') {
+      conditions.push(`drill_shape = "${filters.drillShape}"`);
+      logger.debug('💎 Added drill shape filter:', filters.drillShape);
+    }
+
+    // Year finished filter
+    if (filters.yearFinished && filters.yearFinished !== 'all') {
+      const year = parseInt(filters.yearFinished, 10);
+      if (!isNaN(year)) {
+        conditions.push(`date_completed >= "${year}-01-01 00:00:00"`);
+        conditions.push(`date_completed <= "${year}-12-31 23:59:59"`);
+        logger.debug('📅 Added year filter:', { year, range: `${year}-01-01 to ${year}-12-31` });
+      } else {
+        logger.warn('⚠️ Invalid year filter value:', filters.yearFinished);
+      }
+    }
+
+    // Kit category filter
+    if (filters.includeMiniKits === false) {
+      conditions.push(`kit_category != "mini"`);
+      logger.debug('📦 Added mini kits exclusion filter');
+    }
+
+    // Search term filtering
+    if (filters.searchTerm && filters.searchTerm.trim()) {
+      const searchTerm = filters.searchTerm.trim().replace(/"/g, '\\"');
+      conditions.push(`(title ~ "${searchTerm}" || general_notes ~ "${searchTerm}")`);
+      logger.debug('🔍 Added search filter:', {
+        originalTerm: filters.searchTerm,
+        escapedTerm: searchTerm,
+      });
+    }
+
+    // Tag filtering
+    if (filters.selectedTags && filters.selectedTags.length > 0) {
+      const tagConditions = filters.selectedTags.map(
+        tagId => `project_tags_via_project.tag ?= "${tagId}"`
+      );
+      conditions.push(`(${tagConditions.join(' || ')})`);
+      logger.debug('🏷️ Added tag filters:', {
+        tagCount: filters.selectedTags.length,
+        tags: filters.selectedTags,
+      });
+    }
+
+    const finalFilter = conditions.length > 0 ? conditions.join(' && ') : '';
+
+    logger.debug('🎯 Final base filter generated:', {
+      conditionsCount: conditions.length,
+      conditions,
+      finalFilter,
+      filterLength: finalFilter.length,
+    });
+
+    // Validate filter syntax
+    if (finalFilter && !this.validateFilterSyntax(finalFilter)) {
+      logger.error('❌ Generated filter appears to have syntax issues:', finalFilter);
+    }
+
+    return finalFilter;
+  }
+
+  /**
+   * Basic validation of PocketBase filter syntax
+   */
+  private validateFilterSyntax(filter: string): boolean {
+    try {
+      // Check for basic syntax issues
+      const openParens = (filter.match(/\(/g) || []).length;
+      const closeParens = (filter.match(/\)/g) || []).length;
+
+      if (openParens !== closeParens) {
+        logger.error('❌ Filter validation: Mismatched parentheses', { openParens, closeParens });
+        return false;
+      }
+
+      // Check for unclosed quotes
+      const quotes = (filter.match(/"/g) || []).length;
+      if (quotes % 2 !== 0) {
+        logger.error('❌ Filter validation: Unclosed quotes', { quoteCount: quotes });
+        return false;
+      }
+
+      logger.debug('✅ Filter validation passed');
+      return true;
+    } catch (error) {
+      logger.error('❌ Filter validation failed with error:', error);
+      return false;
+    }
+  }
+
+  /**
    * Build PocketBase filter string from ProjectFilters interface
    */
   private buildStructuredFilter(
@@ -387,14 +507,221 @@ export class ProjectsService {
   }
 
   /**
-   * Get batch status counts - simplified single-query approach with proper deduplication prevention
+   * Get batch status counts using simple getFullList approach
+   * Note: This method is designed to work with aggressive caching (20+ minutes)
+   * Cache is only invalidated when project status fields actually change
    */
   async getBatchStatusCounts(baseFilters: ProjectFilters): Promise<BatchStatusCountResult> {
     const startTime = this.config.enablePerformanceLogging ? performance.now() : 0;
-    const batchId = batchApiLogger.startBatchOperation('status-counts', 7, 'Status count queries');
+    const batchId = batchApiLogger.startBatchOperation(
+      'status-counts-simple',
+      1,
+      'Simple getFullList approach for status counting'
+    );
 
     try {
-      logger.debug('Fetching batch status counts with single-query parallel execution');
+      logger.debug('🔍 Starting simple getFullList status count query');
+
+      // Build base filter excluding status (we'll get all statuses in one query)
+      const baseFilter = this.buildBaseFilter(baseFilters);
+      logger.debug('📋 Generated base filter:', {
+        filterString: baseFilter,
+        originalFilters: baseFilters,
+        filterLength: baseFilter.length,
+      });
+
+      // Use simple getFullList to fetch all projects with just status field
+      logger.debug('🚀 Executing simple getFullList query for status counting...');
+      const queryStartTime = performance.now();
+
+      const result = await pb.collection('projects').getFullList({
+        filter: baseFilter,
+        fields: 'status', // Only fetch status field for minimal data transfer
+        requestKey: `status-count-simple-${Date.now()}`, // Simple unique key
+      });
+
+      const queryEndTime = performance.now();
+      const queryDuration = queryEndTime - queryStartTime;
+
+      // Count statuses in memory (very fast for reasonable dataset sizes)
+      const counts: StatusBreakdown = {
+        wishlist: 0,
+        purchased: 0,
+        stash: 0,
+        progress: 0,
+        completed: 0,
+        archived: 0,
+        destashed: 0,
+      };
+
+      let unrecognizedStatuses = 0;
+      const total = result.length;
+
+      result.forEach((project: { status: string }) => {
+        const status = project.status as keyof StatusBreakdown;
+        if (status && Object.prototype.hasOwnProperty.call(counts, status)) {
+          counts[status]++;
+        } else {
+          unrecognizedStatuses++;
+          logger.warn('Unrecognized project status:', status);
+        }
+      });
+
+      logger.debug('✅ Simple getFullList status counting completed', {
+        queryDuration: `${Math.round(queryDuration)}ms`,
+        totalProjects: total,
+        statusBreakdown: counts,
+        optimization: 'Single getFullList query + in-memory counting + aggressive caching',
+        performanceRating:
+          queryDuration < 100 ? 'excellent' : queryDuration < 500 ? 'good' : 'needs-optimization',
+      });
+
+      if (this.config.enablePerformanceLogging) {
+        const endTime = performance.now();
+        batchApiLogger.endBatchOperation(batchId, total, {
+          totalCounts: total,
+          statusBreakdown: counts,
+          queryType: 'simple_getFullList',
+          projectsProcessed: total,
+          unrecognizedStatuses,
+        });
+        logger.debug(`✅ Simple status counts completed in ${Math.round(endTime - startTime)}ms`, {
+          totalCounts: total,
+          statusBreakdown: counts,
+          queryType: 'simple_getFullList',
+          projectsProcessed: total,
+          unrecognizedStatuses,
+        });
+      }
+
+      logger.debug('🎯 Returning simple status count results:', { counts, total });
+      return { counts, total };
+    } catch (error) {
+      logger.error('❌ Failed to fetch simple status counts', {
+        error: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
+        filters: baseFilters,
+      });
+
+      throw ErrorHandler.handleError(error, 'Simple status count query');
+    }
+  }
+
+  /**
+   * Check if we should use chunked counting approach for large datasets
+   */
+  private async shouldUseChunkedCounting(baseFilter: string): Promise<boolean> {
+    try {
+      // Quick count check with minimal overhead
+      const sampleResult = await pb.collection('projects').getList(1, 1, {
+        filter: baseFilter,
+        fields: 'id', // Minimal field for counting
+        skipTotal: false, // We need total count for this check
+        requestKey: `size-check-${Date.now()}-${Math.random().toString(36).substring(2)}`,
+      });
+
+      const totalItems = sampleResult.totalItems;
+      logger.debug('📏 Dataset size check:', {
+        totalItems,
+        threshold: 1000,
+        shouldUseChunked: totalItems > 1000,
+      });
+
+      return totalItems > 1000; // Use chunked approach for >1000 projects
+    } catch (error) {
+      logger.warn('Failed to check dataset size, using single query approach', error);
+      return false; // Fallback to single query
+    }
+  }
+
+  /**
+   * Chunked status counting for very large datasets
+   */
+  private async getBatchStatusCountsChunked(
+    baseFilters: ProjectFilters,
+    baseFilter: string,
+    batchId: string
+  ): Promise<BatchStatusCountResult> {
+    logger.debug('📊 Starting chunked status counting for large dataset');
+
+    const counts: StatusBreakdown = {
+      wishlist: 0,
+      purchased: 0,
+      stash: 0,
+      progress: 0,
+      completed: 0,
+      archived: 0,
+      destashed: 0,
+    };
+
+    let total = 0;
+    let page = 1;
+    const pageSize = 500; // Process in chunks of 500
+    let hasMore = true;
+
+    while (hasMore) {
+      try {
+        const uniqueRequestKey = `chunked-${page}-${Date.now()}-${Math.random().toString(36).substring(2)}`;
+
+        const result = await pb.collection('projects').getList(page, pageSize, {
+          filter: baseFilter,
+          fields: 'status',
+          skipTotal: page > 1, // Only get total on first page
+          requestKey: uniqueRequestKey,
+        });
+
+        // Process this chunk
+        result.items.forEach(project => {
+          const status = project.status as keyof StatusBreakdown;
+          if (status && Object.prototype.hasOwnProperty.call(counts, status)) {
+            counts[status]++;
+            total++;
+          }
+        });
+
+        hasMore = result.items.length === pageSize;
+        page++;
+
+        logger.debug(`📄 Processed chunk ${page - 1}:`, {
+          itemsInChunk: result.items.length,
+          totalProcessed: total,
+          hasMore,
+        });
+
+        // Safety limit to prevent infinite loops
+        if (page > 50) {
+          logger.warn('⚠️ Chunked counting exceeded page limit, stopping');
+          break;
+        }
+      } catch (error) {
+        logger.error(`Failed to process chunk ${page}:`, error);
+        break;
+      }
+    }
+
+    logger.debug('✅ Chunked status counting completed', {
+      totalChunks: page - 1,
+      totalCounted: total,
+      finalCounts: counts,
+    });
+
+    return { counts, total };
+  }
+
+  /**
+   * Get batch status counts - fallback using parallel single queries
+   * (kept for comparison and potential fallback)
+   */
+  async getBatchStatusCountsLegacy(baseFilters: ProjectFilters): Promise<BatchStatusCountResult> {
+    const startTime = this.config.enablePerformanceLogging ? performance.now() : 0;
+    const batchId = batchApiLogger.startBatchOperation(
+      'status-counts-legacy',
+      7,
+      'Legacy parallel status count queries'
+    );
+
+    try {
+      logger.debug('Fetching batch status counts with legacy parallel execution');
 
       // Build optimized queries for all statuses - single query per status
       const statusTypes: ProjectFilterStatus[] = [
@@ -472,13 +799,16 @@ export class ProjectsService {
           batchApiLogger.endBatchOperation(batchId, total, {
             totalCounts: total,
             statusBreakdown: counts,
-            queryType: 'single_query_parallel',
+            queryType: 'legacy_parallel',
           });
-          logger.debug(`Batch status counts completed in ${Math.round(endTime - startTime)}ms`, {
-            totalCounts: total,
-            statusBreakdown: counts,
-            queryType: 'single_query_parallel',
-          });
+          logger.debug(
+            `Legacy batch status counts completed in ${Math.round(endTime - startTime)}ms`,
+            {
+              totalCounts: total,
+              statusBreakdown: counts,
+              queryType: 'legacy_parallel',
+            }
+          );
         }
 
         return { counts, total };
@@ -489,8 +819,8 @@ export class ProjectsService {
         }
       }
     } catch (error) {
-      logger.error('Failed to fetch batch status counts', error);
-      throw ErrorHandler.handleError(error, 'Batch status count query');
+      logger.error('Failed to fetch legacy batch status counts', error);
+      throw ErrorHandler.handleError(error, 'Legacy batch status count query');
     }
   }
 
