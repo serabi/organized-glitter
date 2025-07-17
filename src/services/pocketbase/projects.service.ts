@@ -5,7 +5,7 @@
  */
 
 import { pb } from '@/lib/pocketbase';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger, batchApiLogger } from '@/utils/secureLogger';
 import {
   BaseService,
   ErrorHandler,
@@ -391,6 +391,7 @@ export class ProjectsService {
    */
   async getBatchStatusCounts(baseFilters: ProjectFilters): Promise<BatchStatusCountResult> {
     const startTime = this.config.enablePerformanceLogging ? performance.now() : 0;
+    const batchId = batchApiLogger.startBatchOperation('status-counts', 7, 'Status count queries');
 
     try {
       logger.debug('Fetching batch status counts with single-query parallel execution');
@@ -468,6 +469,11 @@ export class ProjectsService {
 
         if (this.config.enablePerformanceLogging) {
           const endTime = performance.now();
+          batchApiLogger.endBatchOperation(batchId, total, {
+            totalCounts: total,
+            statusBreakdown: counts,
+            queryType: 'single_query_parallel',
+          });
           logger.debug(`Batch status counts completed in ${Math.round(endTime - startTime)}ms`, {
             totalCounts: total,
             statusBreakdown: counts,

@@ -10,7 +10,7 @@ import { useMemo, useEffect, useRef, useCallback } from 'react';
 import { useProjects, ServerFilters } from '@/hooks/queries/useProjects';
 import { FilterState } from '@/contexts/FilterProvider';
 import { useMetadata } from '@/contexts/MetadataContext';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger, dashboardLogger } from '@/utils/secureLogger';
 import { useRenderGuard, useThrottledLogger } from '@/utils/renderGuards';
 
 // Create logger outside component scope to ensure stable reference
@@ -50,12 +50,12 @@ export const useDashboardData = (
   const allCompanies = useMemo(() => {
     if (!Array.isArray(companies)) return [];
     return companies;
-  }, [companiesSignature]);
+  }, [companies]);
 
   const allArtists = useMemo(() => {
     if (!Array.isArray(artists)) return [];
     return artists;
-  }, [artistsSignature]);
+  }, [artists]);
 
   // Stabilize selectedTags array with content-based signature
   const selectedTagsSignature = useMemo(
@@ -100,15 +100,18 @@ export const useDashboardData = (
   // Only fetch data if user exists and initialization is complete
   const shouldFetchData = Boolean(userId && userId !== 'guest' && isInitialized);
 
-  // Stable logging with minimal dependencies to prevent re-render loops
+  // Enhanced render monitoring with dashboard logger
   useEffect(() => {
-    if (shouldLog() && isExcessive) {
-      logger.debug('🎯 useDashboardData excessive re-renders detected', {
-        renderCount,
-        isExcessive,
-        isInitialized,
-        hasUserId: !!userId,
-      });
+    if (isExcessive) {
+      dashboardLogger.logRenderCount('useDashboardData', renderCount, isExcessive);
+      if (shouldLog()) {
+        logger.debug('🎯 useDashboardData excessive re-renders detected', {
+          renderCount,
+          isExcessive,
+          isInitialized,
+          hasUserId: !!userId,
+        });
+      }
     }
   }, [isExcessive, shouldLog, renderCount, isInitialized, userId]);
 
@@ -144,50 +147,31 @@ export const useDashboardData = (
   // Pass metadata to useProjects for consistent query key generation
   const projectsQuery = useProjects(projectsParamsWithEnabled, allCompanies, allArtists);
 
-  // Enhanced dev logging for Dashboard performance monitoring
+  // Consolidated dashboard performance logging
   useEffect(() => {
-    if (import.meta.env.DEV && projectsQuery.data && !projectsQuery.isLoading) {
-      logger.info('🎉 [DASHBOARD] useDashboardData: Projects loaded successfully', {
-        projectsCount: projectsQuery.data.projects.length,
-        totalItems: projectsQuery.data.totalItems,
-        totalPages: projectsQuery.data.totalPages,
-        currentPage: filters.currentPage,
-        pageSize: filters.pageSize,
-        activeStatus: filters.activeStatus,
-        hasStatusCounts: !!projectsQuery.data.statusCounts,
-        queryState: {
-          isLoading: projectsQuery.isLoading,
-          isFetching: projectsQuery.isFetching,
-          isStale: projectsQuery.isStale,
-          dataUpdatedAt: projectsQuery.dataUpdatedAt,
-        },
-      });
-    }
-  }, [
-    projectsQuery.data,
-    projectsQuery.isLoading,
-    projectsQuery.isFetching,
-    projectsQuery.isStale,
-    projectsQuery.dataUpdatedAt,
-    filters.currentPage,
-    filters.pageSize,
-    filters.activeStatus,
-  ]);
+    if (!import.meta.env.DEV) return;
 
-  // Enhanced dev logging for loading states
-  useEffect(() => {
-    if (import.meta.env.DEV && projectsQuery.isLoading) {
-      logger.info('⏳ [DASHBOARD] useDashboardData: Loading projects...', {
+    if (projectsQuery.isLoading) {
+      logger.info('⏳ [DASHBOARD] Loading projects...', {
         currentPage: filters.currentPage,
         activeStatus: filters.activeStatus,
         sortField: filters.sortField,
         sortDirection: filters.sortDirection,
         hasSearchTerm: !!debouncedSearchTerm,
-        searchTerm: debouncedSearchTerm,
+      });
+    } else if (projectsQuery.data && !projectsQuery.isLoading) {
+      logger.info('✅ [DASHBOARD] Projects loaded successfully', {
+        projectsCount: projectsQuery.data.projects.length,
+        totalItems: projectsQuery.data.totalItems,
+        totalPages: projectsQuery.data.totalPages,
+        hasStatusCounts: !!projectsQuery.data.statusCounts,
+        isStale: projectsQuery.isStale,
       });
     }
   }, [
     projectsQuery.isLoading,
+    projectsQuery.data,
+    projectsQuery.isStale,
     filters.currentPage,
     filters.activeStatus,
     filters.sortField,
