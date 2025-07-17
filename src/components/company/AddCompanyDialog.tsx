@@ -86,7 +86,7 @@ const AddCompanyDialog = ({ onCompanyAdded }: AddCompanyDialogProps) => {
       new URL(url);
       setUrlError('');
       return true;
-    } catch (e) {
+    } catch {
       setUrlError('Please enter a valid URL (e.g., https://example.com)');
       return false;
     }

@@ -45,7 +45,7 @@ const EditCompanyDialog = ({ company, onCompanyUpdated }: EditCompanyDialogProps
       new URL(url);
       setUrlError('');
       return true;
-    } catch (e) {
+    } catch {
       setUrlError('Please enter a valid URL (e.g., https://example.com)');
       return false;
     }
@@ -84,7 +84,7 @@ const EditCompanyDialog = ({ company, onCompanyUpdated }: EditCompanyDialogProps
 
       setIsDialogOpen(false);
       onCompanyUpdated();
-    } catch (error) {
+    } catch {
       // Error handling is done in the mutation hook
     }
   };
