@@ -105,7 +105,7 @@ const FilterDropdown = React.memo(
               : isMetadataTypeArray(safeOptions)
                 ? // Raw metadata {id, name} format - transform to {label, value}
                   safeOptions.map(option => (
-                    <SelectItem key={option.name} value={option.name}>
+                    <SelectItem key={option.id} value={option.name}>
                       {option.name}
                     </SelectItem>
                   ))
