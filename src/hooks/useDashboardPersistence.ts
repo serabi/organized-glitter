@@ -18,7 +18,7 @@ interface DashboardFilters {
   viewType?: ViewType;
 }
 
-interface FilterState {
+interface DashboardFilterState {
   selectedCompany: string;
   selectedArtist: string;
   selectedDrillShape: string;
@@ -48,19 +48,23 @@ export const useDashboardPersistence = () => {
     return 'grid'; // Default
   }, [initialFilters.viewType]);
 
-  const persistFiltersToLocalStorage = useCallback((filterState: FilterState) => {
-    localStorage.setItem(
-      'dashboardFilters',
-      JSON.stringify({
-        selectedCompany: filterState.selectedCompany,
-        selectedArtist: filterState.selectedArtist,
-        selectedDrillShape: filterState.selectedDrillShape,
-        selectedTag: filterState.selectedTag,
-        selectedYearFinished: filterState.selectedYearFinished,
-        includeMiniKits: filterState.includeMiniKits,
-        viewType: filterState.viewType,
-      })
-    );
+  const persistFiltersToLocalStorage = useCallback((filterState: DashboardFilterState) => {
+    try {
+      localStorage.setItem(
+        'dashboardFilters',
+        JSON.stringify({
+          selectedCompany: filterState.selectedCompany,
+          selectedArtist: filterState.selectedArtist,
+          selectedDrillShape: filterState.selectedDrillShape,
+          selectedTag: filterState.selectedTag,
+          selectedYearFinished: filterState.selectedYearFinished,
+          includeMiniKits: filterState.includeMiniKits,
+          viewType: filterState.viewType,
+        })
+      );
+    } catch (error) {
+      secureLogger.error('Failed to persist dashboardFilters to localStorage', error);
+    }
   }, []);
 
   return {
