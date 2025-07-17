@@ -14,6 +14,7 @@ import { StatusBreakdown } from '@/types/dashboard';
 import { queryKeys, ProjectQueryParams } from './queryKeys';
 import { useRenderGuard, useThrottledLogger } from '@/utils/renderGuards';
 import { projectsService } from '@/services/pocketbase/projects.service';
+import { CompaniesResponse, ArtistsResponse } from '@/types/pocketbase.types';
 import {
   ProjectFilters,
   ProjectQueryOptions,
@@ -82,8 +83,8 @@ const transformFilters = (userId: string, serverFilters: ServerFilters): Project
  */
 const fetchProjects = async (
   params: ProjectQueryParams & { userId: string },
-  availableCompanies?: Array<{ id: string; name: string }>,
-  availableArtists?: Array<{ id: string; name: string }>
+  availableCompanies?: CompaniesResponse[],
+  availableArtists?: ArtistsResponse[]
 ): Promise<ProjectsResult> => {
   const { userId, filters, sortField, sortDirection, currentPage, pageSize } = params;
 
@@ -103,14 +104,14 @@ const fetchProjects = async (
 
   const fetchStartTime = performance.now();
 
-  // Create lookup maps for O(1) performance
-  const companyMap = availableCompanies
+  // Create lookup maps for O(1) performance from PocketBase response objects
+  const companyMap = availableCompanies?.length
     ? new Map(availableCompanies.map(c => [c.id, c.name]))
-    : undefined;
+    : new Map();
 
-  const artistMap = availableArtists
+  const artistMap = availableArtists?.length
     ? new Map(availableArtists.map(a => [a.id, a.name]))
-    : undefined;
+    : new Map();
 
   // Transform filters and create query options
   const projectFilters = transformFilters(userId, filters);
@@ -168,6 +169,7 @@ const fetchProjects = async (
 /**
  * Modern React Query hook for fetching projects with optimized performance
  * Uses structured service layer and eliminates expensive fallback patterns
+ * Following React Query dependent query pattern
  */
 export const useProjects = (
   {
@@ -179,13 +181,31 @@ export const useProjects = (
     pageSize,
     enabled = true,
   }: UseProjectsParams,
-  availableCompanies?: Array<{ id: string; name: string }>,
-  availableArtists?: Array<{ id: string; name: string }>
+  availableCompanies?: CompaniesResponse[],
+  availableArtists?: ArtistsResponse[]
 ) => {
   const queryClient = useQueryClient();
 
-  // Stabilize filters with content-based memoization to prevent unnecessary re-computations
-  const stableFilters = useMemo(() => filters, [filters]);
+  // Create stable filter signature to prevent object recreation
+  const filtersSignature = useMemo(() => {
+    if (!filters) return '';
+    return JSON.stringify({
+      status: filters.status,
+      company: filters.company,
+      artist: filters.artist,
+      drillShape: filters.drillShape,
+      yearFinished: filters.yearFinished,
+      includeMiniKits: filters.includeMiniKits,
+      includeDestashed: filters.includeDestashed,
+      includeArchived: filters.includeArchived,
+      includeWishlist: filters.includeWishlist,
+      searchTerm: filters.searchTerm,
+      selectedTags: filters.selectedTags?.sort().join(',') || '',
+    });
+  }, [filters]);
+
+  // Memoize stable filters based on signature
+  const stableFilters = useMemo(() => filters, [filtersSignature]);
 
   // Memoize query parameters with stable filter reference
   const queryParams: ProjectQueryParams = useMemo(
@@ -202,20 +222,6 @@ export const useProjects = (
   // Use render guard to track excessive re-renders (lowered threshold after optimizations)
   const { renderCount, isExcessive } = useRenderGuard('useProjects', 4);
   const { shouldLog } = useThrottledLogger('useProjects', 1000);
-
-  // Optimized debug logging - only log when excessive renders are detected
-  useEffect(() => {
-    if (shouldLog() && isExcessive) {
-      logger.debug('🔄 useProjects called (modernized)', {
-        userId,
-        status: stableFilters.status,
-        queryKey: queryKeys.projects.list(userId || '', queryParams),
-        enabled: !!userId && enabled,
-        renderCount,
-        isExcessive,
-      });
-    }
-  }, [userId, queryParams, enabled, stableFilters.status, isExcessive, shouldLog, renderCount]);
 
   // Stabilize metadata signatures for query key
   const companiesSignature = useMemo(
@@ -235,6 +241,40 @@ export const useProjects = (
     [availableArtists]
   );
 
+  // Enhanced debug logging with render trigger analysis
+  useEffect(() => {
+    if (shouldLog() && isExcessive) {
+      logger.debug('🔄 useProjects called (modernized)', {
+        userId,
+        status: stableFilters.status,
+        queryKey: queryKeys.projects.list(userId || '', queryParams),
+        enabled: !!userId && enabled,
+        renderCount,
+        isExcessive,
+        // Render trigger debugging
+        filtersSignature,
+        companiesSignature,
+        artistsSignature,
+        queryParamsSignature: JSON.stringify(queryParams),
+        availableCompaniesCount: availableCompanies?.length || 0,
+        availableArtistsCount: availableArtists?.length || 0,
+      });
+    }
+  }, [
+    userId,
+    queryParams,
+    enabled,
+    stableFilters.status,
+    isExcessive,
+    shouldLog,
+    renderCount,
+    filtersSignature,
+    companiesSignature,
+    artistsSignature,
+    availableCompanies?.length,
+    availableArtists?.length,
+  ]);
+
   const query = useQuery({
     queryKey: [
       ...queryKeys.projects.list(userId || '', queryParams),
@@ -243,17 +283,19 @@ export const useProjects = (
     ],
     queryFn: () =>
       fetchProjects({ userId: userId!, ...queryParams }, availableCompanies, availableArtists),
-    enabled: !!userId && enabled, // Only run when userId is available AND hook is enabled
+    enabled: !!userId && enabled,
     ...getStatusCountQueryConfig(), // Use optimized caching with smart invalidation
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
-  // Stabilize prefetch dependencies to prevent unnecessary re-renders
+  // Stabilize prefetch dependencies and prevent prefetch during initial loading
   const shouldPrefetch = Boolean(
     userId &&
       query.data?.totalPages &&
       currentPage < query.data.totalPages &&
-      !query.isPlaceholderData
+      !query.isPlaceholderData &&
+      !query.isLoading && // Don't prefetch during initial load
+      !query.isRefetching // Don't prefetch during refetch
   );
 
   // Prefetch next page for better UX with stabilized dependencies
@@ -270,8 +312,35 @@ export const useProjects = (
           companiesSignature,
           artistsSignature,
         ],
-        queryFn: () =>
-          fetchProjects({ userId, ...nextPageParams }, availableCompanies, availableArtists),
+        queryFn: () => {
+          // Create proper query options structure for prefetch requests
+          const prefetchOptions: ProjectQueryOptions = {
+            filters: transformFilters(userId, nextPageParams.filters),
+            sort: {
+              field: nextPageParams.sortField,
+              direction: nextPageParams.sortDirection,
+            },
+            page: nextPageParams.currentPage,
+            pageSize: nextPageParams.pageSize,
+            expand: {
+              tags: true,
+              company: false,
+              artist: false,
+              user: false,
+            },
+            includeStatusCounts: false, // KEY: Disable status counting for prefetch
+          };
+
+          // Create safe Maps for prefetch, same as main query
+          const companyMap = availableCompanies?.length
+            ? new Map(availableCompanies.map(c => [c.id, c.name]))
+            : new Map();
+          const artistMap = availableArtists?.length
+            ? new Map(availableArtists.map(a => [a.id, a.name]))
+            : new Map();
+
+          return projectsService.getProjects(prefetchOptions, companyMap, artistMap);
+        },
         staleTime: 2 * 60 * 1000, // Same as main query
       });
 

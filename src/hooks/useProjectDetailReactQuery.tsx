@@ -67,10 +67,10 @@ export const useProjectDetailReactQuery = (projectId: string | undefined) => {
     if (!projectId || !project) return false;
 
     try {
-      await updateStatusMutation.mutateAsync({ 
-        projectId, 
-        newStatus, 
-        currentStatus: project.status 
+      await updateStatusMutation.mutateAsync({
+        projectId,
+        newStatus,
+        currentStatus: project.status,
       });
       return true;
     } catch (error) {

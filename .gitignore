@@ -169,6 +169,8 @@ STEP_1_COMPLETION_SUMMARY.md
 STEP_2_COMPLETION_SUMMARY.md
 STEP_4_COMPLETION_SUMMARY.md
 STEP_5_COMPLETION_SUMMARY.md
+.kiro/
+.kiro/** 
 .kiro/specs/advanced-edit-spreadsheet/design.md
 .kiro/steering/tech.md
 .kiro/steering/structure.md
@@ -180,3 +182,5 @@ STEP_5_COMPLETION_SUMMARY.md
 .kiro/specs/codebase-simplification/design.md
 .kiro/specs/codebase-simplification/tasks.md
 .vscode/extensions.json
+.kiro/specs/projects-service-optimization/design.md
+.kiro/specs/projects-service-optimization/requirements.md

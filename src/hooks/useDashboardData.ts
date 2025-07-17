@@ -47,14 +47,15 @@ export const useDashboardData = (
     [artists]
   );
 
+  // Pass PocketBase response objects directly to useProjects
   const allCompanies = useMemo(() => {
     if (!Array.isArray(companies)) return [];
-    return companies;
+    return companies; // Keep as CompaniesResponse[]
   }, [companies]);
 
   const allArtists = useMemo(() => {
     if (!Array.isArray(artists)) return [];
-    return artists;
+    return artists; // Keep as ArtistsResponse[]
   }, [artists]);
 
   // Stabilize selectedTags array with content-based signature
@@ -63,9 +64,9 @@ export const useDashboardData = (
     [filters.selectedTags]
   );
 
-  // Memoize server filters to prevent unnecessary re-executions
-  const serverFilters: ServerFilters = useMemo(
-    () => ({
+  // Properly memoize server filters with deep equality check
+  const serverFilters: ServerFilters = useMemo(() => {
+    const filterObj = {
       status: filters.activeStatus,
       company: filters.selectedCompany,
       artist: filters.selectedArtist,
@@ -75,32 +76,38 @@ export const useDashboardData = (
       includeDestashed: filters.includeDestashed,
       includeArchived: filters.includeArchived,
       includeWishlist: filters.includeWishlist,
-      searchTerm: debouncedSearchTerm, // Use the debounced version from context
+      searchTerm: debouncedSearchTerm,
       selectedTags: filters.selectedTags,
-    }),
-    [
-      filters.activeStatus,
-      filters.selectedCompany,
-      filters.selectedArtist,
-      filters.selectedDrillShape,
-      filters.selectedYearFinished,
-      filters.includeMiniKits,
-      filters.includeDestashed,
-      filters.includeArchived,
-      filters.includeWishlist,
-      debouncedSearchTerm,
-      selectedTagsSignature, // Use signature instead of array reference
-    ]
-  );
+    };
+
+    // Only return new object if values actually changed
+    return filterObj;
+  }, [
+    filters.activeStatus,
+    filters.selectedCompany,
+    filters.selectedArtist,
+    filters.selectedDrillShape,
+    filters.selectedYearFinished,
+    filters.includeMiniKits,
+    filters.includeDestashed,
+    filters.includeArchived,
+    filters.includeWishlist,
+    debouncedSearchTerm,
+    selectedTagsSignature, // Use signature instead of array reference
+  ]);
 
   // Use render guard to track excessive re-renders (lowered threshold after optimizations)
   const { renderCount, isExcessive } = useRenderGuard('useDashboardData', 5);
   const { shouldLog } = useThrottledLogger('useDashboardData', 1000);
 
   // Only fetch data if user exists and initialization is complete
-  const shouldFetchData = Boolean(userId && userId !== 'guest' && isInitialized);
+  const shouldFetchData = Boolean(
+    userId && 
+    userId !== 'guest' && 
+    isInitialized
+  );
 
-  // Enhanced render monitoring with dashboard logger
+  // Enhanced render monitoring with detailed debugging
   useEffect(() => {
     if (isExcessive) {
       dashboardLogger.logRenderCount('useDashboardData', renderCount, isExcessive);
@@ -110,39 +117,54 @@ export const useDashboardData = (
           isExcessive,
           isInitialized,
           hasUserId: !!userId,
+          // Debug info for render triggers
+          serverFiltersSignature: JSON.stringify(serverFilters),
+          companiesCount: allCompanies?.length || 0,
+          artistsCount: allArtists?.length || 0,
+          companiesSignature,
+          artistsSignature,
+          selectedTagsSignature,
+          filterActiveStatus: filters.activeStatus,
+          filterCurrentPage: filters.currentPage,
         });
       }
     }
-  }, [isExcessive, shouldLog, renderCount, isInitialized, userId]);
+  }, [
+    isExcessive,
+    shouldLog,
+    renderCount,
+    isInitialized,
+    userId,
+    serverFilters,
+    allCompanies?.length,
+    allArtists?.length,
+    companiesSignature,
+    artistsSignature,
+    selectedTagsSignature,
+    filters.activeStatus,
+    filters.currentPage,
+  ]);
 
-  // Memoize useProjects parameters to prevent unnecessary re-executions
-  const projectsParams = useMemo(
-    () => ({
+  // Stabilize all useProjects parameters in a single memoized object
+  const projectsParamsWithEnabled = useMemo(() => {
+    return {
       userId,
       filters: serverFilters,
       sortField: filters.sortField,
       sortDirection: filters.sortDirection,
       currentPage: filters.currentPage,
       pageSize: filters.pageSize,
-    }),
-    [
-      userId,
-      serverFilters,
-      filters.sortField,
-      filters.sortDirection,
-      filters.currentPage,
-      filters.pageSize,
-    ]
-  );
-
-  // Add enabled flag to prevent execution during initialization
-  const projectsParamsWithEnabled = useMemo(
-    () => ({
-      ...projectsParams,
       enabled: shouldFetchData,
-    }),
-    [projectsParams, shouldFetchData]
-  );
+    };
+  }, [
+    userId,
+    serverFilters,
+    filters.sortField,
+    filters.sortDirection,
+    filters.currentPage,
+    filters.pageSize,
+    shouldFetchData,
+  ]);
 
   // Pass metadata to useProjects for consistent query key generation
   const projectsQuery = useProjects(projectsParamsWithEnabled, allCompanies, allArtists);

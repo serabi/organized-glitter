@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useMemo, useEffect } from 'react';
+import React, { createContext, useContext, useMemo, useEffect, useCallback, useState } from 'react';
 import { useAllCompanies } from '@/hooks/queries/useCompanies';
 import { useArtists } from '@/hooks/queries/useArtists';
 import { useTags } from '@/hooks/queries/useTags';
@@ -108,26 +108,38 @@ export const MetadataProvider = React.memo(({ children }: MetadataProviderProps)
 
   const artistNames = useMemo(() => artists.map(artist => artist.name).filter(Boolean), [artists]);
 
-  // Stable loading state objects to prevent reference changes
-  const stableLoadingState = useMemo(() => ({ companies: true, artists: true, tags: true }), []);
+  // Debounced loading state to reduce frequent re-renders
+  const [stableLoadingState, setStableLoadingState] = useState({
+    companies: true,
+    artists: true,
+    tags: true,
+  });
 
-  // Batch loading states to prevent cascade re-renders - only change when ALL queries complete
-  const isLoading = useMemo(() => {
-    const loading = {
+  // Update loading state with debouncing to prevent cascade re-renders
+  useEffect(() => {
+    const newLoadingState = {
       companies: companiesQuery.isLoading,
       artists: artistsQuery.isLoading,
       tags: tagsQuery.isLoading,
     };
 
-    // Prevent unnecessary re-renders by batching state changes
-    const anyLoading = loading.companies || loading.artists || loading.tags;
-    if (anyLoading) {
-      // Return a stable loading state object while any query is loading
-      return stableLoadingState;
-    }
+    // Only update if the state actually changed to avoid unnecessary renders
+    const stateChanged =
+      stableLoadingState.companies !== newLoadingState.companies ||
+      stableLoadingState.artists !== newLoadingState.artists ||
+      stableLoadingState.tags !== newLoadingState.tags;
 
-    return loading;
+    if (stateChanged) {
+      // Use a small delay to batch state updates
+      const timeoutId = setTimeout(() => {
+        setStableLoadingState(newLoadingState);
+      }, 10);
+
+      return () => clearTimeout(timeoutId);
+    }
   }, [companiesQuery.isLoading, artistsQuery.isLoading, tagsQuery.isLoading, stableLoadingState]);
+
+  const isLoading = stableLoadingState;
 
   const error = useMemo(
     () => ({
@@ -138,34 +150,22 @@ export const MetadataProvider = React.memo(({ children }: MetadataProviderProps)
     [companiesQuery.error, artistsQuery.error, tagsQuery.error]
   );
 
-  // Memoize callback functions to prevent recreation - use refetch functions directly
-  const refresh = useMemo(
-    () => async () => {
-      await Promise.all([companiesQuery.refetch(), artistsQuery.refetch(), tagsQuery.refetch()]);
-    },
-    [companiesQuery, artistsQuery, tagsQuery]
-  );
+  // Use useCallback for refresh functions to prevent recreation and reduce re-renders
+  const refresh = useCallback(async () => {
+    await Promise.all([companiesQuery.refetch(), artistsQuery.refetch(), tagsQuery.refetch()]);
+  }, [companiesQuery.refetch, artistsQuery.refetch, tagsQuery.refetch]);
 
-  const refreshCompanies = useMemo(
-    () => async () => {
-      await companiesQuery.refetch();
-    },
-    [companiesQuery]
-  );
+  const refreshCompanies = useCallback(async () => {
+    await companiesQuery.refetch();
+  }, [companiesQuery.refetch]);
 
-  const refreshArtists = useMemo(
-    () => async () => {
-      await artistsQuery.refetch();
-    },
-    [artistsQuery]
-  );
+  const refreshArtists = useCallback(async () => {
+    await artistsQuery.refetch();
+  }, [artistsQuery.refetch]);
 
-  const refreshTags = useMemo(
-    () => async () => {
-      await tagsQuery.refetch();
-    },
-    [tagsQuery]
-  );
+  const refreshTags = useCallback(async () => {
+    await tagsQuery.refetch();
+  }, [tagsQuery.refetch]);
 
   const value: MetadataContextType = useMemo(
     () => ({

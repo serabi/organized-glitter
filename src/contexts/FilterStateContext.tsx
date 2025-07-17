@@ -322,7 +322,7 @@ export const FilterStateProvider: React.FC<FilterStateProviderProps> = React.mem
         return;
       }
 
-      const initializeFilters = async () => {
+      const initializeFilters = () => {
         initializationStateRef.current = 'initializing';
         const perfId = performanceLogger.start('initializeFilters');
         logger.info('🚀 Initializing filter state with batched updates...');
@@ -330,6 +330,56 @@ export const FilterStateProvider: React.FC<FilterStateProviderProps> = React.mem
         let initialFilters = getDefaultFilters();
         let sourceOfTruth = 'defaults';
 
+        // OPTIMIZATION: Initialize with defaults immediately, load saved state in background
+        React.startTransition(() => {
+          // Process URL parameters first (synchronous)
+          const urlParams = new URLSearchParams(location.search);
+          if (urlParams.toString().length > 0) {
+            logger.info('🔥 Processing URL parameters...');
+            sourceOfTruth = 'url_params';
+            const urlFilters: Partial<FilterState> = {};
+
+            const status = urlParams.get('status');
+            if (status) urlFilters.activeStatus = status as ProjectFilterStatus;
+
+            const company = urlParams.get('company');
+            if (company) urlFilters.selectedCompany = company;
+
+            const artist = urlParams.get('artist');
+            if (artist) urlFilters.selectedArtist = artist;
+
+            const tag = urlParams.get('tag');
+            if (tag) {
+              const matchingTag = userMetadata.tags.find(t => t.name === tag);
+              if (matchingTag) urlFilters.selectedTags = [matchingTag.id];
+            }
+
+            const year = urlParams.get('year');
+            if (year) urlFilters.selectedYearFinished = year;
+
+            const drillShape = urlParams.get('drillShape');
+            if (drillShape) urlFilters.selectedDrillShape = drillShape;
+
+            initialFilters = { ...initialFilters, ...urlFilters };
+            logger.info('✅ URL parameters applied');
+            navigate(location.pathname, { replace: true });
+          }
+
+          // Set initial state immediately with defaults/URL params
+          dispatch({ type: 'SET_INITIAL_STATE', payload: initialFilters });
+          setIsInitialized(true);
+          initializationStateRef.current = 'complete';
+
+          logger.info('🏁 Filter state initialization complete', { sourceOfTruth });
+          logger.info('✅ Batched filter state initialization updates applied');
+          performanceLogger.end(perfId);
+        });
+
+        // Load saved settings in background after initial render
+        loadSavedFiltersAsync();
+      };
+
+      const loadSavedFiltersAsync = async () => {
         try {
           const { pb } = await import('@/lib/pocketbase');
           const record = await pb
@@ -342,10 +392,7 @@ export const FilterStateProvider: React.FC<FilterStateProviderProps> = React.mem
             const timeSinceLastVisit = Date.now() - savedTimestamp;
             const twentyFourHours = 24 * 60 * 60 * 1000;
 
-            if (timeSinceLastVisit > twentyFourHours) {
-              logger.info('⏰ Resetting to defaults - more than 24 hours since last visit');
-              sourceOfTruth = 'defaults (24h reset)';
-            } else {
+            if (timeSinceLastVisit <= twentyFourHours) {
               const rawSavedFilters = {
                 activeStatus: savedContext.filters?.status,
                 selectedCompany: savedContext.filters?.company,
@@ -364,68 +411,31 @@ export const FilterStateProvider: React.FC<FilterStateProviderProps> = React.mem
                 pageSize: savedContext.pageSize,
                 viewType: 'grid',
               };
-              initialFilters = validateAndSanitizeFilters(rawSavedFilters as Partial<FilterState>);
-              sourceOfTruth = 'database';
-              logger.info('✅ Restored filters from database');
+              const restoredFilters = validateAndSanitizeFilters(
+                rawSavedFilters as Partial<FilterState>
+              );
+
+              // Only apply restored filters if they're different from current state
+              const currentFiltersString = JSON.stringify(filters);
+              const restoredFiltersString = JSON.stringify(restoredFilters);
+
+              if (currentFiltersString !== restoredFiltersString) {
+                React.startTransition(() => {
+                  dispatch({ type: 'SET_INITIAL_STATE', payload: restoredFilters });
+                });
+
+                logger.info('✅ Restored filters from database (background) - filters updated');
+              } else {
+                logger.debug('Background filter restoration skipped - no changes detected');
+              }
             }
           }
         } catch (error) {
           if (error?.status !== 404) {
-            logger.error('Error loading saved filters:', error);
-          } else {
-            logger.info('No saved filter settings found. Using defaults.');
-            sourceOfTruth = 'defaults (no record)';
+            logger.warn('Background filter restoration failed:', error);
           }
+          // Don't log 404s - this is normal for first-time users
         }
-
-        // Process URL parameters
-        const urlParams = new URLSearchParams(location.search);
-        if (urlParams.toString().length > 0) {
-          logger.info('🔥 Processing URL parameters...');
-          sourceOfTruth = 'url_params';
-          const urlFilters: Partial<FilterState> = {};
-
-          const status = urlParams.get('status');
-          if (status) urlFilters.activeStatus = status as ProjectFilterStatus;
-
-          const company = urlParams.get('company');
-          if (company) urlFilters.selectedCompany = company;
-
-          const artist = urlParams.get('artist');
-          if (artist) urlFilters.selectedArtist = artist;
-
-          const tag = urlParams.get('tag');
-          if (tag) {
-            const matchingTag = userMetadata.tags.find(t => t.name === tag);
-            if (matchingTag) urlFilters.selectedTags = [matchingTag.id];
-          }
-
-          const year = urlParams.get('year');
-          if (year) urlFilters.selectedYearFinished = year;
-
-          const drillShape = urlParams.get('drillShape');
-          if (drillShape) urlFilters.selectedDrillShape = drillShape;
-
-          initialFilters = { ...initialFilters, ...urlFilters };
-          logger.info('✅ URL parameters applied');
-          navigate(location.pathname, { replace: true });
-        }
-
-        logger.info('🏁 Filter state initialization complete', { sourceOfTruth });
-
-        // BATCHED INITIALIZATION - Apply all initialization updates in a single React update cycle
-        React.startTransition(() => {
-          // Set filter state
-          dispatch({ type: 'SET_INITIAL_STATE', payload: initialFilters });
-
-          // Set initialization flag
-          setIsInitialized(true);
-          initializationStateRef.current = 'complete';
-
-          logger.info('✅ Batched filter state initialization updates applied');
-        });
-
-        performanceLogger.end(perfId);
       };
 
       initializeFilters();

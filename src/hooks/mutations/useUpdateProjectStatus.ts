@@ -49,7 +49,10 @@ export const useUpdateProjectStatus = () => {
       // Auto-set date_completed when status changes to 'completed'
       if (newStatus === 'completed') {
         updateData.date_completed = getCurrentDateString(userTimezone);
-        logger.debug('Auto-setting date_completed for completed project:', updateData.date_completed);
+        logger.debug(
+          'Auto-setting date_completed for completed project:',
+          updateData.date_completed
+        );
       }
 
       // Update the project
@@ -59,9 +62,9 @@ export const useUpdateProjectStatus = () => {
       return result as ProjectsResponse;
     },
 
-    onMutate: async (variables) => {
+    onMutate: async variables => {
       const { projectId, newStatus } = variables;
-      
+
       if (!user?.id) {
         throw new Error('User not authenticated');
       }
@@ -72,7 +75,10 @@ export const useUpdateProjectStatus = () => {
 
       // Snapshot the previous values for rollback
       const previousProjects = queryClient.getQueryData(queryKeys.projects.list(user.id));
-      const previousStatusCounts = queryClient.getQueryData([...queryKeys.projects.list(user.id), 'status-counts']);
+      const previousStatusCounts = queryClient.getQueryData([
+        ...queryKeys.projects.list(user.id),
+        'status-counts',
+      ]);
 
       // Find the project and its current status
       let oldStatus: string | undefined;
@@ -88,7 +94,10 @@ export const useUpdateProjectStatus = () => {
           return oldData;
         }
 
-        const typedData = oldData as { items?: ProjectsResponse[]; statusCounts?: Record<string, number> };
+        const typedData = oldData as {
+          items?: ProjectsResponse[];
+          statusCounts?: Record<string, number>;
+        };
         if (!typedData.items || !Array.isArray(typedData.items)) {
           return oldData;
         }
@@ -108,7 +117,7 @@ export const useUpdateProjectStatus = () => {
 
         // Update status counts optimistically
         let updatedStatusCounts = typedData.statusCounts ? { ...typedData.statusCounts } : {};
-        
+
         if (oldStatus && oldStatus !== newStatus) {
           // Decrease old status count
           if (updatedStatusCounts[oldStatus]) {
@@ -147,7 +156,7 @@ export const useUpdateProjectStatus = () => {
 
     onSuccess: async (data, variables) => {
       const { projectId, newStatus } = variables;
-      
+
       if (!user?.id) return;
 
       // Update the project detail in cache with real data
@@ -168,16 +177,13 @@ export const useUpdateProjectStatus = () => {
 
     onError: (error, variables, context) => {
       const { projectId, newStatus } = variables;
-      
+
       logger.error('Project status update failed, performing rollback:', error);
 
       try {
         // Rollback project lists
         if (context?.previousProjects && user?.id) {
-          queryClient.setQueryData(
-            queryKeys.projects.list(user.id),
-            context.previousProjects
-          );
+          queryClient.setQueryData(queryKeys.projects.list(user.id), context.previousProjects);
           logger.debug('Rolled back project lists cache');
         }
 
@@ -212,7 +218,7 @@ export const useUpdateProjectStatus = () => {
       // Determine error type and show appropriate message
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       const lowerErrorMessage = errorMessage.toLowerCase();
-      
+
       const isRateLimit =
         lowerErrorMessage.includes('429') ||
         lowerErrorMessage.includes('rate limit') ||
@@ -240,8 +246,10 @@ export const useUpdateProjectStatus = () => {
       setTimeout(() => {
         if (user?.id) {
           queryClient.invalidateQueries({ queryKey: queryKeys.projects.list(user.id) });
-          queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(variables.projectId) });
-          
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.projects.detail(variables.projectId),
+          });
+
           // Invalidate dashboard stats for current year
           const currentYear = new Date().getFullYear();
           queryClient.invalidateQueries({
