@@ -14,6 +14,15 @@ export class PocketBaseSubscriptionManager implements SubscriptionManager {
   private subscriptions: Map<string, SubscriptionCleanup> = new Map();
   private pb: PocketBase;
   private isCleaningUp: boolean = false;
+  private subscriptionStats: {
+    totalCreated: number;
+    totalDestroyed: number;
+    lastActivity: number;
+  } = {
+    totalCreated: 0,
+    totalDestroyed: 0,
+    lastActivity: Date.now(),
+  };
 
   constructor(pb: PocketBase) {
     this.pb = pb;
@@ -24,20 +33,15 @@ export class PocketBaseSubscriptionManager implements SubscriptionManager {
    * Setup cleanup handlers for browser events
    */
   private setupCleanupHandlers(): void {
-    // Cleanup on page unload
+    // Only cleanup on actual page unload to prevent constant subscription cycling
     if (typeof window !== 'undefined') {
       window.addEventListener('beforeunload', () => {
         this.unsubscribeAll();
       });
 
-      // Cleanup on visibility change (optional - for aggressive cleanup)
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'hidden') {
-          this.pauseSubscriptions();
-        } else if (document.visibilityState === 'visible') {
-          this.resumeSubscriptions();
-        }
-      });
+      // Removed aggressive visibility change handler that was causing constant cleanup cycles
+      // Tab switching, minimizing, etc. should not destroy subscriptions
+      // PocketBase handles connection recovery automatically
     }
   }
 
@@ -84,12 +88,15 @@ export class PocketBaseSubscriptionManager implements SubscriptionManager {
       };
 
       this.subscriptions.set(subscriptionId, cleanup);
+      this.subscriptionStats.totalCreated++;
+      this.subscriptionStats.lastActivity = Date.now();
 
       logger.debug('Subscription created', {
         collection,
         filter,
         subscriptionId,
         totalSubscriptions: this.subscriptions.size,
+        totalCreated: this.subscriptionStats.totalCreated,
       });
 
       return cleanup;
@@ -112,10 +119,15 @@ export class PocketBaseSubscriptionManager implements SubscriptionManager {
       try {
         subscription.unsubscribe();
         this.subscriptions.delete(subscriptionId);
+        this.subscriptionStats.totalDestroyed++;
+        this.subscriptionStats.lastActivity = Date.now();
+
         logger.debug('Subscription removed', {
           subscriptionId,
           collection: subscription.collection,
           filter: subscription.filter,
+          totalDestroyed: this.subscriptionStats.totalDestroyed,
+          remainingSubscriptions: this.subscriptions.size,
         });
       } catch (error) {
         logger.error('Error unsubscribing', { error, subscriptionId });
@@ -166,31 +178,31 @@ export class PocketBaseSubscriptionManager implements SubscriptionManager {
   }
 
   /**
-   * Pause all subscriptions (disconnect but keep references)
+   * Check connection health and log subscription status
+   * Called manually for diagnostics, not automatically on visibility changes
    */
-  pauseSubscriptions(): void {
-    logger.debug('Pausing all subscriptions');
-
-    const subscriptionData = Array.from(this.subscriptions.entries()).map(([id, subscription]) => ({
-      id,
-      collection: subscription.collection,
-      filter: subscription.filter,
-    }));
-
-    this.unsubscribeAll();
-
-    // Store paused subscriptions for potential resume
-    // This is a simplified approach - in a real app you might want to store these
-    // in a way that allows resuming with the same callbacks
+  checkConnectionHealth(): void {
+    const stats = this.getSubscriptionStats();
+    logger.debug('Subscription health check', {
+      totalSubscriptions: stats.total,
+      byCollection: stats.byCollection,
+      isConnected: this.pb.authStore.isValid,
+    });
   }
 
   /**
-   * Resume subscriptions (would require storing callback references)
+   * Manually trigger subscription reconnection for all active subscriptions
+   * This is safer than automatic pause/resume and gives components control
    */
-  resumeSubscriptions(): void {
-    // This would require a more complex implementation to store callback references
-    // For now, we'll just log that subscriptions should be recreated
-    logger.debug('Subscriptions should be recreated after resume');
+  reconnectAll(): void {
+    const stats = this.getSubscriptionStats();
+    logger.info('Manual subscription reconnection requested', {
+      totalSubscriptions: stats.total,
+      byCollection: stats.byCollection,
+    });
+
+    // Components should handle their own reconnection logic via their hooks
+    // This just provides visibility into the reconnection process
   }
 
   /**
@@ -201,12 +213,18 @@ export class PocketBaseSubscriptionManager implements SubscriptionManager {
   }
 
   /**
-   * Get subscription statistics
+   * Get subscription statistics with lifecycle tracking
    */
   getSubscriptionStats(): {
     total: number;
     byCollection: Record<string, number>;
     activeSubscriptions: Array<{ collection: string; filter?: string }>;
+    lifecycle: {
+      totalCreated: number;
+      totalDestroyed: number;
+      lastActivity: number;
+      timeSinceLastActivity: number;
+    };
   } {
     const byCollection: Record<string, number> = {};
     const activeSubscriptions: Array<{ collection: string; filter?: string }> = [];
@@ -221,6 +239,12 @@ export class PocketBaseSubscriptionManager implements SubscriptionManager {
       total: this.subscriptions.size,
       byCollection,
       activeSubscriptions,
+      lifecycle: {
+        totalCreated: this.subscriptionStats.totalCreated,
+        totalDestroyed: this.subscriptionStats.totalDestroyed,
+        lastActivity: this.subscriptionStats.lastActivity,
+        timeSinceLastActivity: Date.now() - this.subscriptionStats.lastActivity,
+      },
     };
   }
 
@@ -245,10 +269,9 @@ export class PocketBaseSubscriptionManager implements SubscriptionManager {
   destroy(): void {
     this.unsubscribeAll();
 
-    // Remove event listeners
+    // Remove event listeners - only beforeunload since we removed visibilitychange
     if (typeof window !== 'undefined') {
       window.removeEventListener('beforeunload', this.unsubscribeAll);
-      document.removeEventListener('visibilitychange', this.pauseSubscriptions);
     }
   }
 }

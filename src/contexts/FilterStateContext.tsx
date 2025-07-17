@@ -312,13 +312,7 @@ export const FilterStateProvider: React.FC<FilterStateProviderProps> = React.mem
      * Initialize filters from database and URL parameters with batched updates
      */
     useEffect(() => {
-      if (
-        !user?.id ||
-        initializationStateRef.current !== 'pending' ||
-        userMetadata.isLoading.tags ||
-        userMetadata.isLoading.companies ||
-        userMetadata.isLoading.artists
-      ) {
+      if (!user?.id || initializationStateRef.current !== 'pending' || isMetadataLoading) {
         return;
       }
 
@@ -441,9 +435,7 @@ export const FilterStateProvider: React.FC<FilterStateProviderProps> = React.mem
       initializeFilters();
     }, [
       user?.id,
-      userMetadata.isLoading.tags,
-      userMetadata.isLoading.companies,
-      userMetadata.isLoading.artists,
+      isMetadataLoading, // Single dependency instead of individual loading states
       location.search,
       location.pathname,
       navigate,

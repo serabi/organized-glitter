@@ -262,17 +262,15 @@ export const useProjects = (
     }
   }, [
     userId,
-    queryParams,
     enabled,
     stableFilters.status,
     isExcessive,
     shouldLog,
     renderCount,
+    // Use signatures instead of full objects to reduce re-renders
     filtersSignature,
     companiesSignature,
     artistsSignature,
-    availableCompanies?.length,
-    availableArtists?.length,
   ]);
 
   const query = useQuery({

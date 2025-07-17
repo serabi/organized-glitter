@@ -101,11 +101,7 @@ export const useDashboardData = (
   const { shouldLog } = useThrottledLogger('useDashboardData', 1000);
 
   // Only fetch data if user exists and initialization is complete
-  const shouldFetchData = Boolean(
-    userId && 
-    userId !== 'guest' && 
-    isInitialized
-  );
+  const shouldFetchData = Boolean(userId && userId !== 'guest' && isInitialized);
 
   // Enhanced render monitoring with detailed debugging
   useEffect(() => {
@@ -135,9 +131,7 @@ export const useDashboardData = (
     renderCount,
     isInitialized,
     userId,
-    serverFilters,
-    allCompanies?.length,
-    allArtists?.length,
+    // Use signatures instead of full objects to reduce re-renders
     companiesSignature,
     artistsSignature,
     selectedTagsSignature,

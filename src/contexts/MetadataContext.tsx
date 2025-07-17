@@ -108,38 +108,14 @@ export const MetadataProvider = React.memo(({ children }: MetadataProviderProps)
 
   const artistNames = useMemo(() => artists.map(artist => artist.name).filter(Boolean), [artists]);
 
-  // Debounced loading state to reduce frequent re-renders
-  const [stableLoadingState, setStableLoadingState] = useState({
-    companies: true,
-    artists: true,
-    tags: true,
-  });
-
-  // Update loading state with debouncing to prevent cascade re-renders
-  useEffect(() => {
-    const newLoadingState = {
+  // Batch loading state updates to reduce cascading re-renders
+  const isLoading = useMemo(() => {
+    return {
       companies: companiesQuery.isLoading,
       artists: artistsQuery.isLoading,
       tags: tagsQuery.isLoading,
     };
-
-    // Only update if the state actually changed to avoid unnecessary renders
-    const stateChanged =
-      stableLoadingState.companies !== newLoadingState.companies ||
-      stableLoadingState.artists !== newLoadingState.artists ||
-      stableLoadingState.tags !== newLoadingState.tags;
-
-    if (stateChanged) {
-      // Use a small delay to batch state updates
-      const timeoutId = setTimeout(() => {
-        setStableLoadingState(newLoadingState);
-      }, 10);
-
-      return () => clearTimeout(timeoutId);
-    }
-  }, [companiesQuery.isLoading, artistsQuery.isLoading, tagsQuery.isLoading, stableLoadingState]);
-
-  const isLoading = stableLoadingState;
+  }, [companiesQuery.isLoading, artistsQuery.isLoading, tagsQuery.isLoading]);
 
   const error = useMemo(
     () => ({
