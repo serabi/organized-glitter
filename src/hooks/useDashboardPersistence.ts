@@ -16,7 +16,7 @@
  */
 
 import { useCallback, useMemo } from 'react';
-import { ProjectFilterStatus, ViewType } from '@/types/project';
+import { ViewType } from '@/types/project';
 import { secureLogger } from '@/utils/secureLogger';
 
 interface DashboardFilters {

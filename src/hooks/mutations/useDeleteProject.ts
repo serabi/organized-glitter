@@ -1,5 +1,4 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { startTransition } from 'react';
 import { pb } from '@/lib/pocketbase';
 import { queryKeys } from '../queries/queryKeys';
 import { useToast } from '@/hooks/use-toast';
@@ -284,7 +283,7 @@ export const useDeleteProject = () => {
       return previousData;
     },
 
-    onSuccess: async (result, variables) => {
+    onSuccess: async (_, variables) => {
       // Show immediate user feedback
       toast({
         title: 'Project Deleted',

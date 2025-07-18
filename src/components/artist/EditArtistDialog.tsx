@@ -39,7 +39,7 @@ const EditArtistDialog = ({ artist }: EditArtistDialogProps) => {
     }
 
     updateArtistMutation.mutate(
-      { id: artist.id, name: artistName.trim() },
+      { id: artist.id, data: { name: artistName.trim() } },
       {
         onSuccess: () => {
           setIsDialogOpen(false);

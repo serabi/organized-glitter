@@ -15,12 +15,7 @@ import { queryKeys, ProjectQueryParams } from './queryKeys';
 import { useRenderGuard, useThrottledLogger } from '@/utils/renderGuards';
 import { projectsService } from '@/services/pocketbase/projects.service';
 import { CompaniesResponse, ArtistsResponse } from '@/types/pocketbase.types';
-import {
-  ProjectFilters,
-  ProjectQueryOptions,
-  ProjectQueryResult,
-  ProjectExpandOptions,
-} from '@/types/projectFilters';
+import { ProjectFilters, ProjectQueryOptions } from '@/types/projectFilters';
 import { Project, ProjectFilterStatus } from '@/types/project';
 import { getStatusCountQueryConfig } from './shared/queryUtils';
 

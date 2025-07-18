@@ -57,12 +57,15 @@ const ArtistTable = ({ artists, loading }: ArtistTableProps) => {
   const confirmDeleteArtist = async () => {
     if (!artistToDelete) return;
 
-    deleteArtistMutation.mutate(artistToDelete.id, {
-      onSuccess: () => {
-        setShowDeleteConfirmDialog(false);
-        setArtistToDelete(null);
-      },
-    });
+    deleteArtistMutation.mutate(
+      { id: artistToDelete.id, name: artistToDelete.name },
+      {
+        onSuccess: () => {
+          setShowDeleteConfirmDialog(false);
+          setArtistToDelete(null);
+        },
+      }
+    );
   };
 
   if (loading) {

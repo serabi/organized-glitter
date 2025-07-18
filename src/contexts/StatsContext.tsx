@@ -55,7 +55,7 @@ import React, {
 } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { createLogger } from '@/utils/secureLogger';
-import { DashboardStats, StatusBreakdown } from '@/types/dashboard';
+import { DashboardStats } from '@/types/dashboard';
 import { queryKeys } from '@/hooks/queries/queryKeys';
 import { safeInvalidateQueries } from '@/utils/queryInvalidationGuard';
 import { useAuth } from '@/hooks/useAuth';

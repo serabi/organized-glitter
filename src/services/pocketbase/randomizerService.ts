@@ -27,11 +27,13 @@ import type {
   RandomizerSpinsRecord,
   RandomizerSpinsResponse,
   ProjectsResponse,
-  Collections,
 } from '@/types/pocketbase.types';
+import { Collections } from '@/types/pocketbase.types';
 import type { PocketBaseError } from '@/types/pocketbase-common';
 
 const logger = createLogger('RandomizerService');
+
+const RANDOMIZER_COLLECTION = 'randomizer_spins';
 
 /**
  * Specific error types for randomizer operations
@@ -240,17 +242,17 @@ export function captureSpinAnalytics(
  */
 export function detectDeviceType(userAgent?: string): 'mobile' | 'tablet' | 'desktop' {
   if (!userAgent) return 'desktop';
-  
+
   const ua = userAgent.toLowerCase();
-  
+
   if (/mobile|android|iphone|ipod|blackberry|iemobile|opera mini/i.test(ua)) {
     return 'mobile';
   }
-  
+
   if (/tablet|ipad|android(?!.*mobile)/i.test(ua)) {
     return 'tablet';
   }
-  
+
   return 'desktop';
 }
 
@@ -1083,10 +1085,9 @@ export async function getLastSpinEnhanced(
 
     const record = await pb
       .collection(Collections.RandomizerSpins)
-      .getFirstListItem<RandomizerSpinsResponse<string[], RandomizerSpinExpand>>(
-        pb.filter('user = {:userId}', { userId }),
-        queryOptions
-      );
+      .getFirstListItem<
+        RandomizerSpinsResponse<string[], RandomizerSpinExpand>
+      >(pb.filter('user = {:userId}', { userId }), queryOptions);
 
     logger.debug('Enhanced last spin fetched', {
       userId,
@@ -1159,7 +1160,7 @@ export async function getLastSpin(userId: string): Promise<SpinRecord | null> {
     if (!result) {
       return null;
     }
-    
+
     // Convert to legacy format for backward compatibility
     return {
       id: result.id,
@@ -1209,7 +1210,10 @@ export async function getLastSpin(userId: string): Promise<SpinRecord | null> {
  * }
  * ```
  */
-export async function cleanupOldSpinsEnhanced(userId: string, daysToKeep: number = 90): Promise<number> {
+export async function cleanupOldSpinsEnhanced(
+  userId: string,
+  daysToKeep: number = 90
+): Promise<number> {
   try {
     // Validate user ID
     if (!userId || typeof userId !== 'string' || userId.length !== 15) {
@@ -1221,7 +1225,8 @@ export async function cleanupOldSpinsEnhanced(userId: string, daysToKeep: number
       );
     }
 
-    if (daysToKeep < 1 || daysToKeep > 3650) { // Max 10 years
+    if (daysToKeep < 1 || daysToKeep > 3650) {
+      // Max 10 years
       throw createRandomizerError(
         RandomizerErrorType.VALIDATION_ERROR,
         'Days to keep must be between 1 and 3650',
@@ -1602,33 +1607,33 @@ export async function getSpinStatisticsEnhanced(
     const spins = await pb
       .collection(Collections.RandomizerSpins)
       .getFullList<RandomizerSpinsResponse<string[]>>({
-        filter: pb.filter('user = {:userId} && spun_at >= {:cutoff}', { 
-          userId, 
-          cutoff: cutoffISO 
+        filter: pb.filter('user = {:userId} && spun_at >= {:cutoff}', {
+          userId,
+          cutoff: cutoffISO,
         }),
         sort: 'spun_at',
       });
 
     // Calculate statistics
     const totalSpins = spins.length;
-    
+
     // Device and method breakdowns (would need metadata in actual records)
     const deviceBreakdown = { mobile: 0, tablet: 0, desktop: 0 };
     const methodBreakdown = { click: 0, keyboard: 0, touch: 0 };
-    
+
     // Project selection frequency
     const projectCounts: Record<string, { count: number; title: string }> = {};
-    
+
     let earliestSpin = '';
     let latestSpin = '';
-    
+
     spins.forEach((spin, index) => {
       // Track project selections
       if (!projectCounts[spin.project]) {
         projectCounts[spin.project] = { count: 0, title: spin.project_title };
       }
       projectCounts[spin.project].count++;
-      
+
       // Track time range
       if (index === 0) earliestSpin = spin.spun_at;
       if (index === spins.length - 1) latestSpin = spin.spun_at;
@@ -1637,7 +1642,7 @@ export async function getSpinStatisticsEnhanced(
     // Find most selected project
     let mostSelectedProject = null;
     let maxCount = 0;
-    
+
     for (const [projectId, data] of Object.entries(projectCounts)) {
       if (data.count > maxCount) {
         maxCount = data.count;
@@ -1713,12 +1718,7 @@ export async function performBatchOperation(
       );
     }
 
-    const {
-      batchSize = 50,
-      delayMs = 10,
-      maxRetries = 3,
-      onProgress,
-    } = options;
+    const { batchSize = 50, delayMs = 10, maxRetries = 3, onProgress } = options;
 
     logger.debug('Starting enhanced batch operation', {
       userId,
@@ -1740,9 +1740,9 @@ export async function performBatchOperation(
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - 90); // 90 days default
         const cutoffISO = cutoffDate.toISOString();
-        filter = pb.filter('user = {:userId} && spun_at < {:cutoff}', { 
-          userId, 
-          cutoff: cutoffISO 
+        filter = pb.filter('user = {:userId} && spun_at < {:cutoff}', {
+          userId,
+          cutoff: cutoffISO,
         });
         sort = 'spun_at';
         break;
@@ -1797,7 +1797,7 @@ export async function performBatchOperation(
  * ```typescript
  * // Use enhanced functions with full type safety
  * import { EnhancedRandomizerService } from './randomizerService';
- * 
+ *
  * const spinResult = await EnhancedRandomizerService.createSpinEnhanced({
  *   user: 'user123',
  *   project: 'proj456',
@@ -1805,7 +1805,7 @@ export async function performBatchOperation(
  *   selected_projects: ['proj456', 'proj789'],
  *   metadata: { selectionTime: 1250, deviceType: 'mobile', spinMethod: 'touch' }
  * });
- * 
+ *
  * const history = await EnhancedRandomizerService.getSpinHistoryEnhanced('user123', 10, true);
  * const stats = await EnhancedRandomizerService.getSpinStatisticsEnhanced('user123', 30);
  * ```
@@ -1822,7 +1822,7 @@ export const EnhancedRandomizerService = {
   cleanupOldSpinsEnhanced,
   getSpinStatisticsEnhanced,
   performBatchOperation,
-  
+
   // Legacy methods for backward compatibility
   createSpin,
   getSpinHistory,
@@ -1830,7 +1830,7 @@ export const EnhancedRandomizerService = {
   clearSpinHistory,
   getLastSpin,
   cleanupOldSpins,
-  
+
   // Utility methods
   validateRandomizerCollection,
   ensureRandomizerCollection,

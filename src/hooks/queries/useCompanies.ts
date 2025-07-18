@@ -9,9 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { pb } from '@/lib/pocketbase';
 import { Collections, CompaniesResponse } from '@/types/pocketbase.types';
 import { queryKeys, CompanyQueryParams } from './queryKeys';
-import { ClientResponseError } from 'pocketbase';
 import { createLogger } from '@/utils/secureLogger';
-import { useAuth } from '@/hooks/useAuth';
 import { createFullListQuery } from './shared/listQueryFactory';
 
 const logger = createLogger('useCompanies');

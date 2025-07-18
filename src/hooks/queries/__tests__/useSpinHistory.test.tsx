@@ -1,8 +1,11 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { useQuery } from '@tanstack/react-query';
-import { useSpinHistory } from '../useSpinHistory';
-import { getSpinHistory } from '@/services/pocketbase/randomizerService';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSpinHistory, randomizerQueryKeys } from '../useSpinHistory';
+import {
+  getSpinHistoryEnhanced,
+  getSpinHistoryCountEnhanced,
+} from '@/services/pocketbase/randomizerService';
 import type { MockUseQueryResult } from '@/types/test-mocks';
 
 // Mock dependencies
@@ -17,7 +20,9 @@ vi.mock('@/utils/secureLogger', () => ({
 }));
 
 const mockUseQuery = vi.mocked(useQuery);
-const mockGetSpinHistory = vi.mocked(getSpinHistory);
+const mockUseQueryClient = vi.mocked(useQueryClient);
+const mockGetSpinHistoryEnhanced = vi.mocked(getSpinHistoryEnhanced);
+const mockGetSpinHistoryCountEnhanced = vi.mocked(getSpinHistoryCountEnhanced);
 
 const mockSpinHistory = [
   {
@@ -25,22 +30,41 @@ const mockSpinHistory = [
     user: 'user1',
     project: 'proj1',
     project_title: 'Test Project 1',
+    project_company: 'Test Company',
+    project_artist: 'Test Artist',
+    selected_count: 2,
     selected_projects: ['proj1', 'proj2'],
     spun_at: '2024-01-01T12:00:00Z',
     created: '2024-01-01T12:00:00Z',
     updated: '2024-01-01T12:00:00Z',
+    collectionId: 'randomizer_spins',
+    collectionName: 'randomizer_spins' as any,
   },
   {
     id: '2',
     user: 'user1',
     project: 'proj2',
     project_title: 'Test Project 2',
+    project_company: 'Test Company 2',
+    project_artist: 'Test Artist 2',
+    selected_count: 3,
     selected_projects: ['proj1', 'proj2', 'proj3'],
     spun_at: '2024-01-01T11:00:00Z',
     created: '2024-01-01T11:00:00Z',
     updated: '2024-01-01T11:00:00Z',
+    collectionId: 'randomizer_spins',
+    collectionName: 'randomizer_spins' as any,
   },
 ];
+
+// Mock query client
+const mockQueryClient = {
+  prefetchQuery: vi.fn(),
+};
+
+beforeEach(() => {
+  mockUseQueryClient.mockReturnValue(mockQueryClient as any);
+});
 
 describe('useSpinHistory', () => {
   beforeEach(() => {
@@ -59,7 +83,7 @@ describe('useSpinHistory', () => {
       renderHook(() => useSpinHistory({ userId: 'user1' }));
 
       expect(mockUseQuery).toHaveBeenCalledWith({
-        queryKey: ['randomizer', 'history', 'user1', { limit: 8 }],
+        queryKey: randomizerQueryKeys.history('user1', { limit: 8, expand: false }),
         queryFn: expect.any(Function),
         enabled: true,
         staleTime: 30 * 1000,
@@ -99,7 +123,7 @@ describe('useSpinHistory', () => {
 
       expect(mockUseQuery).toHaveBeenCalledWith(
         expect.objectContaining({
-          queryKey: ['randomizer', 'history', 'user1', { limit: 8 }],
+          queryKey: randomizerQueryKeys.history('user1', { limit: 8, expand: false }),
         })
       );
     });
@@ -116,7 +140,24 @@ describe('useSpinHistory', () => {
 
       expect(mockUseQuery).toHaveBeenCalledWith(
         expect.objectContaining({
-          queryKey: ['randomizer', 'history', 'user1', { limit: 50 }],
+          queryKey: randomizerQueryKeys.history('user1', { limit: 50, expand: false }),
+        })
+      );
+    });
+
+    it('generates correct query key with project expansion', () => {
+      mockUseQuery.mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+      });
+
+      renderHook(() => useSpinHistory({ userId: 'user1', expandProject: true }));
+
+      expect(mockUseQuery).toHaveBeenCalledWith(
+        expect.objectContaining({
+          queryKey: randomizerQueryKeys.history('user1', { limit: 8, expand: true }),
         })
       );
     });
@@ -133,15 +174,37 @@ describe('useSpinHistory', () => {
 
       expect(mockUseQuery).toHaveBeenCalledWith(
         expect.objectContaining({
-          queryKey: ['randomizer', 'history', undefined, { limit: 8 }],
+          queryKey: randomizerQueryKeys.history('', { limit: 8, expand: false }),
         })
       );
     });
   });
 
   describe('Query Function', () => {
-    it('calls getSpinHistory with correct parameters', async () => {
-      mockGetSpinHistory.mockResolvedValue(mockSpinHistory);
+    it('calls getSpinHistoryEnhanced with correct parameters', async () => {
+      mockGetSpinHistoryEnhanced.mockResolvedValue(mockSpinHistory);
+      let queryFn: () => Promise<unknown>;
+
+      mockUseQuery.mockImplementation(config => {
+        queryFn = config.queryFn as typeof queryFn;
+        return {
+          data: undefined,
+          isLoading: false,
+          error: null,
+          refetch: vi.fn(),
+        };
+      });
+
+      renderHook(() => useSpinHistory({ userId: 'user1', limit: 10, expandProject: true }));
+
+      const result = await queryFn();
+
+      expect(mockGetSpinHistoryEnhanced).toHaveBeenCalledWith('user1', 10, true);
+      expect(result).toEqual(mockSpinHistory);
+    });
+
+    it('calls getSpinHistoryEnhanced with default expand parameter', async () => {
+      mockGetSpinHistoryEnhanced.mockResolvedValue(mockSpinHistory);
       let queryFn: () => Promise<unknown>;
 
       mockUseQuery.mockImplementation(config => {
@@ -158,7 +221,7 @@ describe('useSpinHistory', () => {
 
       const result = await queryFn();
 
-      expect(mockGetSpinHistory).toHaveBeenCalledWith('user1', 10);
+      expect(mockGetSpinHistoryEnhanced).toHaveBeenCalledWith('user1', 10, false);
       expect(result).toEqual(mockSpinHistory);
     });
 
@@ -179,13 +242,13 @@ describe('useSpinHistory', () => {
 
       const result = await queryFn();
 
-      expect(mockGetSpinHistory).not.toHaveBeenCalled();
+      expect(mockGetSpinHistoryEnhanced).not.toHaveBeenCalled();
       expect(result).toEqual([]);
     });
 
-    it('handles getSpinHistory errors', async () => {
+    it('handles getSpinHistoryEnhanced errors', async () => {
       const error = new Error('Database error');
-      mockGetSpinHistory.mockRejectedValue(error);
+      mockGetSpinHistoryEnhanced.mockRejectedValue(error);
       let queryFn: () => Promise<unknown>;
 
       mockUseQuery.mockImplementation(config => {
@@ -464,7 +527,7 @@ describe('useSpinHistory', () => {
 
       expect(mockUseQuery).toHaveBeenCalledWith(
         expect.objectContaining({
-          queryKey: ['randomizer', 'history', 'user1', { limit: 8 }],
+          queryKey: randomizerQueryKeys.history('user1', { limit: 8, expand: false }),
         })
       );
     });
@@ -520,7 +583,7 @@ describe('useSpinHistory', () => {
 
   describe('Integration with Service Layer', () => {
     it('passes correct parameters to service layer', async () => {
-      mockGetSpinHistory.mockResolvedValue(mockSpinHistory);
+      mockGetSpinHistoryEnhanced.mockResolvedValue(mockSpinHistory);
       let queryFn: () => Promise<unknown>;
 
       mockUseQuery.mockImplementation(config => {
@@ -537,7 +600,7 @@ describe('useSpinHistory', () => {
 
       await queryFn();
 
-      expect(mockGetSpinHistory).toHaveBeenCalledWith('test-user', 25);
+      expect(mockGetSpinHistoryEnhanced).toHaveBeenCalledWith('test-user', 25, false);
     });
 
     it('returns service layer data unchanged', async () => {
@@ -547,14 +610,19 @@ describe('useSpinHistory', () => {
           user: 'user1',
           project: 'proj1',
           project_title: 'Custom Project',
+          project_company: 'Custom Company',
+          project_artist: 'Custom Artist',
+          selected_count: 1,
           selected_projects: ['proj1'],
           spun_at: '2024-01-01T09:00:00Z',
           created: '2024-01-01T09:00:00Z',
           updated: '2024-01-01T09:00:00Z',
+          collectionId: 'randomizer_spins',
+          collectionName: 'randomizer_spins' as any,
         },
       ];
 
-      mockGetSpinHistory.mockResolvedValue(customSpinHistory);
+      mockGetSpinHistoryEnhanced.mockResolvedValue(customSpinHistory);
       let queryFn: () => Promise<unknown>;
 
       mockUseQuery.mockImplementation(config => {

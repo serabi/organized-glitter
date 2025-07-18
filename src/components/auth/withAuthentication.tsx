@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import DashboardLoadingState from '@/components/dashboard/DashboardLoadingState';
 import { PocketBaseUser } from '@/contexts/AuthContext.types';
+import { createLogger } from '@/utils/secureLogger';
 
 const withAuthentication = <P extends object>(
   WrappedComponent: ComponentType<P & { user: PocketBaseUser | null }> // Ensure WrappedComponent expects user prop
@@ -13,6 +14,7 @@ const withAuthentication = <P extends object>(
     const { user, isLoading: authLoading } = useAuth();
     const navigate = useNavigate();
     const { toast } = useToast();
+    const logger = createLogger('withAuthentication');
 
     logger.log('🔐 withAuthentication: Auth state:', {
       hasUser: !!user,

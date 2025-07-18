@@ -126,8 +126,6 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
   const [isSpinning, setIsSpinning] = useState(false);
   /** Current rotation angle in degrees */
   const [rotation, setRotation] = useState(0);
-  /** The last selected project result */
-  const [selectedResult, setSelectedResult] = useState<Project | null>(null);
   /** Current window size for responsive calculations */
   const [windowSize, setWindowSize] = useState({ width: 1024, height: 768 });
   /** Reference to the wheel DOM element for focus management */
@@ -195,7 +193,6 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
     setTimeout(() => {
       setIsSpinning(false);
       if (selectedProject) {
-        setSelectedResult(selectedProject);
         onSpinComplete(selectedProject);
         logger.info('Wheel spin completed', {
           selectedProjectId: selectedProject.id,

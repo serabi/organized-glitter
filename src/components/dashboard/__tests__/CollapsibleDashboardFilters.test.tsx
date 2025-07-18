@@ -21,9 +21,7 @@ vi.mock('@/contexts/FilterProvider', () => ({
 
 // Mock DashboardFilters component
 vi.mock('../DashboardFilters', () => ({
-  default: vi.fn(() => (
-    <div data-testid="dashboard-filters">Dashboard Filters</div>
-  )),
+  default: vi.fn(() => <div data-testid="dashboard-filters">Dashboard Filters</div>),
 }));
 
 // Mock localStorage
@@ -253,7 +251,7 @@ describe('CollapsibleDashboardFilters', () => {
 
       // Unmount and remount with new mock value
       unmount();
-      
+
       mockGetActiveFilterCount.mockReturnValue(5);
       render(<CollapsibleDashboardFilters />);
 

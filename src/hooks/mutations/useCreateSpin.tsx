@@ -12,6 +12,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { CreateSpinParams, createSpin } from '@/services/pocketbase/randomizerService';
+import { randomizerQueryKeys } from '@/hooks/queries/useSpinHistory';
 import { useToast } from '@/hooks/use-toast';
 import { createLogger } from '@/utils/secureLogger';
 
@@ -94,7 +95,16 @@ export const useCreateSpin = () => {
 
       // Invalidate and refetch spin history to include the new record
       queryClient.invalidateQueries({
-        queryKey: ['randomizer', 'history', variables.user],
+        queryKey: randomizerQueryKeys.all,
+      });
+
+      // Also invalidate the specific user's history and count
+      queryClient.invalidateQueries({
+        queryKey: randomizerQueryKeys.history(variables.user),
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: randomizerQueryKeys.count(variables.user),
       });
 
       toast({

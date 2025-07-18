@@ -2,11 +2,9 @@ import React, { Suspense, lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { RootRoute } from '@/components/auth/RootRoute';
-import { FilterProvider } from '@/contexts/FilterProvider';
 import { PageLoading } from '@/components/ui/page-loading';
 import { usePostHogPageTracking } from '@/hooks/usePostHogPageTracking';
 import { useNavigationMonitoring } from '@/hooks/useNavigationMonitoring';
-import { useAuth } from '@/hooks/useAuth';
 import { createLogger } from '@/utils/secureLogger';
 import RouteErrorBoundary from '@/components/error/RouteErrorBoundary';
 

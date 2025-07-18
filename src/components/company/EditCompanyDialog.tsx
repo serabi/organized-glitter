@@ -78,8 +78,10 @@ const EditCompanyDialog = ({ company, onCompanyUpdated }: EditCompanyDialogProps
     try {
       await updateCompanyMutation.mutateAsync({
         id: company.id,
-        name: companyName,
-        website_url: companyUrl || undefined,
+        data: {
+          name: companyName,
+          website_url: companyUrl || undefined,
+        },
       });
 
       setIsDialogOpen(false);

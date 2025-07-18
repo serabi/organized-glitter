@@ -11,7 +11,6 @@ import { queryKeys } from './queryKeys';
 import { createLogger } from '@/utils/secureLogger';
 import { StatusBreakdown } from '@/types/dashboard';
 import { Project } from '@/types/project';
-import { projectsService } from '@/services/pocketbase/projects.service';
 
 const logger = createLogger('useOptimizedStatusCounts');
 

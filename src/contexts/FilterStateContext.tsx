@@ -10,7 +10,6 @@ import React, {
   useReducer,
   useState,
   useEffect,
-  useCallback,
   useRef,
   useMemo,
   ReactNode,
@@ -18,7 +17,7 @@ import React, {
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMetadata } from '@/contexts/MetadataContext';
 import { createLogger, performanceLogger } from '@/utils/secureLogger';
-import { ProjectFilterStatus, Tag } from '@/types/project';
+import { ProjectFilterStatus } from '@/types/project';
 import { DashboardValidSortField } from '@/features/dashboard/dashboard.constants';
 import { DashboardFilterContext } from '@/hooks/mutations/useSaveNavigationContext';
 

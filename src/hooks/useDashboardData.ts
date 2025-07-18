@@ -6,7 +6,7 @@
  * @updated 2025-07-10
  */
 
-import { useMemo, useEffect, useRef, useCallback } from 'react';
+import { useMemo, useEffect } from 'react';
 import { useProjects, ServerFilters } from '@/hooks/queries/useProjects';
 import { FilterState } from '@/contexts/FilterProvider';
 import { useMetadata } from '@/contexts/MetadataContext';

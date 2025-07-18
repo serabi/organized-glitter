@@ -217,7 +217,7 @@ export function fromDbProject(
   // Normalize the input to a single DbProject object
   const projectData = normalizeDbProject(dbProject);
 
-  logger.dbConversion('Converting DB project to app format', {
+  logger.debug('Converting DB project to app format', {
     projectId: projectData.id,
     title: projectData.title,
     fieldsAvailable: Object.keys(projectData),
@@ -302,7 +302,7 @@ export function fromDbProject(
           } as Tag;
         });
 
-      logger.dbConversion('Transformed tag data', {
+      logger.debug('Transformed tag data', {
         projectId: projectData.id,
         tagCount: tags.length,
         tagNames: tags.map(tag => tag.name),
@@ -339,7 +339,7 @@ export function fromDbProject(
     updatedAt: projectData.updated_at || new Date().toISOString(),
   };
 
-  logger.dbConversion('Project conversion completed', {
+  logger.debug('Project conversion completed', {
     projectId: project.id,
     title: project.title,
     status: project.status,

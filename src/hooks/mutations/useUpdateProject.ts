@@ -6,9 +6,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { createLogger } from '@/utils/secureLogger';
 import { ClientResponseError } from 'pocketbase';
-import { updateProjectInCache } from '@/utils/cacheUtils';
-import { useMetadata } from '@/contexts/MetadataContext';
-import type { Project } from '@/types/project';
 import { getCurrentDateString } from '@/utils/dateHelpers';
 import { useUserTimezone } from '@/hooks/useUserTimezone';
 
