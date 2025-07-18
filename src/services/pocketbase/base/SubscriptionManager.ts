@@ -206,10 +206,19 @@ export class PocketBaseSubscriptionManager implements SubscriptionManager {
   }
 
   /**
-   * Generate unique subscription ID
+   * Generate deterministic subscription ID based on collection and filter
    */
   private generateSubscriptionId(collection: string, filter?: string): string {
-    return `${collection}:${filter || '*'}:${Date.now()}`;
+    const filterKey = filter || '*';
+    // Create a simple hash for deterministic ID generation
+    const hashInput = `${collection}:${filterKey}`;
+    let hash = 0;
+    for (let i = 0; i < hashInput.length; i++) {
+      const char = hashInput.charCodeAt(i);
+      hash = (hash << 5) - hash + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return `${collection}:${filterKey}:${Math.abs(hash)}`;
   }
 
   /**

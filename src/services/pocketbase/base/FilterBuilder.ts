@@ -167,13 +167,13 @@ export class FilterBuilder {
     // Handle arrays for "any" operators
     if (Array.isArray(value)) {
       if (operator.startsWith('?')) {
-        const arrayValue = value.map(v => `'${this.escapeValue(v)}'`).join(', ');
+        const arrayValue = value.map(v => `'${FilterBuilder.escapeValue(v)}'`).join(', ');
         return `${field} ${operator} (${arrayValue})`;
       }
     }
 
     // Handle single values
-    const escapedValue = this.escapeValue(value);
+    const escapedValue = FilterBuilder.escapeValue(value);
     return `${field} ${operator} '${escapedValue}'`;
   }
 

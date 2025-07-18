@@ -13,6 +13,8 @@ export const useDashboardViewState = () => {
     useDashboardPersistence();
 
   // View and filter state
+  // Note: activeStatus and searchTerm are intentionally non-persistent (reset on page refresh)
+  // This provides better UX where users start with clean status/search state each session
   const [activeStatus, setActiveStatus] = useState<ProjectFilterStatus>('all');
   const [viewType, setViewType] = useState<ViewType>(getInitialViewType());
   const [searchTerm, setSearchTerm] = useState('');
@@ -63,7 +65,8 @@ export const useDashboardViewState = () => {
 
   const getActiveFilterCount = () => {
     let count = 0;
-    if (searchTerm) count++;
+    // Note: searchTerm is excluded as it's non-persistent (session-only)
+    // activeStatus is excluded as it's handled separately by tab UI
     if (selectedCompany !== 'all') count++;
     if (selectedArtist !== 'all') count++;
     if (selectedDrillShape !== 'all') count++;

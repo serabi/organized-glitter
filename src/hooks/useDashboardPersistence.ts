@@ -1,5 +1,16 @@
 /**
  * Dashboard filters localStorage persistence hook
+ *
+ * Manages persistence of dashboard filter state across sessions.
+ *
+ * PERSISTENT FILTERS (saved to localStorage):
+ * - selectedCompany, selectedArtist, selectedDrillShape, selectedTag, selectedYearFinished
+ * - includeMiniKits, viewType
+ *
+ * NON-PERSISTENT FILTERS (reset on page refresh):
+ * - activeStatus (tab selection) - better UX to start fresh each session
+ * - searchTerm - session-only for privacy and fresh search experience
+ *
  * @author @serabi
  * @created 2025-07-16
  */

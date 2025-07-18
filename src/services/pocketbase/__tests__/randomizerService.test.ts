@@ -168,7 +168,8 @@ describe('randomizerService', () => {
       expect(mockCollection.getList).toHaveBeenCalledWith(1, 10, {
         filter: 'user = "user1"',
         sort: '-spun_at',
-        fields: 'id,user,project,project_title,project_company,project_artist,selected_count,spun_at,selected_projects,created,updated',
+        fields:
+          'id,user,project,project_title,project_company,project_artist,selected_count,spun_at,selected_projects,created,updated',
       });
       expect(result).toEqual(mockSpinHistory);
     });
@@ -187,7 +188,8 @@ describe('randomizerService', () => {
       expect(mockCollection.getList).toHaveBeenCalledWith(1, 8, {
         filter: 'user = "user1"',
         sort: '-spun_at',
-        fields: 'id,user,project,project_title,project_company,project_artist,selected_count,spun_at,selected_projects,created,updated',
+        fields:
+          'id,user,project,project_title,project_company,project_artist,selected_count,spun_at,selected_projects,created,updated',
       });
     });
 
@@ -214,7 +216,8 @@ describe('randomizerService', () => {
       expect(mockCollection.getList).toHaveBeenCalledWith(1, 8, {
         filter: 'user = "user1"',
         sort: '-spun_at',
-        fields: 'id,user,project,project_title,project_company,project_artist,selected_count,spun_at,selected_projects,created,updated',
+        fields:
+          'id,user,project,project_title,project_company,project_artist,selected_count,spun_at,selected_projects,created,updated',
       });
       expect(result).toEqual([]);
     });
@@ -227,7 +230,8 @@ describe('randomizerService', () => {
       expect(mockCollection.getList).toHaveBeenCalledWith(1, 8, {
         filter: 'user = "user"with"quotes"',
         sort: '-spun_at',
-        fields: 'id,user,project,project_title,project_company,project_artist,selected_count,spun_at,selected_projects,created,updated',
+        fields:
+          'id,user,project,project_title,project_company,project_artist,selected_count,spun_at,selected_projects,created,updated',
       });
     });
 
@@ -239,7 +243,8 @@ describe('randomizerService', () => {
       expect(mockCollection.getList).toHaveBeenCalledWith(1, 1000, {
         filter: 'user = "user1"',
         sort: '-spun_at',
-        fields: 'id,user,project,project_title,project_company,project_artist,selected_count,spun_at,selected_projects,created,updated',
+        fields:
+          'id,user,project,project_title,project_company,project_artist,selected_count,spun_at,selected_projects,created,updated',
       });
     });
   });
@@ -253,7 +258,8 @@ describe('randomizerService', () => {
       expect(mockPb.collection).toHaveBeenCalledWith('randomizer_spins');
       expect(mockCollection.getFirstListItem).toHaveBeenCalledWith('user = "user1"', {
         sort: '-spun_at',
-        fields: 'id,user,project,project_title,project_company,project_artist,selected_count,spun_at,selected_projects,created,updated',
+        fields:
+          'id,user,project,project_title,project_company,project_artist,selected_count,spun_at,selected_projects,created,updated',
       });
       expect(result).toEqual(mockSpinRecord);
     });
