@@ -23,7 +23,7 @@
  * @version 3.0.0 - Database-only implementation (simplified)
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
@@ -36,11 +36,9 @@ import { StatsProvider } from '@/contexts/StatsContext';
 import { FilterProvider } from '@/contexts/FilterProvider';
 import { UIProvider } from '@/contexts/UIContext';
 import { RecentlyEditedProvider } from '@/contexts/RecentlyEditedContext';
-import { NavigationContext } from '@/hooks/useNavigateToProject';
 import { DashboardFilterContext } from '@/hooks/mutations/useSaveNavigationContext';
 import { createLogger } from '@/utils/secureLogger';
 import { useToast } from '@/hooks/use-toast';
-import { useDashboardData } from '@/hooks/useDashboardData';
 
 // RecentlyEdited context moved to DashboardFiltersContext for better architecture
 

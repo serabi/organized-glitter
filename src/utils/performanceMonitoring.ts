@@ -24,7 +24,7 @@ export const initializePerformanceMonitoring = (): void => {
         });
       });
       observer.observe({ entryTypes: ['longtask'] });
-    } catch (e) {
+    } catch {
       // PerformanceObserver might not be supported in some browsers
       secureLogger.debug('PerformanceObserver not supported or failed to initialize');
     }

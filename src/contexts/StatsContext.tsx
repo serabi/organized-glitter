@@ -55,7 +55,7 @@ import React, {
 } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { createLogger } from '@/utils/secureLogger';
-import { DashboardStats, StatusBreakdown } from '@/types/dashboard';
+import { DashboardStats } from '@/types/dashboard';
 import { queryKeys } from '@/hooks/queries/queryKeys';
 import { safeInvalidateQueries } from '@/utils/queryInvalidationGuard';
 import { useAuth } from '@/hooks/useAuth';
@@ -245,12 +245,17 @@ export const StatsProvider: React.FC<StatsProviderProps> = ({ children }) => {
   // Determine if we should show loading state
   const shouldShowLoading = !isInitialized || isLoadingProjects;
 
-  // Simplified counts calculation using statusCounts directly
+  // Create stable statusCounts signature to prevent unnecessary recalculations
+  const statusCountsSignature = useMemo(() => {
+    if (!statusCounts) return null;
+    return `${statusCounts.wishlist}-${statusCounts.purchased}-${statusCounts.stash}-${statusCounts.progress}-${statusCounts.completed}-${statusCounts.destashed}-${statusCounts.archived}`;
+  }, [statusCounts]);
+
+  // Simplified counts calculation using statusCounts directly with optimized dependencies
   const countsForTabs = useMemo((): CountsForTabsType | BadgeLoadingState => {
     logger.debug('StatsContext countsForTabs calculation:', {
       isInitialized,
       isLoadingProjects,
-      shouldShowLoading,
       hasStatusCounts: !!statusCounts,
       isError: !!errorProjects,
     });
@@ -302,8 +307,7 @@ export const StatsProvider: React.FC<StatsProviderProps> = ({ children }) => {
   }, [
     isInitialized,
     isLoadingProjects,
-    shouldShowLoading,
-    statusCounts,
+    statusCountsSignature, // Use signature instead of statusCounts object
     totalItems,
     errorProjects,
     isNetworkSlow,

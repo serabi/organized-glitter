@@ -109,7 +109,6 @@ export const useRealtimeProjectSync = () => {
         scheduleInvalidation(queryKeys.projects.detail(record.id), `${source}:detail`);
 
         // For any change, lists and high-level stats are likely affected
-        scheduleInvalidation(queryKeys.projects.advanced(user.id), `${source}:advanced-list`);
         scheduleInvalidation(queryKeys.projects.lists(), `${source}:project-lists`);
 
         // Critical: Invalidate stats overview, now debounced

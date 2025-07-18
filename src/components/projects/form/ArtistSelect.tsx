@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { useCreateArtist } from '@/hooks/mutations/useCreateArtist';
+import { useCreateArtist } from '@/hooks/mutations/useArtistMutations';
 import { useToast } from '@/hooks/use-toast';
 import { secureLogger } from '@/utils/secureLogger';
 

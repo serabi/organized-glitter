@@ -27,7 +27,7 @@ import { createLogger } from '@/utils/secureLogger';
 import EditCompanyDialog from './EditCompanyDialog';
 import { Link } from 'react-router-dom';
 import { CompaniesResponse } from '@/types/pocketbase.types';
-import { useDeleteCompany } from '@/hooks/mutations/useDeleteCompany';
+import { useDeleteCompany } from '@/hooks/mutations/useCompanyMutations';
 import {
   AlertDialog,
   AlertDialogAction,

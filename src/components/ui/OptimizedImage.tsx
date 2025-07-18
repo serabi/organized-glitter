@@ -164,16 +164,6 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
     return singleImageQuery.imageUrl;
   };
 
-  // Determine loading state
-  const isLoading = progressive
-    ? progressiveImageQuery.isPlaceholderLoading
-    : singleImageQuery.isLoading;
-
-  // Determine error state
-  const error = progressive
-    ? null // Progressive loading handles errors gracefully
-    : singleImageQuery.error;
-
   // Handle progressive loading upgrade with smart quality selection
   const handleProgressiveUpgrade = React.useCallback(() => {
     if (progressive && progressiveImageQuery.placeholderUrl) {

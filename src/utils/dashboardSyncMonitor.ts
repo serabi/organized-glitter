@@ -209,7 +209,7 @@ export const dashboardSyncMonitor = new DashboardSyncMonitor();
 // Development-only debugging helpers
 if (import.meta.env.DEV) {
   // Add to window for debugging
-  (window as Record<string, unknown>).__dashboardSyncMonitor = dashboardSyncMonitor;
+  (window as unknown as Record<string, unknown>).__dashboardSyncMonitor = dashboardSyncMonitor;
 
   // Auto-diagnose every 30 seconds in development
   const diagnosisInterval = setInterval(() => {

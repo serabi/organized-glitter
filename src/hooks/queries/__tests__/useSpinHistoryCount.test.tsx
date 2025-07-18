@@ -2,7 +2,8 @@
 import { renderHook } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { useSpinHistoryCount } from '../useSpinHistoryCount';
-import { getSpinHistoryCount } from '@/services/pocketbase/randomizerService';
+import { getSpinHistoryCountEnhanced } from '@/services/pocketbase/randomizerService';
+import { randomizerQueryKeys } from '@/hooks/queries/useSpinHistory';
 
 // Mock dependencies
 vi.mock('@/services/pocketbase/randomizerService');
@@ -12,7 +13,7 @@ vi.mock('@/utils/secureLogger', () => ({
   }),
 }));
 
-const mockGetSpinHistoryCount = vi.mocked(getSpinHistoryCount);
+const mockGetSpinHistoryCountEnhanced = vi.mocked(getSpinHistoryCountEnhanced);
 
 // Mock React Query
 const mockUseQuery = vi.fn();
@@ -36,7 +37,7 @@ describe('useSpinHistoryCount', () => {
     renderHook(() => useSpinHistoryCount({ userId: 'user1' }));
 
     expect(mockUseQuery).toHaveBeenCalledWith({
-      queryKey: ['randomizer', 'history', 'count', 'user1'],
+      queryKey: randomizerQueryKeys.count('user1'),
       queryFn: expect.any(Function),
       enabled: true,
       staleTime: 30000,
@@ -77,7 +78,7 @@ describe('useSpinHistoryCount', () => {
 
   describe('queryFn', () => {
     it('calls getSpinHistoryCount with correct userId', async () => {
-      mockGetSpinHistoryCount.mockResolvedValue(15);
+      mockGetSpinHistoryCountEnhanced.mockResolvedValue(15);
 
       renderHook(() => useSpinHistoryCount({ userId: 'test-user' }));
 
@@ -86,7 +87,7 @@ describe('useSpinHistoryCount', () => {
 
       const result = await queryFn();
 
-      expect(mockGetSpinHistoryCount).toHaveBeenCalledWith('test-user');
+      expect(mockGetSpinHistoryCountEnhanced).toHaveBeenCalledWith('test-user');
       expect(result).toBe(15);
     });
 
@@ -98,7 +99,7 @@ describe('useSpinHistoryCount', () => {
 
       const result = await queryFn();
 
-      expect(mockGetSpinHistoryCount).not.toHaveBeenCalled();
+      expect(mockGetSpinHistoryCountEnhanced).not.toHaveBeenCalled();
       expect(result).toBe(0);
     });
   });

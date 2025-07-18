@@ -15,7 +15,6 @@ import { InlineTagManager } from '@/components/tags/InlineTagManager';
 import { Tag } from '@/types/tag';
 import { ProjectImageSection } from '@/components/projects/form-sections/ProjectImageSection';
 import { useImageUpload } from '@/hooks/useImageUpload';
-import { useProjectUpdateUnified } from '@/hooks/mutations/useProjectUpdateUnified';
 import ArtistSelect from '@/components/projects/form/ArtistSelect';
 import CompanySelect from '@/components/projects/form/CompanySelect';
 
@@ -53,9 +52,6 @@ export const ProjectMainTabSimple = ({
 
   // Initialize image upload hook with proper parameters
   const imageUploadHook = useImageUpload('project-images', 'project-image');
-
-  // Initialize unified project update mutation
-  const updateProjectMutation = useProjectUpdateUnified();
 
   // Handle image change events with unified save
   const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {

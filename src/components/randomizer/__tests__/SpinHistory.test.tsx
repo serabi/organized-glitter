@@ -4,8 +4,7 @@ import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import { UseQueryResult } from '@tanstack/react-query';
 import { SpinHistory } from '../SpinHistory';
-import { useSpinHistory } from '@/hooks/queries/useSpinHistory';
-import { SpinRecord } from '@/services/pocketbase/randomizerService';
+import { useSpinHistory, type EnhancedSpinRecord } from '@/hooks/queries/useSpinHistory';
 
 // Mock the hooks
 vi.mock('@/hooks/queries/useSpinHistory');
@@ -28,48 +27,68 @@ const renderSpinHistory = (props: { userId: string; onClearHistory?: () => void 
   );
 };
 
-const mockSpinHistory: SpinRecord[] = [
+const mockSpinHistory: EnhancedSpinRecord[] = [
   {
     id: '1',
     user: 'user1',
     project: 'proj1',
     project_title: 'Test Project 1',
+    project_company: 'Test Company',
+    project_artist: 'Test Artist',
+    selected_count: 3,
     selected_projects: ['proj1', 'proj2', 'proj3'],
     spun_at: '2024-01-01T12:00:00Z',
     created: '2024-01-01T12:00:00Z',
     updated: '2024-01-01T12:00:00Z',
+    collectionId: 'randomizer_spins',
+    collectionName: 'randomizer_spins' as any,
   },
   {
     id: '2',
     user: 'user1',
     project: 'proj2',
     project_title: 'Test Project 2',
+    project_company: 'Test Company 2',
+    project_artist: 'Test Artist 2',
+    selected_count: 2,
     selected_projects: ['proj1', 'proj2'],
     spun_at: '2024-01-01T11:00:00Z',
     created: '2024-01-01T11:00:00Z',
     updated: '2024-01-01T11:00:00Z',
+    collectionId: 'randomizer_spins',
+    collectionName: 'randomizer_spins' as any,
   },
   {
     id: '3',
     user: 'user1',
     project: 'null', // Deleted project represented as string 'null'
     project_title: 'Deleted Project',
+    project_company: 'Deleted Company',
+    project_artist: 'Deleted Artist',
+    selected_count: 3,
     selected_projects: ['proj1', 'proj2', 'proj3'],
     spun_at: '2024-01-01T10:00:00Z',
     created: '2024-01-01T10:00:00Z',
     updated: '2024-01-01T10:00:00Z',
+    collectionId: 'randomizer_spins',
+    collectionName: 'randomizer_spins' as any,
   },
 ];
 
-const mockLongHistory: SpinRecord[] = Array.from({ length: 12 }, (_, i) => ({
+const mockLongHistory: EnhancedSpinRecord[] = Array.from({ length: 12 }, (_, i) => ({
   id: `${i + 1}`,
   user: 'user1',
   project: `proj${i + 1}`,
   project_title: `Project ${i + 1}`,
+  project_company: 'Test Company',
+  project_artist: 'Test Artist',
+  selected_count: 2,
   selected_projects: ['proj1', 'proj2'],
   spun_at: `2024-01-01T${String(12 - i).padStart(2, '0')}:00:00Z`,
   created: `2024-01-01T${String(12 - i).padStart(2, '0')}:00:00Z`,
   updated: `2024-01-01T${String(12 - i).padStart(2, '0')}:00:00Z`,
+  collectionId: 'randomizer_spins',
+  collectionName: 'randomizer_spins' as any,
 }));
 
 describe('SpinHistory', () => {

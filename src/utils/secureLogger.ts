@@ -225,12 +225,134 @@ const performanceLogger = (() => {
   return { start, end };
 })();
 
+/**
+ * Batch API performance logger specialized for PocketBase operations
+ * Tracks before/after performance comparisons for optimization work
+ */
+const batchApiLogger = (() => {
+  const operations = new Map<
+    string,
+    { startTime: number; queryCount: number; description: string }
+  >();
+
+  const startBatchOperation = (id: string, queryCount: number, description: string): string => {
+    if (!isDevelopment) return id;
+    operations.set(id, {
+      startTime: performance.now(),
+      queryCount,
+      description,
+    });
+    console.log(
+      `%cBATCH API%c %c${description}%c - Starting ${queryCount} queries`,
+      'background-color: #2196f3; color: white; padding: 2px 4px; border-radius: 3px;',
+      '',
+      'color: #2196f3; font-weight: bold;',
+      'color: inherit;'
+    );
+    return id;
+  };
+
+  const endBatchOperation = (
+    id: string,
+    resultCount?: number,
+    metadata?: Record<string, unknown>
+  ) => {
+    if (!isDevelopment || !operations.has(id)) return;
+
+    const operation = operations.get(id)!;
+    const duration = performance.now() - operation.startTime;
+    operations.delete(id);
+
+    const color = duration < 500 ? '#4caf50' : duration < 2000 ? '#ff9800' : '#f44336';
+    const efficiency =
+      operation.queryCount > 1
+        ? `(${(duration / operation.queryCount).toFixed(1)}ms per query)`
+        : '';
+    const results = resultCount !== undefined ? ` → ${resultCount} results` : '';
+
+    console.log(
+      `%cBATCH API%c %c${operation.description}%c - ${duration.toFixed(2)}ms ${efficiency}${results}`,
+      'background-color: #2196f3; color: white; padding: 2px 4px; border-radius: 3px;',
+      '',
+      `color: ${color}; font-weight: bold;`,
+      'color: inherit;',
+      metadata || ''
+    );
+  };
+
+  const logOptimization = (before: number, after: number, description: string) => {
+    if (!isDevelopment) return;
+
+    const improvement = ((before - after) / before) * 100;
+    const color = improvement > 50 ? '#4caf50' : improvement > 25 ? '#ff9800' : '#f44336';
+
+    console.log(
+      `%cOPTIMIZATION%c %c${description}%c - ${before.toFixed(0)}ms → ${after.toFixed(0)}ms (${improvement.toFixed(1)}% improvement)`,
+      'background-color: #9c27b0; color: white; padding: 2px 4px; border-radius: 3px;',
+      '',
+      `color: ${color}; font-weight: bold;`,
+      'color: inherit;'
+    );
+  };
+
+  return { startBatchOperation, endBatchOperation, logOptimization };
+})();
+
+/**
+ * Dashboard performance logger for tracking specific performance issues
+ * Monitors re-renders, query durations, and initialization timing
+ */
+const dashboardLogger = (() => {
+  const createDashboardLogger = (category: string) => {
+    const prefix = `[DASHBOARD-${category.toUpperCase()}]`;
+    return createLogger(prefix);
+  };
+
+  const logQueryDuration = (
+    queryType: string,
+    duration: number,
+    metadata?: Record<string, unknown>
+  ) => {
+    if (!isDevelopment) return;
+
+    const color = duration < 100 ? '#4caf50' : duration < 1000 ? '#ff9800' : '#f44336';
+    const threshold = queryType.includes('status') ? 1000 : 500; // Status queries expected to be slower
+
+    if (duration > threshold) {
+      console.warn(
+        `%cSLOW QUERY%c %c${queryType}%c - ${duration.toFixed(2)}ms (threshold: ${threshold}ms)`,
+        'background-color: #ff5722; color: white; padding: 2px 4px; border-radius: 3px;',
+        '',
+        `color: ${color}; font-weight: bold;`,
+        'color: inherit;',
+        metadata || ''
+      );
+    }
+  };
+
+  const logRenderCount = (componentName: string, renderCount: number, isExcessive: boolean) => {
+    if (!isDevelopment || !isExcessive) return;
+
+    console.warn(
+      `%cREPEAT RENDER%c %c${componentName}%c - ${renderCount} renders`,
+      'background-color: #ff9800; color: white; padding: 2px 4px; border-radius: 3px;',
+      '',
+      'color: #ff9800; font-weight: bold;',
+      'color: inherit;'
+    );
+  };
+
+  return { createDashboardLogger, logQueryDuration, logRenderCount };
+})();
+
 export {
   createLogger,
   secureLogger,
   createSecureEnvSummary,
   redactSensitiveData,
   performanceLogger,
+  batchApiLogger,
+  dashboardLogger,
 };
 
 // Example Usage:

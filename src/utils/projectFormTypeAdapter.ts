@@ -14,8 +14,11 @@ export function convertSchemaToFormValues(data: ProjectFormSchemaType): ProjectF
     return undefined;
   };
 
-  return {
-    ...data,
+  const result: ProjectFormValues = {
+    // Copy all common fields
+    title: data.title,
+    userId: data.userId,
+    status: data.status,
     // Convert dates safely to strings for form compatibility
     datePurchased: dateToString(data.datePurchased),
     dateReceived: dateToString(data.dateReceived),
@@ -40,10 +43,15 @@ export function convertSchemaToFormValues(data: ProjectFormSchemaType): ProjectF
       typeof data._imageReplacement === 'string'
         ? data._imageReplacement === 'true'
         : !!data._imageReplacement,
+    // Handle optional fields specific to ProjectFormValues
+    id: data.id,
+    imageFile: data.imageFile || undefined,
     // tagNames is not available on ProjectFormSchemaType, it has tagIds.
     // ProjectFormValues has an optional tagNames, so it will be undefined here.
-    // tagNames: data.tagNames || undefined, // This line causes the error
+    tagNames: undefined,
   };
+
+  return result;
 }
 
 /**

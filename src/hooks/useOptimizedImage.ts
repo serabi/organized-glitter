@@ -31,8 +31,6 @@ export const useOptimizedImage = ({
   context = 'card',
   enabled = true,
 }: UseOptimizedImageParams): UseOptimizedImageResult => {
-  const queryClient = useQueryClient();
-
   // Generate query key for image caching
   const queryKey = ['optimized-image', record?.id, filename, size || context];
 

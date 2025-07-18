@@ -44,10 +44,7 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge, type BadgeProps } from '@/components/ui/badge';
-import ResponsiveTabText, {
-  getStatusText,
-  useWindowDimensions,
-} from '@/components/ui/responsive-tab-text';
+import ResponsiveTabText, { useWindowDimensions } from '@/components/ui/responsive-tab-text';
 import { ProjectFilterStatus } from '@/types/project';
 import { useStats, CountsForTabsType } from '@/contexts/StatsContext';
 import { useStatusFilter } from '@/contexts/FilterProvider';
@@ -133,7 +130,7 @@ const isValidProjectFilterStatus = (value: string): value is ProjectFilterStatus
 
 const StatusTabsComponent = () => {
   // Use focused contexts instead of monolithic DashboardFiltersContext
-  const { getCountsForTabs, getBadgeContent, isError, isLoading } = useStats();
+  const { getCountsForTabs, getBadgeContent } = useStats();
   const { activeStatus, updateStatus } = useStatusFilter();
 
   // Fallback counts object with all required properties
@@ -171,7 +168,6 @@ const StatusTabsComponent = () => {
 
   // Responsive layout logic
   const isMobile = width < 768;
-  const isSmallMobile = width < 375;
 
   // Map status to badge variant for color coding
   const getBadgeVariant = (status: string): BadgeProps['variant'] => {

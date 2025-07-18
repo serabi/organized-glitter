@@ -148,7 +148,7 @@ export function createImageCanvas(file: File): Promise<HTMLCanvasElement> {
         ctx.drawImage(img, 0, 0);
         cleanup();
         resolve(canvas);
-      } catch (error) {
+      } catch (_error) {
         cleanup();
         reject(new Error('Failed to draw image on canvas'));
       }
@@ -162,7 +162,7 @@ export function createImageCanvas(file: File): Promise<HTMLCanvasElement> {
     try {
       objectUrl = URL.createObjectURL(file);
       img.src = objectUrl;
-    } catch (error) {
+    } catch (_error) {
       reject(new Error('Failed to create object URL from file'));
     }
   });
@@ -208,7 +208,7 @@ export function dataURLtoFile(dataurl: string, filename: string): File {
       type: mime,
       lastModified: Date.now(),
     });
-  } catch (error) {
+  } catch (_error) {
     throw new Error('Failed to decode base64 data');
   }
 }
@@ -242,7 +242,7 @@ export function canvasToBlob(
         type,
         quality
       );
-    } catch (error) {
+    } catch (_error) {
       reject(new Error('Canvas toBlob operation failed'));
     }
   });
@@ -316,7 +316,7 @@ export function createCroppedImage(
         // Convert to data URL
         const dataUrl = canvas.toDataURL('image/jpeg', quality);
         resolve(dataUrl);
-      } catch (error) {
+      } catch (_error) {
         reject(new Error('Failed to process image crop'));
       }
     };
@@ -349,7 +349,7 @@ export function createFilePreviewUrl(file: File): string {
 
   try {
     return URL.createObjectURL(file);
-  } catch (error) {
+  } catch (_error) {
     throw new Error('Failed to create preview URL');
   }
 }

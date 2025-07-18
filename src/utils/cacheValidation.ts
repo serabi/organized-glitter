@@ -24,7 +24,7 @@ export function isValidPocketBaseId(id: string): boolean {
 /**
  * Validates if a query key contains valid record IDs
  */
-export function validateQueryKey(queryKey: unknown[]): boolean {
+export function validateQueryKey(queryKey: readonly unknown[]): boolean {
   for (const key of queryKey) {
     // Check any string that could be a PocketBase ID (16 chars or looks like an ID)
     if (typeof key === 'string') {

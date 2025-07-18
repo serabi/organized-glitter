@@ -15,7 +15,6 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { SpinRecord } from '@/services/pocketbase/randomizerService';
 import { ExternalLink, History, Trash2, ChevronDown } from 'lucide-react';
 import { useSpinHistory } from '@/hooks/queries/useSpinHistory';
 import { createLogger } from '@/utils/secureLogger';

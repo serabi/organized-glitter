@@ -18,7 +18,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Plus, Loader2 } from 'lucide-react';
-import { useCreateCompany } from '@/hooks/mutations/useCreateCompany';
+import { useCreateCompany } from '@/hooks/mutations/useCompanyMutations';
 import { secureLogger } from '@/utils/secureLogger';
 import FormField from './FormField';
 

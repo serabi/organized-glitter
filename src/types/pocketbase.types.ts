@@ -192,7 +192,10 @@ export type RandomizerSpinsRecord<Tselected_projects = unknown> = {
 	created?: IsoDateString
 	id: string
 	project: RecordIdString
+	project_artist?: string
+	project_company?: string
 	project_title: string
+	selected_count: number
 	selected_projects: null | Tselected_projects
 	spun_at: IsoDateString
 	updated?: IsoDateString

@@ -85,12 +85,6 @@ vi.mock('@/pages/Dashboard', () => ({
 vi.mock('@/pages/Profile', () => ({
   default: () => <div data-testid="profile">Profile</div>,
 }));
-vi.mock('@/pages/AdvancedView', () => ({
-  default: () => <div data-testid="advanced-view">Advanced View</div>,
-}));
-vi.mock('@/pages/AdvancedEdit', () => ({
-  default: () => <div data-testid="advanced-edit">Advanced Edit</div>,
-}));
 vi.mock('@/pages/NewProject', () => ({
   default: () => <div data-testid="new-project">New Project</div>,
 }));

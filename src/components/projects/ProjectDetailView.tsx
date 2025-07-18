@@ -21,7 +21,6 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ProjectType, ProjectStatus, ProgressNote } from '@/types/project';
-import { PocketBaseUser } from '@/contexts/AuthContext.types';
 import ImageGallery from '@/components/projects/ImageGallery';
 import ProjectDetails from '@/components/projects/ProjectDetails';
 import ProjectNotes from '@/components/projects/form/ProjectNotes';
@@ -61,8 +60,6 @@ interface ProjectDetailViewProps {
   navigateToEdit: () => void;
   /** Whether any operation is currently submitting */
   isSubmitting?: boolean;
-  /** Current authenticated user */
-  user: PocketBaseUser | null;
 }
 
 /**
@@ -90,7 +87,6 @@ const ProjectDetailView = ({
   onDelete,
   navigateToEdit,
   isSubmitting = false,
-  user,
 }: ProjectDetailViewProps) => {
   return (
     <div className="container mx-auto px-4 py-6">

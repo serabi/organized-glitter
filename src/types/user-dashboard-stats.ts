@@ -4,13 +4,13 @@
  * @created 2025-07-04
  */
 
-import { BaseRecord } from '@/types/pocketbase.types';
+import { BaseSystemFields } from '@/types/pocketbase.types';
 
 /**
  * User Dashboard Stats record interface
  * Stores pre-computed project counts for fast dashboard loading
  */
-export interface UserDashboardStatsRecord extends BaseRecord {
+export interface UserDashboardStatsRecord extends BaseSystemFields {
   id: string;
   user: string; // Relation to users collection
 

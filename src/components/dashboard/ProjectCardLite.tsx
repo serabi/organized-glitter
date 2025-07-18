@@ -58,36 +58,12 @@ const ProjectCardLite = memo(
           </span>
         </div>
 
-        <div className="flex flex-1 flex-col p-4">
+        <div className="flex flex-1 flex-col justify-between p-3">
           <h3 className="truncate text-lg font-semibold">{project.title}</h3>
-          <div className="mt-2 flex-1 space-y-1">
-            {project.company && (
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                <span className="font-medium">Company:</span> {project.company}
-              </p>
-            )}
-            {(project.width || project.height) && (
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                <span className="font-medium">Size:</span>{' '}
-                {project.width && project.height
-                  ? `${project.width} × ${project.height} cm`
-                  : project.width
-                    ? `${project.width} cm (W)`
-                    : `${project.height} cm (H)`}
-              </p>
-            )}
-            {project.drillShape && (
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                <span className="font-medium">Drill Shape:</span> {project.drillShape}
-              </p>
-            )}
-          </div>
           {onClick && (
-            <div className="mt-4 block">
-              <Button size="sm" className="mt-auto w-full" onClick={handleClick}>
-                View Details
-              </Button>
-            </div>
+            <Button size="sm" className="mt-3 w-full" onClick={handleClick}>
+              View Details
+            </Button>
           )}
         </div>
       </div>

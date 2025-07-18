@@ -12,7 +12,8 @@ import { Loader2, Search } from 'lucide-react';
 import { useTags } from '@/hooks/queries/useTags';
 
 const TagListTab = () => {
-  const { data: tags = [], isLoading: loading } = useTags();
+  const { data: tagsData = [], isLoading: loading } = useTags();
+  const tags = Array.isArray(tagsData) ? tagsData : [];
   return (
     <div className="dark:glass-card rounded-lg bg-diamond-100 text-diamond-900 shadow dark:text-foreground">
       <div className="border-b border-gray-200 p-6">

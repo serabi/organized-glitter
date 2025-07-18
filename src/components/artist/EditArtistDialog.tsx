@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, Pencil } from 'lucide-react';
 import FormField from '@/components/projects/form/FormField';
-import { useUpdateArtist } from '@/hooks/mutations/useUpdateArtist';
+import { useUpdateArtist } from '@/hooks/mutations/useArtistMutations';
 
 interface EditArtistDialogProps {
   artist: {
@@ -39,7 +39,7 @@ const EditArtistDialog = ({ artist }: EditArtistDialogProps) => {
     }
 
     updateArtistMutation.mutate(
-      { id: artist.id, name: artistName.trim() },
+      { id: artist.id, data: { name: artistName.trim() } },
       {
         onSuccess: () => {
           setIsDialogOpen(false);

@@ -11,7 +11,8 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { getSpinHistoryCount } from '@/services/pocketbase/randomizerService';
+import { getSpinHistoryCountEnhanced } from '@/services/pocketbase/randomizerService';
+import { randomizerQueryKeys } from '@/hooks/queries/useSpinHistory';
 import { createLogger } from '@/utils/secureLogger';
 
 const logger = createLogger('useSpinHistoryCount');
@@ -88,17 +89,17 @@ export interface UseSpinHistoryCountParams {
  */
 export const useSpinHistoryCount = ({ userId, enabled = true }: UseSpinHistoryCountParams) => {
   return useQuery({
-    queryKey: ['randomizer', 'history', 'count', userId],
+    queryKey: randomizerQueryKeys.count(userId || ''),
     queryFn: async (): Promise<number> => {
       if (!userId) {
         logger.debug('No userId provided, returning zero count');
         return 0;
       }
 
-      logger.debug('Fetching spin history count', { userId });
-      const count = await getSpinHistoryCount(userId);
+      logger.debug('Fetching enhanced spin history count', { userId });
+      const count = await getSpinHistoryCountEnhanced(userId);
 
-      logger.debug('Spin history count fetched', {
+      logger.debug('Enhanced spin history count fetched', {
         userId,
         totalCount: count,
       });
@@ -110,7 +111,17 @@ export const useSpinHistoryCount = ({ userId, enabled = true }: UseSpinHistoryCo
     gcTime: 5 * 60 * 1000, // 5 minutes garbage collection
     refetchOnWindowFocus: true, // Refetch on focus for fresh counts
     retry: (failureCount, error) => {
-      // Don't retry on 4xx errors
+      // Enhanced error handling with RandomizerError support
+      if (error && typeof error === 'object' && 'type' in error) {
+        const randomizerError = error as { type: string; canRetry: boolean };
+        logger.debug('RandomizerError detected in count query', {
+          type: randomizerError.type,
+          canRetry: randomizerError.canRetry,
+        });
+        return randomizerError.canRetry && failureCount < 2;
+      }
+
+      // Legacy error handling for backward compatibility
       const errorMessage = error?.message || '';
       const isClientError =
         errorMessage.includes('400') ||

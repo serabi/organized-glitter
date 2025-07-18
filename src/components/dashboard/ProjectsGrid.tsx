@@ -80,85 +80,70 @@ const ProjectsGridComponent: React.FC<ProjectsGridProps> = ({ dashboardData }) =
   // Compute dynamic separator props
   const dynamicSeparatorProps = useDynamicSeparatorProps(filters.sortField, projects);
 
-  // Debug log: print all project statuses in the grid for the Purchased section
+  // Consolidated debug logging for development
   React.useEffect(() => {
-    if (filters.activeStatus === 'purchased' && !loading) {
-      secureLogger.debug(
-        '[Debug] Projects rendered in Purchased section:',
-        projects.map(p => ({ id: p.id, status: p.status, title: p.title }))
-      );
+    if (!loading) {
+      secureLogger.debug('📊 ProjectsGrid Debug Info:', {
+        // Basic grid state
+        gridState: {
+          loading,
+          projectsCount: projects.length,
+          totalItems,
+          totalPages,
+          currentPage,
+          pageSize,
+          viewType,
+          searchTerm,
+          sortField,
+        },
+        // Pagination state
+        pagination: {
+          willShow: !loading && totalItems > 0,
+          condition: !loading && totalItems > 0,
+        },
+        // Filter state
+        filters: {
+          activeStatus: filters.activeStatus,
+          searchTerm: filters.searchTerm,
+          debouncedSearchTerm,
+          sortField: filters.sortField,
+          sortDirection: filters.sortDirection,
+          selectedCompany: filters.selectedCompany,
+          selectedArtist: filters.selectedArtist,
+          selectedDrillShape: filters.selectedDrillShape,
+          selectedYearFinished: filters.selectedYearFinished,
+          includeMiniKits: filters.includeMiniKits,
+          includeDestashed: filters.includeDestashed,
+          includeArchived: filters.includeArchived,
+          selectedTags: filters.selectedTags,
+        },
+        // Data sample
+        sampleData: {
+          firstThreeProjects: projects
+            .slice(0, 3)
+            .map(p => ({ id: p.id, title: p.title, status: p.status })),
+          uniqueStatuses: [...new Set(projects.map(p => p.status))],
+          purchasedProjects:
+            filters.activeStatus === 'purchased'
+              ? projects.map(p => ({ id: p.id, status: p.status, title: p.title }))
+              : 'Not in purchased view',
+        },
+        timestamp: new Date().toISOString(),
+      });
     }
-  }, [filters.activeStatus, loading, projects]);
-
-  // Debug log: pagination visibility debugging
-  React.useEffect(() => {
-    secureLogger.debug('🔍 Pagination Debug:', {
-      loading,
-      totalItems,
-      totalPages,
-      currentPage,
-      pageSize,
-      projectsLength: projects.length,
-      paginationCondition: !loading && totalItems > 0,
-      willShowPagination: !loading && totalItems > 0,
-    });
-  }, [loading, totalItems, totalPages, currentPage, pageSize, projects.length]);
-
-  // Debug log: Track data source and query params
-  React.useEffect(() => {
-    secureLogger.debug('📊 ProjectsGrid Data Source Debug:', {
-      userId: user?.id,
-      dashboardDataResult: {
-        projects: projects.length,
-        totalItems,
-        totalPages,
-        loading,
-        currentPage,
-        pageSize,
-      },
-      filtersContext: {
-        activeStatus: filters.activeStatus,
-        searchTerm: filters.searchTerm,
-        debouncedSearchTerm,
-        sortField: filters.sortField,
-        sortDirection: filters.sortDirection,
-        selectedCompany: filters.selectedCompany,
-        selectedArtist: filters.selectedArtist,
-        selectedDrillShape: filters.selectedDrillShape,
-        selectedYearFinished: filters.selectedYearFinished,
-        includeMiniKits: filters.includeMiniKits,
-        includeDestashed: filters.includeDestashed,
-        includeArchived: filters.includeArchived,
-        selectedTags: filters.selectedTags,
-      },
-      expectedQueryKey: `projects.list(${user?.id}, filters=${JSON.stringify({
-        status: filters.activeStatus,
-        company: filters.selectedCompany,
-        artist: filters.selectedArtist,
-        drillShape: filters.selectedDrillShape,
-        yearFinished: filters.selectedYearFinished,
-        includeMiniKits: filters.includeMiniKits,
-        includeDestashed: filters.includeDestashed,
-        includeArchived: filters.includeArchived,
-        searchTerm: debouncedSearchTerm,
-        selectedTags: filters.selectedTags,
-      })}, sort=${filters.sortField}:${filters.sortDirection}, page=${currentPage}, size=${pageSize})`,
-      firstThreeProjects: projects
-        .slice(0, 3)
-        .map(p => ({ id: p.id, title: p.title, status: p.status })),
-      uniqueStatuses: [...new Set(projects.map(p => p.status))],
-      timestamp: new Date().toISOString(),
-    });
   }, [
-    user?.id,
+    loading,
     projects,
     totalItems,
     totalPages,
-    loading,
     currentPage,
     pageSize,
+    viewType,
+    searchTerm,
+    sortField,
     filters,
     debouncedSearchTerm,
+    user?.id,
   ]);
 
   const {
@@ -167,13 +152,6 @@ const ProjectsGridComponent: React.FC<ProjectsGridProps> = ({ dashboardData }) =
     currentSortDatePropertyKey,
     countOfItemsWithoutCurrentSortDate,
   } = dynamicSeparatorProps;
-
-  // Track projects grid render with different states
-  React.useEffect(() => {
-    if (!loading) {
-      // addBreadcrumb removed
-    }
-  }, [loading, projects.length, viewType, searchTerm, sortField]); // Changed sortBy to sortField
 
   // Handle project card click with simple navigation
   const handleProjectClick = React.useCallback(
@@ -186,7 +164,7 @@ const ProjectsGridComponent: React.FC<ProjectsGridProps> = ({ dashboardData }) =
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className="animate-pulse overflow-hidden rounded-lg bg-white shadow-md">
             <div className="h-48 bg-gray-200" />
@@ -272,7 +250,9 @@ const ProjectsGridComponent: React.FC<ProjectsGridProps> = ({ dashboardData }) =
     <div className="space-y-6">
       <div
         className={
-          viewType === 'grid' ? 'grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3' : 'space-y-4'
+          viewType === 'grid'
+            ? 'grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+            : 'space-y-4'
         }
       >
         {renderProjectsWithDivider()}

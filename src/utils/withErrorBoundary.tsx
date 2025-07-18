@@ -1,6 +1,5 @@
 import { ComponentType } from 'react';
 import { ErrorBoundary, ErrorBoundaryProps } from '../components/ErrorBoundary';
-import { logger } from './logger';
 
 export type WithErrorBoundaryOptions = Omit<ErrorBoundaryProps, 'children'>;
 

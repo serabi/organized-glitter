@@ -30,10 +30,10 @@ vi.mock('@/hooks/useNavigateToProject', () => ({
 vi.mock('@/hooks/useUserMetadata', () => ({
   useUserMetadata: vi.fn(),
 }));
-vi.mock('@/hooks/mutations/useCreateCompany', () => ({
+vi.mock('@/hooks/mutations/useCompanyMutations', () => ({
   useCreateCompany: vi.fn(),
 }));
-vi.mock('@/hooks/mutations/useCreateArtist', () => ({
+vi.mock('@/hooks/mutations/useArtistMutations', () => ({
   useCreateArtist: vi.fn(),
 }));
 vi.mock('@/contexts/MetadataContext');

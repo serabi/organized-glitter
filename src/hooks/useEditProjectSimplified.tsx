@@ -28,7 +28,6 @@ import { ProjectsResponse, CompaniesResponse, ArtistsResponse } from '@/types/po
 import { extractDateOnly } from '@/lib/utils';
 import { useServiceToast } from '@/utils/toast-adapter';
 import { useQueryClient } from '@tanstack/react-query';
-import { queryKeys } from '@/hooks/queries/queryKeys';
 import { createLogger } from '@/utils/secureLogger';
 import { Collections } from '@/types/pocketbase.types';
 import { TagService } from '@/lib/tags';

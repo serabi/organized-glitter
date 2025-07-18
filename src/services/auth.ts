@@ -3,6 +3,7 @@ import { createLogger } from '@/utils/secureLogger';
 import type { PocketBaseUser } from '@/contexts/AuthContext.types';
 import { analytics } from '@/services/analytics';
 import { ClientResponseError } from 'pocketbase';
+import { ErrorHandler, FieldMapper } from '@/services/pocketbase/base';
 
 const authLogger = createLogger('AuthService');
 
@@ -70,10 +71,9 @@ export const loginWithPassword = async (data: LoginData): Promise<AuthResult> =>
   } catch (error) {
     authLogger.error('Password authentication failed:', error);
 
-    let errorMessage = 'Authentication failed. Please check your credentials.';
-    if (error instanceof ClientResponseError && error.data) {
-      errorMessage = error.data.message || 'Invalid email or password.';
-    }
+    const handledError = ErrorHandler.handleError(error, 'Password authentication');
+    const errorMessage =
+      handledError.userMessage || 'Authentication failed. Please check your credentials.';
 
     analytics.auth.loginFailed('email', errorMessage);
     analytics.error.authenticationFailed('email', errorMessage);
@@ -96,13 +96,18 @@ export const registerWithPassword = async (data: RegisterData): Promise<AuthResu
   try {
     authLogger.debug('Attempting user registration');
 
-    const createData = {
+    const fieldMapper = FieldMapper.createWithCommonMappings({
+      confirmPassword: 'passwordConfirm',
+      betaTester: 'beta_tester',
+    });
+
+    const createData = fieldMapper.toBackend({
       email: data.email,
       password: data.password,
-      passwordConfirm: data.confirmPassword,
+      confirmPassword: data.confirmPassword,
       username: data.username,
-      beta_tester: true,
-    };
+      betaTester: true,
+    });
 
     authLogger.debug('Attempting to create user with data:', createData);
     const newUser = await pb.collection('users').create(createData);
@@ -129,11 +134,9 @@ export const registerWithPassword = async (data: RegisterData): Promise<AuthResu
   } catch (error) {
     authLogger.error('User registration failed:', error);
 
-    let errorMessage = 'An unknown error occurred during registration.';
-    if (error instanceof ClientResponseError && error.data) {
-      const firstError = Object.values(error.data.data || {})[0] as { message?: string };
-      errorMessage = firstError?.message || error.data.message || 'Registration failed.';
-    }
+    const handledError = ErrorHandler.handleError(error, 'User registration');
+    const errorMessage =
+      handledError.userMessage || 'An unknown error occurred during registration.';
 
     return {
       success: false,
@@ -245,10 +248,9 @@ export const loginWithOAuth2 = async (provider: 'google' | 'discord'): Promise<A
       });
     }
 
-    let errorMessage = `${provider} authentication failed. Please try again.`;
-    if (error instanceof ClientResponseError && error.data) {
-      errorMessage = error.data.message || `Failed to authenticate with ${provider}.`;
-    }
+    const handledError = ErrorHandler.handleError(error, `${provider} authentication`);
+    const errorMessage =
+      handledError.userMessage || `${provider} authentication failed. Please try again.`;
 
     return {
       success: false,
@@ -274,9 +276,12 @@ export const requestPasswordReset = async (email: string): Promise<AuthResult> =
   } catch (error) {
     authLogger.error('Password reset request failed:', error);
 
+    const handledError = ErrorHandler.handleError(error, 'Password reset request');
+    const errorMessage = handledError.userMessage || 'Failed to send password reset email';
+
     return {
       success: false,
-      error: 'Failed to send password reset email',
+      error: errorMessage,
     };
   }
 };
@@ -302,9 +307,12 @@ export const confirmPasswordReset = async (
   } catch (error) {
     authLogger.error('Password reset confirmation failed:', error);
 
+    const handledError = ErrorHandler.handleError(error, 'Password reset confirmation');
+    const errorMessage = handledError.userMessage || 'Failed to reset password';
+
     return {
       success: false,
-      error: 'Failed to reset password',
+      error: errorMessage,
     };
   }
 };
@@ -326,13 +334,14 @@ export const confirmEmailVerification = async (token: string): Promise<AuthResul
   } catch (error) {
     authLogger.error('Email verification confirmation failed:', error);
 
-    let errorMessage = 'Failed to verify email';
+    const handledError = ErrorHandler.handleError(error, 'Email verification confirmation');
+    let errorMessage = handledError.userMessage || 'Failed to verify email';
+
+    // Keep the specific token expired handling for better UX
     if (error instanceof ClientResponseError && error.data) {
       if (error.data.message?.includes('token') || error.data.message?.includes('expired')) {
         errorMessage =
           'Verification link has expired or is invalid. Please request a new verification email.';
-      } else {
-        errorMessage = error.data.message || 'Failed to verify email';
       }
     }
 
