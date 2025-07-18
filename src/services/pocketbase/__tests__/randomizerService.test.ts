@@ -2,9 +2,12 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   createSpin,
   getSpinHistory,
+  getSpinHistoryCount,
   clearSpinHistory,
   getLastSpin,
   cleanupOldSpins,
+  validateRandomizerCollection,
+  ensureRandomizerCollection,
   type CreateSpinParams,
   type SpinRecord,
 } from '../randomizerService';
@@ -46,6 +49,9 @@ const mockSpinRecord: SpinRecord = {
   user: 'user1',
   project: 'proj1',
   project_title: 'Test Project',
+  project_company: 'Test Company',
+  project_artist: 'Test Artist',
+  selected_count: 3,
   selected_projects: ['proj1', 'proj2', 'proj3'],
   spun_at: '2024-01-01T12:00:00Z',
   created: '2024-01-01T12:00:00Z',
@@ -83,6 +89,7 @@ describe('randomizerService', () => {
         project: 'proj1',
         project_title: 'Test Project',
         selected_projects: ['proj1', 'proj2', 'proj3'],
+        selected_count: 3,
         spun_at: expect.any(String), // ISO string
       });
       expect(result).toEqual(mockSpinRecord);
@@ -136,6 +143,7 @@ describe('randomizerService', () => {
         project: null,
         project_title: 'Deleted Project',
         selected_projects: ['proj1', 'proj2', 'proj3'],
+        selected_count: 3,
         spun_at: expect.any(String),
       });
       expect(result).toEqual(recordWithNullProject);
@@ -160,7 +168,7 @@ describe('randomizerService', () => {
       expect(mockCollection.getList).toHaveBeenCalledWith(1, 10, {
         filter: 'user = "user1"',
         sort: '-spun_at',
-        fields: 'id,user,project,project_title,spun_at,selected_projects,created,updated',
+        fields: 'id,user,project,project_title,project_company,project_artist,selected_count,spun_at,selected_projects,created,updated',
       });
       expect(result).toEqual(mockSpinHistory);
     });
@@ -179,7 +187,7 @@ describe('randomizerService', () => {
       expect(mockCollection.getList).toHaveBeenCalledWith(1, 8, {
         filter: 'user = "user1"',
         sort: '-spun_at',
-        fields: 'id,user,project,project_title,spun_at,selected_projects,created,updated',
+        fields: 'id,user,project,project_title,project_company,project_artist,selected_count,spun_at,selected_projects,created,updated',
       });
     });
 
@@ -206,7 +214,7 @@ describe('randomizerService', () => {
       expect(mockCollection.getList).toHaveBeenCalledWith(1, 8, {
         filter: 'user = "user1"',
         sort: '-spun_at',
-        fields: 'id,user,project,project_title,spun_at,selected_projects,created,updated',
+        fields: 'id,user,project,project_title,project_company,project_artist,selected_count,spun_at,selected_projects,created,updated',
       });
       expect(result).toEqual([]);
     });
@@ -219,7 +227,7 @@ describe('randomizerService', () => {
       expect(mockCollection.getList).toHaveBeenCalledWith(1, 8, {
         filter: 'user = "user"with"quotes"',
         sort: '-spun_at',
-        fields: 'id,user,project,project_title,spun_at,selected_projects,created,updated',
+        fields: 'id,user,project,project_title,project_company,project_artist,selected_count,spun_at,selected_projects,created,updated',
       });
     });
 
@@ -231,7 +239,7 @@ describe('randomizerService', () => {
       expect(mockCollection.getList).toHaveBeenCalledWith(1, 1000, {
         filter: 'user = "user1"',
         sort: '-spun_at',
-        fields: 'id,user,project,project_title,spun_at,selected_projects,created,updated',
+        fields: 'id,user,project,project_title,project_company,project_artist,selected_count,spun_at,selected_projects,created,updated',
       });
     });
   });
@@ -245,7 +253,7 @@ describe('randomizerService', () => {
       expect(mockPb.collection).toHaveBeenCalledWith('randomizer_spins');
       expect(mockCollection.getFirstListItem).toHaveBeenCalledWith('user = "user1"', {
         sort: '-spun_at',
-        fields: 'id,user,project,project_title,spun_at,selected_projects,created,updated',
+        fields: 'id,user,project,project_title,project_company,project_artist,selected_count,spun_at,selected_projects,created,updated',
       });
       expect(result).toEqual(mockSpinRecord);
     });

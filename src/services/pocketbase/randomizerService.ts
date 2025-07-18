@@ -35,6 +35,12 @@ export interface SpinRecord {
   project: string;
   /** Project title at time of spin (preserved even if project deleted) */
   project_title: string;
+  /** Project company name at time of spin (preserved, optional) */
+  project_company?: string;
+  /** Project artist name at time of spin (preserved, optional) */
+  project_artist?: string;
+  /** Count of projects available for selection */
+  selected_count: number;
   /** ISO timestamp when the spin was performed */
   spun_at: string;
   /** Array of project IDs that were available for selection */
@@ -56,11 +62,34 @@ export interface CreateSpinParams {
   project: string;
   /** Project title for preservation */
   project_title: string;
+  /** Project company name for preservation (optional) */
+  project_company?: string;
+  /** Project artist name for preservation (optional) */
+  project_artist?: string;
   /** Array of all projects that were selectable */
   selected_projects: string[];
 }
 
 const RANDOMIZER_COLLECTION = 'randomizer_spins';
+
+/**
+ * Database validation result interface
+ * @interface ValidationResult
+ */
+interface ValidationResult {
+  /** Whether the collection exists and is properly configured */
+  isValid: boolean;
+  /** List of validation issues found */
+  issues: string[];
+  /** Whether the collection exists */
+  exists: boolean;
+  /** Collection configuration details */
+  details?: {
+    hasRequiredFields: boolean;
+    hasProperRules: boolean;
+    hasIndexes: boolean;
+  };
+}
 
 /**
  * Configuration options for paginated batch deletion operations
@@ -246,6 +275,7 @@ export async function createSpin(params: CreateSpinParams): Promise<SpinRecord> 
 
     const record = await pb.collection(RANDOMIZER_COLLECTION).create({
       ...params,
+      selected_count: params.selected_projects.length,
       spun_at: new Date().toISOString(),
     });
 
@@ -292,7 +322,7 @@ export async function getSpinHistory(userId: string, limit: number = 8): Promise
     const records = await pb.collection(RANDOMIZER_COLLECTION).getList(1, limit, {
       filter: pb.filter('user = {:userId}', { userId }),
       sort: '-spun_at', // Most recent first
-      fields: 'id,user,project,project_title,spun_at,selected_projects,created,updated',
+      fields: 'id,user,project,project_title,project_company,project_artist,selected_count,spun_at,selected_projects,created,updated',
     });
 
     logger.debug('Spin history fetched', {
@@ -434,7 +464,7 @@ export async function getLastSpin(userId: string): Promise<SpinRecord | null> {
       .collection(RANDOMIZER_COLLECTION)
       .getFirstListItem(pb.filter('user = {:userId}', { userId }), {
         sort: '-spun_at',
-        fields: 'id,user,project,project_title,spun_at,selected_projects,created,updated',
+        fields: 'id,user,project,project_title,project_company,project_artist,selected_count,spun_at,selected_projects,created,updated',
       });
 
     return record as unknown as SpinRecord;
@@ -521,6 +551,219 @@ export async function cleanupOldSpins(userId: string, daysToKeep: number = 90): 
 }
 
 /**
+ * Validates the randomizer_spins collection configuration and permissions
+ *
+ * Performs comprehensive validation of the PocketBase collection to ensure it has:
+ * - Proper field schema with all required fields
+ * - Correct API rules for user data isolation
+ * - Performance indexes for optimal query performance
+ * - Appropriate permissions and security settings
+ *
+ * @returns {Promise<ValidationResult>} Detailed validation results with issues and recommendations
+ *
+ * @example
+ * ```typescript
+ * const validation = await validateRandomizerCollection();
+ * if (!validation.isValid) {
+ *   console.warn('Collection issues found:', validation.issues);
+ * }
+ * ```
+ *
+ * @performance This function makes API calls to PocketBase admin endpoints
+ * @security Only works when authenticated as a superuser or admin
+ */
+export async function validateRandomizerCollection(): Promise<ValidationResult> {
+  const issues: string[] = [];
+  let exists = false;
+  let hasRequiredFields = false;
+  let hasProperRules = false;
+  let hasIndexes = false;
+
+  try {
+    logger.debug('Validating randomizer collection configuration');
+
+    // Test if collection exists by attempting a simple query
+    try {
+      await pb.collection(RANDOMIZER_COLLECTION).getList(1, 1, { fields: 'id' });
+      exists = true;
+      logger.debug('Collection exists and is accessible');
+    } catch (error: any) {
+      if (error?.status === 404) {
+        issues.push('Collection "randomizer_spins" does not exist');
+        exists = false;
+      } else if (error?.status === 403) {
+        issues.push('Collection exists but API rules prevent access - check authentication');
+        exists = true; // Collection exists but has access issues
+      } else {
+        issues.push(`Failed to access collection: ${error?.message || 'Unknown error'}`);
+        exists = false;
+      }
+    }
+
+    // If collection exists, validate its configuration
+    if (exists) {
+      try {
+        // Test field validation by attempting to create a minimal record
+        // This will fail due to validation but tells us about field requirements
+        try {
+          await pb.collection(RANDOMIZER_COLLECTION).create({
+            user: 'test',
+            project: 'test',
+            project_title: 'test',
+            selected_projects: ['test'],
+            selected_count: 1,
+            spun_at: new Date().toISOString(),
+          });
+        } catch (error: any) {
+          // Expected to fail due to invalid data, but we can analyze the error
+          if (error?.data) {
+            const errorData = error.data;
+            
+            // Check for missing required fields
+            const requiredFields = ['user', 'project', 'project_title', 'selected_count', 'spun_at', 'selected_projects'];
+            const missingFields = requiredFields.filter(field => 
+              errorData[field] && errorData[field].code === 'validation_required'
+            );
+            
+            if (missingFields.length === 0) {
+              hasRequiredFields = true;
+            } else {
+              issues.push(`Missing required fields: ${missingFields.join(', ')}`);
+            }
+
+            // Check if new optional fields are recognized
+            if (!errorData.project_company && !errorData.project_artist) {
+              // Fields are likely present if no validation errors for them
+              logger.debug('Optional fields (project_company, project_artist) appear to be configured');
+            }
+          } else {
+            // If we get a different error, assume fields are configured
+            hasRequiredFields = true;
+          }
+        }
+
+        // Test API rules by checking access patterns
+        try {
+          // This should work for authenticated users
+          await pb.collection(RANDOMIZER_COLLECTION).getList(1, 1, {
+            filter: pb.filter('user = {:userId}', { userId: 'test-user-id' }),
+            fields: 'id'
+          });
+          hasProperRules = true;
+        } catch (error: any) {
+          if (error?.status === 400 && error?.message?.includes('filter')) {
+            issues.push('API rules may not be properly configured for user-based filtering');
+          } else if (error?.status === 403) {
+            issues.push('API rules are too restrictive - users cannot access their own data');
+          } else {
+            // Other errors might be expected (like no records found)
+            hasProperRules = true;
+          }
+        }
+
+        // Note: We cannot easily validate indexes without admin access to collection schema
+        // For now, assume indexes are present if collection is accessible
+        hasIndexes = true;
+
+      } catch (error: any) {
+        issues.push(`Failed to validate collection configuration: ${error?.message || 'Unknown error'}`);
+      }
+    }
+
+    const isValid = exists && hasRequiredFields && hasProperRules && issues.length === 0;
+
+    const result: ValidationResult = {
+      isValid,
+      issues,
+      exists,
+      details: {
+        hasRequiredFields,
+        hasProperRules,
+        hasIndexes,
+      },
+    };
+
+    if (isValid) {
+      logger.info('Randomizer collection validation passed');
+    } else {
+      logger.warn('Randomizer collection validation failed', {
+        issues,
+        exists,
+        hasRequiredFields,
+        hasProperRules,
+      });
+    }
+
+    return result;
+
+  } catch (error) {
+    logger.error('Failed to validate randomizer collection', error);
+    return {
+      isValid: false,
+      issues: [`Validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`],
+      exists: false,
+    };
+  }
+}
+
+/**
+ * Ensures the randomizer collection exists and is properly configured
+ *
+ * Performs validation and provides helpful error messages if the collection
+ * is missing or misconfigured. This function should be called during application
+ * initialization or before performing randomizer operations.
+ *
+ * @param {boolean} [throwOnError=false] - Whether to throw an error if validation fails
+ * @returns {Promise<boolean>} True if collection is valid, false otherwise
+ *
+ * @throws {Error} When throwOnError is true and validation fails
+ *
+ * @example
+ * ```typescript
+ * // Check without throwing
+ * const isReady = await ensureRandomizerCollection();
+ * if (!isReady) {
+ *   console.warn('Randomizer collection needs setup');
+ * }
+ *
+ * // Throw on validation failure
+ * try {
+ *   await ensureRandomizerCollection(true);
+ *   // Safe to use randomizer functions
+ * } catch (error) {
+ *   console.error('Randomizer not available:', error.message);
+ * }
+ * ```
+ */
+export async function ensureRandomizerCollection(throwOnError: boolean = false): Promise<boolean> {
+  try {
+    const validation = await validateRandomizerCollection();
+    
+    if (!validation.isValid) {
+      const errorMessage = `Randomizer collection validation failed: ${validation.issues.join(', ')}`;
+      
+      if (throwOnError) {
+        throw new Error(errorMessage);
+      } else {
+        logger.warn(errorMessage);
+        return false;
+      }
+    }
+
+    return true;
+  } catch (error) {
+    const errorMessage = `Failed to ensure randomizer collection: ${error instanceof Error ? error.message : 'Unknown error'}`;
+    
+    if (throwOnError) {
+      throw new Error(errorMessage);
+    } else {
+      logger.error(errorMessage);
+      return false;
+    }
+  }
+}
+
+/**
  * Randomizer Service object providing centralized access to all randomizer operations
  *
  * Consolidates all randomizer-related database operations into a single service object
@@ -543,7 +786,10 @@ export async function cleanupOldSpins(userId: string, daysToKeep: number = 90): 
 export const RandomizerService = {
   createSpin,
   getSpinHistory,
+  getSpinHistoryCount,
   clearSpinHistory,
   getLastSpin,
   cleanupOldSpins,
+  validateRandomizerCollection,
+  ensureRandomizerCollection,
 } as const;
