@@ -6,9 +6,9 @@
  * for the randomizer feature's history display needs with configurable limits, retry logic,
  * and performance enhancements including prefetching and optimized query keys.
  *
- * @author Enhanced for randomizer optimization
+ * @author @serabi
  * @version 2.0.0
- * @since 2025-01-17
+ * @since 2025-07-17
  */
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -18,7 +18,7 @@ import {
   getSpinHistoryCountEnhanced,
   type RandomizerSpinExpand,
 } from '@/services/pocketbase/randomizerService';
-import type { RandomizerSpinsResponse, ProjectsResponse } from '@/types/pocketbase.types';
+import type { RandomizerSpinsResponse } from '@/types/pocketbase.types';
 import { createLogger } from '@/utils/secureLogger';
 
 const logger = createLogger('useSpinHistory');
@@ -164,7 +164,7 @@ export const useSpinHistory = ({
     refetchOnWindowFocus: false, // Don't refetch when window gains focus
     retry: (failureCount, error) => {
       // Enhanced error handling with RandomizerError support
-      if (error && typeof error === 'object' && 'type' in error) {
+      if (error && typeof error === 'object' && 'type' in error && 'canRetry' in error) {
         const randomizerError = error as { type: string; canRetry: boolean };
         logger.debug('RandomizerError detected', {
           type: randomizerError.type,

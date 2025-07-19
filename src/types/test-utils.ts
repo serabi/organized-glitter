@@ -1,18 +1,15 @@
 /**
  * Type definitions for testing utilities and mocks
  * @author @serabi
- * @created 2025-01-14
+ * @created 2025-07-14
  */
 
 import type { Mock } from 'vitest';
 import type { ProjectFormValues, Project } from './shared';
-import type { ProjectsResponse, ProjectTagsResponse } from './pocketbase.types';
+import type { ProjectTagsResponse } from './pocketbase.types';
 
 // Mock function type for vitest
-export type MockFunction<T extends (...args: unknown[]) => unknown> = Mock<
-  Parameters<T>,
-  ReturnType<T>
->;
+export type MockFunction<T extends (...args: unknown[]) => unknown> = Mock<T>;
 
 // Form value types for testing
 export type ProjectFormValue = ProjectFormValues[keyof ProjectFormValues];

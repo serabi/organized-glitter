@@ -1,7 +1,7 @@
 /**
  * Generic CRUD mutation factory for consolidating entity operations
  * @author @serabi
- * @created 2025-01-16
+ * @created 2025-07-16
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -17,7 +17,7 @@ import { requireAuthenticatedUser } from '@/utils/authGuards';
 const logger = createLogger('EntityCRUD');
 
 /**
- * Configuration for entity CRUD operations
+ * Configuration for entity CRUD operations (updated for TanStack Query v5 compatibility)
  * @author @serabi
  */
 export interface EntityConfig<TData extends Record<string, unknown>> {
@@ -25,10 +25,10 @@ export interface EntityConfig<TData extends Record<string, unknown>> {
   collection: Collections;
   /** Entity name for logging and user messages */
   entityName: string;
-  /** Query keys for cache invalidation */
+  /** Query keys for cache invalidation - flexible signature for different parameter patterns */
   queryKeys: {
     lists: () => readonly unknown[];
-    list: (userId: string) => readonly unknown[];
+    list: (...args: unknown[]) => readonly unknown[]; // Flexible signature to handle variable parameters
     detail: (id: string) => readonly unknown[];
   };
   /** Required and optional field definitions */
@@ -74,7 +74,7 @@ export function createEntityCreateMutation<TData extends Record<string, unknown>
         // Trim name field if it exists
         const processedData = { ...data };
         if ('name' in processedData && typeof processedData.name === 'string') {
-          processedData.name = processedData.name.trim() as TData[keyof TData];
+          (processedData as any).name = processedData.name.trim();
         }
 
         // Check for duplicate names before creating
@@ -105,12 +105,11 @@ export function createEntityCreateMutation<TData extends Record<string, unknown>
           userId,
         });
 
-        return record as TData;
+        return record as unknown as TData;
       },
       onSuccess: newEntity => {
-        // Invalidate relevant queries
+        // Invalidate relevant queries - use lists() for broader cache invalidation
         queryClient.invalidateQueries({ queryKey: config.queryKeys.lists() });
-        queryClient.invalidateQueries({ queryKey: config.queryKeys.list(user?.id || '') });
 
         // Show success toast
         const entityName =
@@ -183,7 +182,7 @@ export function createEntityUpdateMutation<TData extends Record<string, unknown>
         // Trim name field if it exists
         const processedData = { ...data };
         if ('name' in processedData && typeof processedData.name === 'string') {
-          processedData.name = processedData.name.trim() as TData[keyof TData];
+          (processedData as any).name = processedData.name.trim();
         }
 
         // Check for duplicate names (if name is being updated)
@@ -209,12 +208,11 @@ export function createEntityUpdateMutation<TData extends Record<string, unknown>
           userId,
         });
 
-        return updatedRecord as TData;
+        return updatedRecord as unknown as TData;
       },
       onSuccess: (updatedEntity, { id }) => {
-        // Invalidate relevant queries
+        // Invalidate relevant queries - use lists() for broader cache invalidation
         queryClient.invalidateQueries({ queryKey: config.queryKeys.lists() });
-        queryClient.invalidateQueries({ queryKey: config.queryKeys.list(user?.id || '') });
         queryClient.invalidateQueries({ queryKey: config.queryKeys.detail(id) });
 
         // Show success toast
@@ -267,7 +265,7 @@ export function createEntityDeleteMutation<TData extends Record<string, unknown>
     const queryClient = useQueryClient();
 
     return useMutation({
-      mutationFn: async ({ id, name }: { id: string; name?: string }): Promise<void> => {
+      mutationFn: async ({ id }: { id: string }): Promise<void> => {
         const userId = requireAuthenticatedUser(user);
 
         logger.debug(`Deleting ${config.entityName}`, { id, userId });
@@ -279,14 +277,13 @@ export function createEntityDeleteMutation<TData extends Record<string, unknown>
           userId,
         });
       },
-      onSuccess: (_, { id, name }) => {
-        // Invalidate relevant queries
+      onSuccess: (_, { id }) => {
+        // Invalidate relevant queries - use lists() for broader cache invalidation  
         queryClient.invalidateQueries({ queryKey: config.queryKeys.lists() });
-        queryClient.invalidateQueries({ queryKey: config.queryKeys.list(user?.id || '') });
         queryClient.invalidateQueries({ queryKey: config.queryKeys.detail(id) });
 
         // Show success toast
-        const entityName = name || config.entityName;
+        const entityName = config.entityName;
         toast({
           title: 'Success!',
           description: `${config.entityName.charAt(0).toUpperCase() + config.entityName.slice(1)} "${entityName}" has been deleted`,

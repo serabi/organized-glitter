@@ -2,6 +2,7 @@ import React, { createContext, useContext, useMemo, useEffect, useCallback } fro
 import { useAllCompanies } from '@/hooks/queries/useCompanies';
 import { useArtists } from '@/hooks/queries/useArtists';
 import { useTags } from '@/hooks/queries/useTags';
+import { useAuth } from '@/hooks/useAuth';
 import type { Tag } from '@/types/tag';
 import { ArtistsResponse, CompaniesResponse } from '@/types/pocketbase.types';
 import { createLogger } from '@/utils/secureLogger';
@@ -49,26 +50,29 @@ interface MetadataProviderProps {
  * React Query handles caching, deduplication, and prevents redundant API calls
  */
 export const MetadataProvider = React.memo(({ children }: MetadataProviderProps) => {
+  const { user } = useAuth();
+  const userId = user?.id;
+
   logger.debug('MetadataProvider: Starting render, calling hooks');
 
-  const companiesQuery = useAllCompanies();
+  const companiesQuery = useAllCompanies(userId);
   logger.debug('MetadataProvider: useAllCompanies completed', {
     isLoading: companiesQuery.isLoading,
-    dataLength: companiesQuery.data?.length || 0,
+    dataLength: companiesQuery.isSuccess && Array.isArray(companiesQuery.data) ? companiesQuery.data.length : 0,
     error: companiesQuery.error?.message,
   });
 
-  const artistsQuery = useArtists();
+  const artistsQuery = useArtists(userId);
   logger.debug('MetadataProvider: useArtists completed', {
     isLoading: artistsQuery.isLoading,
-    dataLength: artistsQuery.data?.length || 0,
+    dataLength: artistsQuery.isSuccess && Array.isArray(artistsQuery.data) ? artistsQuery.data.length : 0,
     error: artistsQuery.error?.message,
   });
 
-  const tagsQuery = useTags();
+  const tagsQuery = useTags(userId);
   logger.debug('MetadataProvider: useTags completed', {
     isLoading: tagsQuery.isLoading,
-    dataLength: tagsQuery.data?.length || 0,
+    dataLength: tagsQuery.isSuccess && Array.isArray(tagsQuery.data) ? tagsQuery.data.length : 0,
     error: tagsQuery.error?.message,
   });
 
@@ -78,9 +82,9 @@ export const MetadataProvider = React.memo(({ children }: MetadataProviderProps)
       companiesLoading: companiesQuery.isLoading,
       artistsLoading: artistsQuery.isLoading,
       tagsLoading: tagsQuery.isLoading,
-      companiesData: companiesQuery.data?.length || 0,
-      artistsData: artistsQuery.data?.length || 0,
-      tagsData: tagsQuery.data?.length || 0,
+      companiesData: companiesQuery.isSuccess && Array.isArray(companiesQuery.data) ? companiesQuery.data.length : 0,
+      artistsData: artistsQuery.isSuccess && Array.isArray(artistsQuery.data) ? artistsQuery.data.length : 0,
+      tagsData: tagsQuery.isSuccess && Array.isArray(tagsQuery.data) ? tagsQuery.data.length : 0,
     });
   });
 

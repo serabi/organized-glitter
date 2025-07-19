@@ -97,7 +97,7 @@ export class ServiceTestBase {
    */
   protected createMockPocketBase(): ServiceMockPocketBase {
     return {
-      collection: vi.fn(() => this.mockCollection),
+      collection: vi.fn((name: string) => this.mockCollection),
       filter: vi.fn((query, params) =>
         query.replace(/\{:(\w+)\}/g, (_, key) => `"${params[key]}"`)
       ),
@@ -263,7 +263,7 @@ export class ServiceTestBase {
    */
   public createMockSubscription(callback: (data: unknown) => void): () => void {
     const unsubscribe = vi.fn();
-    this.mockCollection.subscribe.mockImplementation((topic, cb) => {
+    this.mockCollection.subscribe.mockImplementation((_topic, cb) => {
       // Store callback for later triggering
       (cb as typeof callback)(callback);
       return unsubscribe;

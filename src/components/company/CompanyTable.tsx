@@ -168,7 +168,7 @@ const CompanyTable = ({ companies, loading, onCompanyUpdated }: CompanyTableProp
     if (!companyToDelete) return;
 
     deleteCompanyMutation.mutate(
-      { id: companyToDelete.id, name: companyToDelete.name },
+      { id: companyToDelete.id },
       {
         onSettled: () => {
           setShowDeleteConfirmDialog(false);

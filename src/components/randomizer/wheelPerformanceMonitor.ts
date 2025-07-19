@@ -6,7 +6,7 @@
  *
  * @author serabi
  * @version 1.0.0
- * @since 2025-01-19
+ * @since 2025-07-19
  */
 
 import { createLogger } from '@/utils/secureLogger';
@@ -161,7 +161,7 @@ export class WheelPerformanceMonitor {
   /**
    * Suggest performance optimizations based on metrics
    */
-  private suggestOptimizations(metric: WheelPerformanceMetrics, warnings: string[]): void {
+  private suggestOptimizations(metric: WheelPerformanceMetrics, _warnings: string[]): void {
     const suggestions: string[] = [];
 
     // Render mode suggestions

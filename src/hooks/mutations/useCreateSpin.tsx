@@ -6,9 +6,9 @@
  * error classification and recovery strategies. Uses the TypedRandomizerService for
  * improved type safety and error handling.
  *
- * @author Enhanced for randomizer optimization
+ * @author @serabi
  * @version 2.0.0
- * @since 2025-01-19
+ * @since 2025-07-19
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -17,13 +17,13 @@ import {
   createSpinEnhanced,
   RandomizerError,
   RandomizerErrorType,
-  captureSpinAnalytics,
   detectDeviceType,
 } from '@/services/pocketbase/randomizerService';
 import { randomizerQueryKeys } from '@/hooks/queries/useSpinHistory';
 import { useToast } from '@/hooks/use-toast';
 import { createLogger } from '@/utils/secureLogger';
 import type { RandomizerSpinsResponse } from '@/types/pocketbase.types';
+import { Collections } from '@/types/pocketbase.types';
 
 const logger = createLogger('useCreateSpin');
 
@@ -274,7 +274,7 @@ export const useCreateSpin = () => {
         created: new Date().toISOString(),
         updated: new Date().toISOString(),
         collectionId: 'randomizer_spins',
-        collectionName: 'randomizer_spins',
+        collectionName: Collections.RandomizerSpins,
       };
 
       queryClient.setQueryData(
@@ -321,9 +321,8 @@ export const useCreateSpin = () => {
       // Show success toast with enhanced information
       toast({
         title: 'Spin recorded!',
-        description: `Selected: ${variables.project_title}${
-          variables.project_company ? ` by ${variables.project_company}` : ''
-        }`,
+        description: `Selected: ${variables.project_title}${variables.project_company ? ` by ${variables.project_company}` : ''
+          }`,
       });
     },
     onError: (error, variables, context) => {

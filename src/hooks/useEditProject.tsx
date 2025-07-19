@@ -11,7 +11,7 @@
  * - Navigation protection
  * - CRUD operations with confirmations
  *
- * @author Organized Glitter Team
+ * @author @serabi
  * @since 2.0.0 - Migrated to React Query patterns to fix 404 authentication race conditions
  */
 
@@ -28,7 +28,6 @@ import {
 } from '@/hooks/mutations/useProjectDetailMutations';
 import { useProjectUpdateUnified } from '@/hooks/mutations/useProjectUpdateUnified';
 import { useMetadata } from '@/contexts/MetadataContext';
-import { extractDateOnly } from '@/lib/utils';
 import { useServiceToast } from '@/utils/toast-adapter';
 import { createLogger } from '@/utils/secureLogger';
 
@@ -70,7 +69,7 @@ const prepareFormInitialData = (project: ProjectType): ProjectFormValues => {
  */
 export const useEditProject = (projectId: string | undefined) => {
   // Authentication state
-  const { user, isAuthenticated, initialCheckComplete, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, initialCheckComplete, isLoading: authLoading } = useAuth();
 
   // Data fetching
   const {
@@ -95,10 +94,10 @@ export const useEditProject = (projectId: string | undefined) => {
   // Navigation state with proper isDirty check
   const isDirty = Boolean(
     formData &&
-      project &&
-      JSON.stringify(formData) !== JSON.stringify(prepareFormInitialData(project))
+    project &&
+    JSON.stringify(formData) !== JSON.stringify(prepareFormInitialData(project))
   );
-  const { ConfirmationDialog: NavigationDialog, confirmUnsavedChanges } = useConfirmationDialog();
+  const { confirmUnsavedChanges } = useConfirmationDialog();
   const { navigationState, clearNavigationError } = useNavigationWithWarning({
     isDirty,
     confirmationDialog: { confirmUnsavedChanges },

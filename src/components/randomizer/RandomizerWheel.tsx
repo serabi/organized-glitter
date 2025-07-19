@@ -5,9 +5,9 @@
  * Features smooth animations, comprehensive accessibility support, responsive design, and
  * integration with the Organized Glitter brand color palette.
  *
- * @author Generated with Claude Code
+ * @author @serabi
  * @version 1.0.0
- * @since 2024-06-28
+ * @since 2025-06-28
  */
 
 import React, { useState, useRef, useCallback } from 'react';
@@ -258,7 +258,7 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
           </div>
 
           {/* Empty Wheel with Gradient */}
-          <div className="relative h-72 w-72 overflow-hidden rounded-full border-4 border-flamingo-300 bg-gradient-to-br from-diamond-400 via-flamingo-400 via-peach-400 to-mauve-400 opacity-60 sm:h-120 sm:w-120 lg:h-140 lg:w-140">
+          <div className="relative h-72 w-72 overflow-hidden rounded-full border-4 border-flamingo-300 bg-gradient-to-br from-diamond-400 via-flamingo-400 to-mauve-400 opacity-60 sm:h-120 sm:w-120 lg:h-140 lg:w-140">
             {/* Center content */}
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center text-white drop-shadow-lg">
@@ -268,7 +268,7 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
             </div>
 
             {/* Subtle pulse animation */}
-            <div className="absolute inset-0 animate-pulse rounded-full bg-gradient-to-br from-diamond-300 via-flamingo-300 via-peach-300 to-mauve-300 opacity-30"></div>
+            <div className="absolute inset-0 animate-pulse rounded-full bg-gradient-to-br from-diamond-300 via-flamingo-300 to-mauve-300 opacity-30"></div>
           </div>
         </div>
 
@@ -378,9 +378,8 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
         {/* Wheel */}
         <div
           ref={wheelRef}
-          className={`duration-3000 relative h-72 w-72 overflow-hidden rounded-full border-4 border-flamingo-300 transition-transform ease-out sm:h-96 sm:w-96 lg:h-140 lg:w-140 ${
-            isSpinning ? 'animate-spin-custom' : ''
-          }`}
+          className={`duration-3000 relative h-72 w-72 overflow-hidden rounded-full border-4 border-flamingo-300 transition-transform ease-out sm:h-96 sm:w-96 lg:h-140 lg:w-140 ${isSpinning ? 'animate-spin-custom' : ''
+            }`}
           style={{
             transform: `rotate(${rotation}deg)`,
             transformOrigin: 'center',

@@ -1,7 +1,7 @@
 /**
  * Entity configurations for consolidated CRUD operations
  * @author @serabi
- * @created 2025-01-16
+ * @created 2025-07-16
  */
 
 import { Collections, ArtistsResponse, CompaniesResponse } from '@/types/pocketbase.types';
@@ -85,11 +85,15 @@ export const artistConfig: EntityConfig<ArtistsResponse> = createEntityConfig<Ar
 );
 
 /**
- * Company entity configuration
+ * Company entity configuration (with adapted query keys for CRUD compatibility)
  * @author @serabi
  */
 export const companyConfig: EntityConfig<CompaniesResponse> = createEntityConfig<CompaniesResponse>(
   'company',
   Collections.Companies,
-  queryKeys.companies
+  {
+    lists: queryKeys.companies.lists,
+    list: (userId: string) => queryKeys.companies.allForUser(userId), // Use allForUser for single-param compatibility
+    detail: queryKeys.companies.detail,
+  }
 );

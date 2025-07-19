@@ -17,68 +17,6 @@ const PROJECT_STATUS = {
   ARCHIVED: 'archived' as const,
 } satisfies Record<string, ProjectStatus>;
 
-// Helper function to invalidate project-related queries with precise targeting
-const invalidateProjectQueries = async (
-  queryClient: ReturnType<typeof useQueryClient>,
-  projectId?: string,
-  userId?: string,
-  isDeletion?: boolean
-) => {
-  const invalidations: Promise<void>[] = [];
-
-  // Handle project-specific cache based on operation type
-  if (projectId) {
-    if (isDeletion) {
-      // For deletions, remove the project and related data completely from cache to prevent 404 refetch attempts
-      // removeQueries is synchronous in TanStack Query v5, so handle separately from async invalidations
-      queryClient.removeQueries({ queryKey: queryKeys.projects.detail(projectId), exact: true });
-      queryClient.removeQueries({
-        queryKey: queryKeys.progressNotes.list(projectId),
-        exact: true,
-      });
-    } else {
-      // For non-deletion operations, invalidate to trigger refetch with fresh data
-      invalidations.push(
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.projects.detail(projectId),
-          exact: true,
-        })
-      );
-    }
-  }
-
-  // Precisely invalidate project lists - avoid broad invalidation
-  if (userId) {
-    // For paginated lists, we use exact: false but with specific user context
-    invalidations.push(
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.projects.lists(),
-        exact: false,
-        refetchType: 'active', // Only refetch currently active queries
-      })
-    );
-  } else {
-    // Fallback: broader invalidation if no userId
-    invalidations.push(
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.projects.lists(),
-        refetchType: 'active',
-      })
-    );
-  }
-
-  // Precisely invalidate tag stats with exact matching
-  invalidations.push(
-    queryClient.invalidateQueries({
-      queryKey: queryKeys.tags.stats(),
-      exact: true,
-      refetchType: 'none', // Mark stale but don't refetch immediately
-    })
-  );
-
-  // Wait for all invalidations to complete
-  await Promise.all(invalidations);
-};
 
 // Helper function to handle common error logging and toast
 const handleMutationError = (

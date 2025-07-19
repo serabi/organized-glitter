@@ -1,22 +1,18 @@
 /**
- * React Query hook for fetching artists data
+ * React Query hook for fetching artists data (modernized with queryOptions)
  * @author @serabi
- * @created 2025-01-16
+ * @created 2025-07-16
  */
 
-import { Collections, ArtistsResponse } from '@/types/pocketbase.types';
-import { queryKeys } from './queryKeys';
-import { createListQuery } from './shared/listQueryFactory';
+import { useQuery } from '@tanstack/react-query';
+import { artistsOptions } from './shared/queryOptionsFactory';
 
 /**
- * Hook for fetching all artists for the current user
+ * Hook for fetching all artists for the current user (modernized with queryOptions)
  * @author @serabi
+ * @param userId - User ID to fetch artists for
  * @returns React Query result with artists data
  */
-export const useArtists = createListQuery<ArtistsResponse>({
-  collection: Collections.Artists,
-  queryKeyFactory: (userId: string) => queryKeys.artists.list(userId),
-  sortField: 'name',
-  requestKeySuffix: 'all',
-  hookName: 'useArtists',
-});
+export const useArtists = (userId?: string) => {
+  return useQuery(artistsOptions(userId || ''));
+};

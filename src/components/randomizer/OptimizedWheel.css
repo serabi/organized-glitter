@@ -318,6 +318,9 @@
 .wheel__label--optimized {
   /* Reduce memory footprint for many labels */
   contain: layout style paint;
+  /* GPU acceleration for better performance */
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 /* Print Styles */
