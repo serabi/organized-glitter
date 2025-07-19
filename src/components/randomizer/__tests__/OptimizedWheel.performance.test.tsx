@@ -1,6 +1,6 @@
 /**
  * @fileoverview Performance tests for OptimizedWheel component
- * 
+ *
  * Tests performance optimizations including Canvas fallback,
  * memoization, and render mode switching.
  */
@@ -103,13 +103,8 @@ describe('OptimizedWheel Performance Tests', () => {
   describe('Render Mode Selection', () => {
     it('should use CSS render mode for small project counts', () => {
       const projects = createMockProjects(5);
-      
-      render(
-        <OptimizedWheel
-          projects={projects}
-          onSpinComplete={mockOnSpinComplete}
-        />
-      );
+
+      render(<OptimizedWheel projects={projects} onSpinComplete={mockOnSpinComplete} />);
 
       // Should render CSS-based wheel (no canvas element)
       expect(screen.queryByRole('application')).toBeInTheDocument();
@@ -118,13 +113,8 @@ describe('OptimizedWheel Performance Tests', () => {
 
     it('should use Canvas render mode for large project counts', () => {
       const projects = createMockProjects(25); // Above threshold of 20
-      
-      render(
-        <OptimizedWheel
-          projects={projects}
-          onSpinComplete={mockOnSpinComplete}
-        />
-      );
+
+      render(<OptimizedWheel projects={projects} onSpinComplete={mockOnSpinComplete} />);
 
       // Should render Canvas-based wheel
       expect(document.querySelector('canvas')).toBeInTheDocument();
@@ -132,7 +122,7 @@ describe('OptimizedWheel Performance Tests', () => {
 
     it('should respect forced render mode', () => {
       const projects = createMockProjects(5);
-      
+
       render(
         <OptimizedWheel
           projects={projects}
@@ -154,27 +144,25 @@ describe('OptimizedWheel Performance Tests', () => {
       // Mock console methods to capture performance logs
       const consoleSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
 
-      render(
-        <OptimizedWheel
-          projects={projects}
-          onSpinComplete={mockOnSpinComplete}
-        />
-      );
+      render(<OptimizedWheel projects={projects} onSpinComplete={mockOnSpinComplete} />);
 
       // Trigger a spin to generate performance metrics
       const spinButton = screen.getByRole('button', { name: /spin the wheel/i });
       fireEvent.click(spinButton);
 
-      await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalled();
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          expect(consoleSpy).toHaveBeenCalled();
+        },
+        { timeout: 1000 }
+      );
 
       consoleSpy.mockRestore();
     });
 
     it('should switch to Canvas mode when CSS performance is poor', async () => {
       const projects = createMockProjects(15); // Below Canvas threshold
-      
+
       // Mock poor performance
       let callCount = 0;
       mockPerformance.now.mockImplementation(() => {
@@ -184,10 +172,7 @@ describe('OptimizedWheel Performance Tests', () => {
       });
 
       const { rerender } = render(
-        <OptimizedWheel
-          projects={projects}
-          onSpinComplete={mockOnSpinComplete}
-        />
+        <OptimizedWheel projects={projects} onSpinComplete={mockOnSpinComplete} />
       );
 
       // Initially should use CSS mode
@@ -195,31 +180,26 @@ describe('OptimizedWheel Performance Tests', () => {
 
       // Trigger multiple renders to accumulate performance metrics
       for (let i = 0; i < 5; i++) {
-        rerender(
-          <OptimizedWheel
-            projects={projects}
-            onSpinComplete={mockOnSpinComplete}
-          />
-        );
+        rerender(<OptimizedWheel projects={projects} onSpinComplete={mockOnSpinComplete} />);
         await new Promise(resolve => setTimeout(resolve, 100));
       }
 
       // Should eventually switch to Canvas mode due to poor performance
-      await waitFor(() => {
-        expect(document.querySelector('canvas')).toBeInTheDocument();
-      }, { timeout: 2000 });
+      await waitFor(
+        () => {
+          expect(document.querySelector('canvas')).toBeInTheDocument();
+        },
+        { timeout: 2000 }
+      );
     });
   });
 
   describe('Memory Management', () => {
     it('should cleanup resources on unmount', () => {
       const projects = createMockProjects(25); // Canvas mode
-      
+
       const { unmount } = render(
-        <OptimizedWheel
-          projects={projects}
-          onSpinComplete={mockOnSpinComplete}
-        />
+        <OptimizedWheel projects={projects} onSpinComplete={mockOnSpinComplete} />
       );
 
       // Trigger animation to create resources
@@ -235,18 +215,13 @@ describe('OptimizedWheel Performance Tests', () => {
 
     it('should monitor memory usage in development', () => {
       const projects = createMockProjects(30);
-      
+
       // Mock high memory usage
       mockPerformance.memory.usedJSHeapSize = 60 * 1024 * 1024; // 60MB (above 50MB threshold)
 
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-      render(
-        <OptimizedWheel
-          projects={projects}
-          onSpinComplete={mockOnSpinComplete}
-        />
-      );
+      render(<OptimizedWheel projects={projects} onSpinComplete={mockOnSpinComplete} />);
 
       // Should log memory warning in development
       expect(consoleSpy).toHaveBeenCalledWith(
@@ -261,24 +236,16 @@ describe('OptimizedWheel Performance Tests', () => {
   describe('Memoization Optimizations', () => {
     it('should memoize wheel gradient generation', () => {
       const projects = createMockProjects(10);
-      
+
       const { rerender } = render(
-        <OptimizedWheel
-          projects={projects}
-          onSpinComplete={mockOnSpinComplete}
-        />
+        <OptimizedWheel projects={projects} onSpinComplete={mockOnSpinComplete} />
       );
 
       // Get initial render count
       const initialCallCount = mockPerformance.now.mock.calls.length;
 
       // Rerender with same projects - should use memoized gradient
-      rerender(
-        <OptimizedWheel
-          projects={projects}
-          onSpinComplete={mockOnSpinComplete}
-        />
-      );
+      rerender(<OptimizedWheel projects={projects} onSpinComplete={mockOnSpinComplete} />);
 
       // Should not have generated new gradient (minimal additional calls)
       const finalCallCount = mockPerformance.now.mock.calls.length;
@@ -287,24 +254,16 @@ describe('OptimizedWheel Performance Tests', () => {
 
     it('should memoize project labels', () => {
       const projects = createMockProjects(8);
-      
+
       const { rerender } = render(
-        <OptimizedWheel
-          projects={projects}
-          onSpinComplete={mockOnSpinComplete}
-        />
+        <OptimizedWheel projects={projects} onSpinComplete={mockOnSpinComplete} />
       );
 
       // Count initial label elements
       const initialLabels = document.querySelectorAll('.wheel__label').length;
 
       // Rerender with same projects
-      rerender(
-        <OptimizedWheel
-          projects={projects}
-          onSpinComplete={mockOnSpinComplete}
-        />
-      );
+      rerender(<OptimizedWheel projects={projects} onSpinComplete={mockOnSpinComplete} />);
 
       // Should have same number of labels (memoized)
       const finalLabels = document.querySelectorAll('.wheel__label').length;
@@ -316,30 +275,20 @@ describe('OptimizedWheel Performance Tests', () => {
   describe('Canvas Fallback Optimizations', () => {
     it('should use offscreen canvas for complex scenarios', () => {
       const projects = createMockProjects(35); // Above offscreen threshold of 30
-      
-      render(
-        <OptimizedWheel
-          projects={projects}
-          onSpinComplete={mockOnSpinComplete}
-        />
-      );
+
+      render(<OptimizedWheel projects={projects} onSpinComplete={mockOnSpinComplete} />);
 
       // Should create canvas element
       expect(document.querySelector('canvas')).toBeInTheDocument();
-      
+
       // Should have called canvas context methods
       expect(mockCanvas.getContext).toHaveBeenCalled();
     });
 
     it('should optimize Canvas rendering for many projects', async () => {
       const projects = createMockProjects(40);
-      
-      render(
-        <OptimizedWheel
-          projects={projects}
-          onSpinComplete={mockOnSpinComplete}
-        />
-      );
+
+      render(<OptimizedWheel projects={projects} onSpinComplete={mockOnSpinComplete} />);
 
       // Trigger spin to test animation performance
       const spinButton = screen.getByRole('button', { name: /spin the wheel/i });
@@ -355,7 +304,7 @@ describe('OptimizedWheel Performance Tests', () => {
   describe('Responsive Performance', () => {
     it('should adapt rendering based on screen size', () => {
       const projects = createMockProjects(15);
-      
+
       // Mock small screen
       Object.defineProperty(window, 'innerWidth', {
         value: 500,
@@ -363,11 +312,7 @@ describe('OptimizedWheel Performance Tests', () => {
       });
 
       render(
-        <OptimizedWheel
-          projects={projects}
-          onSpinComplete={mockOnSpinComplete}
-          size="small"
-        />
+        <OptimizedWheel projects={projects} onSpinComplete={mockOnSpinComplete} size="small" />
       );
 
       // Should render with small size optimizations

@@ -58,14 +58,18 @@ export const MetadataProvider = React.memo(({ children }: MetadataProviderProps)
   const companiesQuery = useAllCompanies(userId);
   logger.debug('MetadataProvider: useAllCompanies completed', {
     isLoading: companiesQuery.isLoading,
-    dataLength: companiesQuery.isSuccess && Array.isArray(companiesQuery.data) ? companiesQuery.data.length : 0,
+    dataLength:
+      companiesQuery.isSuccess && Array.isArray(companiesQuery.data)
+        ? companiesQuery.data.length
+        : 0,
     error: companiesQuery.error?.message,
   });
 
   const artistsQuery = useArtists(userId);
   logger.debug('MetadataProvider: useArtists completed', {
     isLoading: artistsQuery.isLoading,
-    dataLength: artistsQuery.isSuccess && Array.isArray(artistsQuery.data) ? artistsQuery.data.length : 0,
+    dataLength:
+      artistsQuery.isSuccess && Array.isArray(artistsQuery.data) ? artistsQuery.data.length : 0,
     error: artistsQuery.error?.message,
   });
 
@@ -82,8 +86,12 @@ export const MetadataProvider = React.memo(({ children }: MetadataProviderProps)
       companiesLoading: companiesQuery.isLoading,
       artistsLoading: artistsQuery.isLoading,
       tagsLoading: tagsQuery.isLoading,
-      companiesData: companiesQuery.isSuccess && Array.isArray(companiesQuery.data) ? companiesQuery.data.length : 0,
-      artistsData: artistsQuery.isSuccess && Array.isArray(artistsQuery.data) ? artistsQuery.data.length : 0,
+      companiesData:
+        companiesQuery.isSuccess && Array.isArray(companiesQuery.data)
+          ? companiesQuery.data.length
+          : 0,
+      artistsData:
+        artistsQuery.isSuccess && Array.isArray(artistsQuery.data) ? artistsQuery.data.length : 0,
       tagsData: tagsQuery.isSuccess && Array.isArray(tagsQuery.data) ? tagsQuery.data.length : 0,
     });
   });

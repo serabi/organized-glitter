@@ -6,12 +6,11 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { 
-  WheelPerformanceMonitor, 
-  wheelPerformanceMonitor,
+import {
+  WheelPerformanceMonitor,
   useWheelPerformanceMonitoring,
   WHEEL_PERFORMANCE_THRESHOLDS,
-  WheelPerformanceMetrics 
+  WheelPerformanceMetrics,
 } from '../wheelPerformanceMonitor';
 
 // Mock logger
@@ -29,12 +28,14 @@ describe('WheelPerformanceMonitor', () => {
 
   beforeEach(() => {
     monitor = new WheelPerformanceMonitor();
-    
+
     // Mock PerformanceObserver
-    global.PerformanceObserver = vi.fn().mockImplementation((callback) => ({
+    const MockPerformanceObserver = vi.fn().mockImplementation((callback: PerformanceObserverCallback) => ({
       observe: vi.fn(),
       disconnect: vi.fn(),
     }));
+    (MockPerformanceObserver as any).supportedEntryTypes = ['measure', 'navigation', 'resource'];
+    global.PerformanceObserver = MockPerformanceObserver as any;
 
     // Mock performance.memory
     Object.defineProperty(performance, 'memory', {
@@ -210,12 +211,14 @@ describe('WheelPerformanceMonitor', () => {
 
     it('destroys resources properly', () => {
       const disconnectSpy = vi.fn();
-      
+
       // Mock PerformanceObserver with disconnect spy
-      global.PerformanceObserver = vi.fn().mockImplementation(() => ({
+      const MockPerformanceObserver = vi.fn().mockImplementation((callback: PerformanceObserverCallback) => ({
         observe: vi.fn(),
         disconnect: disconnectSpy,
       }));
+      (MockPerformanceObserver as any).supportedEntryTypes = ['measure', 'navigation', 'resource'];
+      global.PerformanceObserver = MockPerformanceObserver as any;
 
       const testMonitor = new WheelPerformanceMonitor();
       testMonitor.destroy();
@@ -254,7 +257,7 @@ describe('useWheelPerformanceMonitoring Hook', () => {
 
   it('records metrics through hook', () => {
     const hook = useWheelPerformanceMonitoring();
-    
+
     const metric: WheelPerformanceMetrics = {
       renderTime: 10,
       animationFrameTime: 8,

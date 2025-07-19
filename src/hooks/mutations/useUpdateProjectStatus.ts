@@ -21,13 +21,13 @@ const logger = createLogger('useUpdateProjectStatus');
 interface UpdateProjectStatusData {
   projectId: string;
   newStatus: string;
-  currentStatus?: string;
 }
 
 interface MutationContext {
   previousProjects?: unknown;
   previousStatusCounts?: unknown;
   oldStatus?: string;
+  oldDateCompleted?: string;
 }
 
 export const useUpdateProjectStatus = () => {
@@ -42,17 +42,21 @@ export const useUpdateProjectStatus = () => {
       logger.debug('Updating project status:', { projectId, newStatus });
 
       // Prepare update data
-      const updateData: { status: string; date_completed?: string } = {
+      const updateData: { status: string; date_completed?: string | null } = {
         status: newStatus,
       };
 
       // Auto-set date_completed when status changes to 'completed'
+      // Clear date_completed when status changes away from 'completed'
       if (newStatus === 'completed') {
         updateData.date_completed = getCurrentDateString(userTimezone);
         logger.debug(
           'Auto-setting date_completed for completed project:',
           updateData.date_completed
         );
+      } else {
+        updateData.date_completed = null;
+        logger.debug('Clearing date_completed for non-completed project');
       }
 
       // Update the project
@@ -80,12 +84,14 @@ export const useUpdateProjectStatus = () => {
         'status-counts',
       ]);
 
-      // Find the project and its current status
+      // Find the project and its current status and date_completed
       let oldStatus: string | undefined;
+      let oldDateCompleted: string | undefined;
       if (previousProjects && typeof previousProjects === 'object' && 'items' in previousProjects) {
         const typedData = previousProjects as { items?: ProjectsResponse[] };
         const project = typedData.items?.find(p => p.id === projectId);
         oldStatus = project?.status;
+        oldDateCompleted = project?.date_completed;
       }
 
       // Optimistically update the project in all project lists
@@ -106,9 +112,12 @@ export const useUpdateProjectStatus = () => {
         const updatedItems = typedData.items.map((project: ProjectsResponse) => {
           if (project.id === projectId) {
             const updatedProject = { ...project, status: newStatus };
-            // Add date_completed if status is completed
+            // Add date_completed if status is completed, clear it otherwise
             if (newStatus === 'completed') {
               updatedProject.date_completed = getCurrentDateString(userTimezone);
+            } else {
+              // Remove date_completed when status is not completed
+              delete updatedProject.date_completed;
             }
             return updatedProject;
           }
@@ -116,7 +125,7 @@ export const useUpdateProjectStatus = () => {
         });
 
         // Update status counts optimistically
-        let updatedStatusCounts = typedData.statusCounts ? { ...typedData.statusCounts } : {};
+        const updatedStatusCounts = typedData.statusCounts ? { ...typedData.statusCounts } : {};
 
         if (oldStatus && oldStatus !== newStatus) {
           // Decrease old status count
@@ -137,11 +146,20 @@ export const useUpdateProjectStatus = () => {
       // Update the project detail if it exists in cache
       const previousProject = queryClient.getQueryData(queryKeys.projects.detail(projectId));
       if (previousProject) {
-        queryClient.setQueryData(queryKeys.projects.detail(projectId), {
+        const updatedProject = {
           ...previousProject,
           status: newStatus,
-          ...(newStatus === 'completed' && { date_completed: getCurrentDateString(userTimezone) }),
-        });
+        };
+
+        // Handle date_completed field based on status
+        if (newStatus === 'completed') {
+          updatedProject.date_completed = getCurrentDateString(userTimezone);
+        } else {
+          // Remove date_completed when status is not completed
+          delete updatedProject.date_completed;
+        }
+
+        queryClient.setQueryData(queryKeys.projects.detail(projectId), updatedProject);
       }
 
       logger.debug('Optimistic updates applied:', { projectId, oldStatus, newStatus });
@@ -151,11 +169,12 @@ export const useUpdateProjectStatus = () => {
         previousProjects,
         previousStatusCounts,
         oldStatus,
+        oldDateCompleted,
       };
     },
 
     onSuccess: async (data, variables) => {
-      const { projectId, newStatus } = variables;
+      const { newStatus } = variables;
 
       if (!user?.id) return;
 
@@ -199,10 +218,20 @@ export const useUpdateProjectStatus = () => {
         // Rollback project detail
         const previousProject = queryClient.getQueryData(queryKeys.projects.detail(projectId));
         if (previousProject && context?.oldStatus) {
-          queryClient.setQueryData(queryKeys.projects.detail(projectId), {
+          const rolledBackProject = {
             ...previousProject,
             status: context.oldStatus,
-          });
+          };
+
+          // Restore the original date_completed state
+          if (context.oldDateCompleted) {
+            rolledBackProject.date_completed = context.oldDateCompleted;
+          } else {
+            // If there was no date_completed originally, remove it
+            delete rolledBackProject.date_completed;
+          }
+
+          queryClient.setQueryData(queryKeys.projects.detail(projectId), rolledBackProject);
           logger.debug('Rolled back project detail cache');
         }
       } catch (rollbackError) {

@@ -1,6 +1,6 @@
 /**
  * @fileoverview Basic tests for OptimizedWheel component
- * 
+ *
  * Simple tests to verify the component renders without infinite loops.
  */
 
@@ -41,12 +41,7 @@ describe('OptimizedWheel Basic Tests', () => {
   });
 
   it('should render empty state without projects', () => {
-    render(
-      <OptimizedWheel
-        projects={[]}
-        onSpinComplete={mockOnSpinComplete}
-      />
-    );
+    render(<OptimizedWheel projects={[]} onSpinComplete={mockOnSpinComplete} />);
 
     expect(screen.getByText('Select projects below')).toBeInTheDocument();
     expect(screen.getByText('to get started!')).toBeInTheDocument();
@@ -54,13 +49,8 @@ describe('OptimizedWheel Basic Tests', () => {
 
   it('should render with small number of projects', () => {
     const projects = createMockProjects(3);
-    
-    render(
-      <OptimizedWheel
-        projects={projects}
-        onSpinComplete={mockOnSpinComplete}
-      />
-    );
+
+    render(<OptimizedWheel projects={projects} onSpinComplete={mockOnSpinComplete} />);
 
     expect(screen.getByRole('button', { name: /spin the wheel/i })).toBeInTheDocument();
     expect(screen.getByRole('application')).toBeInTheDocument();
@@ -68,26 +58,17 @@ describe('OptimizedWheel Basic Tests', () => {
 
   it('should render with large number of projects', () => {
     const projects = createMockProjects(25);
-    
-    render(
-      <OptimizedWheel
-        projects={projects}
-        onSpinComplete={mockOnSpinComplete}
-      />
-    );
+
+    render(<OptimizedWheel projects={projects} onSpinComplete={mockOnSpinComplete} />);
 
     expect(screen.getByRole('button', { name: /spin the wheel/i })).toBeInTheDocument();
   });
 
   it('should handle disabled state', () => {
     const projects = createMockProjects(5);
-    
+
     render(
-      <OptimizedWheel
-        projects={projects}
-        onSpinComplete={mockOnSpinComplete}
-        disabled={true}
-      />
+      <OptimizedWheel projects={projects} onSpinComplete={mockOnSpinComplete} disabled={true} />
     );
 
     const spinButton = screen.getByRole('button', { name: /spin the wheel/i });
@@ -96,7 +77,7 @@ describe('OptimizedWheel Basic Tests', () => {
 
   it('should respect forced render mode', () => {
     const projects = createMockProjects(5);
-    
+
     render(
       <OptimizedWheel
         projects={projects}

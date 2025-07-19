@@ -17,9 +17,7 @@ const logger = createLogger('QueryOptionsFactory');
 /**
  * Companies data fetching with pagination
  */
-async function fetchCompanies(
-  params: CompanyQueryParams & { userId: string }
-): Promise<{
+async function fetchCompanies(params: CompanyQueryParams & { userId: string }): Promise<{
   companies: CompaniesResponse[];
   totalItems: number;
   totalPages: number;
@@ -120,7 +118,8 @@ async function fetchTags(): Promise<Tag[]> {
 
     if (result.status === 'error') {
       logger.error('Tags fetch failed', result.error);
-      throw new Error(result.error || 'Failed to fetch tags');
+      const errorMessage = result.error instanceof Error ? result.error.message : result.error;
+      throw new Error(errorMessage || 'Failed to fetch tags');
     }
 
     const endTime = performance.now();

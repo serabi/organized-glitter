@@ -94,8 +94,8 @@ export const useEditProject = (projectId: string | undefined) => {
   // Navigation state with proper isDirty check
   const isDirty = Boolean(
     formData &&
-    project &&
-    JSON.stringify(formData) !== JSON.stringify(prepareFormInitialData(project))
+      project &&
+      JSON.stringify(formData) !== JSON.stringify(prepareFormInitialData(project))
   );
   const { confirmUnsavedChanges } = useConfirmationDialog();
   const { navigationState, clearNavigationError } = useNavigationWithWarning({

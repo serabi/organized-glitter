@@ -63,11 +63,11 @@ type ChartTooltipContentProps = React.ComponentProps<typeof Tooltip> &
 type ChartLegendProps = LegendProps;
 
 type ChartLegendContentProps = React.ComponentProps<'div'> & {
-    payload?: any[];
-    verticalAlign?: 'top' | 'middle' | 'bottom';
-    hideIcon?: boolean;
-    nameKey?: string;
-  };
+  payload?: any[];
+  verticalAlign?: 'top' | 'middle' | 'bottom';
+  hideIcon?: boolean;
+  nameKey?: string;
+};
 
 // Lazy loaded chart components with loading fallbacks and proper typing
 export const ChartContainer = React.forwardRef<HTMLDivElement, ChartContainerProps>(

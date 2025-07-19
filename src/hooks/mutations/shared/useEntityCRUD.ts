@@ -278,7 +278,7 @@ export function createEntityDeleteMutation<TData extends Record<string, unknown>
         });
       },
       onSuccess: (_, { id }) => {
-        // Invalidate relevant queries - use lists() for broader cache invalidation  
+        // Invalidate relevant queries - use lists() for broader cache invalidation
         queryClient.invalidateQueries({ queryKey: config.queryKeys.lists() });
         queryClient.invalidateQueries({ queryKey: config.queryKeys.detail(id) });
 

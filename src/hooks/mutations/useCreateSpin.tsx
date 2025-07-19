@@ -321,8 +321,9 @@ export const useCreateSpin = () => {
       // Show success toast with enhanced information
       toast({
         title: 'Spin recorded!',
-        description: `Selected: ${variables.project_title}${variables.project_company ? ` by ${variables.project_company}` : ''
-          }`,
+        description: `Selected: ${variables.project_title}${
+          variables.project_company ? ` by ${variables.project_company}` : ''
+        }`,
       });
     },
     onError: (error, variables, context) => {

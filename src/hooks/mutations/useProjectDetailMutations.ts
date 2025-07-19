@@ -17,7 +17,6 @@ const PROJECT_STATUS = {
   ARCHIVED: 'archived' as const,
 } satisfies Record<string, ProjectStatus>;
 
-
 // Helper function to handle common error logging and toast
 const handleMutationError = (
   error: unknown,

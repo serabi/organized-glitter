@@ -378,8 +378,9 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
         {/* Wheel */}
         <div
           ref={wheelRef}
-          className={`duration-3000 relative h-72 w-72 overflow-hidden rounded-full border-4 border-flamingo-300 transition-transform ease-out sm:h-96 sm:w-96 lg:h-140 lg:w-140 ${isSpinning ? 'animate-spin-custom' : ''
-            }`}
+          className={`duration-3000 relative h-72 w-72 overflow-hidden rounded-full border-4 border-flamingo-300 transition-transform ease-out sm:h-96 sm:w-96 lg:h-140 lg:w-140 ${
+            isSpinning ? 'animate-spin-custom' : ''
+          }`}
           style={{
             transform: `rotate(${rotation}deg)`,
             transformOrigin: 'center',

@@ -61,8 +61,8 @@ export class WheelPerformanceMonitor {
     }
 
     try {
-      this.performanceObserver = new PerformanceObserver((list) => {
-        list.getEntries().forEach((entry) => {
+      this.performanceObserver = new PerformanceObserver(list => {
+        list.getEntries().forEach(entry => {
           if (entry.name.includes('wheel') || entry.name.includes('randomizer')) {
             logger.debug('Performance entry detected', {
               name: entry.name,
@@ -73,8 +73,8 @@ export class WheelPerformanceMonitor {
         });
       });
 
-      this.performanceObserver.observe({ 
-        entryTypes: ['measure', 'navigation', 'paint'] 
+      this.performanceObserver.observe({
+        entryTypes: ['measure', 'navigation', 'paint'],
       });
     } catch (error) {
       logger.debug('Performance observer initialization failed', error);
@@ -125,23 +125,33 @@ export class WheelPerformanceMonitor {
 
     // Check render time
     if (metric.renderTime > WHEEL_PERFORMANCE_THRESHOLDS.RENDER_TIME_CRITICAL) {
-      warnings.push(`Critical render time: ${metric.renderTime.toFixed(2)}ms (>${WHEEL_PERFORMANCE_THRESHOLDS.RENDER_TIME_CRITICAL}ms)`);
+      warnings.push(
+        `Critical render time: ${metric.renderTime.toFixed(2)}ms (>${WHEEL_PERFORMANCE_THRESHOLDS.RENDER_TIME_CRITICAL}ms)`
+      );
     } else if (metric.renderTime > WHEEL_PERFORMANCE_THRESHOLDS.RENDER_TIME_WARNING) {
-      warnings.push(`Slow render time: ${metric.renderTime.toFixed(2)}ms (>${WHEEL_PERFORMANCE_THRESHOLDS.RENDER_TIME_WARNING}ms)`);
+      warnings.push(
+        `Slow render time: ${metric.renderTime.toFixed(2)}ms (>${WHEEL_PERFORMANCE_THRESHOLDS.RENDER_TIME_WARNING}ms)`
+      );
     }
 
     // Check memory usage
     if (metric.memoryUsage) {
       if (metric.memoryUsage > WHEEL_PERFORMANCE_THRESHOLDS.MEMORY_CRITICAL_MB) {
-        warnings.push(`Critical memory usage: ${metric.memoryUsage}MB (>${WHEEL_PERFORMANCE_THRESHOLDS.MEMORY_CRITICAL_MB}MB)`);
+        warnings.push(
+          `Critical memory usage: ${metric.memoryUsage}MB (>${WHEEL_PERFORMANCE_THRESHOLDS.MEMORY_CRITICAL_MB}MB)`
+        );
       } else if (metric.memoryUsage > WHEEL_PERFORMANCE_THRESHOLDS.MEMORY_WARNING_MB) {
-        warnings.push(`High memory usage: ${metric.memoryUsage}MB (>${WHEEL_PERFORMANCE_THRESHOLDS.MEMORY_WARNING_MB}MB)`);
+        warnings.push(
+          `High memory usage: ${metric.memoryUsage}MB (>${WHEEL_PERFORMANCE_THRESHOLDS.MEMORY_WARNING_MB}MB)`
+        );
       }
     }
 
     // Check animation frame time
     if (metric.animationFrameTime > WHEEL_PERFORMANCE_THRESHOLDS.ANIMATION_FRAME_WARNING) {
-      warnings.push(`Slow animation frame: ${metric.animationFrameTime.toFixed(2)}ms (>${WHEEL_PERFORMANCE_THRESHOLDS.ANIMATION_FRAME_WARNING}ms)`);
+      warnings.push(
+        `Slow animation frame: ${metric.animationFrameTime.toFixed(2)}ms (>${WHEEL_PERFORMANCE_THRESHOLDS.ANIMATION_FRAME_WARNING}ms)`
+      );
     }
 
     // Log warnings
@@ -166,16 +176,25 @@ export class WheelPerformanceMonitor {
 
     // Render mode suggestions
     if (metric.renderMode === 'css' && metric.projectCount > 20) {
-      suggestions.push('Consider using Canvas render mode for better performance with many projects');
+      suggestions.push(
+        'Consider using Canvas render mode for better performance with many projects'
+      );
     }
 
-    if (metric.renderMode === 'canvas' && metric.renderTime > WHEEL_PERFORMANCE_THRESHOLDS.RENDER_TIME_WARNING) {
-      suggestions.push('Canvas rendering is slow - consider reducing project count or simplifying graphics');
+    if (
+      metric.renderMode === 'canvas' &&
+      metric.renderTime > WHEEL_PERFORMANCE_THRESHOLDS.RENDER_TIME_WARNING
+    ) {
+      suggestions.push(
+        'Canvas rendering is slow - consider reducing project count or simplifying graphics'
+      );
     }
 
     // Memory suggestions
     if (metric.memoryUsage && metric.memoryUsage > WHEEL_PERFORMANCE_THRESHOLDS.MEMORY_WARNING_MB) {
-      suggestions.push('High memory usage detected - consider implementing virtualization for large project lists');
+      suggestions.push(
+        'High memory usage detected - consider implementing virtualization for large project lists'
+      );
     }
 
     // Project count suggestions
@@ -215,18 +234,22 @@ export class WheelPerformanceMonitor {
 
     const renderTimes = this.metrics.map(m => m.renderTime);
     const memoryUsages = this.metrics.map(m => m.memoryUsage).filter(Boolean) as number[];
-    
+
     const averageRenderTime = renderTimes.reduce((sum, time) => sum + time, 0) / renderTimes.length;
     const maxRenderTime = Math.max(...renderTimes);
-    const averageMemoryUsage = memoryUsages.length > 0 
-      ? memoryUsages.reduce((sum, mem) => sum + mem, 0) / memoryUsages.length 
-      : 0;
+    const averageMemoryUsage =
+      memoryUsages.length > 0
+        ? memoryUsages.reduce((sum, mem) => sum + mem, 0) / memoryUsages.length
+        : 0;
 
     // Calculate render mode distribution
-    const renderModeDistribution = this.metrics.reduce((dist, metric) => {
-      dist[metric.renderMode] = (dist[metric.renderMode] || 0) + 1;
-      return dist;
-    }, {} as Record<string, number>);
+    const renderModeDistribution = this.metrics.reduce(
+      (dist, metric) => {
+        dist[metric.renderMode] = (dist[metric.renderMode] || 0) + 1;
+        return dist;
+      },
+      {} as Record<string, number>
+    );
 
     // Determine performance grade
     let performanceGrade: 'excellent' | 'good' | 'fair' | 'poor' = 'excellent';
