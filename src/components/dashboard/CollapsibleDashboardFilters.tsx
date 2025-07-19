@@ -33,11 +33,7 @@ type CollapsibleDashboardFiltersProps = Record<string, never>;
 const LOCAL_STORAGE_KEY = 'dashboardFiltersMobileCollapsed';
 
 const CollapsibleDashboardFiltersComponent: React.FC<CollapsibleDashboardFiltersProps> = () => {
-  // Handle SSR - don't render on server
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
+  // All hooks must be called before any early returns
   const isMobile = useIsMobile();
   const { getActiveFilterCount } = useFilterActionsOnly();
 
@@ -46,7 +42,7 @@ const CollapsibleDashboardFiltersComponent: React.FC<CollapsibleDashboardFilters
       try {
         const storedState = localStorage.getItem(LOCAL_STORAGE_KEY);
         return storedState ? JSON.parse(storedState) === true : true; // Default to open
-      } catch (error) {
+      } catch {
         // Handle invalid JSON gracefully
         return true; // Default to open
       }
@@ -58,9 +54,8 @@ const CollapsibleDashboardFiltersComponent: React.FC<CollapsibleDashboardFilters
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(isOpen));
-      } catch (error) {
-        // Handle localStorage errors gracefully
-        console.warn('Failed to save filter state to localStorage:', error);
+      } catch {
+        // Handle localStorage errors gracefully - removed console.warn to avoid console usage
       }
     }
   }, [isOpen]);
@@ -79,11 +74,12 @@ const CollapsibleDashboardFiltersComponent: React.FC<CollapsibleDashboardFilters
     [toggleOpen]
   );
 
-  const activeFilterCount = getActiveFilterCount ? getActiveFilterCount() : 0;
-
-  if (!isMobile) {
-    return null; // On desktop, this component renders nothing
+  // Handle SSR and mobile check - early returns after all hooks
+  if (typeof window === 'undefined' || !isMobile) {
+    return null;
   }
+
+  const activeFilterCount = getActiveFilterCount ? getActiveFilterCount() : 0;
 
   return (
     <div className="mb-4 rounded-lg border border-gray-200 shadow-sm dark:border-gray-700 lg:hidden">

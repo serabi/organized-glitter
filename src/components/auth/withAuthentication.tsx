@@ -33,7 +33,7 @@ const withAuthentication = <P extends object>(
         });
         navigate('/login');
       }
-    }, [user, authLoading, navigate, toast]);
+    }, [user, authLoading, navigate, toast, logger]);
 
     if (authLoading) {
       logger.log('withAuthentication: Showing loading state while checking authentication');

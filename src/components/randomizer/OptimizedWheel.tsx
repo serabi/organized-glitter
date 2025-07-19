@@ -17,6 +17,9 @@ import type { Project } from '@/types/shared';
 import { createLogger } from '@/utils/secureLogger';
 import { useSimplePerformanceTracking } from '@/hooks/usePerformanceMonitoring';
 import { useWheelPerformanceMonitoring, WheelPerformanceMetrics } from './wheelPerformanceMonitor';
+import { useAccessibilityAnnouncements, useFocusManagement } from '@/hooks/useAccessibilityAnnouncements';
+import { useWheelTouchGestures } from '@/hooks/useTouchGestures';
+import { useIsMobile, useIsTouchDevice } from '@/hooks/use-mobile';
 import './OptimizedWheel.css';
 
 const logger = createLogger('OptimizedWheel');
@@ -484,6 +487,9 @@ MemoizedWheelSegments.displayName = 'MemoizedWheelSegments';
  * - Responsive sizing with CSS custom properties
  * - Reduced motion support for accessibility
  * - Comprehensive keyboard and screen reader support
+ * - Touch gesture support for mobile devices
+ * - WCAG 2.1 AA compliance with proper ARIA labels
+ * - Haptic feedback for touch interactions
  */
 export const OptimizedWheel: React.FC<OptimizedWheelProps> = memo(
   ({ projects, onSpinComplete, disabled = false, size: preferredSize, forceRenderMode }) => {
@@ -492,12 +498,26 @@ export const OptimizedWheel: React.FC<OptimizedWheelProps> = memo(
     const [performanceMetrics, setPerformanceMetrics] = useState<WheelPerformanceMetrics[]>([]);
     const [adaptiveRenderMode, setAdaptiveRenderMode] = useState<'css' | 'canvas' | null>(null);
     const wheelRef = useRef<HTMLDivElement>(null);
-    const resultAnnouncementRef = useRef<HTMLDivElement>(null);
     const performanceFallbackTriggered = useRef(false);
 
     // Performance monitoring
     const { getElapsedTime } = useSimplePerformanceTracking('OptimizedWheel');
     const { recordMetric, getPerformanceSummary } = useWheelPerformanceMonitoring();
+
+    // Accessibility and mobile support
+    const {
+      announce,
+      announceSpinStart,
+      announceSpinResult,
+      announceKeyboardInstructions,
+      announceTouchInstructions,
+      liveRegionRef,
+      statusRef,
+    } = useAccessibilityAnnouncements();
+
+    const { removeFocus } = useFocusManagement();
+    const isMobile = useIsMobile();
+    const isTouchDevice = useIsTouchDevice();
 
     // Use responsive sizing hook
     const size = useResponsiveWheelSize(preferredSize);
@@ -530,7 +550,7 @@ export const OptimizedWheel: React.FC<OptimizedWheelProps> = memo(
       }, 5000); // 5 second debounce
 
       return () => clearTimeout(timeoutId);
-    }, [performanceMetrics.length, adaptiveRenderMode, forceRenderMode, projects.length]);
+    }, [performanceMetrics, adaptiveRenderMode, forceRenderMode, projects.length]);
 
     // Determine render mode based on project count, performance, and adaptive fallback
     const renderMode = useMemo(() => {
@@ -597,8 +617,17 @@ export const OptimizedWheel: React.FC<OptimizedWheelProps> = memo(
       return projects[selectedIndex];
     }, []);
 
+    // Forward declaration for handleSpin function
+    const handleSpinRef = useRef<() => void>();
+
+    // Touch gesture support for wheel
+    const { wheelTouchHandlers, touchFeedback, triggerHapticFeedback } = useWheelTouchGestures(
+      () => handleSpinRef.current?.(),
+      disabled || isSpinning
+    );
+
     /**
-     * Handle wheel spin with CSS-based animation
+     * Handle wheel spin with CSS-based animation and accessibility support
      */
     const handleSpin = useCallback(() => {
       if (isSpinning || projects.length === 0 || disabled) return;
@@ -606,10 +635,8 @@ export const OptimizedWheel: React.FC<OptimizedWheelProps> = memo(
       logger.debug('Starting optimized wheel spin', { projectCount: projects.length });
       setIsSpinning(true);
 
-      // Announce spin start to screen readers
-      if (resultAnnouncementRef.current) {
-        resultAnnouncementRef.current.textContent = `Spinning wheel to select from ${projects.length} projects...`;
-      }
+      // Announce spin start with accessibility support
+      announceSpinStart(projects.length);
 
       // Check for reduced motion preference
       const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -645,16 +672,36 @@ export const OptimizedWheel: React.FC<OptimizedWheelProps> = memo(
             totalDegrees,
           });
 
-          // Announce result to screen readers
-          if (resultAnnouncementRef.current) {
-            resultAnnouncementRef.current.textContent = `Spin complete! Selected project: ${selectedProject.title}`;
+          // Announce result with accessibility support
+          const projectDetails = [selectedProject.company, selectedProject.artist]
+            .filter(Boolean)
+            .join(' • ');
+          announceSpinResult(selectedProject.title, projectDetails);
+
+          // Trigger haptic feedback for touch devices
+          if (isTouchDevice) {
+            triggerHapticFeedback('medium');
           }
         }
       }, animationDuration);
-    }, [isSpinning, projects, disabled, spinDegrees, selectProject, onSpinComplete]);
+    }, [
+      isSpinning, 
+      projects, 
+      disabled, 
+      spinDegrees, 
+      selectProject, 
+      onSpinComplete, 
+      announceSpinStart, 
+      announceSpinResult, 
+      isTouchDevice, 
+      triggerHapticFeedback
+    ]);
+
+    // Update the ref with the current handleSpin function
+    handleSpinRef.current = handleSpin;
 
     /**
-     * Keyboard navigation handler
+     * Enhanced keyboard navigation handler with accessibility support
      */
     const handleKeyDown = useCallback(
       (event: React.KeyboardEvent) => {
@@ -666,17 +713,56 @@ export const OptimizedWheel: React.FC<OptimizedWheelProps> = memo(
             event.preventDefault();
             if (!disabled && projects.length > 0) {
               handleSpin();
+            } else if (projects.length === 0) {
+              announce('No projects selected. Please select projects from the list below.');
+            } else if (disabled) {
+              announce('Wheel is currently disabled.');
             }
             break;
           case 'Escape':
             event.preventDefault();
-            if (wheelRef.current) {
-              wheelRef.current.blur();
+            removeFocus();
+            announce('Focus removed from wheel.');
+            break;
+          case 'Tab':
+            // Let default tab behavior work, but announce navigation
+            if (!event.shiftKey) {
+              announce('Navigating to next element.');
+            } else {
+              announce('Navigating to previous element.');
             }
+            break;
+          case 'F1':
+          case '?':
+            event.preventDefault();
+            if (isTouchDevice) {
+              announceTouchInstructions();
+            } else {
+              announceKeyboardInstructions();
+            }
+            break;
+          case 'ArrowUp':
+          case 'ArrowDown':
+          case 'ArrowLeft':
+          case 'ArrowRight':
+            event.preventDefault();
+            announce('Use Enter or Space to spin the wheel.');
+            break;
+          default:
             break;
         }
       },
-      [isSpinning, disabled, projects.length, handleSpin]
+      [
+        isSpinning, 
+        disabled, 
+        projects.length, 
+        handleSpin, 
+        announce, 
+        removeFocus, 
+        announceKeyboardInstructions, 
+        announceTouchInstructions, 
+        isTouchDevice
+      ]
     );
 
     /**
@@ -746,43 +832,7 @@ export const OptimizedWheel: React.FC<OptimizedWheelProps> = memo(
     const projectListString = useMemo(() => {
       return projects.map(p => p.title).join(', ');
     }, [projects]);
-
-    // Empty wheel state
-    if (projects.length === 0) {
-      return (
-        <div className="flex flex-col items-center space-y-6">
-          <div className="sr-only" id="wheel-instructions">
-            Project randomizer wheel. Select some projects from the list below to start spinning.
-          </div>
-
-          <div
-            className="wheel-container wheel-container--empty"
-            role="img"
-            aria-label="Empty project randomizer wheel"
-            aria-describedby="wheel-instructions"
-          >
-            <div className="wheel-pointer" aria-hidden="true" />
-            <div className="wheel wheel--empty">
-              <div className="wheel__content">
-                <p className="wheel__empty-text">Select projects below</p>
-                <p className="wheel__empty-subtext">to get started!</p>
-              </div>
-            </div>
-          </div>
-
-          <Button
-            disabled={true}
-            size="lg"
-            className="wheel-button wheel-button--disabled"
-            aria-label="Spin the wheel (disabled - no projects selected)"
-          >
-            Spin the Wheel!
-          </Button>
-        </div>
-      );
-    }
-
-    // Performance monitoring effect - simplified and heavily debounced
+// Performance monitoring effect - simplified and heavily debounced
     useEffect(() => {
       if (!import.meta.env.DEV || performanceMetrics.length === 0) return;
 
@@ -810,7 +860,7 @@ export const OptimizedWheel: React.FC<OptimizedWheelProps> = memo(
       }, 2000); // 2 second debounce
 
       return () => clearTimeout(timeoutId);
-    }, [performanceMetrics.length]); // Minimal dependencies
+    }, [performanceMetrics, getElapsedTime, getPerformanceSummary]);
 
     // Cleanup effect for memory management
     useEffect(() => {
@@ -820,17 +870,68 @@ export const OptimizedWheel: React.FC<OptimizedWheelProps> = memo(
       };
     }, []);
 
+    // Empty wheel state with enhanced accessibility
+    if (projects.length === 0) {
+      return (
+        <div className="flex flex-col items-center space-y-6">
+          {/* Accessibility live regions */}
+          <div ref={liveRegionRef} aria-live="polite" aria-atomic="true" className="sr-only" />
+          <div ref={statusRef} aria-live="assertive" aria-atomic="true" className="sr-only" />
+
+          <div className="sr-only" id="wheel-instructions">
+            Project randomizer wheel. Select some projects from the list below to start spinning.
+            {isTouchDevice && ' You can also swipe up on the wheel to spin when projects are selected.'}
+            Press F1 or question mark for help.
+          </div>
+
+          <div
+            className="wheel-container wheel-container--empty"
+            role="img"
+            aria-label="Empty project randomizer wheel"
+            aria-describedby="wheel-instructions"
+          >
+            <div className="wheel-pointer" aria-hidden="true" />
+            <div className="wheel wheel--empty">
+              <div className="wheel__content">
+                <p className="wheel__empty-text">Select projects below</p>
+                <p className="wheel__empty-subtext">to get started!</p>
+                {isTouchDevice && (
+                  <p className="wheel__empty-touch-hint">Swipe up to spin when ready</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <Button
+            disabled={true}
+            size="lg"
+            className="wheel-button wheel-button--disabled"
+            aria-label="Spin the wheel (disabled - no projects selected)"
+            aria-describedby="wheel-instructions"
+          >
+            Spin the Wheel!
+          </Button>
+        </div>
+      );
+    }
+
+
     return (
       <div className="flex flex-col items-center space-y-6">
+        {/* Accessibility live regions */}
+        <div ref={liveRegionRef} aria-live="polite" aria-atomic="true" className="sr-only" />
+        <div ref={statusRef} aria-live="assertive" aria-atomic="true" className="sr-only" />
+
         {/* Screen Reader Content */}
         <div className="sr-only">
           <div id="wheel-description">
             Project randomizer wheel with {projects.length} projects: {projectListString}
           </div>
           <div id="wheel-instructions">
-            Press Enter or Space to spin the wheel. Use Escape to exit focus.
+            Press Enter or Space to spin the wheel. Use Escape to exit focus. Use Tab to navigate.
+            {isTouchDevice && ' You can also tap the wheel or swipe up to spin.'}
+            Press F1 or question mark for help.
           </div>
-          <div ref={resultAnnouncementRef} aria-live="polite" aria-atomic="true" />
 
           <div id="project-alternatives">
             <h3>Available Projects:</h3>
@@ -847,6 +948,17 @@ export const OptimizedWheel: React.FC<OptimizedWheelProps> = memo(
           </div>
         </div>
 
+        {/* Touch feedback for mobile users */}
+        {isTouchDevice && touchFeedback && (
+          <div 
+            className="wheel-touch-feedback"
+            role="status"
+            aria-live="polite"
+          >
+            {touchFeedback}
+          </div>
+        )}
+
         {/* Performance Debug Info (Development Only) */}
         {import.meta.env.DEV && performanceMetrics.length > 0 && (
           <div className="sr-only">
@@ -857,14 +969,24 @@ export const OptimizedWheel: React.FC<OptimizedWheelProps> = memo(
           </div>
         )}
 
-        {/* Wheel Container */}
+        {/* Wheel Container with Touch Support */}
         <div
-          className={`wheel-container wheel-container--${size} wheel-container--${renderMode}`}
+          className={`wheel-container wheel-container--${size} wheel-container--${renderMode} ${
+            isTouchDevice ? 'wheel-container--touch' : ''
+          } ${isMobile ? 'wheel-container--mobile' : ''}`}
           role="application"
           aria-label={`Project randomizer wheel with ${projects.length} projects`}
           aria-describedby="wheel-description wheel-instructions project-alternatives"
           tabIndex={0}
           onKeyDown={handleKeyDown}
+          onFocus={() => {
+            if (isTouchDevice) {
+              announceTouchInstructions();
+            } else {
+              announceKeyboardInstructions();
+            }
+          }}
+          {...(isTouchDevice ? wheelTouchHandlers : {})}
         >
           {/* Pointer */}
           <div className="wheel-pointer" aria-hidden="true" />
@@ -892,20 +1014,51 @@ export const OptimizedWheel: React.FC<OptimizedWheelProps> = memo(
           )}
         </div>
 
-        {/* Spin Button */}
+        {/* Enhanced Spin Button with Accessibility */}
         <Button
           onClick={handleSpin}
           disabled={disabled || isSpinning || projects.length === 0}
           size="lg"
-          className="wheel-button"
+          className={`wheel-button ${isTouchDevice ? 'wheel-button--touch' : ''} ${
+            isMobile ? 'wheel-button--mobile' : ''
+          }`}
           aria-label={
             isSpinning
               ? `Spinning wheel to select from ${projects.length} projects`
-              : `Spin the wheel to randomly select from ${projects.length} projects`
+              : `Spin the wheel to randomly select from ${projects.length} projects${
+                  isTouchDevice ? '. You can also swipe up on the wheel' : ''
+                }`
           }
+          aria-describedby="wheel-description wheel-instructions"
+          onFocus={() => {
+            announce(`Spin button focused. ${projects.length} projects available for selection.`);
+          }}
         >
-          {isSpinning ? 'Spinning...' : 'Spin the Wheel!'}
+          {isSpinning ? (
+            <>
+              <span className="wheel-button__spinner" aria-hidden="true" />
+              Spinning...
+            </>
+          ) : (
+            <>
+              Spin the Wheel!
+              {isTouchDevice && (
+                <span className="wheel-button__touch-hint" aria-hidden="true">
+                  or swipe ↑
+                </span>
+              )}
+            </>
+          )}
         </Button>
+
+        {/* Additional touch instructions for mobile */}
+        {isTouchDevice && !isSpinning && (
+          <div className="wheel-touch-instructions">
+            <p className="text-sm text-muted-foreground text-center">
+              Tap the button above or swipe up on the wheel to spin
+            </p>
+          </div>
+        )}
 
         {/* Performance Metrics Display (Development Only) */}
         {import.meta.env.DEV && performanceMetrics.length > 0 && (

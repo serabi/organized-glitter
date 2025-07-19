@@ -110,7 +110,7 @@ export function toDbProject(project: ProjectFormValues): Partial<DbProject> {
   const dateCompleted = project.dateCompleted === '' ? null : project.dateCompleted;
 
   // Create a copy of the project object and remove fields that don't exist in the database
-  const { _imageReplacement, imageFile, ...projectData } = project;
+  const { _imageReplacement: _unused1, imageFile: _unused2, ...projectData } = project;
 
   // Standardize the status value to ensure consistency in the database
   const standardizedStatus = mapAppStatusToDbStatus(projectData.status);

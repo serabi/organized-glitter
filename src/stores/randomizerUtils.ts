@@ -11,11 +11,7 @@
  */
 
 import type { Project } from '@/types/project';
-import {
-  RandomizerError,
-  RandomizerErrorType,
-  RandomizerPreferences,
-} from './randomizerStore';
+import { RandomizerError, RandomizerErrorType, RandomizerPreferences } from './randomizerStore';
 import { createLogger } from '@/utils/secureLogger';
 
 const logger = createLogger('RandomizerUtils');

@@ -486,7 +486,7 @@ describe('Security: Field Name Validation', () => {
     });
 
     it('should log security violations with context', () => {
-      const filter = createFilter().equals('malicious_field', 'test').build();
+      createFilter().equals('malicious_field', 'test').build();
 
       // Should log the security violation
       expect(consoleSpy).toHaveBeenCalled();

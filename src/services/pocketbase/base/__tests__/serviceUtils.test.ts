@@ -462,5 +462,68 @@ describe('Service Utilities', () => {
         expect(filterString).toContain('level_9');
       });
     });
+
+    describe('Array Validation', () => {
+      it('should allow arrays with ? operators', () => {
+        const filter: StructuredFilter = {
+          conditions: [{ field: 'category', operator: '?=', value: ['tech', 'science'] }],
+          logic: 'AND',
+        };
+
+        const filterString = FilterBuilder.toFilterString(filter);
+
+        expect(filterString).toBe("category ?= ('tech', 'science')");
+      });
+
+      it('should throw error for arrays with non-? operators', () => {
+        const filter: StructuredFilter = {
+          conditions: [{ field: 'status', operator: '=', value: ['active', 'pending'] }],
+          logic: 'AND',
+        };
+
+        expect(() => FilterBuilder.toFilterString(filter)).toThrow(
+          "Invalid filter: Array values cannot be used with operator '=' on field 'status'. Use array operators like '?=', '?!=', '?>', etc. instead."
+        );
+      });
+
+      it('should throw error for arrays with comparison operators', () => {
+        const filter: StructuredFilter = {
+          conditions: [{ field: 'score', operator: '>', value: [100, 200] }],
+          logic: 'AND',
+        };
+
+        expect(() => FilterBuilder.toFilterString(filter)).toThrow(
+          "Invalid filter: Array values cannot be used with operator '>' on field 'score'. Use array operators like '?=', '?!=', '?>', etc. instead."
+        );
+      });
+
+      it('should throw error for arrays with like operators', () => {
+        const filter: StructuredFilter = {
+          conditions: [{ field: 'title', operator: '~', value: ['test', 'demo'] }],
+          logic: 'AND',
+        };
+
+        expect(() => FilterBuilder.toFilterString(filter)).toThrow(
+          "Invalid filter: Array values cannot be used with operator '~' on field 'title'. Use array operators like '?=', '?!=', '?>', etc. instead."
+        );
+      });
+
+      it('should work correctly with ? operators for different comparison types', () => {
+        const filter: StructuredFilter = {
+          conditions: [
+            { field: 'status', operator: '?=', value: ['active', 'pending'] },
+            { field: 'priority', operator: '?>', value: [5, 7, 9] },
+            { field: 'category', operator: '?~', value: ['tech', 'science'] },
+          ],
+          logic: 'AND',
+        };
+
+        const filterString = FilterBuilder.toFilterString(filter);
+
+        expect(filterString).toContain("status ?= ('active', 'pending')");
+        expect(filterString).toContain("priority ?> ('5', '7', '9')");
+        expect(filterString).toContain("category ?~ ('tech', 'science')");
+      });
+    });
   });
 });

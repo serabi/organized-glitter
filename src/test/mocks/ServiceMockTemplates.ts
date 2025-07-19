@@ -7,8 +7,6 @@
 import { vi } from 'vitest';
 import type { ServiceMockCollection, ServiceMockPocketBase } from '../ServiceTestBase';
 import { ProjectFactory, TagFactory, ErrorScenarioFactory } from '../factories/ServiceDataFactory';
-import type { ProjectType } from '@/types/project';
-import type { Tag } from '@/types/tag';
 
 /**
  * Template for creating standardized service mocks
@@ -23,7 +21,7 @@ export class ServiceMockTemplates {
       return ProjectFactory({ id });
     });
 
-    collection.getList.mockImplementation(async (page = 1, perPage = 30, options = {}) => {
+    collection.getList.mockImplementation(async (page = 1, perPage = 30, _options = {}) => {
       const items = Array.from({ length: Math.min(perPage, 10) }, (_, index) =>
         ProjectFactory({ id: `item-${page}-${index + 1}` })
       );
@@ -43,7 +41,7 @@ export class ServiceMockTemplates {
       );
     });
 
-    collection.getFirstListItem.mockImplementation(async (filter: string) => {
+    collection.getFirstListItem.mockImplementation(async (_filter: string) => {
       return ProjectFactory({ id: 'first-item' });
     });
 
@@ -71,7 +69,7 @@ export class ServiceMockTemplates {
     });
 
     // Real-time operations
-    collection.subscribe.mockImplementation((topic, callback) => {
+    collection.subscribe.mockImplementation((_topic, _callback) => {
       return vi.fn(); // Return unsubscribe function
     });
 

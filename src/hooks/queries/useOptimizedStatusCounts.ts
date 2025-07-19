@@ -16,6 +16,78 @@ import { ProjectFilters } from '@/types/projectFilters';
 
 const logger = createLogger('useOptimizedStatusCounts');
 
+/**
+ * Supported data structures for cached query data
+ */
+type QueryDataStructure =
+  | Project[] // Plain array
+  | { projects: Project[]; totalItems?: number; totalPages?: number } // Object with projects property
+  | { items: Project[]; totalItems?: number; totalPages?: number } // Object with items property
+  | { data: Project[]; totalItems?: number; totalPages?: number }; // Object with data property
+
+/**
+ * Result from extracting projects from various data structures
+ */
+interface ExtractedProjectData {
+  projects: Project[];
+  totalItems: number;
+}
+
+/**
+ * Extract projects and metadata from various cached query data structures
+ */
+const extractProjectsFromQueryData = (data: any): ExtractedProjectData => {
+  // Handle null/undefined
+  if (!data) {
+    return { projects: [], totalItems: 0 };
+  }
+
+  // Case 1: Plain array of projects
+  if (Array.isArray(data)) {
+    logger.debug('Detected plain Project[] array structure');
+    return { projects: data, totalItems: data.length };
+  }
+
+  // Case 2: Object with 'projects' property (current pattern)
+  if (data.projects && Array.isArray(data.projects)) {
+    logger.debug('Detected {projects: Project[]} structure');
+    return {
+      projects: data.projects,
+      totalItems: data.totalItems || data.projects.length,
+    };
+  }
+
+  // Case 3: Object with 'items' property
+  if (data.items && Array.isArray(data.items)) {
+    logger.debug('Detected {items: Project[]} structure');
+    return {
+      projects: data.items,
+      totalItems: data.totalItems || data.items.length,
+    };
+  }
+
+  // Case 4: Object with 'data' property
+  if (data.data && Array.isArray(data.data)) {
+    logger.debug('Detected {data: Project[]} structure');
+    return {
+      projects: data.data,
+      totalItems: data.totalItems || data.data.length,
+    };
+  }
+
+  // Fallback: log structure and return empty
+  logger.warn('Unrecognized query data structure:', {
+    dataType: typeof data,
+    isArray: Array.isArray(data),
+    keys: typeof data === 'object' ? Object.keys(data) : 'not-object',
+    hasProjects: 'projects' in (data || {}),
+    hasItems: 'items' in (data || {}),
+    hasData: 'data' in (data || {}),
+  });
+
+  return { projects: [], totalItems: 0 };
+};
+
 export interface OptimizedStatusCountsResult {
   statusCounts: StatusBreakdown | null;
   isLoading: boolean;
@@ -79,14 +151,16 @@ const canDeriveFromCache = (
 
     projectQueries.forEach(query => {
       const data = query.state.data as any;
-      if (data && data.projects && Array.isArray(data.projects)) {
-        data.projects.forEach((project: Project) => {
+      const extracted = extractProjectsFromQueryData(data);
+
+      if (extracted.projects.length > 0) {
+        extracted.projects.forEach((project: Project) => {
           allCachedProjects.set(project.id, project);
         });
 
         // Track the highest total items count we've seen
-        if (data.totalItems && data.totalItems > maxTotalItems) {
-          maxTotalItems = data.totalItems;
+        if (extracted.totalItems > maxTotalItems) {
+          maxTotalItems = extracted.totalItems;
         }
       }
     });

@@ -30,10 +30,12 @@ describe('WheelPerformanceMonitor', () => {
     monitor = new WheelPerformanceMonitor();
 
     // Mock PerformanceObserver
-    const MockPerformanceObserver = vi.fn().mockImplementation((callback: PerformanceObserverCallback) => ({
-      observe: vi.fn(),
-      disconnect: vi.fn(),
-    }));
+    const MockPerformanceObserver = vi
+      .fn()
+      .mockImplementation((callback: PerformanceObserverCallback) => ({
+        observe: vi.fn(),
+        disconnect: vi.fn(),
+      }));
     (MockPerformanceObserver as any).supportedEntryTypes = ['measure', 'navigation', 'resource'];
     global.PerformanceObserver = MockPerformanceObserver as any;
 
@@ -213,10 +215,12 @@ describe('WheelPerformanceMonitor', () => {
       const disconnectSpy = vi.fn();
 
       // Mock PerformanceObserver with disconnect spy
-      const MockPerformanceObserver = vi.fn().mockImplementation((callback: PerformanceObserverCallback) => ({
-        observe: vi.fn(),
-        disconnect: disconnectSpy,
-      }));
+      const MockPerformanceObserver = vi
+        .fn()
+        .mockImplementation((callback: PerformanceObserverCallback) => ({
+          observe: vi.fn(),
+          disconnect: disconnectSpy,
+        }));
       (MockPerformanceObserver as any).supportedEntryTypes = ['measure', 'navigation', 'resource'];
       global.PerformanceObserver = MockPerformanceObserver as any;
 

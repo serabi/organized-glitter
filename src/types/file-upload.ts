@@ -3,7 +3,7 @@
  * Provides type safety for image uploads and project mutations
  */
 
-import type { ProjectFormValues, Project } from './shared';
+import type { ProjectFormValues } from './shared';
 
 /**
  * Data structure for file upload operations

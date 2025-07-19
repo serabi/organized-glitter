@@ -164,11 +164,18 @@ export class FilterBuilder {
     const field = fieldMapping?.[condition.field] || condition.field;
     const { operator, value } = condition;
 
-    // Handle arrays for "any" operators
+    // Handle arrays
     if (Array.isArray(value)) {
       if (operator.startsWith('?')) {
+        // Handle arrays for "any" operators
         const arrayValue = value.map(v => `'${FilterBuilder.escapeValue(v)}'`).join(', ');
         return `${field} ${operator} (${arrayValue})`;
+      } else {
+        // Arrays with non-'?' operators are invalid
+        throw new Error(
+          `Invalid filter: Array values cannot be used with operator '${operator}' on field '${condition.field}'. ` +
+            `Use array operators like '?=', '?!=', '?>', etc. instead.`
+        );
       }
     }
 

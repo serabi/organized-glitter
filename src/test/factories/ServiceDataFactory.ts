@@ -4,7 +4,7 @@
  * @created 2025-07-16
  */
 
-import type { ProjectType, ProjectFilterStatus, ViewType } from '@/types/project';
+import type { ProjectType, ProjectFilterStatus } from '@/types/project';
 import type { Tag } from '@/types/tag';
 import type { TestDataFactory } from '@/types/test-utils';
 

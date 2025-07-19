@@ -44,8 +44,7 @@ export interface ProjectsQueryData {
 export const updateProjectInCache = (
   queryClient: QueryClient,
   projectId: string,
-  updatedProject: Project,
-  _userId: string
+  updatedProject: Project
 ): void => {
   try {
     // Update the specific project detail cache
@@ -112,8 +111,7 @@ export const updateProjectInCache = (
  */
 export const removeProjectFromCache = (
   queryClient: QueryClient,
-  projectId: string,
-  _userId: string
+  projectId: string
 ): void => {
   try {
     // Remove the specific project detail cache
@@ -176,8 +174,7 @@ export const removeProjectFromCache = (
  */
 export const addProjectToCache = (
   queryClient: QueryClient,
-  newProject: Project,
-  _userId: string
+  newProject: Project
 ): void => {
   try {
     // Set the project detail cache

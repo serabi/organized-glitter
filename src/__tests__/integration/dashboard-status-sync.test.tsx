@@ -56,13 +56,6 @@ const TestWrapper = ({ children, user = { id: 'test-user-id', email: 'test@test.
     },
   });
 
-  const authContextValue = {
-    user,
-    isAuthenticated: !!user,
-    login: vi.fn(),
-    logout: vi.fn(),
-    isLoading: false,
-  };
 
   return (
     <QueryClientProvider client={queryClient}>

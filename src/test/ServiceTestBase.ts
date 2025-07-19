@@ -97,7 +97,7 @@ export class ServiceTestBase {
    */
   protected createMockPocketBase(): ServiceMockPocketBase {
     return {
-      collection: vi.fn((name: string) => this.mockCollection),
+      collection: vi.fn((_name: string) => this.mockCollection),
       filter: vi.fn((query, params) =>
         query.replace(/\{:(\w+)\}/g, (_, key) => `"${params[key]}"`)
       ),

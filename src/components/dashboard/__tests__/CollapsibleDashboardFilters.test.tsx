@@ -197,7 +197,6 @@ describe('CollapsibleDashboardFilters', () => {
       const button = screen.getByRole('button');
 
       const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
-      const spaceEvent = new KeyboardEvent('keydown', { key: ' ', bubbles: true });
 
       const preventDefaultSpy = vi.spyOn(enterEvent, 'preventDefault');
 
@@ -277,9 +276,10 @@ describe('CollapsibleDashboardFilters', () => {
 
       // Look for the chevron down icon (using test id or class)
       const button = screen.getByRole('button');
-      const chevronDown =
-        button.querySelector('[data-testid="chevron-down"]') ||
+      // Check for chevron icons - either should be present
+      const chevronElement = button.querySelector('[data-testid="chevron-down"]') ||
         button.querySelector('.lucide-chevron-down');
+      expect(chevronElement).toBeTruthy();
 
       // The icon should be present (actual implementation uses Lucide icons)
       expect(button).toBeInTheDocument();

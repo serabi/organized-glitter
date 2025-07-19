@@ -140,7 +140,7 @@ describe('ProjectForm', () => {
   });
 
   it('does not render cancel button when onCancel is not provided', () => {
-    const { onCancel, ...propsWithoutCancel } = defaultProps;
+    const { onCancel: _onCancel, ...propsWithoutCancel } = defaultProps;
     render(<ProjectForm {...propsWithoutCancel} />);
 
     expect(screen.queryByText('Cancel')).not.toBeInTheDocument();

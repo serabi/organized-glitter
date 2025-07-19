@@ -525,10 +525,7 @@ describe('createRandomizerError', () => {
   });
 
   it('should use default values when not provided', () => {
-    const error = createRandomizerError(
-      RandomizerErrorType.VALIDATION_ERROR,
-      'Test error'
-    );
+    const error = createRandomizerError(RandomizerErrorType.VALIDATION_ERROR, 'Test error');
 
     expect(error.canRetry).toBe(false);
     expect(error.suggestedAction).toBe('Please try again later');

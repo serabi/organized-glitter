@@ -5,12 +5,6 @@ import { logger } from './logger';
  * Uses Vite's official error handling with minimal fallback
  */
 
-interface ChunkErrorEvent extends Event {
-  filename?: string;
-  lineno?: number;
-  colno?: number;
-  error?: Error;
-}
 
 /**
  * Initialize chunk loading error handling
