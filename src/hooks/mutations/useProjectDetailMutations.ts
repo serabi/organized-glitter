@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { createLogger } from '@/utils/secureLogger';
 import { dashboardSyncMonitor } from '@/utils/dashboardSyncMonitor';
+import { statusOptions } from '@/hooks/useProjectStatus';
 
 const logger = createLogger('useProjectDetailMutations');
 
@@ -106,15 +107,7 @@ export const useUpdateProjectStatusMutation = () => {
       logger.debug('Updating project status:', { projectId, status });
 
       // Validate status value
-      const validStatuses: ProjectStatus[] = [
-        'wishlist',
-        'purchased',
-        'stash',
-        'progress',
-        'completed',
-        'archived',
-        'destashed',
-      ];
+      const validStatuses = statusOptions;
       if (!validStatuses.includes(status)) {
         throw new Error(
           `Invalid project status: ${status}. Must be one of: ${validStatuses.join(', ')}`

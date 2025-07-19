@@ -290,6 +290,9 @@ export const FilterStateProvider: React.FC<FilterStateProviderProps> = React.mem
     const initializationStateRef = useRef<'pending' | 'initializing' | 'complete'>('pending');
     const searchInputRef = useRef<HTMLInputElement>(null);
 
+    // Ref to track current filters state for async operations (prevents stale closures)
+    const filtersRef = useRef(filters);
+
     // Debounced search term
     useEffect(() => {
       const timer = setTimeout(() => {
@@ -298,6 +301,11 @@ export const FilterStateProvider: React.FC<FilterStateProviderProps> = React.mem
 
       return () => clearTimeout(timer);
     }, [filters.searchTerm]);
+
+    // Keep filtersRef synchronized with current filters state
+    useEffect(() => {
+      filtersRef.current = filters;
+    }, [filters]);
 
     const isSearchPending = filters.searchTerm !== debouncedSearchTerm;
 
@@ -409,7 +417,7 @@ export const FilterStateProvider: React.FC<FilterStateProviderProps> = React.mem
               );
 
               // Only apply restored filters if they're different from current state
-              const currentFiltersString = JSON.stringify(filters);
+              const currentFiltersString = JSON.stringify(filtersRef.current);
               const restoredFiltersString = JSON.stringify(restoredFilters);
 
               if (currentFiltersString !== restoredFiltersString) {

@@ -20,20 +20,37 @@ import type {
   ProjectQueryOptions,
   ProjectFilterStatus,
 } from '@/types/projectFilters';
+import type { DashboardValidSortField } from '@/features/dashboard/dashboard.constants';
 import type { ProjectType } from '@/types/project';
 
 // Mock dependencies
 vi.mock('@/lib/pocketbase', () => ({
-  pb: {},
+  pb: {
+    collection: vi.fn(() => ({
+      getList: vi.fn(),
+      getFullList: vi.fn(),
+      getOne: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    })),
+    files: {
+      getURL: vi.fn(),
+    },
+  },
 }));
 
 vi.mock('@/utils/secureLogger', () => ({
-  createLogger: () => ({
+  createLogger: vi.fn(() => ({
     debug: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-  }),
+  })),
+  batchApiLogger: {
+    startBatchOperation: vi.fn(),
+    endBatchOperation: vi.fn(),
+  },
 }));
 
 vi.mock('@/services/pocketbase/base.service', () => ({
@@ -78,6 +95,24 @@ vi.mock('@/services/pocketbase/base.service', () => ({
 describe('ProjectsService', () => {
   let serviceTestBase: ServiceTestBase;
   let projectsService: ProjectsService;
+  let mockPb: {
+    collection: ReturnType<typeof vi.fn>;
+    files: { getURL: ReturnType<typeof vi.fn> };
+  };
+  let mockCollection: {
+    getList: ReturnType<typeof vi.fn>;
+    getFullList: ReturnType<typeof vi.fn>;
+    getOne: ReturnType<typeof vi.fn>;
+    create: ReturnType<typeof vi.fn>;
+    update: ReturnType<typeof vi.fn>;
+    delete: ReturnType<typeof vi.fn>;
+  };
+  let mockLogger: {
+    debug: ReturnType<typeof vi.fn>;
+    info: ReturnType<typeof vi.fn>;
+    warn: ReturnType<typeof vi.fn>;
+    error: ReturnType<typeof vi.fn>;
+  };
   let mockBaseService: {
     list: ReturnType<typeof vi.fn>;
     getOne: ReturnType<typeof vi.fn>;
@@ -102,9 +137,37 @@ describe('ProjectsService', () => {
     serviceTestBase = new ServiceTestBase();
     serviceTestBase.resetAllMocks();
 
+    // Setup PocketBase mocks
+    const { pb } = await import('@/lib/pocketbase');
+    mockPb = pb as typeof mockPb;
+
+    // Create collection mock
+    mockCollection = {
+      getList: vi.fn(),
+      getFullList: vi.fn(),
+      getOne: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    };
+    mockPb.collection.mockReturnValue(mockCollection);
+
+    // Setup logger mocks
+    const { createLogger } = await import('@/utils/secureLogger');
+    mockLogger = {
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    };
+    (createLogger as ReturnType<typeof vi.fn>).mockReturnValue(mockLogger);
+
     // Get the mocked base service
     const { createBaseService } = await import('@/services/pocketbase/base.service');
     mockBaseService = createBaseService() as typeof mockBaseService;
+
+    // Reset all mocks
+    vi.clearAllMocks();
 
     projectsService = new ProjectsService();
   });
@@ -131,21 +194,52 @@ describe('ProjectsService', () => {
       it('should get projects with default options', async () => {
         const mockProjects = FilterScenarioFactory.statusFilteringProjects();
 
-        // Mock the service directly
-        vi.spyOn(projectsService, 'getProjects').mockResolvedValue({
-          items: mockProjects,
+        // Mock PocketBase response (what the actual service depends on)
+        const mockPbResponse = {
+          items: mockProjects.map(project => ({
+            id: project.id,
+            title: project.title,
+            status: project.status,
+            user_id: project.userId,
+            date_purchased: project.datePurchased,
+            date_received: project.dateReceived,
+            company_id: project.companyId,
+            artist_id: project.artistId,
+            created: project.created,
+            updated: project.updated,
+          })),
           page: 1,
           perPage: 20,
           totalItems: mockProjects.length,
           totalPages: 1,
-          statusCounts: undefined,
-        });
+        };
+        mockCollection.getList.mockResolvedValue(mockPbResponse);
 
-        const filters: ProjectFilters = { userId: 'test-user' };
-        const result = await projectsService.getProjects(filters);
+        const options: ProjectQueryOptions = {
+          filters: { userId: 'test-user' },
+          sort: { field: 'last_updated', direction: 'desc' },
+          page: 1,
+          pageSize: 20,
+        };
+        const result = await projectsService.getProjects(options);
 
-        expect(result.items).toEqual(mockProjects);
+        // Verify PocketBase was called with correct parameters
+        expect(mockPb.collection).toHaveBeenCalledWith('projects');
+        expect(mockCollection.getList).toHaveBeenCalledWith(
+          1, // page
+          20, // pageSize
+          {
+            filter: 'user = "test-user"',
+            sort: '-updated',
+            expand: undefined,
+          }
+        );
+
+        // Verify transformed result
+        expect(result.projects).toHaveLength(mockProjects.length);
         expect(result.totalItems).toBe(mockProjects.length);
+        expect(result.currentPage).toBe(1);
+        expect(result.pageSize).toBe(20);
       });
 
       it('should apply status filtering correctly', async () => {
@@ -154,51 +248,97 @@ describe('ProjectsService', () => {
           ProjectFactory({ status: 'completed' }),
         ];
 
-        // Mock the service directly
-        vi.spyOn(projectsService, 'getProjects').mockResolvedValue({
-          items: mockProjects,
+        // Mock PocketBase response
+        const mockPbResponse = {
+          items: mockProjects.map(project => ({
+            id: project.id,
+            title: project.title,
+            status: project.status,
+            user_id: project.userId,
+            date_purchased: project.datePurchased,
+            date_received: project.dateReceived,
+            company_id: project.companyId,
+            artist_id: project.artistId,
+            created: project.created,
+            updated: project.updated,
+          })),
           page: 1,
           perPage: 20,
           totalItems: 2,
           totalPages: 1,
-          statusCounts: undefined,
-        });
+        };
+        mockCollection.getList.mockResolvedValue(mockPbResponse);
 
-        const filters: ProjectFilters = {
-          userId: 'test-user',
-          status: 'completed',
+        const options: ProjectQueryOptions = {
+          filters: {
+            userId: 'test-user',
+            status: 'completed',
+          },
+          sort: { field: 'last_updated', direction: 'desc' },
+          page: 1,
+          pageSize: 20,
         };
 
-        const result = await projectsService.getProjects(filters);
+        const result = await projectsService.getProjects(options);
 
-        expect(result.items).toEqual(mockProjects);
-        expect(result.items[0].status).toBe('completed');
+        // Verify filter was built correctly
+        expect(mockCollection.getList).toHaveBeenCalledWith(1, 20, {
+          filter: 'user = "test-user" && status = "completed"',
+          sort: '-updated',
+          expand: undefined,
+        });
+
+        expect(result.projects).toHaveLength(2);
+        expect(result.projects[0].status).toBe('completed');
       });
 
       it('should apply search filtering', async () => {
         const searchProjects = FilterScenarioFactory.searchTestProjects();
         const kittenProjects = searchProjects.filter(p => p.title.includes('Kitten'));
 
-        // Mock the service directly
-        vi.spyOn(projectsService, 'getProjects').mockResolvedValue({
-          items: kittenProjects,
+        // Mock PocketBase response
+        const mockPbResponse = {
+          items: kittenProjects.map(project => ({
+            id: project.id,
+            title: project.title,
+            status: project.status,
+            user_id: project.userId,
+            date_purchased: project.datePurchased,
+            date_received: project.dateReceived,
+            company_id: project.companyId,
+            artist_id: project.artistId,
+            created: project.created,
+            updated: project.updated,
+          })),
           page: 1,
           perPage: 20,
           totalItems: kittenProjects.length,
           totalPages: 1,
-          statusCounts: undefined,
-        });
+        };
+        mockCollection.getList.mockResolvedValue(mockPbResponse);
 
-        const filters: ProjectFilters = {
-          userId: 'test-user',
-          searchTerm: 'Kitten',
+        const options: ProjectQueryOptions = {
+          filters: {
+            userId: 'test-user',
+            searchTerm: 'Kitten',
+          },
+          sort: { field: 'last_updated', direction: 'desc' },
+          page: 1,
+          pageSize: 20,
         };
 
-        const result = await projectsService.getProjects(filters);
+        const result = await projectsService.getProjects(options);
 
-        expect(result.items).toHaveLength(kittenProjects.length);
-        if (result.items.length > 0) {
-          expect(result.items[0].title).toContain('Kitten');
+        // Verify search filter was built correctly
+        expect(mockCollection.getList).toHaveBeenCalledWith(1, 20, {
+          filter: 'user = "test-user" && (title ~ "Kitten" || general_notes ~ "Kitten")',
+          sort: '-updated',
+          expand: undefined,
+        });
+
+        expect(result.projects).toHaveLength(kittenProjects.length);
+        if (result.projects.length > 0) {
+          expect(result.projects[0].title).toContain('Kitten');
         }
       });
 
@@ -208,27 +348,73 @@ describe('ProjectsService', () => {
           p => p.company === 'Diamond Art Club'
         );
 
-        // Mock the service directly
-        vi.spyOn(projectsService, 'getProjects').mockResolvedValue({
-          items: diamondArtClubProjects,
+        // Mock PocketBase response
+        const mockPbResponse = {
+          items: diamondArtClubProjects.map(project => ({
+            id: project.id,
+            title: project.title,
+            status: project.status,
+            user_id: project.userId,
+            company_id: project.companyId,
+            company: project.company, // Include company field for proper mapping
+            date_purchased: project.datePurchased,
+            date_received: project.dateReceived,
+            artist_id: project.artistId,
+            created: project.created,
+            updated: project.updated,
+          })),
           page: 1,
           perPage: 20,
           totalItems: diamondArtClubProjects.length,
           totalPages: 1,
-          statusCounts: undefined,
-        });
+        };
+        mockCollection.getList.mockResolvedValue(mockPbResponse);
 
-        const filters: ProjectFilters = {
-          userId: 'test-user',
-          company: 'diamond-art-club-id',
+        const options: ProjectQueryOptions = {
+          filters: {
+            userId: 'test-user',
+            company: 'diamond-art-club-id',
+          },
+          sort: { field: 'last_updated', direction: 'desc' },
+          page: 1,
+          pageSize: 20,
         };
 
-        const result = await projectsService.getProjects(filters);
+        const result = await projectsService.getProjects(options);
 
-        expect(result.items).toHaveLength(diamondArtClubProjects.length);
-        if (result.items.length > 0) {
-          expect(result.items[0].company).toBe('Diamond Art Club');
-        }
+        // Verify company filter was built correctly
+        expect(mockCollection.getList).toHaveBeenCalledWith(1, 20, {
+          filter: 'user = "test-user" && company = "diamond-art-club-id"',
+          sort: '-updated',
+          expand: undefined,
+        });
+
+        expect(result.projects).toHaveLength(diamondArtClubProjects.length);
+        // Note: Company field transformation depends on companyMap which we're not mocking here
+        // The important part is that the filter was built correctly and PB was called
+      });
+
+      it('should handle PocketBase errors correctly', async () => {
+        // Mock PocketBase to throw an error
+        const error = new Error('Database connection failed');
+        mockCollection.getList.mockRejectedValue(error);
+
+        const options: ProjectQueryOptions = {
+          filters: { userId: 'test-user' },
+          sort: { field: 'last_updated', direction: 'desc' },
+          page: 1,
+          pageSize: 20,
+        };
+
+        // Verify that the service properly handles and re-throws the error
+        await expect(projectsService.getProjects(options)).rejects.toThrow();
+
+        // Verify PocketBase was called (tests integration)
+        expect(mockCollection.getList).toHaveBeenCalledWith(1, 20, {
+          filter: 'user = "test-user"',
+          sort: '-updated',
+          expand: undefined,
+        });
       });
 
       it('should apply tag filtering', async () => {
