@@ -21,7 +21,7 @@ export class ServiceMockTemplates {
       return ProjectFactory({ id });
     });
 
-    collection.getList.mockImplementation(async (page = 1, perPage = 30, _options = {}) => {
+    collection.getList.mockImplementation(async (page = 1, perPage = 30) => {
       const items = Array.from({ length: Math.min(perPage, 10) }, (_, index) =>
         ProjectFactory({ id: `item-${page}-${index + 1}` })
       );
@@ -41,7 +41,7 @@ export class ServiceMockTemplates {
       );
     });
 
-    collection.getFirstListItem.mockImplementation(async (_filter: string) => {
+    collection.getFirstListItem.mockImplementation(async () => {
       return ProjectFactory({ id: 'first-item' });
     });
 
@@ -69,7 +69,7 @@ export class ServiceMockTemplates {
     });
 
     // Real-time operations
-    collection.subscribe.mockImplementation((_topic, _callback) => {
+    collection.subscribe.mockImplementation(() => {
       return vi.fn(); // Return unsubscribe function
     });
 

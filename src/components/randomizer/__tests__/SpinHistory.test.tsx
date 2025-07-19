@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import { UseQueryResult } from '@tanstack/react-query';
@@ -41,7 +41,7 @@ const mockSpinHistory: EnhancedSpinRecord[] = [
     created: '2024-01-01T12:00:00Z',
     updated: '2024-01-01T12:00:00Z',
     collectionId: 'randomizer_spins',
-    collectionName: 'randomizer_spins' as any,
+    collectionName: 'randomizer_spins',
   },
   {
     id: '2',
@@ -56,7 +56,7 @@ const mockSpinHistory: EnhancedSpinRecord[] = [
     created: '2024-01-01T11:00:00Z',
     updated: '2024-01-01T11:00:00Z',
     collectionId: 'randomizer_spins',
-    collectionName: 'randomizer_spins' as any,
+    collectionName: 'randomizer_spins',
   },
   {
     id: '3',
@@ -71,7 +71,7 @@ const mockSpinHistory: EnhancedSpinRecord[] = [
     created: '2024-01-01T10:00:00Z',
     updated: '2024-01-01T10:00:00Z',
     collectionId: 'randomizer_spins',
-    collectionName: 'randomizer_spins' as any,
+    collectionName: 'randomizer_spins',
   },
 ];
 
@@ -88,7 +88,7 @@ const mockLongHistory: EnhancedSpinRecord[] = Array.from({ length: 12 }, (_, i) 
   created: `2024-01-01T${String(12 - i).padStart(2, '0')}:00:00Z`,
   updated: `2024-01-01T${String(12 - i).padStart(2, '0')}:00:00Z`,
   collectionId: 'randomizer_spins',
-  collectionName: 'randomizer_spins' as any,
+  collectionName: 'randomizer_spins',
 }));
 
 describe('SpinHistory', () => {

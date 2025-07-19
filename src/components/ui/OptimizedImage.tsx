@@ -481,8 +481,8 @@ export const GalleryImage: React.FC<GalleryImageProps> = ({
   filename,
   alt,
   className = 'w-full h-32 object-cover rounded',
-  index,
-  totalImages,
+  index: _index,
+  totalImages: _totalImages,
   ...props
 }) => {
   return (

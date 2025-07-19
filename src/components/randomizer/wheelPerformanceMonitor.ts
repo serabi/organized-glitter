@@ -14,6 +14,17 @@ import { createLogger } from '@/utils/secureLogger';
 const logger = createLogger('WheelPerformanceMonitor');
 
 /**
+ * Extended Performance interface with memory property
+ */
+interface PerformanceWithMemory extends Performance {
+  memory?: {
+    usedJSHeapSize: number;
+    totalJSHeapSize: number;
+    jsHeapSizeLimit: number;
+  };
+}
+
+/**
  * Performance metrics for wheel operations
  */
 export interface WheelPerformanceMetrics {
@@ -111,7 +122,7 @@ export class WheelPerformanceMonitor {
       return undefined;
     }
 
-    const memoryInfo = (performance as any).memory;
+    const memoryInfo = (performance as PerformanceWithMemory).memory;
     if (!memoryInfo) return undefined;
 
     return Math.round(memoryInfo.usedJSHeapSize / 1048576); // Convert to MB

@@ -139,7 +139,7 @@ describe('OptimizedWheel Performance Tests', () => {
   describe('Performance Monitoring', () => {
     it('should track render performance metrics', async () => {
       const projects = createMockProjects(10);
-      let performanceMetrics: any[] = [];
+      const performanceMetrics: unknown[] = [];
 
       // Mock console methods to capture performance logs
       const consoleSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});

@@ -1,5 +1,6 @@
 import * as React from 'react';
 import * as RechartsPrimitive from 'recharts';
+import type { ValueType, NameType, Payload, LegendPayload } from 'recharts';
 
 import { cn } from '@/lib/utils';
 
@@ -62,7 +63,7 @@ const ChartContainer = React.forwardRef<
 ChartContainer.displayName = 'Chart';
 
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
-  const colorConfig = Object.entries(config).filter(([_, config]) => config.theme || config.color);
+  const colorConfig = Object.entries(config).filter(([_key, config]) => config.theme || config.color);
 
   // Move all hooks to the top before any conditional logic
   const cssRules = React.useMemo(() => {
@@ -170,8 +171,8 @@ const ChartTooltipContent = React.forwardRef<
       indicator?: 'line' | 'dot' | 'dashed';
       nameKey?: string;
       labelKey?: string;
-      payload?: any[];
-      label?: any;
+      payload?: ReadonlyArray<Payload<ValueType, NameType>>;
+      label?: unknown;
       active?: boolean;
     }
 >(
@@ -313,7 +314,7 @@ const ChartLegend = RechartsPrimitive.Legend;
 const ChartLegendContent = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<'div'> & {
-    payload?: any[];
+    payload?: ReadonlyArray<LegendPayload>;
     verticalAlign?: 'top' | 'middle' | 'bottom';
     hideIcon?: boolean;
     nameKey?: string;
