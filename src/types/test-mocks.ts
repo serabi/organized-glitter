@@ -7,7 +7,7 @@
 import type { Mock } from 'vitest';
 import type { QueryClient, UseMutationResult, UseQueryResult } from '@tanstack/react-query';
 import type { NavigateFunction } from 'react-router-dom';
-import type { Project, ProjectFormValues } from './shared';
+import type { Project, ProjectFormValues, ProjectStatus } from './shared';
 import type { ProjectsResponse, RandomizerSpinsResponse } from './pocketbase.types';
 
 // Core mock function type
@@ -22,7 +22,7 @@ export interface MockQueryClient extends Partial<QueryClient> {
   refetchQueries: MockFn<(filters?: { queryKey?: unknown[] }) => Promise<void>>;
 }
 
-export interface MockUseQueryResult<TData = unknown> extends Partial<UseQueryResult<TData>> {
+export interface MockUseQueryResult<TData = unknown> {
   data?: TData;
   isLoading?: boolean;
   isError?: boolean;
@@ -30,8 +30,7 @@ export interface MockUseQueryResult<TData = unknown> extends Partial<UseQueryRes
   refetch?: MockFn<() => Promise<{ data: TData }>>;
 }
 
-export interface MockUseMutationResult<TData = unknown, TVariables = unknown>
-  extends Partial<UseMutationResult<TData, Error, TVariables>> {
+export interface MockUseMutationResult<TData = unknown, TVariables = unknown> {
   mutate?: MockFn<(variables: TVariables) => void>;
   mutateAsync?: MockFn<(variables: TVariables) => Promise<TData>>;
   isLoading?: boolean;

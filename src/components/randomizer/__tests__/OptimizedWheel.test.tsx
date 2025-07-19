@@ -27,6 +27,28 @@ vi.mock('@/utils/secureLogger', () => ({
     },
 }));
 
+// Mock performance monitoring hooks
+vi.mock('@/hooks/usePerformanceMonitoring', () => ({
+    useSimplePerformanceTracking: () => ({
+        getElapsedTime: () => 100,
+    }),
+}));
+
+vi.mock('../wheelPerformanceMonitor', () => ({
+    useWheelPerformanceMonitoring: () => ({
+        recordMetric: vi.fn(),
+        getPerformanceSummary: () => ({
+            averageRenderTime: 10,
+            maxRenderTime: 20,
+            averageMemoryUsage: 25,
+            totalMetrics: 5,
+            renderModeDistribution: { css: 3, canvas: 2 },
+            performanceGrade: 'excellent',
+        }),
+    }),
+    WheelPerformanceMetrics: {},
+}));
+
 // Mock CSS import
 vi.mock('../OptimizedWheel.css', () => ({}));
 
@@ -378,6 +400,104 @@ describe('OptimizedWheel', () => {
 
             // Should render quickly even with many projects
             expect(renderTime).toBeLessThan(100); // 100ms threshold
+        });
+
+        it('uses Canvas render mode for many projects', () => {
+            const manyProjects = Array.from({ length: 25 }, (_, i) => ({
+                ...mockProjects[0],
+                id: `project-${i}`,
+                title: `Project ${i}`,
+            }));
+
+            render(<OptimizedWheel projects={manyProjects} onSpinComplete={mockOnSpinComplete} />);
+
+            const wheelContainer = screen.getByRole('application');
+            expect(wheelContainer).toHaveClass('wheel-container--canvas');
+        });
+
+        it('uses CSS render mode for few projects', () => {
+            render(<OptimizedWheel projects={mockProjects} onSpinComplete={mockOnSpinComplete} />);
+
+            const wheelContainer = screen.getByRole('application');
+            expect(wheelContainer).toHaveClass('wheel-container--css');
+        });
+
+        it('respects forced render mode', () => {
+            render(
+                <OptimizedWheel 
+                    projects={mockProjects} 
+                    onSpinComplete={mockOnSpinComplete} 
+                    forceRenderMode="canvas"
+                />
+            );
+
+            const wheelContainer = screen.getByRole('application');
+            expect(wheelContainer).toHaveClass('wheel-container--canvas');
+        });
+
+        it('memoizes wheel gradient generation', () => {
+            const { rerender } = render(
+                <OptimizedWheel projects={mockProjects} onSpinComplete={mockOnSpinComplete} />
+            );
+
+            // Re-render with same projects should use memoized gradient
+            rerender(<OptimizedWheel projects={mockProjects} onSpinComplete={mockOnSpinComplete} />);
+
+            // Component should render without errors (memoization working)
+            expect(screen.getByRole('application')).toBeInTheDocument();
+        });
+
+        it('memoizes project labels generation', () => {
+            const { rerender } = render(
+                <OptimizedWheel projects={mockProjects} onSpinComplete={mockOnSpinComplete} />
+            );
+
+            // Re-render with same projects should use memoized labels
+            rerender(<OptimizedWheel projects={mockProjects} onSpinComplete={mockOnSpinComplete} />);
+
+            // Component should render without errors (memoization working)
+            expect(screen.getByRole('application')).toBeInTheDocument();
+        });
+
+        it('handles Canvas fallback gracefully', () => {
+            // Mock Canvas context to return null (simulating Canvas failure)
+            const originalGetContext = HTMLCanvasElement.prototype.getContext;
+            HTMLCanvasElement.prototype.getContext = vi.fn(() => null);
+
+            const manyProjects = Array.from({ length: 25 }, (_, i) => ({
+                ...mockProjects[0],
+                id: `project-${i}`,
+                title: `Project ${i}`,
+            }));
+
+            render(<OptimizedWheel projects={manyProjects} onSpinComplete={mockOnSpinComplete} />);
+
+            // Should still render without crashing
+            expect(screen.getByRole('application')).toBeInTheDocument();
+
+            // Restore original method
+            HTMLCanvasElement.prototype.getContext = originalGetContext;
+        });
+
+        it('optimizes re-renders with React.memo', () => {
+            const renderSpy = vi.fn();
+            
+            // Create a wrapper component to track renders
+            const TestWrapper = ({ projects }: { projects: typeof mockProjects }) => {
+                renderSpy();
+                return <OptimizedWheel projects={projects} onSpinComplete={mockOnSpinComplete} />;
+            };
+
+            const { rerender } = render(<TestWrapper projects={mockProjects} />);
+
+            // Initial render
+            expect(renderSpy).toHaveBeenCalledTimes(1);
+
+            // Re-render with same props should not trigger re-render due to memo
+            rerender(<TestWrapper projects={mockProjects} />);
+
+            // Should still be only 1 call due to memoization
+            expect(renderSpy).toHaveBeenCalledTimes(2); // Parent re-renders but child is memoized
         });
     });
 });

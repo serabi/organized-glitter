@@ -1,14 +1,14 @@
 /**
  * Modern React hook for automatic cache cleaning on navigation
  *
- * This hook provides a type-safe, Wouter-aware way to clean invalid cache entries
+ * This hook provides a type-safe, router-aware way to clean invalid cache entries
  * without modifying global methods. Uses modern React and TanStack Query patterns.
  *
- * @version 2.0.0 - Modernized with latest Wouter and TanStack Query patterns
+ * @version 2.0.0 - Modernized with latest React Router and TanStack Query patterns
  */
 
 import { useEffect, useCallback, useRef } from 'react';
-import { useLocation } from 'wouter';
+import { useLocation } from 'react-router-dom';
 import { useQueryClient, type QueryClient, Query } from '@tanstack/react-query';
 import { cleanInvalidCacheEntries } from '@/utils/cacheValidation';
 import { createLogger } from '@/utils/secureLogger';

@@ -59,7 +59,7 @@ export class ServiceMockTemplates {
       return ProjectFactory({
         id,
         ...data,
-        updated: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       });
     });
 
@@ -191,8 +191,8 @@ export class ServiceMockTemplates {
       return ProjectFactory({
         id: `new-project-${Date.now()}`,
         ...mappedData,
-        created: new Date().toISOString(),
-        updated: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       });
     });
   }
@@ -216,7 +216,7 @@ export class ServiceMockTemplates {
         const userMatch = options.filter.match(/user = "([^"]+)"/);
         if (userMatch) {
           const userId = userMatch[1];
-          tags = tags.map(tag => ({ ...tag, user: userId }));
+          tags = tags.map(tag => ({ ...tag, userId }));
         }
       }
 
@@ -227,8 +227,8 @@ export class ServiceMockTemplates {
       return TagFactory({
         id: `new-tag-${Date.now()}`,
         ...data,
-        created: new Date().toISOString(),
-        updated: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       });
     });
   }
@@ -390,7 +390,7 @@ export class ServiceMockTemplates {
           ProjectFactory({
             id,
             ...data,
-            updated: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
           })
         )
       );

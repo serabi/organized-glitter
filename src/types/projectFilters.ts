@@ -4,7 +4,7 @@
  * @created 2025-01-16
  */
 
-import { ProjectStatus } from './project';
+import { ProjectStatus, Project } from './project';
 import { DashboardValidSortField } from '@/features/dashboard/dashboard.constants';
 import { SortDirectionType } from '@/contexts/FilterProvider';
 

@@ -40,9 +40,9 @@ export const ProjectFactory: TestDataFactory<ProjectType> = (overrides = {}) => 
     hoursSpent: 0,
     image: 'test-image.jpg',
     imageUrl: 'https://example.com/test-image.jpg',
-    user: 'test-user-id',
-    created: '2024-01-01T00:00:00Z',
-    updated: '2024-01-01T00:00:00Z',
+    userId: 'test-user-id',
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
     collectionId: 'projects',
     collectionName: 'projects',
     expand: undefined,
@@ -59,9 +59,9 @@ export const TagFactory: TestDataFactory<Tag> = (overrides = {}) => {
     id: `tag-${Math.random().toString(36).substr(2, 9)}`,
     name: 'Test Tag',
     color: '#3B82F6',
-    user: 'test-user-id',
-    created: '2024-01-01T00:00:00Z',
-    updated: '2024-01-01T00:00:00Z',
+    userId: 'test-user-id',
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
     collectionId: 'tags',
     collectionName: 'tags',
   };
@@ -77,16 +77,16 @@ export const UserFactory: TestDataFactory<{
   email: string;
   username: string;
   verified: boolean;
-  created: string;
-  updated: string;
+  createdAt: string;
+  updatedAt: string;
 }> = (overrides = {}) => {
   const defaultUser = {
     id: `user-${Math.random().toString(36).substr(2, 9)}`,
     email: 'test@example.com',
     username: 'testuser',
     verified: true,
-    created: '2024-01-01T00:00:00Z',
-    updated: '2024-01-01T00:00:00Z',
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
   };
 
   return { ...defaultUser, ...overrides };

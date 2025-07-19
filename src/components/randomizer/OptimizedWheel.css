@@ -287,6 +287,39 @@
     0 0 0 4px hsl(var(--primary) / 0.2);
 }
 
+/* Canvas Wheel Styles */
+.wheel-canvas {
+  border: var(--wheel-border-width) solid #f43f5e;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.wheel-container--canvas {
+  /* Additional styles for canvas mode if needed */
+}
+
+.wheel-container--css {
+  /* Additional styles for CSS mode if needed */
+}
+
+/* Performance Optimization Classes */
+.wheel-container--optimized {
+  /* GPU acceleration for better performance */
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+.wheel--performance-mode {
+  /* Optimized rendering for complex scenarios */
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Memory Usage Optimization */
+.wheel__label--optimized {
+  /* Reduce memory footprint for many labels */
+  contain: layout style paint;
+}
+
 /* Print Styles */
 @media print {
   .wheel-container {
@@ -299,5 +332,10 @@
 
   .wheel-button {
     display: none;
+  }
+
+  .wheel-canvas {
+    /* Ensure canvas prints correctly */
+    print-color-adjust: exact;
   }
 }

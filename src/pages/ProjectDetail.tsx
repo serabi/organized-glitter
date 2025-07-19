@@ -87,7 +87,7 @@ const ProjectDetail = () => {
   const navigationState = location.state as {
     fromNavigation?: boolean;
     projectId?: string;
-    projectData?: Project;
+    projectData?: ProjectType;
     timestamp?: number;
     navigationContext?: NavigationContext;
   } | null;

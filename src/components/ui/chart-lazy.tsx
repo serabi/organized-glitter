@@ -62,8 +62,9 @@ type ChartTooltipContentProps = React.ComponentProps<typeof Tooltip> &
 
 type ChartLegendProps = LegendProps;
 
-type ChartLegendContentProps = React.ComponentProps<'div'> &
-  Pick<LegendProps, 'payload' | 'verticalAlign'> & {
+type ChartLegendContentProps = React.ComponentProps<'div'> & {
+    payload?: any[];
+    verticalAlign?: 'top' | 'middle' | 'bottom';
     hideIcon?: boolean;
     nameKey?: string;
   };

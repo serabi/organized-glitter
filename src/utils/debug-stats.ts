@@ -7,7 +7,7 @@
 
 import { pb } from '@/lib/pocketbase';
 import { Collections } from '@/types/pocketbase.types';
-import { DashboardStatsService } from '@/services/pocketbase/dashboardStatsService';
+import { DashboardStatsService } from '@/services/dashboardStatsService';
 import { createFilter } from '@/utils/filterBuilder';
 import { logger } from './logger';
 import { secureLogger } from './secureLogger';

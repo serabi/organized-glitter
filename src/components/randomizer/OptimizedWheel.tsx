@@ -3,20 +3,32 @@
  *
  * A performance-optimized spinning wheel component that uses CSS-based animations
  * instead of complex SVG calculations. Features simplified selection algorithm,
- * responsive sizing with CSS custom properties, and comprehensive accessibility support.
+ * responsive sizing with CSS custom properties, Canvas fallback for complex scenarios,
+ * comprehensive memoization, and performance monitoring.
  *
  * @author serabi
- * @version 2.0.0
+ * @version 2.1.0
  * @since 2025-01-19
  */
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo, memo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Project } from '@/types/shared';
+import type { Project } from '@/types/shared';
 import { createLogger } from '@/utils/secureLogger';
+import { useSimplePerformanceTracking } from '@/hooks/usePerformanceMonitoring';
+import { useWheelPerformanceMonitoring, WheelPerformanceMetrics } from './wheelPerformanceMonitor';
 import './OptimizedWheel.css';
 
 const logger = createLogger('OptimizedWheel');
+
+/**
+ * Performance thresholds for determining render mode
+ */
+const PERFORMANCE_THRESHOLDS = {
+  CANVAS_FALLBACK_PROJECT_COUNT: 20, // Use Canvas for >20 projects
+  COMPLEX_SCENARIO_PROJECT_COUNT: 50, // Consider very complex for >50 projects
+  ANIMATION_PERFORMANCE_THRESHOLD: 16.67, // Target 60fps (16.67ms per frame)
+} as const;
 
 /**
  * Custom hook for responsive wheel sizing
@@ -81,39 +93,283 @@ interface OptimizedWheelProps {
   disabled?: boolean;
   /** Wheel size variant (optional) */
   size?: 'small' | 'medium' | 'large';
+  /** Force specific render mode (optional, for testing) */
+  forceRenderMode?: 'css' | 'canvas';
 }
 
 /**
- * Optimized randomizer wheel component with CSS-based animations
+ * Canvas-based wheel component for complex scenarios (many projects)
+ * Provides better performance when CSS-based rendering becomes inefficient
+ */
+const CanvasWheel = memo<{
+  projects: Project[];
+  size: 'small' | 'medium' | 'large';
+  isSpinning: boolean;
+  spinDegrees: number;
+  onPerformanceMetric: (metric: Partial<WheelPerformanceMetrics>) => void;
+}>(({ projects, size, isSpinning, spinDegrees, onPerformanceMetric }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animationFrameRef = useRef<number>();
+
+  // Memoized wheel dimensions based on size
+  const dimensions = useMemo(() => {
+    const sizeMap = {
+      small: { width: 240, height: 240, radius: 110 },
+      medium: { width: 320, height: 320, radius: 150 },
+      large: { width: 480, height: 480, radius: 230 },
+    };
+    return sizeMap[size];
+  }, [size]);
+
+  // Memoized project segments for Canvas rendering
+  const projectSegments = useMemo(() => {
+    const segmentAngle = (2 * Math.PI) / projects.length;
+    return projects.map((project, index) => ({
+      project,
+      startAngle: index * segmentAngle,
+      endAngle: (index + 1) * segmentAngle,
+      color: WHEEL_COLORS[index % WHEEL_COLORS.length],
+      centerAngle: index * segmentAngle + segmentAngle / 2,
+    }));
+  }, [projects]);
+
+  // Canvas drawing function with performance monitoring
+  const drawWheel = useCallback((currentRotation: number = 0) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const renderStartTime = performance.now();
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const { width, height, radius } = dimensions;
+    const centerX = width / 2;
+    const centerY = height / 2;
+
+    // Clear canvas
+    ctx.clearRect(0, 0, width, height);
+
+    // Save context for rotation
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    ctx.rotate((currentRotation * Math.PI) / 180);
+
+    // Draw segments
+    projectSegments.forEach(segment => {
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, radius, segment.startAngle, segment.endAngle);
+      ctx.closePath();
+      ctx.fillStyle = segment.color;
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Draw project text
+      ctx.save();
+      ctx.rotate(segment.centerAngle);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `${size === 'small' ? '12' : size === 'medium' ? '14' : '16'}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      
+      const textRadius = radius * 0.7;
+      const text = segment.project.title.length > 12 
+        ? `${segment.project.title.substring(0, 9)}...` 
+        : segment.project.title;
+      
+      ctx.fillText(text, textRadius, 0);
+      ctx.restore();
+    });
+
+    // Restore context
+    ctx.restore();
+
+    // Draw border
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+    ctx.strokeStyle = '#f43f5e';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    const renderTime = performance.now() - renderStartTime;
+    onPerformanceMetric({ 
+      renderTime, 
+      renderMode: 'canvas',
+      projectCount: projects.length,
+    });
+  }, [dimensions, projectSegments, size, projects.length, onPerformanceMetric]);
+
+  // Animation loop for spinning
+  useEffect(() => {
+    if (!isSpinning) {
+      drawWheel(spinDegrees);
+      return;
+    }
+
+    const startTime = performance.now();
+    const duration = 3000; // 3 seconds
+    const startRotation = spinDegrees - (3 * 360 + Math.random() * 360); // Previous rotation
+    const endRotation = spinDegrees;
+
+    const animate = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Easing function (cubic-bezier approximation)
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+      const currentRotation = startRotation + (endRotation - startRotation) * easeOut;
+
+      drawWheel(currentRotation);
+
+      if (progress < 1) {
+        animationFrameRef.current = requestAnimationFrame(animate);
+      }
+    };
+
+    animationFrameRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [isSpinning, spinDegrees, drawWheel]);
+
+  // Initial draw
+  useEffect(() => {
+    drawWheel(spinDegrees);
+  }, [drawWheel, spinDegrees]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      width={dimensions.width}
+      height={dimensions.height}
+      className="wheel-canvas"
+      style={{
+        width: dimensions.width,
+        height: dimensions.height,
+        borderRadius: '50%',
+      }}
+      aria-hidden="true"
+    />
+  );
+});
+
+CanvasWheel.displayName = 'CanvasWheel';
+
+/**
+ * Memoized wheel segments component for CSS-based rendering
+ * Optimizes re-renders when project list changes
+ */
+const MemoizedWheelSegments = memo<{
+  projectLabels: Array<{
+    id: string;
+    title: string;
+    x: number;
+    y: number;
+    angle: number;
+  }>;
+}>(({ projectLabels }) => {
+  return (
+    <>
+      {/* Project Labels */}
+      {projectLabels.map(label => (
+        <div
+          key={label.id}
+          className="wheel__label"
+          style={{
+            left: `${label.x}%`,
+            top: `${label.y}%`,
+            transform: `translate(-50%, -50%) rotate(${label.angle}deg)`,
+          }}
+        >
+          {label.title.length > 12 ? `${label.title.substring(0, 9)}...` : label.title}
+        </div>
+      ))}
+    </>
+  );
+});
+
+MemoizedWheelSegments.displayName = 'MemoizedWheelSegments';
+
+/**
+ * Optimized randomizer wheel component with CSS-based animations and Canvas fallback
  *
- * Uses CSS transforms and animations instead of complex JavaScript calculations
- * for better performance. Implements simplified selection algorithm using
- * modular arithmetic for fair distribution.
+ * Uses CSS transforms and animations for optimal performance, with automatic fallback
+ * to Canvas rendering for complex scenarios (many projects). Implements simplified
+ * selection algorithm using modular arithmetic for fair distribution.
  *
  * @param props - Component props
  * @returns The rendered optimized wheel component
  *
  * @features
  * - CSS-based animations for smooth 60fps performance
+ * - Canvas fallback for complex scenarios (>20 projects)
+ * - Comprehensive memoization for optimal re-renders
+ * - Performance monitoring and metrics collection
  * - Simplified selection algorithm using modular arithmetic
  * - Responsive sizing with CSS custom properties
  * - Reduced motion support for accessibility
- * - Canvas fallback for complex scenarios (future enhancement)
  * - Comprehensive keyboard and screen reader support
  */
-export const OptimizedWheel: React.FC<OptimizedWheelProps> = ({
+export const OptimizedWheel: React.FC<OptimizedWheelProps> = memo(({
   projects,
   onSpinComplete,
   disabled = false,
   size: preferredSize,
+  forceRenderMode,
 }) => {
   const [isSpinning, setIsSpinning] = useState(false);
   const [spinDegrees, setSpinDegrees] = useState(0);
+  const [performanceMetrics, setPerformanceMetrics] = useState<WheelPerformanceMetrics[]>([]);
   const wheelRef = useRef<HTMLDivElement>(null);
   const resultAnnouncementRef = useRef<HTMLDivElement>(null);
 
+  // Performance monitoring
+  const { getElapsedTime } = useSimplePerformanceTracking('OptimizedWheel');
+  const { recordMetric, getPerformanceSummary } = useWheelPerformanceMonitoring();
+
   // Use responsive sizing hook
   const size = useResponsiveWheelSize(preferredSize);
+
+  // Determine render mode based on project count and performance
+  const renderMode = useMemo(() => {
+    if (forceRenderMode) return forceRenderMode;
+    
+    // Use Canvas for complex scenarios
+    if (projects.length > PERFORMANCE_THRESHOLDS.CANVAS_FALLBACK_PROJECT_COUNT) {
+      logger.debug('Using Canvas render mode for complex scenario', {
+        projectCount: projects.length,
+        threshold: PERFORMANCE_THRESHOLDS.CANVAS_FALLBACK_PROJECT_COUNT,
+      });
+      return 'canvas';
+    }
+    
+    return 'css';
+  }, [projects.length, forceRenderMode]);
+
+  // Performance metrics callback
+  const handlePerformanceMetric = useCallback((metric: Partial<WheelPerformanceMetrics>) => {
+    const fullMetric: WheelPerformanceMetrics = {
+      renderTime: 0,
+      animationFrameTime: 0,
+      projectCount: projects.length,
+      renderMode,
+      ...metric,
+    };
+
+    // Record metric in performance monitor
+    recordMetric(fullMetric);
+
+    setPerformanceMetrics(prev => {
+      const newMetrics = [...prev, fullMetric];
+      // Keep only last 10 metrics to prevent memory leaks
+      return newMetrics.slice(-10);
+    });
+  }, [projects.length, renderMode, recordMetric]);
 
   /**
    * Simplified project selection using modular arithmetic
@@ -220,12 +476,13 @@ export const OptimizedWheel: React.FC<OptimizedWheelProps> = ({
   );
 
   /**
-   * Generate wheel segments using CSS conic-gradient
-   * More performant than individual SVG paths
+   * Memoized wheel gradient generation for CSS-based rendering
+   * More performant than individual SVG paths, with caching for identical project lists
    */
-  const generateWheelGradient = useCallback(() => {
+  const wheelGradient = useMemo(() => {
     if (projects.length === 0) return '';
 
+    const renderStartTime = performance.now();
     const segmentSize = 100 / projects.length; // Percentage per segment
     const gradientStops: string[] = [];
 
@@ -238,18 +495,26 @@ export const OptimizedWheel: React.FC<OptimizedWheelProps> = ({
       gradientStops.push(`${color} ${endPercent}%`);
     });
 
-    return `conic-gradient(from 0deg, ${gradientStops.join(', ')})`;
-  }, [projects]);
+    const gradient = `conic-gradient(from 0deg, ${gradientStops.join(', ')})`;
+    const renderTime = performance.now() - renderStartTime;
+
+    // Track performance for gradient generation
+    handlePerformanceMetric({ renderTime });
+
+    return gradient;
+  }, [projects, handlePerformanceMetric]);
 
   /**
-   * Generate project labels positioned around the wheel
+   * Memoized project labels positioned around the wheel
+   * Cached to prevent recalculation on every render
    */
-  const generateProjectLabels = useCallback(() => {
+  const projectLabels = useMemo(() => {
     if (projects.length === 0) return [];
 
+    const renderStartTime = performance.now();
     const segmentAngle = 360 / projects.length;
 
-    return projects.map((project, index) => {
+    const labels = projects.map((project, index) => {
       const angle = index * segmentAngle + segmentAngle / 2;
       const radian = (angle * Math.PI) / 180;
 
@@ -266,6 +531,16 @@ export const OptimizedWheel: React.FC<OptimizedWheelProps> = ({
         angle,
       };
     });
+
+    const renderTime = performance.now() - renderStartTime;
+    handlePerformanceMetric({ renderTime });
+
+    return labels;
+  }, [projects, handlePerformanceMetric]);
+
+  // Memoized project list string for accessibility
+  const projectListString = useMemo(() => {
+    return projects.map(p => p.title).join(', ');
   }, [projects]);
 
   // Empty wheel state
@@ -303,16 +578,37 @@ export const OptimizedWheel: React.FC<OptimizedWheelProps> = ({
     );
   }
 
-  const wheelGradient = generateWheelGradient();
-  const projectLabels = generateProjectLabels();
-  const projectList = projects.map(p => p.title).join(', ');
+  // Performance monitoring effect
+  useEffect(() => {
+    if (import.meta.env.DEV && performanceMetrics.length > 0) {
+      const latestMetric = performanceMetrics[performanceMetrics.length - 1];
+      const elapsedTime = getElapsedTime();
+      
+      logger.debug('Wheel performance metrics', {
+        componentLifetime: `${elapsedTime.toFixed(2)}ms`,
+        latestRenderTime: `${latestMetric.renderTime.toFixed(2)}ms`,
+        renderMode: latestMetric.renderMode,
+        projectCount: latestMetric.projectCount,
+        totalMetrics: performanceMetrics.length,
+      });
+
+      // Log performance summary every 5 metrics
+      if (performanceMetrics.length % 5 === 0) {
+        const summary = getPerformanceSummary();
+        logger.info('Wheel performance summary', {
+          ...summary,
+          componentLifetime: `${elapsedTime.toFixed(2)}ms`,
+        });
+      }
+    }
+  }, [performanceMetrics, getElapsedTime, getPerformanceSummary]);
 
   return (
     <div className="flex flex-col items-center space-y-6">
       {/* Screen Reader Content */}
       <div className="sr-only">
         <div id="wheel-description">
-          Project randomizer wheel with {projects.length} projects: {projectList}
+          Project randomizer wheel with {projects.length} projects: {projectListString}
         </div>
         <div id="wheel-instructions">
           Press Enter or Space to spin the wheel. Use Escape to exit focus.
@@ -334,9 +630,18 @@ export const OptimizedWheel: React.FC<OptimizedWheelProps> = ({
         </div>
       </div>
 
+      {/* Performance Debug Info (Development Only) */}
+      {import.meta.env.DEV && performanceMetrics.length > 0 && (
+        <div className="sr-only">
+          <div id="performance-debug">
+            Render mode: {renderMode}, Latest render time: {performanceMetrics[performanceMetrics.length - 1]?.renderTime.toFixed(2)}ms
+          </div>
+        </div>
+      )}
+
       {/* Wheel Container */}
       <div
-        className={`wheel-container wheel-container--${size}`}
+        className={`wheel-container wheel-container--${size} wheel-container--${renderMode}`}
         role="application"
         aria-label={`Project randomizer wheel with ${projects.length} projects`}
         aria-describedby="wheel-description wheel-instructions project-alternatives"
@@ -346,30 +651,29 @@ export const OptimizedWheel: React.FC<OptimizedWheelProps> = ({
         {/* Pointer */}
         <div className="wheel-pointer" aria-hidden="true" />
 
-        {/* Wheel */}
-        <div
-          ref={wheelRef}
-          className={`wheel ${isSpinning ? 'wheel--spinning' : ''}`}
-          style={{
-            background: wheelGradient,
-          }}
-          aria-hidden="true"
-        >
-          {/* Project Labels */}
-          {projectLabels.map(label => (
-            <div
-              key={label.id}
-              className="wheel__label"
-              style={{
-                left: `${label.x}%`,
-                top: `${label.y}%`,
-                transform: `translate(-50%, -50%) rotate(${label.angle}deg)`,
-              }}
-            >
-              {label.title.length > 12 ? `${label.title.substring(0, 9)}...` : label.title}
-            </div>
-          ))}
-        </div>
+        {/* Conditional Rendering: CSS vs Canvas */}
+        {renderMode === 'canvas' ? (
+          <CanvasWheel
+            projects={projects}
+            size={size}
+            isSpinning={isSpinning}
+            spinDegrees={spinDegrees}
+            onPerformanceMetric={handlePerformanceMetric}
+          />
+        ) : (
+          <div
+            ref={wheelRef}
+            className={`wheel ${isSpinning ? 'wheel--spinning' : ''}`}
+            style={{
+              background: wheelGradient,
+            }}
+            aria-hidden="true"
+          >
+            <MemoizedWheelSegments
+              projectLabels={projectLabels}
+            />
+          </div>
+        )}
       </div>
 
       {/* Spin Button */}
@@ -386,6 +690,17 @@ export const OptimizedWheel: React.FC<OptimizedWheelProps> = ({
       >
         {isSpinning ? 'Spinning...' : 'Spin the Wheel!'}
       </Button>
+
+      {/* Performance Metrics Display (Development Only) */}
+      {import.meta.env.DEV && performanceMetrics.length > 0 && (
+        <div className="text-xs text-muted-foreground mt-2">
+          <div>Render Mode: {renderMode}</div>
+          <div>Latest Render: {performanceMetrics[performanceMetrics.length - 1]?.renderTime.toFixed(2)}ms</div>
+          <div>Projects: {projects.length}</div>
+        </div>
+      )}
     </div>
   );
-};
+});
+
+OptimizedWheel.displayName = 'OptimizedWheel';
