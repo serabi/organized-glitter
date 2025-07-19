@@ -6,11 +6,13 @@
  */
 
 import { useMemo, useCallback } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { queryKeys } from './queryKeys';
 import { createLogger } from '@/utils/secureLogger';
 import { StatusBreakdown } from '@/types/dashboard';
 import { Project } from '@/types/project';
+import { projectsService } from '@/services/pocketbase/projects.service';
+import { ProjectFilters } from '@/types/projectFilters';
 
 const logger = createLogger('useOptimizedStatusCounts');
 
@@ -153,22 +155,33 @@ export const useOptimizedStatusCounts = (
     return counts;
   }, [cacheAnalysis]);
 
-  // Server query fallback (using existing service)
-  const serverQuery = useMemo(() => {
-    if (derivedCounts !== null) {
-      // We have derived counts, no need for server query
-      return { data: null, isLoading: false, error: null };
-    }
+  // Server query fallback using React Query
+  const serverQuery = useQuery({
+    queryKey: queryKeys.stats.overview(userId),
+    queryFn: async () => {
+      logger.debug('🌐 Executing server query for status counts', {
+        reason: !cacheAnalysis.canDerive ? 'insufficient-cache' : 'forced-query',
+        cachedProjectCount: cacheAnalysis.totalCached,
+      });
 
-    // This would integrate with existing server query logic
-    // For now, we'll return a placeholder that indicates server query is needed
-    logger.debug('Cache derivation not possible, server query needed:', {
-      reason: !cacheAnalysis.canDerive ? 'insufficient-cache' : 'forced-query',
-      cachedProjectCount: cacheAnalysis.totalCached,
-    });
+      const filters: ProjectFilters = { userId };
+      const result = await projectsService.getOptimizedStatusCounts(filters);
 
-    return { data: null, isLoading: true, error: null };
-  }, [derivedCounts, cacheAnalysis]);
+      logger.info('✅ Server status counts fetched successfully', {
+        counts: result.counts,
+        total: result.total,
+        queryDuration: result.queryDuration,
+        source: 'server-query',
+      });
+
+      return result.counts;
+    },
+    enabled: derivedCounts === null && !!userId,
+    staleTime: 1 * 60 * 1000, // 1 minute - reasonable for status counts
+    gcTime: 5 * 60 * 1000, // 5 minutes cache retention
+    retry: 2,
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+  });
 
   // Calculate cache hit rate for monitoring
   const cacheHitRate = useMemo(() => {
@@ -187,7 +200,7 @@ export const useOptimizedStatusCounts = (
       };
     }
 
-    if (serverQuery.isLoading) {
+    if (serverQuery.isLoading || serverQuery.isFetching) {
       return {
         statusCounts: null,
         isLoading: true,
@@ -208,13 +221,20 @@ export const useOptimizedStatusCounts = (
     }
 
     return {
-      statusCounts: serverQuery.data,
+      statusCounts: serverQuery.data || null,
       isLoading: false,
       error: null,
       source: 'server-query',
       cacheHitRate,
     };
-  }, [derivedCounts, serverQuery, cacheHitRate]);
+  }, [
+    derivedCounts,
+    serverQuery.isLoading,
+    serverQuery.isFetching,
+    serverQuery.error,
+    serverQuery.data,
+    cacheHitRate,
+  ]);
 
   return result;
 };

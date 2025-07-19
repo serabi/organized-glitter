@@ -657,24 +657,22 @@ describe('ProjectsService', () => {
     });
 
     it('should handle concurrent operations', async () => {
-      const concurrentPromises = Array.from({ length: 5 }, (_, i) => {
-        const mockProject = ProjectFactory({
+      const concurrentProjects = Array.from({ length: 5 }, (_, i) => {
+        return ProjectFactory({
           title: `Concurrent Project ${i + 1}`,
           user: 'test-user',
           status: 'purchased' as ProjectFilterStatus,
           id: `concurrent-${i + 1}`,
         });
-
-        return Promise.resolve(mockProject);
       });
 
       // Mock each individual createProject call
       vi.spyOn(projectsService, 'createProject')
-        .mockResolvedValueOnce(await concurrentPromises[0])
-        .mockResolvedValueOnce(await concurrentPromises[1])
-        .mockResolvedValueOnce(await concurrentPromises[2])
-        .mockResolvedValueOnce(await concurrentPromises[3])
-        .mockResolvedValueOnce(await concurrentPromises[4]);
+        .mockResolvedValueOnce(concurrentProjects[0])
+        .mockResolvedValueOnce(concurrentProjects[1])
+        .mockResolvedValueOnce(concurrentProjects[2])
+        .mockResolvedValueOnce(concurrentProjects[3])
+        .mockResolvedValueOnce(concurrentProjects[4]);
 
       const results = await Promise.all([
         projectsService.createProject({

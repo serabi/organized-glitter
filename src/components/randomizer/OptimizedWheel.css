@@ -1,0 +1,303 @@
+/**
+ * Optimized Wheel Component Styles
+ * 
+ * CSS-based animations and responsive sizing using custom properties
+ * for better performance than JavaScript-based animations.
+ */
+
+/* CSS Custom Properties for responsive sizing */
+:root {
+  --wheel-size-small: 240px;
+  --wheel-size-medium: 320px;
+  --wheel-size-large: 480px;
+  --wheel-border-width: 4px;
+  --wheel-pointer-height: 32px;
+  --wheel-pointer-width: 2px;
+  --animation-duration: 3s;
+  --animation-timing: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* Wheel Container */
+.wheel-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-radius: 50%;
+  outline: none;
+  transition: box-shadow 0.2s ease;
+}
+
+.wheel-container:focus {
+  box-shadow:
+    0 0 0 2px hsl(var(--primary)),
+    0 0 0 4px hsl(var(--primary) / 0.2);
+}
+
+/* Responsive sizing */
+.wheel-container--small {
+  width: var(--wheel-size-small);
+  height: var(--wheel-size-small);
+}
+
+.wheel-container--medium {
+  width: var(--wheel-size-medium);
+  height: var(--wheel-size-medium);
+}
+
+.wheel-container--large {
+  width: var(--wheel-size-large);
+  height: var(--wheel-size-large);
+}
+
+/* Wheel Pointer */
+.wheel-pointer {
+  position: absolute;
+  top: calc(-1 * var(--wheel-pointer-height) / 2);
+  left: 50%;
+  transform: translateX(-50%);
+  width: var(--wheel-pointer-width);
+  height: var(--wheel-pointer-height);
+  background: linear-gradient(to bottom, #f43f5e, #e11d48);
+  border-radius: 1px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+}
+
+/* Main Wheel */
+.wheel {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: var(--wheel-border-width) solid #f43f5e;
+  position: relative;
+  overflow: hidden;
+  transition: transform var(--animation-duration) var(--animation-timing);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+/* Spinning Animation */
+.wheel--spinning {
+  animation: optimized-spin var(--animation-duration) var(--animation-timing) forwards;
+}
+
+@keyframes optimized-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(var(--spin-degrees, 1800deg));
+  }
+}
+
+/* Empty Wheel State */
+.wheel--empty {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--primary) / 0.6) 0%,
+    hsl(var(--secondary) / 0.6) 25%,
+    hsl(var(--accent) / 0.6) 50%,
+    hsl(var(--muted) / 0.6) 75%,
+    hsl(var(--primary) / 0.6) 100%
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: gentle-pulse 3s ease-in-out infinite;
+}
+
+@keyframes gentle-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.wheel__content {
+  text-align: center;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.wheel__empty-text {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.wheel__empty-subtext {
+  font-size: 0.875rem;
+  margin: 0;
+  opacity: 0.9;
+}
+
+/* Project Labels */
+.wheel__label {
+  position: absolute;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: white;
+  text-shadow:
+    -1px -1px 0 rgba(0, 0, 0, 0.8),
+    1px -1px 0 rgba(0, 0, 0, 0.8),
+    -1px 1px 0 rgba(0, 0, 0, 0.8),
+    1px 1px 0 rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+  transform-origin: center;
+}
+
+/* Spin Button */
+.wheel-button {
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+  color: white;
+  font-weight: 600;
+  padding: 0.75rem 2rem;
+  font-size: 1.125rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+}
+
+.wheel-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.9), hsl(var(--secondary) / 0.9));
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  transform: translateY(-1px);
+}
+
+.wheel-button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.wheel-button--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  :root {
+    --wheel-size-small: 200px;
+    --wheel-size-medium: 240px;
+    --wheel-size-large: 280px;
+    --wheel-pointer-height: 24px;
+    --wheel-pointer-width: 1.5px;
+  }
+
+  .wheel__label {
+    font-size: 0.75rem;
+  }
+
+  .wheel__empty-text {
+    font-size: 1rem;
+  }
+
+  .wheel__empty-subtext {
+    font-size: 0.75rem;
+  }
+
+  .wheel-button {
+    padding: 0.625rem 1.5rem;
+    font-size: 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --wheel-size-small: 280px;
+    --wheel-size-medium: 400px;
+    --wheel-size-large: 560px;
+    --wheel-pointer-height: 40px;
+    --wheel-pointer-width: 3px;
+  }
+
+  .wheel__label {
+    font-size: 1rem;
+  }
+
+  .wheel__empty-text {
+    font-size: 1.25rem;
+  }
+
+  .wheel__empty-subtext {
+    font-size: 1rem;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --animation-duration: 0.5s;
+    --animation-timing: ease-out;
+  }
+
+  .wheel--spinning {
+    animation: reduced-spin var(--animation-duration) var(--animation-timing) forwards;
+  }
+
+  @keyframes reduced-spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(var(--spin-degrees, 90deg));
+    }
+  }
+
+  .wheel--empty {
+    animation: none;
+  }
+
+  .wheel-button {
+    transition: none;
+  }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .wheel {
+    border-width: calc(var(--wheel-border-width) * 1.5);
+    border-color: currentColor;
+  }
+
+  .wheel-pointer {
+    background: currentColor;
+    box-shadow:
+      0 0 0 2px white,
+      0 0 0 4px currentColor;
+  }
+
+  .wheel__label {
+    text-shadow:
+      -2px -2px 0 white,
+      2px -2px 0 white,
+      -2px 2px 0 white,
+      2px 2px 0 white;
+  }
+}
+
+/* Focus Visible Support */
+.wheel-container:focus-visible {
+  box-shadow:
+    0 0 0 2px hsl(var(--primary)),
+    0 0 0 4px hsl(var(--primary) / 0.2);
+}
+
+/* Print Styles */
+@media print {
+  .wheel-container {
+    break-inside: avoid;
+  }
+
+  .wheel--spinning {
+    animation: none;
+  }
+
+  .wheel-button {
+    display: none;
+  }
+}

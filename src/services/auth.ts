@@ -98,6 +98,7 @@ export const registerWithPassword = async (data: RegisterData): Promise<AuthResu
 
     const fieldMapper = FieldMapper.createWithCommonMappings({
       confirmPassword: 'passwordConfirm',
+      passwordConfirm: 'passwordConfirm', // Preserve case for PocketBase auth
       betaTester: 'beta_tester',
     });
 
