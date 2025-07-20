@@ -10,6 +10,12 @@ import { Collections, CompaniesResponse, ArtistsResponse } from '@/types/pocketb
 import { TagService } from '@/lib/tags';
 import { queryKeys, CompanyQueryParams } from '../queryKeys';
 import { createLogger } from '@/utils/secureLogger';
+import { 
+  getStandardQueryConfig, 
+  getFrequentQueryConfig, 
+  createRequestKey, 
+  createQueryTimer 
+} from './queryUtils';
 import type { Tag } from '@/types/tag';
 
 const logger = createLogger('QueryOptionsFactory');
@@ -30,8 +36,8 @@ async function fetchCompanies(params: CompanyQueryParams & { userId: string }): 
 
   logger.debug(`Fetching companies for user ${userId} - page ${currentPage}, size ${pageSize}`);
 
-  const startTime = performance.now();
-  const requestKey = `companies-${userId}-page${currentPage}-size${pageSize}`;
+  const timer = createQueryTimer('QueryOptionsFactory', 'fetchCompanies');
+  const requestKey = createRequestKey('companies', userId, `page${currentPage}-size${pageSize}`);
 
   const resultList = await pb.collection(Collections.Companies).getList(currentPage, pageSize, {
     filter: `user = "${userId}"`,
@@ -39,10 +45,7 @@ async function fetchCompanies(params: CompanyQueryParams & { userId: string }): 
     requestKey,
   });
 
-  const endTime = performance.now();
-  logger.debug(
-    `Companies query completed in ${Math.round(endTime - startTime)}ms - ${resultList.items.length} items`
-  );
+  timer.stop({ itemCount: resultList.items.length });
 
   return {
     companies: resultList.items,
@@ -61,8 +64,8 @@ async function fetchAllCompanies(userId: string): Promise<CompaniesResponse[]> {
 
   logger.debug(`Fetching all companies for user ${userId}`);
 
-  const startTime = performance.now();
-  const requestKey = `companies-${userId}-all`;
+  const timer = createQueryTimer('QueryOptionsFactory', 'fetchAllCompanies');
+  const requestKey = createRequestKey('companies', userId, 'all');
 
   const resultList = await pb.collection(Collections.Companies).getList(1, 500, {
     filter: `user = "${userId}"`,
@@ -70,10 +73,7 @@ async function fetchAllCompanies(userId: string): Promise<CompaniesResponse[]> {
     requestKey,
   });
 
-  const endTime = performance.now();
-  logger.debug(
-    `All companies query completed in ${Math.round(endTime - startTime)}ms - ${resultList.items.length} items`
-  );
+  timer.stop({ itemCount: resultList.items.length });
 
   return resultList.items;
 }
@@ -88,8 +88,8 @@ async function fetchArtists(userId: string): Promise<ArtistsResponse[]> {
 
   logger.debug(`Fetching artists for user ${userId}`);
 
-  const startTime = performance.now();
-  const requestKey = `artists-${userId}-all`;
+  const timer = createQueryTimer('QueryOptionsFactory', 'fetchArtists');
+  const requestKey = createRequestKey('artists', userId, 'all');
 
   const resultList = await pb.collection(Collections.Artists).getList(1, 500, {
     filter: `user = "${userId}"`,
@@ -97,10 +97,7 @@ async function fetchArtists(userId: string): Promise<ArtistsResponse[]> {
     requestKey,
   });
 
-  const endTime = performance.now();
-  logger.debug(
-    `Artists query completed in ${Math.round(endTime - startTime)}ms - ${resultList.items.length} items`
-  );
+  timer.stop({ itemCount: resultList.items.length });
 
   return resultList.items;
 }
@@ -111,7 +108,7 @@ async function fetchArtists(userId: string): Promise<ArtistsResponse[]> {
 async function fetchTags(): Promise<Tag[]> {
   logger.debug('Fetching tags using TagService');
 
-  const startTime = performance.now();
+  const timer = createQueryTimer('QueryOptionsFactory', 'fetchTags');
 
   try {
     const result = await TagService.getUserTags();
@@ -122,10 +119,7 @@ async function fetchTags(): Promise<Tag[]> {
       throw new Error(errorMessage || 'Failed to fetch tags');
     }
 
-    const endTime = performance.now();
-    logger.debug(
-      `Tags query completed in ${Math.round(endTime - startTime)}ms - ${result.data.length} items`
-    );
+    timer.stop({ itemCount: result.data.length });
 
     return result.data;
   } catch (error) {
@@ -138,29 +132,17 @@ async function fetchTags(): Promise<Tag[]> {
  * Companies query options factory for paginated data
  */
 export function companiesOptions(userId: string, params: CompanyQueryParams) {
+  const config = getStandardQueryConfig();
   return queryOptions({
     queryKey: queryKeys.companies.list(userId, params),
     queryFn: () => fetchCompanies({ userId, ...params }),
     enabled: !!userId,
-    staleTime: 10 * 60 * 1000, // 10 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    retry: (failureCount, error) => {
-      const errorMessage = error?.message || '';
-      const isClientError =
-        errorMessage.includes('400') ||
-        errorMessage.includes('401') ||
-        errorMessage.includes('403') ||
-        errorMessage.includes('404');
-
-      if (isClientError) {
-        return false;
-      }
-
-      return failureCount < 2;
-    },
-    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+    staleTime: config.staleTime,
+    gcTime: config.gcTime,
+    refetchOnWindowFocus: config.refetchOnWindowFocus,
+    refetchOnReconnect: config.refetchOnReconnect,
+    retry: config.retry,
+    retryDelay: config.retryDelay,
   });
 }
 
@@ -168,29 +150,17 @@ export function companiesOptions(userId: string, params: CompanyQueryParams) {
  * All companies query options factory (non-paginated)
  */
 export function allCompaniesOptions(userId: string) {
+  const config = getStandardQueryConfig();
   return queryOptions({
     queryKey: queryKeys.companies.allForUser(userId),
     queryFn: () => fetchAllCompanies(userId),
     enabled: !!userId,
-    staleTime: 10 * 60 * 1000, // 10 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    retry: (failureCount, error) => {
-      const errorMessage = error?.message || '';
-      const isClientError =
-        errorMessage.includes('400') ||
-        errorMessage.includes('401') ||
-        errorMessage.includes('403') ||
-        errorMessage.includes('404');
-
-      if (isClientError) {
-        return false;
-      }
-
-      return failureCount < 2;
-    },
-    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+    staleTime: config.staleTime,
+    gcTime: config.gcTime,
+    refetchOnWindowFocus: config.refetchOnWindowFocus,
+    refetchOnReconnect: config.refetchOnReconnect,
+    retry: config.retry,
+    retryDelay: config.retryDelay,
   });
 }
 
@@ -198,29 +168,17 @@ export function allCompaniesOptions(userId: string) {
  * Artists query options factory
  */
 export function artistsOptions(userId: string) {
+  const config = getFrequentQueryConfig();
   return queryOptions({
     queryKey: queryKeys.artists.list(userId),
     queryFn: () => fetchArtists(userId),
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    retry: (failureCount, error) => {
-      const errorMessage = error?.message || '';
-      const isClientError =
-        errorMessage.includes('400') ||
-        errorMessage.includes('401') ||
-        errorMessage.includes('403') ||
-        errorMessage.includes('404');
-
-      if (isClientError) {
-        return false;
-      }
-
-      return failureCount < 2;
-    },
-    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+    staleTime: config.staleTime,
+    gcTime: config.gcTime,
+    refetchOnWindowFocus: config.refetchOnWindowFocus,
+    refetchOnReconnect: config.refetchOnReconnect,
+    retry: config.retry,
+    retryDelay: config.retryDelay,
   });
 }
 
@@ -228,28 +186,16 @@ export function artistsOptions(userId: string) {
  * Tags query options factory
  */
 export function tagsOptions(userId: string) {
+  const config = getFrequentQueryConfig();
   return queryOptions({
     queryKey: queryKeys.tags.list(userId),
     queryFn: fetchTags,
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    retry: (failureCount, error) => {
-      const errorMessage = error?.message || '';
-      const isClientError =
-        errorMessage.includes('400') ||
-        errorMessage.includes('401') ||
-        errorMessage.includes('403') ||
-        errorMessage.includes('404');
-
-      if (isClientError) {
-        return false;
-      }
-
-      return failureCount < 2;
-    },
-    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+    staleTime: config.staleTime,
+    gcTime: config.gcTime,
+    refetchOnWindowFocus: config.refetchOnWindowFocus,
+    refetchOnReconnect: config.refetchOnReconnect,
+    retry: config.retry,
+    retryDelay: config.retryDelay,
   });
 }

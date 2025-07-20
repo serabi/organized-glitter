@@ -37,7 +37,7 @@ interface TouchGestureConfig {
  */
 interface TouchGestureEvent {
   /** Type of gesture detected */
-  type: 'swipe' | 'tap' | 'longpress' | 'pinch';
+  type: 'swipe' | 'tap' | 'longpress';
   /** Direction of swipe (if applicable) */
   direction?: 'up' | 'down' | 'left' | 'right';
   /** Distance of gesture */

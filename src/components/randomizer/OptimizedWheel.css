@@ -346,9 +346,6 @@
 }
 
 /* Keyboard Focus Indicator */
-.wheel-container:focus:not(:focus-visible) {
-  outline: none;
-}
 
 .wheel-container:focus-visible::after {
   content: '';

@@ -1,7 +1,7 @@
 /**
  * Shared utilities for React Query hooks to reduce duplication and improve consistency
  * @author @serabi
- * @created 2025-01-16
+ * @created 2025-07-16
  */
 
 import { ClientResponseError } from 'pocketbase';
@@ -37,10 +37,20 @@ export const standardRetryConfig = (failureCount: number, error: Error): boolean
     return false;
   }
 
-  // Retry up to 3 times for server errors
-  const shouldRetry = failureCount < 3;
+  // Retry up to 2 times for server errors (matching queryOptionsFactory pattern)
+  const shouldRetry = failureCount < 2;
   logger.debug('Retry decision', { failureCount, shouldRetry, errorMessage });
   return shouldRetry;
+};
+
+/**
+ * Standard exponential backoff retry delay configuration
+ * @author @serabi
+ * @param attemptIndex - Current retry attempt index (0-based)
+ * @returns Delay in milliseconds with exponential backoff, capped at 30 seconds
+ */
+export const standardRetryDelay = (attemptIndex: number): number => {
+  return Math.min(1000 * 2 ** attemptIndex, 30000);
 };
 
 /**
@@ -53,8 +63,9 @@ export const getStandardQueryConfig = () => ({
   gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
   refetchOnWindowFocus: false, // Reduce unnecessary refetches
   refetchOnReconnect: false, // Reduce blinking on reconnect
-  notifyOnChangeProps: ['data', 'error', 'isLoading', 'isError'] as const,
+  notifyOnChangeProps: ['data', 'error', 'isLoading', 'isError'],
   retry: standardRetryConfig,
+  retryDelay: standardRetryDelay,
 });
 
 /**
@@ -67,8 +78,9 @@ export const getFrequentQueryConfig = () => ({
   gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
   refetchOnWindowFocus: false,
   refetchOnReconnect: false,
-  notifyOnChangeProps: ['data', 'error', 'isLoading', 'isError'] as const,
+  notifyOnChangeProps: ['data', 'error', 'isLoading', 'isError'],
   retry: standardRetryConfig,
+  retryDelay: standardRetryDelay,
 });
 
 /**
@@ -83,7 +95,7 @@ export const getPaginatedQueryConfig = () => ({
   refetchOnWindowFocus: false,
   refetchOnReconnect: false,
   retry: standardRetryConfig,
-  retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 30000),
+  retryDelay: standardRetryDelay,
 });
 
 /**
@@ -191,6 +203,7 @@ export const getStatusCountQueryConfig = () => ({
   refetchOnWindowFocus: false, // Never refetch on focus - rely on invalidation
   refetchOnReconnect: false, // Never refetch on reconnect - rely on invalidation
   placeholderData: (previousData: unknown) => previousData, // Show stale data immediately (stale-while-revalidate)
-  notifyOnChangeProps: ['data', 'error', 'isLoading', 'isError'] as const,
+  notifyOnChangeProps: ['data', 'error', 'isLoading', 'isError'],
   retry: standardRetryConfig,
+  retryDelay: standardRetryDelay,
 });
