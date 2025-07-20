@@ -134,21 +134,24 @@ export const useTouchGestures = (
   /**
    * Trigger haptic feedback if available and enabled
    */
-  const triggerHapticFeedback = useCallback((type: 'light' | 'medium' | 'heavy' = 'light') => {
-    if (!mergedConfig.enableHaptics || !('vibrate' in navigator)) return;
+  const triggerHapticFeedback = useCallback(
+    (type: 'light' | 'medium' | 'heavy' = 'light') => {
+      if (!mergedConfig.enableHaptics || !('vibrate' in navigator)) return;
 
-    try {
-      // Use Vibration API for haptic feedback
-      const patterns = {
-        light: [10],
-        medium: [20],
-        heavy: [30],
-      };
-      navigator.vibrate(patterns[type]);
-    } catch (error) {
-      logger.debug('Haptic feedback not available', { error });
-    }
-  }, [mergedConfig.enableHaptics]);
+      try {
+        // Use Vibration API for haptic feedback
+        const patterns = {
+          light: [10],
+          medium: [20],
+          heavy: [30],
+        };
+        navigator.vibrate(patterns[type]);
+      } catch (error) {
+        logger.debug('Haptic feedback not available', { error });
+      }
+    },
+    [mergedConfig.enableHaptics]
+  );
 
   /**
    * Calculate gesture velocity
@@ -160,132 +163,141 @@ export const useTouchGestures = (
   /**
    * Determine swipe direction
    */
-  const getSwipeDirection = useCallback((deltaX: number, deltaY: number): 'up' | 'down' | 'left' | 'right' => {
-    const absDeltaX = Math.abs(deltaX);
-    const absDeltaY = Math.abs(deltaY);
+  const getSwipeDirection = useCallback(
+    (deltaX: number, deltaY: number): 'up' | 'down' | 'left' | 'right' => {
+      const absDeltaX = Math.abs(deltaX);
+      const absDeltaY = Math.abs(deltaY);
 
-    if (absDeltaX > absDeltaY) {
-      return deltaX > 0 ? 'right' : 'left';
-    } else {
-      return deltaY > 0 ? 'down' : 'up';
-    }
-  }, []);
+      if (absDeltaX > absDeltaY) {
+        return deltaX > 0 ? 'right' : 'left';
+      } else {
+        return deltaY > 0 ? 'down' : 'up';
+      }
+    },
+    []
+  );
 
   /**
    * Handle touch start event
    */
-  const handleTouchStart = useCallback((event: React.TouchEvent) => {
-    // Only handle single touch for now
-    if (event.touches.length !== 1) return;
+  const handleTouchStart = useCallback(
+    (event: React.TouchEvent) => {
+      // Only handle single touch for now
+      if (event.touches.length !== 1) return;
 
-    const touch = event.touches[0];
-    const touchState = touchStateRef.current;
+      const touch = event.touches[0];
+      const touchState = touchStateRef.current;
 
-    touchState.startX = touch.clientX;
-    touchState.startY = touch.clientY;
-    touchState.startTime = Date.now();
-    touchState.isTracking = true;
-    touchState.touchId = touch.identifier;
+      touchState.startX = touch.clientX;
+      touchState.startY = touch.clientY;
+      touchState.startTime = Date.now();
+      touchState.isTracking = true;
+      touchState.touchId = touch.identifier;
 
-    // Set up long press detection
-    if (callbacks.onLongPress) {
-      longPressTimeoutRef.current = setTimeout(() => {
-        if (touchState.isTracking) {
-          const gestureEvent: TouchGestureEvent = {
-            type: 'longpress',
-            duration: Date.now() - touchState.startTime,
-            originalEvent: event,
-          };
-          callbacks.onLongPress?.(gestureEvent);
-          triggerHapticFeedback('medium');
-        }
-      }, 500); // 500ms for long press
-    }
+      // Set up long press detection
+      if (callbacks.onLongPress) {
+        longPressTimeoutRef.current = setTimeout(() => {
+          if (touchState.isTracking) {
+            const gestureEvent: TouchGestureEvent = {
+              type: 'longpress',
+              duration: Date.now() - touchState.startTime,
+              originalEvent: event,
+            };
+            callbacks.onLongPress?.(gestureEvent);
+            triggerHapticFeedback('medium');
+          }
+        }, 500); // 500ms for long press
+      }
 
-    callbacks.onTouchStart?.(event);
+      callbacks.onTouchStart?.(event);
 
-    logger.debug('Touch start detected', {
-      x: touch.clientX,
-      y: touch.clientY,
-      touchId: touch.identifier,
-    });
-  }, [callbacks, triggerHapticFeedback]);
+      logger.debug('Touch start detected', {
+        x: touch.clientX,
+        y: touch.clientY,
+        touchId: touch.identifier,
+      });
+    },
+    [callbacks, triggerHapticFeedback]
+  );
 
   /**
    * Handle touch end event
    */
-  const handleTouchEnd = useCallback((event: React.TouchEvent) => {
-    const touchState = touchStateRef.current;
+  const handleTouchEnd = useCallback(
+    (event: React.TouchEvent) => {
+      const touchState = touchStateRef.current;
 
-    if (!touchState.isTracking) return;
+      if (!touchState.isTracking) return;
 
-    // Clear long press timeout
-    if (longPressTimeoutRef.current) {
-      clearTimeout(longPressTimeoutRef.current);
-      longPressTimeoutRef.current = null;
-    }
+      // Clear long press timeout
+      if (longPressTimeoutRef.current) {
+        clearTimeout(longPressTimeoutRef.current);
+        longPressTimeoutRef.current = null;
+      }
 
-    // Find the touch that ended
-    const touch = Array.from(event.changedTouches).find(
-      t => t.identifier === touchState.touchId
-    );
+      // Find the touch that ended
+      const touch = Array.from(event.changedTouches).find(t => t.identifier === touchState.touchId);
 
-    if (!touch) return;
+      if (!touch) return;
 
-    const endTime = Date.now();
-    const duration = endTime - touchState.startTime;
-    const deltaX = touch.clientX - touchState.startX;
-    const deltaY = touch.clientY - touchState.startY;
-    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-    const velocity = calculateVelocity(distance, duration);
+      const endTime = Date.now();
+      const duration = endTime - touchState.startTime;
+      const deltaX = touch.clientX - touchState.startX;
+      const deltaY = touch.clientY - touchState.startY;
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+      const velocity = calculateVelocity(distance, duration);
 
-    // Reset tracking state
-    touchState.isTracking = false;
-    touchState.touchId = null;
+      // Reset tracking state
+      touchState.isTracking = false;
+      touchState.touchId = null;
 
-    // Determine gesture type
-    if (distance >= mergedConfig.swipeThreshold && 
-        duration <= mergedConfig.swipeTimeout && 
-        velocity >= mergedConfig.velocityThreshold) {
-      // Swipe gesture detected
-      const direction = getSwipeDirection(deltaX, deltaY);
-      const gestureEvent: TouchGestureEvent = {
-        type: 'swipe',
-        direction,
-        distance,
-        velocity,
-        duration,
-        originalEvent: event,
-      };
+      // Determine gesture type
+      if (
+        distance >= mergedConfig.swipeThreshold &&
+        duration <= mergedConfig.swipeTimeout &&
+        velocity >= mergedConfig.velocityThreshold
+      ) {
+        // Swipe gesture detected
+        const direction = getSwipeDirection(deltaX, deltaY);
+        const gestureEvent: TouchGestureEvent = {
+          type: 'swipe',
+          direction,
+          distance,
+          velocity,
+          duration,
+          originalEvent: event,
+        };
 
-      callbacks.onSwipe?.(gestureEvent);
-      triggerHapticFeedback('light');
+        callbacks.onSwipe?.(gestureEvent);
+        triggerHapticFeedback('light');
 
-      logger.debug('Swipe gesture detected', {
-        direction,
-        distance: distance.toFixed(2),
-        velocity: velocity.toFixed(3),
-        duration,
-      });
-    } else if (distance < mergedConfig.swipeThreshold && duration < 300) {
-      // Tap gesture detected
-      const gestureEvent: TouchGestureEvent = {
-        type: 'tap',
-        duration,
-        originalEvent: event,
-      };
+        logger.debug('Swipe gesture detected', {
+          direction,
+          distance: distance.toFixed(2),
+          velocity: velocity.toFixed(3),
+          duration,
+        });
+      } else if (distance < mergedConfig.swipeThreshold && duration < 300) {
+        // Tap gesture detected
+        const gestureEvent: TouchGestureEvent = {
+          type: 'tap',
+          duration,
+          originalEvent: event,
+        };
 
-      callbacks.onTap?.(gestureEvent);
-      triggerHapticFeedback('light');
+        callbacks.onTap?.(gestureEvent);
+        triggerHapticFeedback('light');
 
-      logger.debug('Tap gesture detected', {
-        duration,
-        distance: distance.toFixed(2),
-      });
-    }
+        logger.debug('Tap gesture detected', {
+          duration,
+          distance: distance.toFixed(2),
+        });
+      }
 
-    callbacks.onTouchEnd?.(event);
-  }, [callbacks, mergedConfig, calculateVelocity, getSwipeDirection, triggerHapticFeedback]);
+      callbacks.onTouchEnd?.(event);
+    },
+    [callbacks, mergedConfig, calculateVelocity, getSwipeDirection, triggerHapticFeedback]
+  );
 
   /**
    * Handle touch move event (for gesture tracking)
@@ -296,9 +308,7 @@ export const useTouchGestures = (
     if (!touchState.isTracking) return;
 
     // Find the tracked touch
-    const touch = Array.from(event.touches).find(
-      t => t.identifier === touchState.touchId
-    );
+    const touch = Array.from(event.touches).find(t => t.identifier === touchState.touchId);
 
     if (!touch) return;
 
@@ -348,10 +358,7 @@ export const useTouchGestures = (
  * @param disabled - Whether touch gestures should be disabled
  * @returns Wheel-specific touch handlers and utilities
  */
-export const useWheelTouchGestures = (
-  onSpin: () => void,
-  disabled: boolean = false
-) => {
+export const useWheelTouchGestures = (onSpin: () => void, disabled: boolean = false) => {
   const [touchFeedback, setTouchFeedback] = useState<string>('');
   const feedbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -370,36 +377,39 @@ export const useWheelTouchGestures = (
     }, duration);
   }, []);
 
-  const { touchHandlers, isTouch, triggerHapticFeedback } = useTouchGestures({
-    onSwipe: (event) => {
-      if (disabled) return;
+  const { touchHandlers, isTouch, triggerHapticFeedback } = useTouchGestures(
+    {
+      onSwipe: event => {
+        if (disabled) return;
 
-      // Only respond to upward swipes for spinning
-      if (event.direction === 'up' && event.velocity && event.velocity > 0.2) {
-        onSpin();
-        showTouchFeedback('Swipe detected - spinning!');
-        logger.info('Wheel spin triggered by swipe gesture', {
-          direction: event.direction,
-          velocity: event.velocity,
-          distance: event.distance,
-        });
-      } else if (event.direction === 'up') {
-        showTouchFeedback('Swipe faster to spin!');
-      }
+        // Only respond to upward swipes for spinning
+        if (event.direction === 'up' && event.velocity && event.velocity > 0.2) {
+          onSpin();
+          showTouchFeedback('Swipe detected - spinning!');
+          logger.info('Wheel spin triggered by swipe gesture', {
+            direction: event.direction,
+            velocity: event.velocity,
+            distance: event.distance,
+          });
+        } else if (event.direction === 'up') {
+          showTouchFeedback('Swipe faster to spin!');
+        }
+      },
+      onTap: () => {
+        if (disabled) return;
+        // Tap gestures are handled by the button, not the wheel itself
+      },
+      onLongPress: () => {
+        if (disabled) return;
+        showTouchFeedback('Use swipe up gesture or tap the spin button');
+      },
     },
-    onTap: () => {
-      if (disabled) return;
-      // Tap gestures are handled by the button, not the wheel itself
-    },
-    onLongPress: () => {
-      if (disabled) return;
-      showTouchFeedback('Use swipe up gesture or tap the spin button');
-    },
-  }, {
-    swipeThreshold: 30, // Lower threshold for wheel
-    velocityThreshold: 0.15, // Require some velocity for spin
-    enableHaptics: true,
-  });
+    {
+      swipeThreshold: 30, // Lower threshold for wheel
+      velocityThreshold: 0.15, // Require some velocity for spin
+      enableHaptics: true,
+    }
+  );
 
   // Cleanup on unmount
   useEffect(() => {

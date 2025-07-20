@@ -277,7 +277,8 @@ describe('CollapsibleDashboardFilters', () => {
       // Look for the chevron down icon (using test id or class)
       const button = screen.getByRole('button');
       // Check for chevron icons - either should be present
-      const chevronElement = button.querySelector('[data-testid="chevron-down"]') ||
+      const chevronElement =
+        button.querySelector('[data-testid="chevron-down"]') ||
         button.querySelector('.lucide-chevron-down');
       expect(chevronElement).toBeTruthy();
 

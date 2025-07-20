@@ -5,9 +5,9 @@
  * for inclusion in the randomizer wheel. Features checkbox selection, batch operations,
  * loading states, and responsive design with accessibility support.
  *
- * @author Generated with Claude Code
+ * @author @serabi
  * @version 1.0.0
- * @since 2024-06-28
+ * @since 2025-06-28
  */
 
 import React, { useMemo } from 'react';
@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Project } from '@/types/project';
 import { createLogger } from '@/utils/secureLogger';
+import { useIsMobile, useIsTouchDevice } from '@/hooks/use-mobile';
 
 const logger = createLogger('ProjectSelector');
 
@@ -102,6 +103,8 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
   onSelectNone,
   isLoading = false,
 }) => {
+  const isMobile = useIsMobile();
+  const isTouchDevice = useIsTouchDevice();
   /**
    * Memoized statistics about project selection state
    * @type {Object} stats - Selection statistics
@@ -163,12 +166,30 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
         </div>
       </div>
 
-      {/* Quick selection buttons */}
-      <div className="flex gap-2">
-        <Button variant="outline" size="sm" onClick={onSelectAll} disabled={stats.allSelected}>
+      {/* Quick selection buttons with enhanced accessibility */}
+      <div className={`flex gap-2 ${isMobile ? 'flex-col' : 'flex-row'}`}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onSelectAll}
+          disabled={stats.allSelected}
+          className={`${isTouchDevice ? 'min-h-[44px] touch-manipulation' : ''} ${
+            isMobile ? 'w-full' : ''
+          }`}
+          aria-label={`Select all ${stats.total} projects for randomizer`}
+        >
           Select All
         </Button>
-        <Button variant="outline" size="sm" onClick={onSelectNone} disabled={stats.noneSelected}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onSelectNone}
+          disabled={stats.noneSelected}
+          className={`${isTouchDevice ? 'min-h-[44px] touch-manipulation' : ''} ${
+            isMobile ? 'w-full' : ''
+          }`}
+          aria-label="Deselect all projects"
+        >
           Select None
         </Button>
       </div>
@@ -182,9 +203,9 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
             return (
               <div
                 key={project.id}
-                className={`flex cursor-pointer items-center space-x-3 rounded-lg border p-3 transition-colors hover:bg-accent/50 ${
+                className={`flex cursor-pointer items-center space-x-3 rounded-lg border p-3 transition-colors focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 hover:bg-accent/50 ${
                   isSelected ? 'border-primary bg-accent' : ''
-                }`}
+                } ${isTouchDevice ? 'min-h-[44px] touch-manipulation' : ''}`}
                 onClick={() => {
                   logger.debug('Project selection toggled', {
                     projectId: project.id,
@@ -194,12 +215,24 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
                   });
                   onProjectToggle(project.id);
                 }}
+                role="button"
+                tabIndex={0}
+                aria-label={`${isSelected ? 'Deselect' : 'Select'} project: ${project.title}`}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onProjectToggle(project.id);
+                  }
+                }}
               >
                 <Checkbox
                   checked={isSelected}
                   onCheckedChange={() => onProjectToggle(project.id)}
                   aria-label={`Select ${project.title}`}
-                  className="data-[state=checked]:border-primary data-[state=checked]:bg-primary"
+                  className={`data-[state=checked]:border-primary data-[state=checked]:bg-primary ${
+                    isTouchDevice ? 'h-5 w-5' : ''
+                  }`}
+                  tabIndex={-1} // Let the parent div handle focus
                 />
 
                 <div className="min-w-0 flex-1">

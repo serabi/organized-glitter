@@ -35,6 +35,8 @@ export interface ListQueryConfig<TData> {
   requestKeySuffix?: string;
   /** Hook name for logging */
   hookName: string;
+  /** Optional page size for pagination (default: 200) */
+  pageSize?: number;
 }
 
 /**
@@ -61,7 +63,7 @@ export function createListQuery<TData = unknown>(config: ListQueryConfig<TData>)
           }
 
           // Execute query
-          const result = await pb.collection(config.collection).getList(1, 200, {
+          const result = await pb.collection(config.collection).getList(1, config.pageSize ?? 200, {
             filter: filters.join(' && '),
             sort: config.sortField || 'name',
             requestKey: createRequestKey(

@@ -4,7 +4,7 @@
  * This module provides standardized utilities for updating React Query caches
  * with optimistic updates, maintaining sort order and filter states.
  *
- * @author serabi
+ * @author @serabi
  * @since 1.2.0
  */
 
@@ -109,10 +109,7 @@ export const updateProjectInCache = (
  * removeProjectFromCache(queryClient, 'project-123', 'user-456');
  * ```
  */
-export const removeProjectFromCache = (
-  queryClient: QueryClient,
-  projectId: string
-): void => {
+export const removeProjectFromCache = (queryClient: QueryClient, projectId: string): void => {
   try {
     // Remove the specific project detail cache
     queryClient.removeQueries({
@@ -172,10 +169,7 @@ export const removeProjectFromCache = (
  * addProjectToCache(queryClient, newProjectData, 'user-456');
  * ```
  */
-export const addProjectToCache = (
-  queryClient: QueryClient,
-  newProject: Project
-): void => {
+export const addProjectToCache = (queryClient: QueryClient, newProject: Project): void => {
   try {
     // Set the project detail cache
     queryClient.setQueryData(queryKeys.projects.detail(newProject.id), newProject);

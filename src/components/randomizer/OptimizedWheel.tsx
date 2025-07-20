@@ -17,7 +17,10 @@ import type { Project } from '@/types/shared';
 import { createLogger } from '@/utils/secureLogger';
 import { useSimplePerformanceTracking } from '@/hooks/usePerformanceMonitoring';
 import { useWheelPerformanceMonitoring, WheelPerformanceMetrics } from './wheelPerformanceMonitor';
-import { useAccessibilityAnnouncements, useFocusManagement } from '@/hooks/useAccessibilityAnnouncements';
+import {
+  useAccessibilityAnnouncements,
+  useFocusManagement,
+} from '@/hooks/useAccessibilityAnnouncements';
 import { useWheelTouchGestures } from '@/hooks/useTouchGestures';
 import { useIsMobile, useIsTouchDevice } from '@/hooks/use-mobile';
 import './OptimizedWheel.css';
@@ -685,16 +688,16 @@ export const OptimizedWheel: React.FC<OptimizedWheelProps> = memo(
         }
       }, animationDuration);
     }, [
-      isSpinning, 
-      projects, 
-      disabled, 
-      spinDegrees, 
-      selectProject, 
-      onSpinComplete, 
-      announceSpinStart, 
-      announceSpinResult, 
-      isTouchDevice, 
-      triggerHapticFeedback
+      isSpinning,
+      projects,
+      disabled,
+      spinDegrees,
+      selectProject,
+      onSpinComplete,
+      announceSpinStart,
+      announceSpinResult,
+      isTouchDevice,
+      triggerHapticFeedback,
     ]);
 
     // Update the ref with the current handleSpin function
@@ -753,15 +756,15 @@ export const OptimizedWheel: React.FC<OptimizedWheelProps> = memo(
         }
       },
       [
-        isSpinning, 
-        disabled, 
-        projects.length, 
-        handleSpin, 
-        announce, 
-        removeFocus, 
-        announceKeyboardInstructions, 
-        announceTouchInstructions, 
-        isTouchDevice
+        isSpinning,
+        disabled,
+        projects.length,
+        handleSpin,
+        announce,
+        removeFocus,
+        announceKeyboardInstructions,
+        announceTouchInstructions,
+        isTouchDevice,
       ]
     );
 
@@ -832,7 +835,7 @@ export const OptimizedWheel: React.FC<OptimizedWheelProps> = memo(
     const projectListString = useMemo(() => {
       return projects.map(p => p.title).join(', ');
     }, [projects]);
-// Performance monitoring effect - simplified and heavily debounced
+    // Performance monitoring effect - simplified and heavily debounced
     useEffect(() => {
       if (!import.meta.env.DEV || performanceMetrics.length === 0) return;
 
@@ -880,7 +883,8 @@ export const OptimizedWheel: React.FC<OptimizedWheelProps> = memo(
 
           <div className="sr-only" id="wheel-instructions">
             Project randomizer wheel. Select some projects from the list below to start spinning.
-            {isTouchDevice && ' You can also swipe up on the wheel to spin when projects are selected.'}
+            {isTouchDevice &&
+              ' You can also swipe up on the wheel to spin when projects are selected.'}
             Press F1 or question mark for help.
           </div>
 
@@ -914,7 +918,6 @@ export const OptimizedWheel: React.FC<OptimizedWheelProps> = memo(
         </div>
       );
     }
-
 
     return (
       <div className="flex flex-col items-center space-y-6">
@@ -950,11 +953,7 @@ export const OptimizedWheel: React.FC<OptimizedWheelProps> = memo(
 
         {/* Touch feedback for mobile users */}
         {isTouchDevice && touchFeedback && (
-          <div 
-            className="wheel-touch-feedback"
-            role="status"
-            aria-live="polite"
-          >
+          <div className="wheel-touch-feedback" role="status" aria-live="polite">
             {touchFeedback}
           </div>
         )}
@@ -1054,7 +1053,7 @@ export const OptimizedWheel: React.FC<OptimizedWheelProps> = memo(
         {/* Additional touch instructions for mobile */}
         {isTouchDevice && !isSpinning && (
           <div className="wheel-touch-instructions">
-            <p className="text-sm text-muted-foreground text-center">
+            <p className="text-center text-sm text-muted-foreground">
               Tap the button above or swipe up on the wheel to spin
             </p>
           </div>

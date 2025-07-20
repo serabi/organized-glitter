@@ -63,7 +63,9 @@ const ChartContainer = React.forwardRef<
 ChartContainer.displayName = 'Chart';
 
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
-  const colorConfig = Object.entries(config).filter(([_key, config]) => config.theme || config.color);
+  const colorConfig = Object.entries(config).filter(
+    ([_key, config]) => config.theme || config.color
+  );
 
   // Move all hooks to the top before any conditional logic
   const cssRules = React.useMemo(() => {

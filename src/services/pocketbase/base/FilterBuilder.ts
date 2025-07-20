@@ -1,7 +1,7 @@
 /**
  * Type-safe filter builder for PocketBase queries
  * @author @serabi
- * @created 2025-01-16
+ * @created 2025-07-16
  */
 
 import { StructuredFilter, FilterCondition, FilterGroup, FilterOperator } from './types';
@@ -105,9 +105,14 @@ export class FilterBuilder {
     callback(groupBuilder);
     const group = groupBuilder.build();
 
-    if (group.conditions && group.conditions.length > 0) {
+    // Only add the group if it has either conditions or nested groups
+    if (
+      (group.conditions && group.conditions.length > 0) ||
+      (group.groups && group.groups.length > 0)
+    ) {
       this.groups.push({
         conditions: group.conditions,
+        groups: group.groups,
         logic: group.logic || 'AND',
       });
     }
@@ -143,10 +148,31 @@ export class FilterBuilder {
     // Process groups
     if (filter.groups) {
       const groupStrings = filter.groups.map(group => {
-        const groupConditions = group.conditions.map(condition =>
-          this.conditionToString(condition, fieldMapping)
-        );
-        return `(${groupConditions.join(` ${group.logic} `)})`;
+        const groupParts: string[] = [];
+
+        // Process conditions within the group
+        if (group.conditions && group.conditions.length > 0) {
+          const groupConditions = group.conditions.map(condition =>
+            this.conditionToString(condition, fieldMapping)
+          );
+          groupParts.push(groupConditions.join(` ${group.logic} `));
+        }
+
+        // Process nested groups within the group
+        if (group.groups && group.groups.length > 0) {
+          const nestedGroupStrings = group.groups.map(nestedGroup => {
+            const nestedFilter: StructuredFilter = {
+              conditions: nestedGroup.conditions,
+              groups: nestedGroup.groups,
+              logic: nestedGroup.logic,
+            };
+            const nestedString = this.toFilterString(nestedFilter, fieldMapping);
+            return `(${nestedString})`;
+          });
+          groupParts.push(nestedGroupStrings.join(` ${group.logic} `));
+        }
+
+        return `(${groupParts.join(` ${group.logic} `)})`;
       });
       parts.push(groupStrings.join(` ${filter.logic || 'AND'} `));
     }

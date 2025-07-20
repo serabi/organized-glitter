@@ -1,7 +1,7 @@
 /**
  * @fileoverview Interactive Randomizer Wheel Component
  *
- * A beautiful, accessible spinning wheel component that randomly selects from a list of projects.
+ * An accessible spinning wheel component that randomly selects from a list of projects.
  * Features smooth animations, comprehensive accessibility support, responsive design, and
  * integration with the Organized Glitter brand color palette.
  *
@@ -14,6 +14,9 @@ import React, { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Project } from '@/types/project';
 import { createLogger } from '@/utils/secureLogger';
+import { useAccessibilityAnnouncements, useFocusManagement } from '@/hooks/useAccessibilityAnnouncements';
+import { useWheelTouchGestures } from '@/hooks/useTouchGestures';
+import { useIsMobile, useIsTouchDevice } from '@/hooks/use-mobile';
 
 const logger = createLogger('RandomizerWheel');
 
@@ -130,8 +133,20 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
   const [windowSize, setWindowSize] = useState({ width: 1024, height: 768 });
   /** Reference to the wheel DOM element for focus management */
   const wheelRef = useRef<HTMLDivElement>(null);
-  /** Reference to screen reader announcement area */
-  const resultAnnouncementRef = useRef<HTMLDivElement>(null);
+
+  // Accessibility and mobile support
+  const {
+    announceSpinStart,
+    announceSpinResult,
+    announceKeyboardInstructions,
+    announceTouchInstructions,
+    liveRegionRef,
+    statusRef,
+  } = useAccessibilityAnnouncements();
+
+  const { removeFocus } = useFocusManagement();
+  const isMobile = useIsMobile();
+  const isTouchDevice = useIsTouchDevice();
 
   // Update window size for responsive calculations
   React.useEffect(() => {
@@ -146,16 +161,23 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
     }
   }, []);
 
+  // Forward declaration for handleSpin function
+  const handleSpinRef = useRef<() => void>();
+
+  // Touch gesture support for wheel
+  const { wheelTouchHandlers, touchFeedback, triggerHapticFeedback } = useWheelTouchGestures(
+    () => handleSpinRef.current?.(),
+    disabled || isSpinning
+  );
+
   const handleSpin = useCallback(() => {
     if (isSpinning || projects.length === 0) return;
 
     logger.debug('Starting wheel spin', { projectCount: projects.length });
     setIsSpinning(true);
 
-    // Announce spin start to screen readers
-    if (resultAnnouncementRef.current) {
-      resultAnnouncementRef.current.textContent = `Spinning wheel to select from ${projects.length} projects...`;
-    }
+    // Announce spin start with accessibility support
+    announceSpinStart(projects.length);
 
     // Check for reduced motion preference
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -199,15 +221,33 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
           selectedProjectTitle: selectedProject.title,
         });
 
-        // Announce result to screen readers
-        if (resultAnnouncementRef.current) {
-          resultAnnouncementRef.current.textContent = `Spin complete! Selected project: ${selectedProject.title}`;
+        // Announce result with accessibility support
+        const projectDetails = [selectedProject.company, selectedProject.artist]
+          .filter(Boolean)
+          .join(' • ');
+        announceSpinResult(selectedProject.title, projectDetails);
+
+        // Trigger haptic feedback for touch devices
+        if (isTouchDevice) {
+          triggerHapticFeedback('medium');
         }
       }
     }, animationDuration);
-  }, [isSpinning, projects, rotation, onSpinComplete]);
+  }, [
+    isSpinning,
+    projects,
+    rotation,
+    onSpinComplete,
+    announceSpinStart,
+    announceSpinResult,
+    isTouchDevice,
+    triggerHapticFeedback
+  ]);
 
-  // Keyboard navigation handler
+  // Update the ref with the current handleSpin function
+  handleSpinRef.current = handleSpin;
+
+  // Enhanced keyboard navigation handler with accessibility support
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
       if (isSpinning) return;
@@ -222,24 +262,46 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
           break;
         case 'Escape':
           event.preventDefault();
-          if (wheelRef.current) {
-            wheelRef.current.blur();
+          removeFocus();
+          break;
+        case 'F1':
+        case '?':
+          event.preventDefault();
+          if (isTouchDevice) {
+            announceTouchInstructions();
+          } else {
+            announceKeyboardInstructions();
           }
           break;
         default:
           break;
       }
     },
-    [isSpinning, disabled, projects.length, handleSpin]
+    [
+      isSpinning,
+      disabled,
+      projects.length,
+      handleSpin,
+      removeFocus,
+      announceKeyboardInstructions,
+      announceTouchInstructions,
+      isTouchDevice
+    ]
   );
 
-  // Empty wheel state - show beautiful gradient circle
+  // Empty wheel state with enhanced accessibility
   if (projects.length === 0) {
     return (
       <div className="flex flex-col items-center space-y-6">
+        {/* Accessibility live regions */}
+        <div ref={liveRegionRef} aria-live="polite" aria-atomic="true" className="sr-only" />
+        <div ref={statusRef} aria-live="assertive" aria-atomic="true" className="sr-only" />
+
         {/* Screen Reader Instructions */}
         <div className="sr-only" id="wheel-instructions">
           Project randomizer wheel. Select some projects from the list below to start spinning.
+          {isTouchDevice && ' You can also swipe up on the wheel to spin when projects are selected.'}
+          Press F1 or question mark for help.
         </div>
 
         {/* Empty Wheel Container */}
@@ -264,6 +326,9 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
               <div className="text-center text-white drop-shadow-lg">
                 <p className="text-lg font-semibold">Select projects below</p>
                 <p className="text-sm opacity-90">to get started!</p>
+                {isTouchDevice && (
+                  <p className="text-xs opacity-80 mt-1">Swipe up to spin when ready</p>
+                )}
               </div>
             </div>
 
@@ -332,15 +397,20 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
 
   return (
     <div className="flex flex-col items-center space-y-6">
+      {/* Accessibility live regions */}
+      <div ref={liveRegionRef} aria-live="polite" aria-atomic="true" className="sr-only" />
+      <div ref={statusRef} aria-live="assertive" aria-atomic="true" className="sr-only" />
+
       {/* Screen Reader Content */}
       <div className="sr-only">
         <div id="wheel-description">
           Project randomizer wheel with {projects.length} projects: {projectList}
         </div>
         <div id="wheel-instructions">
-          Press Enter or Space to spin the wheel. Use Escape to exit focus.
+          Press Enter or Space to spin the wheel. Use Escape to exit focus. Use Tab to navigate.
+          {isTouchDevice && ' You can also tap the wheel or swipe up to spin.'}
+          Press F1 or question mark for help.
         </div>
-        <div ref={resultAnnouncementRef} aria-live="polite" aria-atomic="true" />
 
         {/* Alternative content - project list for screen readers */}
         <div id="project-alternatives">
@@ -358,14 +428,34 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
         </div>
       </div>
 
-      {/* Wheel Container */}
+      {/* Touch feedback for mobile users */}
+      {isTouchDevice && touchFeedback && (
+        <div
+          className="wheel-touch-feedback"
+          role="status"
+          aria-live="polite"
+        >
+          {touchFeedback}
+        </div>
+      )}
+
+      {/* Enhanced Wheel Container with Touch Support */}
       <div
-        className="relative rounded-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+        className={`relative rounded-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${isTouchDevice ? 'cursor-pointer' : ''
+          }`}
         role="application"
         aria-label={`Project randomizer wheel with ${projects.length} projects`}
         aria-describedby="wheel-description wheel-instructions project-alternatives"
         tabIndex={0}
         onKeyDown={handleKeyDown}
+        onFocus={() => {
+          if (isTouchDevice) {
+            announceTouchInstructions();
+          } else {
+            announceKeyboardInstructions();
+          }
+        }}
+        {...(isTouchDevice ? wheelTouchHandlers : {})}
       >
         {/* Pointer Line */}
         <div
@@ -378,9 +468,8 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
         {/* Wheel */}
         <div
           ref={wheelRef}
-          className={`duration-3000 relative h-72 w-72 overflow-hidden rounded-full border-4 border-flamingo-300 transition-transform ease-out sm:h-96 sm:w-96 lg:h-140 lg:w-140 ${
-            isSpinning ? 'animate-spin-custom' : ''
-          }`}
+          className={`duration-3000 relative h-72 w-72 overflow-hidden rounded-full border-4 border-flamingo-300 transition-transform ease-out sm:h-96 sm:w-96 lg:h-140 lg:w-140 ${isSpinning ? 'animate-spin-custom' : ''
+            }`}
           style={{
             transform: `rotate(${rotation}deg)`,
             transformOrigin: 'center',
@@ -482,21 +571,44 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
         </div>
       </div>
 
-      {/* Spin Button */}
+      {/* Enhanced Spin Button with Accessibility */}
       <Button
         onClick={handleSpin}
         disabled={disabled || isSpinning || projects.length === 0}
         size="lg"
-        className="bg-gradient-to-r from-primary to-mauve-500 px-8 py-3 text-lg font-semibold text-white shadow-lg hover:from-primary/90 hover:to-mauve-500/90"
+        className={`bg-gradient-to-r from-primary to-mauve-500 px-8 py-3 text-lg font-semibold text-white shadow-lg hover:from-primary/90 hover:to-mauve-500/90 ${isTouchDevice ? 'min-h-[48px] touch-manipulation' : ''
+          } ${isMobile ? 'w-full max-w-[280px]' : ''}`}
         aria-label={
           isSpinning
             ? `Spinning wheel to select from ${projects.length} projects`
-            : `Spin the wheel to randomly select from ${projects.length} projects`
+            : `Spin the wheel to randomly select from ${projects.length} projects${isTouchDevice ? '. You can also swipe up on the wheel' : ''
+            }`
         }
-        aria-describedby="wheel-description"
+        aria-describedby="wheel-description wheel-instructions"
       >
-        {isSpinning ? 'Spinning...' : 'Spin the Wheel!'}
+        {isSpinning ? (
+          <>
+            <span className="inline-block w-4 h-4 border-2 border-transparent border-t-current rounded-full animate-spin mr-2" />
+            Spinning...
+          </>
+        ) : (
+          <>
+            Spin the Wheel!
+            {isTouchDevice && (
+              <span className="block text-xs opacity-70 mt-1">or swipe ↑</span>
+            )}
+          </>
+        )}
       </Button>
+
+      {/* Additional touch instructions for mobile */}
+      {isTouchDevice && !isSpinning && (
+        <div className="mt-2 text-center">
+          <p className="text-sm text-muted-foreground">
+            Tap the button above or swipe up on the wheel to spin
+          </p>
+        </div>
+      )}
 
       {/* Custom CSS for the spin animation */}
       <style>{`

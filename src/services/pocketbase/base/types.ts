@@ -1,7 +1,7 @@
 /**
  * Core type definitions for PocketBase service layer
  * @author @serabi
- * @created 2025-01-16
+ * @created 2025-07-16
  */
 
 import { ClientResponseError } from 'pocketbase';
@@ -40,7 +40,8 @@ export interface FilterCondition {
 }
 
 export interface FilterGroup {
-  conditions: FilterCondition[];
+  conditions?: FilterCondition[];
+  groups?: FilterGroup[];
   logic: 'AND' | 'OR';
 }
 

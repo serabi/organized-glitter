@@ -5,7 +5,6 @@ import { logger } from './logger';
  * Uses Vite's official error handling with minimal fallback
  */
 
-
 /**
  * Initialize chunk loading error handling
  * Uses Vite's official vite:preloadError handler as the primary solution
