@@ -75,7 +75,9 @@ const PaginationLink = ({ className, isActive, size = 'icon', ...props }: Pagina
 
   // If onClick is provided, render as button for proper click handling
   if ('onClick' in props && props.onClick) {
-    const { href, ...buttonProps } = props as React.ComponentProps<'button'> & { href?: string };
+    const { href: _href, ...buttonProps } = props as React.ComponentProps<'button'> & {
+      href?: string;
+    };
     return (
       <button
         type="button"

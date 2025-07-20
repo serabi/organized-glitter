@@ -740,11 +740,15 @@ export const OptimizedWheel: React.FC<OptimizedWheelProps> = memo(
           case 'ArrowLeft':
           case 'ArrowRight':
             event.preventDefault();
-            announce(`Use Enter or Space to spin the wheel. Currently ${projects.length} projects available.`);
+            announce(
+              `Use Enter or Space to spin the wheel. Currently ${projects.length} projects available.`
+            );
             break;
           case 'Home':
             event.preventDefault();
-            announce(`Optimized randomizer wheel with ${projects.length} projects. Use Enter or Space to spin.`);
+            announce(
+              `Optimized randomizer wheel with ${projects.length} projects. Use Enter or Space to spin.`
+            );
             break;
           case 'End':
             event.preventDefault();
@@ -763,30 +767,43 @@ export const OptimizedWheel: React.FC<OptimizedWheelProps> = memo(
           case 'H':
             // Help shortcut
             event.preventDefault();
-            announce(`Optimized wheel help: ${projects.length} projects available. Using ${renderMode} rendering mode. Use Enter or Space to spin. Use F1 for detailed instructions.`);
+            announce(
+              `Optimized wheel help: ${projects.length} projects available. Using ${renderMode} rendering mode. Use Enter or Space to spin. Use F1 for detailed instructions.`
+            );
             break;
           case 'r':
           case 'R':
             // Refresh/read current state
             event.preventDefault();
             if (projects.length > 0) {
-              const projectList = projects.slice(0, 5).map(p => p.title).join(', ');
+              const projectList = projects
+                .slice(0, 5)
+                .map(p => p.title)
+                .join(', ');
               const moreText = projects.length > 5 ? ` and ${projects.length - 5} more` : '';
-              announce(`${projects.length} projects selected: ${projectList}${moreText}. Press Enter to spin. Using ${renderMode} rendering.`);
+              announce(
+                `${projects.length} projects selected: ${projectList}${moreText}. Press Enter to spin. Using ${renderMode} rendering.`
+              );
             } else {
-              announce('No projects selected for randomizer. Please select projects from the list below.');
+              announce(
+                'No projects selected for randomizer. Please select projects from the list below.'
+              );
             }
             break;
           case 'm':
           case 'M':
             // Mode information
             event.preventDefault();
-            announce(`Currently using ${renderMode} rendering mode for optimal performance with ${projects.length} projects.`);
+            announce(
+              `Currently using ${renderMode} rendering mode for optimal performance with ${projects.length} projects.`
+            );
             break;
           default:
             // Announce unhandled keys for better user feedback
             if (event.key.length === 1 && /[a-zA-Z0-9]/.test(event.key)) {
-              announce('Use Enter or Space to spin, F1 for help, H for help shortcuts, or Tab to navigate.');
+              announce(
+                'Use Enter or Space to spin, F1 for help, H for help shortcuts, or Tab to navigate.'
+              );
             }
             break;
         }
@@ -794,7 +811,7 @@ export const OptimizedWheel: React.FC<OptimizedWheelProps> = memo(
       [
         isSpinning,
         disabled,
-        projects.length,
+        projects,
         handleSpin,
         announce,
         removeFocus,

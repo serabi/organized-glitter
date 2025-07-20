@@ -194,8 +194,3 @@ export interface MockLogger {
 
 // Utility type for creating test data factories
 export type TestDataFactory<T> = (overrides?: Partial<T>) => T;
-
-// Common test helper types
-export type MockSetup<T = unknown> = () => T;
-export type MockCleanup = () => void;
-export type MockReset = () => void;

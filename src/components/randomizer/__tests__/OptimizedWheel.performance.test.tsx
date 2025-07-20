@@ -34,7 +34,7 @@ const mockRequestAnimationFrame = vi.fn((callback: FrameRequestCallback) => {
   return animationFrameId;
 });
 
-const mockCancelAnimationFrame = vi.fn((id: number) => {
+const mockCancelAnimationFrame = vi.fn((_id: number) => {
   // Mock implementation
 });
 
@@ -139,8 +139,6 @@ describe('OptimizedWheel Performance Tests', () => {
   describe('Performance Monitoring', () => {
     it('should track render performance metrics', async () => {
       const projects = createMockProjects(10);
-      const performanceMetrics: unknown[] = [];
-
       // Mock console methods to capture performance logs
       const consoleSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
 

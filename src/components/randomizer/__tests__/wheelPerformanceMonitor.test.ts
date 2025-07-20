@@ -36,8 +36,12 @@ describe('WheelPerformanceMonitor', () => {
         observe: vi.fn(),
         disconnect: vi.fn(),
       }));
-    (MockPerformanceObserver as unknown).supportedEntryTypes = ['measure', 'navigation', 'resource'];
-    global.PerformanceObserver = MockPerformanceObserver as any;
+    (MockPerformanceObserver as unknown).supportedEntryTypes = [
+      'measure',
+      'navigation',
+      'resource',
+    ];
+    global.PerformanceObserver = MockPerformanceObserver as typeof PerformanceObserver;
 
     // Mock performance.memory
     Object.defineProperty(performance, 'memory', {
@@ -219,8 +223,12 @@ describe('WheelPerformanceMonitor', () => {
         observe: vi.fn(),
         disconnect: disconnectSpy,
       }));
-      (MockPerformanceObserver as any).supportedEntryTypes = ['measure', 'navigation', 'resource'];
-      global.PerformanceObserver = MockPerformanceObserver as any;
+      (MockPerformanceObserver as unknown).supportedEntryTypes = [
+        'measure',
+        'navigation',
+        'resource',
+      ];
+      global.PerformanceObserver = MockPerformanceObserver as typeof PerformanceObserver;
 
       const testMonitor = new WheelPerformanceMonitor();
       testMonitor.destroy();

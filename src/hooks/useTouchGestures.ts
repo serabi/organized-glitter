@@ -411,7 +411,9 @@ export const useWheelTouchGestures = (onSpin: () => void, disabled: boolean = fa
       },
       onLongPress: () => {
         if (disabled) return;
-        showTouchFeedback('Touch help: Swipe up on wheel or tap spin button. Double tap for quick access.');
+        showTouchFeedback(
+          'Touch help: Swipe up on wheel or tap spin button. Double tap for quick access.'
+        );
         triggerHapticFeedback('medium');
       },
     },

@@ -20,17 +20,17 @@ The main wheel component with SVG-based rendering and comprehensive accessibilit
 
 #### Keyboard Navigation
 
-| Key | Action |
-|-----|--------|
-| `Enter` / `Space` | Spin the wheel (if projects selected) |
-| `Escape` | Remove focus from wheel |
-| `Tab` / `Shift+Tab` | Navigate between elements |
-| `Arrow Keys` | Get current state information |
-| `Home` | Get wheel overview |
-| `End` | Navigate to end of interaction |
-| `F1` / `?` | Show help instructions |
-| `H` | Quick help summary |
-| `R` | Read current state and project list |
+| Key                 | Action                                |
+| ------------------- | ------------------------------------- |
+| `Enter` / `Space`   | Spin the wheel (if projects selected) |
+| `Escape`            | Remove focus from wheel               |
+| `Tab` / `Shift+Tab` | Navigate between elements             |
+| `Arrow Keys`        | Get current state information         |
+| `Home`              | Get wheel overview                    |
+| `End`               | Navigate to end of interaction        |
+| `F1` / `?`          | Show help instructions                |
+| `H`                 | Quick help summary                    |
+| `R`                 | Read current state and project list   |
 
 #### Screen Reader Support
 
@@ -61,11 +61,11 @@ Performance-optimized wheel with CSS/Canvas rendering and enhanced accessibility
 
 All RandomizerWheel shortcuts plus:
 
-| Key | Action |
-|-----|--------|
-| `M` | Announce current rendering mode |
+| Key          | Action                                     |
+| ------------ | ------------------------------------------ |
+| `M`          | Announce current rendering mode            |
 | Enhanced `R` | Includes render mode in state announcement |
-| Enhanced `H` | Includes performance information |
+| Enhanced `H` | Includes performance information           |
 
 ### ProjectSelector
 
@@ -73,13 +73,13 @@ Interactive project selection with comprehensive keyboard and screen reader supp
 
 #### Keyboard Navigation
 
-| Key | Action |
-|-----|--------|
-| `Enter` / `Space` | Toggle project selection |
-| `Arrow Up/Down` | Navigate between projects |
-| `Home` | Focus first project |
-| `End` | Focus last project |
-| `Tab` | Navigate to batch operation buttons |
+| Key               | Action                              |
+| ----------------- | ----------------------------------- |
+| `Enter` / `Space` | Toggle project selection            |
+| `Arrow Up/Down`   | Navigate between projects           |
+| `Home`            | Focus first project                 |
+| `End`             | Focus last project                  |
+| `Tab`             | Navigate to batch operation buttons |
 
 #### Screen Reader Support
 
@@ -99,7 +99,7 @@ Interactive project selection with comprehensive keyboard and screen reader supp
 ✅ **2.1.1 Keyboard**: All functionality available via keyboard  
 ✅ **2.1.2 No Keyboard Trap**: Users can navigate away from all elements  
 ✅ **2.4.1 Bypass Blocks**: Skip links available for complex interactions  
-✅ **2.4.2 Page Titled**: Appropriate page and section titles  
+✅ **2.4.2 Page Titled**: Appropriate page and section titles
 
 ### Level AA Requirements
 
@@ -111,13 +111,14 @@ Interactive project selection with comprehensive keyboard and screen reader supp
 ✅ **2.4.7 Focus Visible**: Keyboard focus clearly visible  
 ✅ **3.1.1 Language of Page**: Page language identified  
 ✅ **3.2.1 On Focus**: No unexpected context changes on focus  
-✅ **3.2.2 On Input**: No unexpected context changes on input  
+✅ **3.2.2 On Input**: No unexpected context changes on input
 
 ## Assistive Technology Support
 
 ### Screen Readers
 
 Tested and optimized for:
+
 - **NVDA** (Windows)
 - **JAWS** (Windows)
 - **VoiceOver** (macOS/iOS)
@@ -241,38 +242,40 @@ Tested and optimized for:
 ### Keyboard Event Handling
 
 ```tsx
-const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
-  switch (event.key) {
-    case 'Enter':
-    case ' ':
-      // Spin wheel or provide feedback
-      break;
-    case 'Escape':
-      // Remove focus
-      break;
-    case 'h':
-    case 'H':
-      // Show help
-      break;
-    // ... additional key handlers
-  }
-}, [dependencies]);
+const handleKeyDown = useCallback(
+  (event: React.KeyboardEvent) => {
+    switch (event.key) {
+      case 'Enter':
+      case ' ':
+        // Spin wheel or provide feedback
+        break;
+      case 'Escape':
+        // Remove focus
+        break;
+      case 'h':
+      case 'H':
+        // Show help
+        break;
+      // ... additional key handlers
+    }
+  },
+  [dependencies]
+);
 ```
 
 ### Touch Gesture Implementation
 
 ```tsx
-const { wheelTouchHandlers, touchFeedback } = useWheelTouchGestures(
-  onSpin,
-  disabled
-);
+const { wheelTouchHandlers, touchFeedback } = useWheelTouchGestures(onSpin, disabled);
 
 // Touch feedback display
-{touchFeedback && (
-  <div className="wheel-touch-feedback" role="status" aria-live="polite">
-    {touchFeedback}
-  </div>
-)}
+{
+  touchFeedback && (
+    <div className="wheel-touch-feedback" role="status" aria-live="polite">
+      {touchFeedback}
+    </div>
+  );
+}
 ```
 
 ## Best Practices
@@ -333,4 +336,4 @@ For accessibility questions or issues:
 
 ---
 
-*This accessibility implementation ensures that the randomizer feature is usable by all users, regardless of their abilities or the assistive technologies they use.*
+_This accessibility implementation ensures that the randomizer feature is usable by all users, regardless of their abilities or the assistive technologies they use._

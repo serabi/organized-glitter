@@ -307,7 +307,7 @@ export async function uploadImage(
           const height = Math.min(dimensions.height, 800); // Cap at 800px
 
           placeholderUrl = `https://placehold.co/${width}x${height}/png?text=${encodeURIComponent(shortName)}-${timestamp}`;
-        } catch (dimError) {
+        } catch (_dimError) {
           // Default placeholder if dimensions can't be determined
           placeholderUrl = `https://placehold.co/400x400/png?text=${encodeURIComponent(shortName)}-${timestamp}`;
         }

@@ -20,7 +20,7 @@ export class ErrorHandler {
     }
 
     // Handle network errors
-    if (error instanceof Error && error.name === 'NetworkError') {
+    if (ErrorHandler.isNetworkError(error)) {
       return {
         type: 'network',
         message: 'Network connection failed. Please check your connection and try again.',
@@ -169,6 +169,45 @@ export class ErrorHandler {
       .replace(/([A-Z])/g, ' $1')
       .replace(/^./, str => str.toUpperCase())
       .trim();
+  }
+
+  /**
+   * Enhanced network error detection covering multiple failure scenarios
+   * @author @serabi
+   * @param error - Error to check for network-related issues
+   * @returns true if error indicates a network failure, false otherwise
+   */
+  static isNetworkError(error: unknown): boolean {
+    // 1. Check offline state first (supplementary)
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      return true;
+    }
+
+    // 2. PocketBase ClientResponseError patterns (check before generic Error)
+    if (error instanceof ClientResponseError) {
+      return error.status === 0 || !error.response;
+    }
+
+    // 3. TypeError patterns (most common network errors)
+    if (error instanceof TypeError) {
+      const message = error.message.toLowerCase();
+      return (
+        message.includes('fetch') ||
+        message.includes('network') ||
+        message.includes('connection') ||
+        message.includes('internet') ||
+        message.includes('cancelled') ||
+        message.includes('timeout') ||
+        message.includes('unreachable')
+      );
+    }
+
+    // 4. Named error types
+    if (error instanceof Error) {
+      return ['NetworkError', 'AbortError', 'TimeoutError'].includes(error.name);
+    }
+
+    return false;
   }
 
   /**

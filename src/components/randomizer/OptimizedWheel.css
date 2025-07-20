@@ -350,7 +350,8 @@
 }
 
 @keyframes focus-pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -495,7 +496,7 @@
 .wheel-button:focus-visible {
   outline: 3px solid hsl(var(--primary));
   outline-offset: 2px;
-  box-shadow: 
+  box-shadow:
     0 0 0 2px white,
     0 0 0 5px hsl(var(--primary)),
     0 6px 16px rgba(0, 0, 0, 0.2);
@@ -533,7 +534,7 @@
   .wheel-container:focus-visible::after {
     animation: none;
   }
-  
+
   .wheel-touch-feedback {
     animation: none;
     opacity: 1;

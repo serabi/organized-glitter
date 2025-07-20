@@ -14,7 +14,10 @@ import React, { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Project } from '@/types/project';
 import { createLogger } from '@/utils/secureLogger';
-import { useAccessibilityAnnouncements, useFocusManagement } from '@/hooks/useAccessibilityAnnouncements';
+import {
+  useAccessibilityAnnouncements,
+  useFocusManagement,
+} from '@/hooks/useAccessibilityAnnouncements';
 import { useWheelTouchGestures } from '@/hooks/useTouchGestures';
 import { useIsMobile, useIsTouchDevice } from '@/hooks/use-mobile';
 
@@ -242,7 +245,7 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
     announceSpinStart,
     announceSpinResult,
     isTouchDevice,
-    triggerHapticFeedback
+    triggerHapticFeedback,
   ]);
 
   // Update the ref with the current handleSpin function
@@ -283,11 +286,15 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
         case 'ArrowLeft':
         case 'ArrowRight':
           event.preventDefault();
-          announce(`Use Enter or Space to spin the wheel. Currently ${projects.length} projects available.`);
+          announce(
+            `Use Enter or Space to spin the wheel. Currently ${projects.length} projects available.`
+          );
           break;
         case 'Home':
           event.preventDefault();
-          announce(`Randomizer wheel with ${projects.length} projects. Use Enter or Space to spin.`);
+          announce(
+            `Randomizer wheel with ${projects.length} projects. Use Enter or Space to spin.`
+          );
           break;
         case 'End':
           event.preventDefault();
@@ -306,18 +313,27 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
         case 'H':
           // Help shortcut
           event.preventDefault();
-          announce(`Randomizer wheel help: ${projects.length} projects available. Use Enter or Space to spin. Use F1 for detailed instructions.`);
+          announce(
+            `Randomizer wheel help: ${projects.length} projects available. Use Enter or Space to spin. Use F1 for detailed instructions.`
+          );
           break;
         case 'r':
         case 'R':
           // Refresh/read current state
           event.preventDefault();
           if (projects.length > 0) {
-            const projectList = projects.slice(0, 5).map(p => p.title).join(', ');
+            const projectList = projects
+              .slice(0, 5)
+              .map(p => p.title)
+              .join(', ');
             const moreText = projects.length > 5 ? ` and ${projects.length - 5} more` : '';
-            announce(`${projects.length} projects selected: ${projectList}${moreText}. Press Enter to spin.`);
+            announce(
+              `${projects.length} projects selected: ${projectList}${moreText}. Press Enter to spin.`
+            );
           } else {
-            announce('No projects selected for randomizer. Please select projects from the list below.');
+            announce(
+              'No projects selected for randomizer. Please select projects from the list below.'
+            );
           }
           break;
         default:
@@ -338,7 +354,7 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
       announceTouchInstructions,
       announceSpinStart,
       announce,
-      isTouchDevice
+      isTouchDevice,
     ]
   );
 
@@ -353,7 +369,8 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
         {/* Screen Reader Instructions */}
         <div className="sr-only" id="wheel-instructions">
           Project randomizer wheel. Select some projects from the list below to start spinning.
-          {isTouchDevice && ' You can also swipe up on the wheel to spin when projects are selected.'}
+          {isTouchDevice &&
+            ' You can also swipe up on the wheel to spin when projects are selected.'}
           Press F1 or question mark for help.
         </div>
 
@@ -380,7 +397,7 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
                 <p className="text-lg font-semibold">Select projects below</p>
                 <p className="text-sm opacity-90">to get started!</p>
                 {isTouchDevice && (
-                  <p className="text-xs opacity-80 mt-1">Swipe up to spin when ready</p>
+                  <p className="mt-1 text-xs opacity-80">Swipe up to spin when ready</p>
                 )}
               </div>
             </div>
@@ -483,19 +500,16 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
 
       {/* Touch feedback for mobile users */}
       {isTouchDevice && touchFeedback && (
-        <div
-          className="wheel-touch-feedback"
-          role="status"
-          aria-live="polite"
-        >
+        <div className="wheel-touch-feedback" role="status" aria-live="polite">
           {touchFeedback}
         </div>
       )}
 
       {/* Enhanced Wheel Container with Touch Support */}
       <div
-        className={`relative rounded-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${isTouchDevice ? 'cursor-pointer' : ''
-          }`}
+        className={`relative rounded-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+          isTouchDevice ? 'cursor-pointer' : ''
+        }`}
         role="application"
         aria-label={`Project randomizer wheel with ${projects.length} projects`}
         aria-describedby="wheel-description wheel-instructions project-alternatives"
@@ -521,8 +535,9 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
         {/* Wheel */}
         <div
           ref={wheelRef}
-          className={`duration-3000 relative h-72 w-72 overflow-hidden rounded-full border-4 border-flamingo-300 transition-transform ease-out sm:h-96 sm:w-96 lg:h-140 lg:w-140 ${isSpinning ? 'animate-spin-custom' : ''
-            }`}
+          className={`duration-3000 relative h-72 w-72 overflow-hidden rounded-full border-4 border-flamingo-300 transition-transform ease-out sm:h-96 sm:w-96 lg:h-140 lg:w-140 ${
+            isSpinning ? 'animate-spin-custom' : ''
+          }`}
           style={{
             transform: `rotate(${rotation}deg)`,
             transformOrigin: 'center',
@@ -629,27 +644,27 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
         onClick={handleSpin}
         disabled={disabled || isSpinning || projects.length === 0}
         size="lg"
-        className={`bg-gradient-to-r from-primary to-mauve-500 px-8 py-3 text-lg font-semibold text-white shadow-lg hover:from-primary/90 hover:to-mauve-500/90 ${isTouchDevice ? 'min-h-[48px] touch-manipulation' : ''
-          } ${isMobile ? 'w-full max-w-[280px]' : ''}`}
+        className={`bg-gradient-to-r from-primary to-mauve-500 px-8 py-3 text-lg font-semibold text-white shadow-lg hover:from-primary/90 hover:to-mauve-500/90 ${
+          isTouchDevice ? 'min-h-[48px] touch-manipulation' : ''
+        } ${isMobile ? 'w-full max-w-[280px]' : ''}`}
         aria-label={
           isSpinning
             ? `Spinning wheel to select from ${projects.length} projects`
-            : `Spin the wheel to randomly select from ${projects.length} projects${isTouchDevice ? '. You can also swipe up on the wheel' : ''
-            }`
+            : `Spin the wheel to randomly select from ${projects.length} projects${
+                isTouchDevice ? '. You can also swipe up on the wheel' : ''
+              }`
         }
         aria-describedby="wheel-description wheel-instructions"
       >
         {isSpinning ? (
           <>
-            <span className="inline-block w-4 h-4 border-2 border-transparent border-t-current rounded-full animate-spin mr-2" />
+            <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-transparent border-t-current" />
             Spinning...
           </>
         ) : (
           <>
             Spin the Wheel!
-            {isTouchDevice && (
-              <span className="block text-xs opacity-70 mt-1">or swipe ↑</span>
-            )}
+            {isTouchDevice && <span className="mt-1 block text-xs opacity-70">or swipe ↑</span>}
           </>
         )}
       </Button>

@@ -507,17 +507,6 @@ export const useArchiveProjectMutation = () => {
       // Optimistic cache updates - immediate UI feedback
       if (user?.id) {
         // Modern React 18+ handles batching automatically - no need for manual batching
-        // Optimistically update project status in advanced projects list
-        queryClient.setQueryData(queryKeys.projects.advanced(user.id), (oldData: unknown) => {
-          if (!oldData || typeof oldData !== 'object' || !('projects' in oldData)) return oldData;
-          const data = oldData as { projects: Array<{ id: string; [key: string]: unknown }> };
-          return {
-            ...data,
-            projects: data.projects.map(p =>
-              p.id === projectId ? { ...p, status: PROJECT_STATUS.ARCHIVED } : p
-            ),
-          };
-        });
 
         // Optimistically update any paginated project lists
         queryClient.setQueriesData(
@@ -674,20 +663,6 @@ export const useDeleteProjectMutation = () => {
         queryClient.removeQueries({ queryKey: queryKeys.projects.detail(projectId) });
         // Remove any progress notes for the deleted project
         queryClient.removeQueries({ queryKey: queryKeys.progressNotes.list(projectId) });
-
-        // Optimistically update advanced projects list by removing the deleted project
-        queryClient.setQueryData(queryKeys.projects.advanced(user.id), (oldData: unknown) => {
-          if (!oldData || typeof oldData !== 'object' || !('projects' in oldData)) return oldData;
-          const data = oldData as {
-            projects: Array<{ id: string; [key: string]: unknown }>;
-            totalItems: number;
-          };
-          return {
-            ...data,
-            projects: data.projects.filter(p => p.id !== projectId),
-            totalItems: Math.max(0, data.totalItems - 1),
-          };
-        });
 
         // Optimistically update any paginated project lists by removing the deleted project
         queryClient.setQueriesData(

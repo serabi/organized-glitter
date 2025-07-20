@@ -218,7 +218,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
                 role="button"
                 tabIndex={0}
                 aria-label={`${isSelected ? 'Deselect' : 'Select'} project: ${project.title}${
-                  project.company || project.artist 
+                  project.company || project.artist
                     ? ` by ${[project.company, project.artist].filter(Boolean).join(' • ')}`
                     : ''
                 }`}
@@ -231,14 +231,15 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
                       onProjectToggle(project.id);
                       break;
                     case 'ArrowUp':
-                    case 'ArrowDown':
+                    case 'ArrowDown': {
                       e.preventDefault();
                       // Find next/previous project item and focus it
                       const currentIndex = projects.findIndex(p => p.id === project.id);
-                      const nextIndex = e.key === 'ArrowDown' 
-                        ? Math.min(currentIndex + 1, projects.length - 1)
-                        : Math.max(currentIndex - 1, 0);
-                      
+                      const nextIndex =
+                        e.key === 'ArrowDown'
+                          ? Math.min(currentIndex + 1, projects.length - 1)
+                          : Math.max(currentIndex - 1, 0);
+
                       if (nextIndex !== currentIndex) {
                         const nextElement = document.querySelector(
                           `[role="button"][aria-label*="${projects[nextIndex].title}"]`
@@ -248,7 +249,8 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
                         }
                       }
                       break;
-                    case 'Home':
+                    }
+                    case 'Home': {
                       e.preventDefault();
                       // Focus first project
                       const firstElement = document.querySelector(
@@ -258,15 +260,19 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
                         firstElement.focus();
                       }
                       break;
-                    case 'End':
+                    }
+                    case 'End': {
                       e.preventDefault();
                       // Focus last project
-                      const allElements = document.querySelectorAll('[role="button"][aria-label*="project:"]');
+                      const allElements = document.querySelectorAll(
+                        '[role="button"][aria-label*="project:"]'
+                      );
                       const lastElement = allElements[allElements.length - 1] as HTMLElement;
                       if (lastElement) {
                         lastElement.focus();
                       }
                       break;
+                    }
                     default:
                       break;
                   }
@@ -338,10 +344,10 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
                       <div id={`project-${project.id}-details`} className="sr-only">
                         Project {project.title}
                         {project.company && `, Company: ${project.company}`}
-                        {project.artist && `, Artist: ${project.artist}`}
-                        . Currently {isSelected ? 'selected' : 'not selected'} for randomizer.
-                        Use Enter or Space to {isSelected ? 'deselect' : 'select'}.
-                        Use arrow keys to navigate between projects.
+                        {project.artist && `, Artist: ${project.artist}`}. Currently{' '}
+                        {isSelected ? 'selected' : 'not selected'} for randomizer. Use Enter or
+                        Space to {isSelected ? 'deselect' : 'select'}. Use arrow keys to navigate
+                        between projects.
                       </div>
                     </div>
                   </div>
