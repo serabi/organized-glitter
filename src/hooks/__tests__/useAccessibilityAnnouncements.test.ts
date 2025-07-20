@@ -15,23 +15,6 @@ import {
   useFocusManagement,
 } from '../useAccessibilityAnnouncements';
 import { vi } from 'vitest';
-import { vi } from 'vitest';
-import { vi } from 'vitest';
-import { vi } from 'vitest';
-import { vi } from 'vitest';
-import { vi } from 'vitest';
-import { vi } from 'vitest';
-import { vi } from 'vitest';
-import { vi } from 'vitest';
-import { vi } from 'vitest';
-import { vi } from 'vitest';
-import { vi } from 'vitest';
-import { vi } from 'vitest';
-import { vi } from 'vitest';
-import { vi } from 'vitest';
-import { vi } from 'vitest';
-import { vi } from 'vitest';
-import { vi } from 'vitest';
 
 // Mock logger
 vi.mock('@/utils/secureLogger', () => ({

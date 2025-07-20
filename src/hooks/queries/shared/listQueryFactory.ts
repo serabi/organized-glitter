@@ -1,7 +1,7 @@
 /**
  * Generic list query factory for PocketBase collections
  * @author @serabi
- * @created 2025-01-16
+ * @created 2025-07-16
  */
 
 import { useQuery } from '@tanstack/react-query';
@@ -40,6 +40,52 @@ export interface ListQueryConfig<TData> {
 }
 
 /**
+ * Helper function to execute list queries with shared logic
+ * @param config - Configuration object
+ * @param authenticatedUserId - Authenticated user ID
+ * @param operationName - Name of the operation for logging
+ * @param pocketbaseCall - Function that executes the PocketBase call
+ * @returns Promise resolving to transformed data
+ */
+async function executeListQuery<TData>(
+  config: ListQueryConfig<TData>,
+  authenticatedUserId: string,
+  operationName: string,
+  pocketbaseCall: () => Promise<{ items: unknown[]; totalItems?: number }>
+): Promise<TData[]> {
+  const timer = createQueryTimer(config.hookName, operationName);
+
+  try {
+    const result = await pocketbaseCall();
+
+    // Transform data if needed
+    const transformedData = config.transform
+      ? config.transform(result.items)
+      : (result.items as TData[]);
+
+    timer.stop({
+      itemsCount: transformedData.length,
+      totalItems: result.totalItems,
+    });
+
+    logQuerySuccess(config.hookName, operationName, transformedData, {
+      userId: authenticatedUserId,
+      itemsCount: transformedData.length,
+      totalItems: result.totalItems,
+    });
+
+    return transformedData;
+  } catch (error) {
+    timer.stop({ error: true });
+    logQueryError(config.hookName, operationName, error, {
+      userId: authenticatedUserId,
+      collection: config.collection,
+    });
+    throw error;
+  }
+}
+
+/**
  * Generic hook factory for fetching user-scoped lists from PocketBase
  * @author @serabi
  * @param config - Configuration object
@@ -53,17 +99,15 @@ export function createListQuery<TData = unknown>(config: ListQueryConfig<TData>)
       queryKey: config.queryKeyFactory(userId || ''),
       queryFn: async () => {
         const authenticatedUserId = requireAuth();
-        const timer = createQueryTimer(config.hookName, 'list query');
 
-        try {
-          // Build filter
-          const filters = [`user = "${authenticatedUserId}"`];
-          if (config.additionalFilters) {
-            filters.push(config.additionalFilters);
-          }
+        // Build filter
+        const filters = [`user = "${authenticatedUserId}"`];
+        if (config.additionalFilters) {
+          filters.push(config.additionalFilters);
+        }
 
-          // Execute query
-          const result = await pb.collection(config.collection).getList(1, config.pageSize ?? 200, {
+        return executeListQuery(config, authenticatedUserId, 'list query', () =>
+          pb.collection(config.collection).getList(1, config.pageSize ?? 200, {
             filter: filters.join(' && '),
             sort: config.sortField || 'name',
             requestKey: createRequestKey(
@@ -71,33 +115,8 @@ export function createListQuery<TData = unknown>(config: ListQueryConfig<TData>)
               authenticatedUserId,
               config.requestKeySuffix
             ),
-          });
-
-          // Transform data if needed
-          const transformedData = config.transform
-            ? config.transform(result.items)
-            : (result.items as TData[]);
-
-          timer.stop({
-            itemsCount: transformedData.length,
-            totalItems: result.totalItems,
-          });
-
-          logQuerySuccess(config.hookName, 'list query', transformedData, {
-            userId: authenticatedUserId,
-            itemsCount: transformedData.length,
-            totalItems: result.totalItems,
-          });
-
-          return transformedData;
-        } catch (error) {
-          timer.stop({ error: true });
-          logQueryError(config.hookName, 'list query', error, {
-            userId: authenticatedUserId,
-            collection: config.collection,
-          });
-          throw error;
-        }
+          })
+        );
       },
       enabled: !!userId,
       ...getStandardQueryConfig(),
@@ -119,17 +138,15 @@ export function createFullListQuery<TData = unknown>(config: ListQueryConfig<TDa
       queryKey: config.queryKeyFactory(userId || ''),
       queryFn: async () => {
         const authenticatedUserId = requireAuth();
-        const timer = createQueryTimer(config.hookName, 'full list query');
 
-        try {
-          // Build filter
-          const filters = [`user = "${authenticatedUserId}"`];
-          if (config.additionalFilters) {
-            filters.push(config.additionalFilters);
-          }
+        // Build filter
+        const filters = [`user = "${authenticatedUserId}"`];
+        if (config.additionalFilters) {
+          filters.push(config.additionalFilters);
+        }
 
-          // Execute query
-          const result = await pb.collection(config.collection).getFullList({
+        return executeListQuery(config, authenticatedUserId, 'full list query', () =>
+          pb.collection(config.collection).getFullList({
             filter: filters.join(' && '),
             sort: config.sortField || 'name',
             requestKey: createRequestKey(
@@ -137,29 +154,8 @@ export function createFullListQuery<TData = unknown>(config: ListQueryConfig<TDa
               authenticatedUserId,
               config.requestKeySuffix || 'all'
             ),
-          });
-
-          // Transform data if needed
-          const transformedData = config.transform ? config.transform(result) : (result as TData[]);
-
-          timer.stop({
-            itemsCount: transformedData.length,
-          });
-
-          logQuerySuccess(config.hookName, 'full list query', transformedData, {
-            userId: authenticatedUserId,
-            itemsCount: transformedData.length,
-          });
-
-          return transformedData;
-        } catch (error) {
-          timer.stop({ error: true });
-          logQueryError(config.hookName, 'full list query', error, {
-            userId: authenticatedUserId,
-            collection: config.collection,
-          });
-          throw error;
-        }
+          })
+        );
       },
       enabled: !!userId,
       ...getStandardQueryConfig(),
