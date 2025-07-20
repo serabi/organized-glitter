@@ -1,4 +1,3 @@
-
 /**
  * Type definitions for the database schema
  * These types are used for data conversion and compatibility

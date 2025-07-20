@@ -11,7 +11,6 @@
  */
 
 import React, { useMemo } from 'react';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Project } from '@/types/project';
@@ -203,8 +202,10 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
             return (
               <div
                 key={project.id}
-                className={`flex cursor-pointer items-center space-x-3 rounded-lg border p-3 transition-colors focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 hover:bg-accent/50 ${
-                  isSelected ? 'border-primary bg-accent' : ''
+                className={`flex cursor-pointer items-center space-x-3 rounded-lg border p-3 transition-all duration-200 focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 hover:bg-accent/50 ${
+                  isSelected
+                    ? 'border-primary bg-primary/10 shadow-md ring-1 ring-primary/20'
+                    : 'hover:border-border/60'
                 } ${isTouchDevice ? 'min-h-[44px] touch-manipulation' : ''}`}
                 onClick={() => {
                   logger.debug('Project selection toggled', {
@@ -221,7 +222,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
                   project.company || project.artist
                     ? ` by ${[project.company, project.artist].filter(Boolean).join(' • ')}`
                     : ''
-                }`}
+                }. ${isSelected ? 'Currently selected' : 'Not selected'}`}
                 aria-describedby={`project-${project.id}-details`}
                 onKeyDown={e => {
                   switch (e.key) {
@@ -278,16 +279,6 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
                   }
                 }}
               >
-                <Checkbox
-                  checked={isSelected}
-                  onCheckedChange={() => onProjectToggle(project.id)}
-                  aria-label={`Select ${project.title}`}
-                  className={`data-[state=checked]:border-primary data-[state=checked]:bg-primary ${
-                    isTouchDevice ? 'h-5 w-5' : ''
-                  }`}
-                  tabIndex={-1} // Let the parent div handle focus
-                />
-
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded bg-gray-200">
