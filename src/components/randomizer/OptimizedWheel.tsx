@@ -36,6 +36,7 @@ const PERFORMANCE_THRESHOLDS = {
   ANIMATION_PERFORMANCE_THRESHOLD: 16.67, // Target 60fps (16.67ms per frame)
   MEMORY_THRESHOLD_MB: 50, // Switch to Canvas if memory usage exceeds this
   RENDER_TIME_THRESHOLD_MS: 33, // Switch to Canvas if render time exceeds this
+  METRICS_REPORT_INTERVAL_MS: 200, // Report metrics every 200ms for consistent data collection
 } as const;
 
 /**
@@ -121,6 +122,7 @@ const CanvasWheel = memo<{
   const offscreenCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const lastRenderTimeRef = useRef<number>(0);
   const frameCountRef = useRef<number>(0);
+  const lastMetricsReportTimeRef = useRef<number>(0);
 
   // Memoized wheel dimensions based on size
   const dimensions = useMemo(() => {
@@ -259,8 +261,13 @@ const CanvasWheel = memo<{
       const renderTime = performance.now() - renderStartTime;
       frameCountRef.current++;
 
-      // Only report performance metrics occasionally to avoid render loops
-      if (frameCountRef.current % 10 === 0) {
+      // Report performance metrics at consistent time intervals for better data quality
+      const currentTime = performance.now();
+      if (
+        currentTime - lastMetricsReportTimeRef.current >=
+        PERFORMANCE_THRESHOLDS.METRICS_REPORT_INTERVAL_MS
+      ) {
+        lastMetricsReportTimeRef.current = currentTime;
         // Use setTimeout to avoid calling during render
         setTimeout(() => {
           onPerformanceMetric({

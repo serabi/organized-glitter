@@ -470,7 +470,9 @@
 }
 
 .wheel-container:focus-within {
-  outline: none;
+  /* Maintain visible focus indicator for accessibility compliance */
+  outline: 2px solid hsl(var(--primary) / 0.6);
+  outline-offset: 2px;
 }
 
 /* Improved Color Contrast */

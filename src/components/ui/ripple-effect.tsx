@@ -11,6 +11,28 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { createLogger } from '@/utils/secureLogger';
 
+// CSS-in-JS for ripple animation keyframes
+const rippleStyles = `
+  @keyframes ripple-expand {
+    0% {
+      opacity: 1;
+      transform: scale(0);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(4);
+    }
+  }
+`;
+
+// Inject styles into document head if not already present
+if (typeof document !== 'undefined' && !document.getElementById('ripple-styles')) {
+  const styleElement = document.createElement('style');
+  styleElement.id = 'ripple-styles';
+  styleElement.textContent = rippleStyles;
+  document.head.appendChild(styleElement);
+}
+
 const logger = createLogger('RippleEffect');
 
 interface RippleInfo {
@@ -157,16 +179,14 @@ export const RippleEffect: React.FC<RippleEffectProps> = ({
       {ripples.map(ripple => (
         <span
           key={ripple.id}
-          className="pointer-events-none absolute animate-ping rounded-full"
+          className="pointer-events-none absolute rounded-full"
           style={{
             left: ripple.x - ripple.size / 2,
             top: ripple.y - ripple.size / 2,
             width: ripple.size,
             height: ripple.size,
             backgroundColor: color,
-            animationDuration: `${duration}ms`,
-            animationTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
-            animationFillMode: 'forwards',
+            animation: `ripple-expand ${duration}ms cubic-bezier(0.4, 0, 0.2, 1) forwards`,
           }}
         />
       ))}
