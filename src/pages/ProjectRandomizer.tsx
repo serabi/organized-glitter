@@ -8,7 +8,7 @@
  *
  * @author Generated with Claude Code
  * @version 1.0.0
- * @since 2024-06-28
+ * @since 2025-06-28
  */
 
 import React from 'react';
@@ -112,49 +112,51 @@ const ProjectRandomizer: React.FC = () => {
 
   return (
     <MainLayout>
-      <div className="container mx-auto max-w-7xl px-4 py-8">
-        {/* Page Header */}
-        <div className="mb-8">
-          <div className="mb-4 flex items-center gap-3">
-            <Shuffle className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-bold">Project Randomizer</h1>
+      <div className="container mx-auto max-w-7xl px-3 py-4 sm:px-4 sm:py-6 md:py-8">
+        {/* Page Header - Enhanced Mobile Layout */}
+        <div className="mb-6 md:mb-8">
+          <div className="mb-3 flex items-center gap-2 sm:gap-3 md:mb-4">
+            <Shuffle className="h-6 w-6 text-primary sm:h-8 sm:w-8" />
+            <h1 className="text-2xl font-bold sm:text-3xl">Project Randomizer</h1>
           </div>
-          <p className="text-lg text-muted-foreground">
+          <p className="text-base text-muted-foreground sm:text-lg">
             Can't decide which project to work on? Let the wheel choose for you!
           </p>
         </div>
 
-        {/* Hero Section - Randomizer Wheel */}
-        <Card className="mb-8">
+        {/* Hero Section - Randomizer Wheel - Enhanced Mobile Layout */}
+        <Card className="mb-6 md:mb-8">
           <CardHeader className="text-center">
-            <CardDescription className="text-lg">
+            <CardDescription className="text-sm sm:text-base md:text-lg">
               Select your in-progress projects below, then come back to spin the wheel!
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col items-center py-8">
+          <CardContent className="flex flex-col items-center py-4 sm:py-6 md:py-8">
             <RandomizerWheel
               projects={selectedProjects}
               onSpinComplete={handleSpinComplete}
               disabled={!stats.canSpin || isCreatingSpin}
             />
 
-            {/* Spin Result */}
+            {/* Spin Result - Enhanced Mobile Layout */}
             {lastSpinResult && (
-              <div className="mt-8 w-full max-w-md">
+              <div className="mt-4 w-full max-w-md sm:mt-6 md:mt-8">
                 <Card className="border-primary bg-primary/5">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-center text-xl">Selected Project</CardTitle>
+                  <CardHeader className="pb-2 sm:pb-3">
+                    <CardTitle className="text-center text-lg sm:text-xl">
+                      Selected Project
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4 text-center">
-                    <h3 className="text-2xl font-bold">{lastSpinResult.title}</h3>
+                  <CardContent className="space-y-3 text-center sm:space-y-4">
+                    <h3 className="text-xl font-bold sm:text-2xl">{lastSpinResult.title}</h3>
                     {(lastSpinResult.company || lastSpinResult.artist) && (
-                      <p className="text-lg text-muted-foreground">
+                      <p className="text-base text-muted-foreground sm:text-lg">
                         {[lastSpinResult.company, lastSpinResult.artist]
                           .filter(Boolean)
                           .join(' • ')}
                       </p>
                     )}
-                    <div className="flex justify-center gap-3">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:justify-center sm:gap-3">
                       <Button asChild>
                         <Link to={`/projects/${lastSpinResult.id}`}>
                           <ExternalLink className="mr-2 h-4 w-4" />
@@ -170,11 +172,11 @@ const ProjectRandomizer: React.FC = () => {
               </div>
             )}
 
-            {/* Helper Messages */}
+            {/* Helper Messages - Enhanced Mobile Layout */}
             {!stats.hasProjects && !isLoadingProjects && (
-              <Alert className="mt-8 max-w-lg">
+              <Alert className="mt-4 max-w-lg sm:mt-6 md:mt-8">
                 <Lightbulb className="h-4 w-4" />
-                <AlertDescription className="text-base">
+                <AlertDescription className="text-sm sm:text-base">
                   You don't have any projects in progress.
                   <Link to="/dashboard" className="ml-1 font-medium text-primary hover:underline">
                     Start some projects
@@ -185,9 +187,9 @@ const ProjectRandomizer: React.FC = () => {
             )}
 
             {stats.hasSelection && !stats.canSpin && (
-              <Alert className="mt-8 max-w-lg">
+              <Alert className="mt-4 max-w-lg sm:mt-6 md:mt-8">
                 <Lightbulb className="h-4 w-4" />
-                <AlertDescription className="text-base">
+                <AlertDescription className="text-sm sm:text-base">
                   Select at least 2 projects to make the randomizer interesting!
                 </AlertDescription>
               </Alert>
@@ -195,36 +197,38 @@ const ProjectRandomizer: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Stats Summary */}
-        <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
+        {/* Stats Summary - Enhanced Mobile-First Design */}
+        <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 md:mb-8 md:grid-cols-4">
           <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold">{stats.totalProjects}</div>
-              <p className="text-sm text-muted-foreground">In Progress</p>
+            <CardContent className="p-3 sm:p-4">
+              <div className="text-xl font-bold sm:text-2xl">{stats.totalProjects}</div>
+              <p className="text-xs text-muted-foreground sm:text-sm">In Progress</p>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold">{stats.selectedCount}</div>
-              <p className="text-sm text-muted-foreground">Selected</p>
+            <CardContent className="p-3 sm:p-4">
+              <div className="text-xl font-bold sm:text-2xl">{stats.selectedCount}</div>
+              <p className="text-xs text-muted-foreground sm:text-sm">Selected</p>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold">{stats.recentSpins}</div>
-              <p className="text-sm text-muted-foreground">Total Spins</p>
+            <CardContent className="p-3 sm:p-4">
+              <div className="text-xl font-bold sm:text-2xl">{stats.recentSpins}</div>
+              <p className="text-xs text-muted-foreground sm:text-sm">Total Spins</p>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-primary">{stats.canSpin ? '✓' : '○'}</div>
-              <p className="text-sm text-muted-foreground">Ready to Spin</p>
+            <CardContent className="p-3 sm:p-4">
+              <div className="text-xl font-bold text-primary sm:text-2xl">
+                {stats.canSpin ? '✓' : '○'}
+              </div>
+              <p className="text-xs text-muted-foreground sm:text-sm">Ready to Spin</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Bottom Section - Project Selection and History */}
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+        {/* Bottom Section - Project Selection and History - Enhanced Mobile Layout */}
+        <div className="grid grid-cols-1 gap-4 sm:gap-6 md:gap-8 lg:grid-cols-2">
           {/* Left Panel - Project Selection */}
           <Card>
             <CardHeader>
