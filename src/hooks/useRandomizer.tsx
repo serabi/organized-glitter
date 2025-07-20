@@ -10,7 +10,7 @@
  * @since 2024-06-28
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { Project } from '@/types/project';
 import { useProjects } from '@/hooks/queries/useProjects';
 import { useCreateSpin } from '@/hooks/mutations/useCreateSpin';
@@ -143,6 +143,41 @@ export const useRandomizer = () => {
     return availableProjects.filter(project => selectedProjectIds.has(project.id));
   }, [availableProjects, selectedProjectIds]);
 
+  // URL parameter handling for deep linking
+  const updateUrlParams = useCallback((projectIds: Set<string>) => {
+    const url = new URL(window.location.href);
+    if (projectIds.size > 0) {
+      url.searchParams.set('projects', Array.from(projectIds).join(','));
+    } else {
+      url.searchParams.delete('projects');
+    }
+    window.history.replaceState({}, '', url.toString());
+  }, []);
+
+  // Initialize selected projects from URL parameters
+  useEffect(() => {
+    if (availableProjects.length === 0) return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectsParam = urlParams.get('projects');
+    
+    if (projectsParam) {
+      const projectIds = projectsParam.split(',').filter(id => id.trim());
+      const validProjectIds = projectIds.filter(id => 
+        availableProjects.some(project => project.id === id)
+      );
+      
+      if (validProjectIds.length > 0) {
+        const newSelectedIds = new Set(validProjectIds);
+        setSelectedProjectIds(newSelectedIds);
+        logger.debug('Loaded selected projects from URL', { 
+          urlProjectIds: projectIds, 
+          validProjectIds: validProjectIds 
+        });
+      }
+    }
+  }, [availableProjects]);
+
   // Project selection handlers
   const toggleProject = useCallback((projectId: string) => {
     setSelectedProjectIds(prev => {
@@ -154,20 +189,24 @@ export const useRandomizer = () => {
         newSet.add(projectId);
         logger.debug('Project selected', { projectId });
       }
+      updateUrlParams(newSet);
       return newSet;
     });
-  }, []);
+  }, [updateUrlParams]);
 
   const selectAllProjects = useCallback(() => {
     const allIds = new Set(availableProjects.map(p => p.id));
     setSelectedProjectIds(allIds);
+    updateUrlParams(allIds);
     logger.debug('All projects selected', { count: allIds.size });
-  }, [availableProjects]);
+  }, [availableProjects, updateUrlParams]);
 
   const selectNoProjects = useCallback(() => {
-    setSelectedProjectIds(new Set());
+    const emptySet = new Set<string>();
+    setSelectedProjectIds(emptySet);
+    updateUrlParams(emptySet);
     logger.debug('All projects deselected');
-  }, []);
+  }, [updateUrlParams]);
 
   // Spin handler
   const handleSpinComplete = useCallback(
@@ -257,5 +296,16 @@ export const useRandomizer = () => {
     formatProjectsForWheel: useCallback(() => {
       return selectedProjects;
     }, [selectedProjects]),
+
+    // URL sharing
+    getShareableUrl: useCallback(() => {
+      const url = new URL(window.location.href);
+      if (selectedProjectIds.size > 0) {
+        url.searchParams.set('projects', Array.from(selectedProjectIds).join(','));
+      } else {
+        url.searchParams.delete('projects');
+      }
+      return url.toString();
+    }, [selectedProjectIds]),
   };
 };

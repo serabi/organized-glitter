@@ -74,7 +74,7 @@ export function createEntityCreateMutation<TData extends Record<string, unknown>
         // Trim name field if it exists
         const processedData = { ...data };
         if ('name' in processedData && typeof processedData.name === 'string') {
-          (processedData as any).name = processedData.name.trim();
+          (processedData as TData & { name: string }).name = processedData.name.trim();
         }
 
         // Check for duplicate names before creating
@@ -182,7 +182,7 @@ export function createEntityUpdateMutation<TData extends Record<string, unknown>
         // Trim name field if it exists
         const processedData = { ...data };
         if ('name' in processedData && typeof processedData.name === 'string') {
-          (processedData as any).name = processedData.name.trim();
+          (processedData as TData & { name: string }).name = processedData.name.trim();
         }
 
         // Check for duplicate names (if name is being updated)

@@ -90,6 +90,11 @@ const ProjectDetail = () => {
     projectData?: ProjectType;
     timestamp?: number;
     navigationContext?: NavigationContext;
+    from?: string;
+    randomizerState?: {
+      selectedProjects: string[];
+      shareUrl: string;
+    };
   } | null;
 
   if (navigationState?.fromNavigation) {
@@ -224,6 +229,10 @@ const ProjectDetail = () => {
           <ProjectDetailView
             project={typedProject}
             isMobile={isMobile}
+            navigationState={navigationState ? {
+              from: navigationState.from,
+              randomizerState: navigationState.randomizerState
+            } : undefined}
             onStatusChange={handleUpdateStatus}
             onUpdateNotes={handleUpdateNotes}
             onArchive={handleArchive}

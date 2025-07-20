@@ -22,7 +22,7 @@ vi.mock('@/utils/secureLogger', () => ({
 const mockUseQuery = vi.mocked(useQuery);
 const mockUseQueryClient = vi.mocked(useQueryClient);
 const mockGetSpinHistoryEnhanced = vi.mocked(getSpinHistoryEnhanced);
-const mockGetSpinHistoryCountEnhanced = vi.mocked(getSpinHistoryCountEnhanced);
+const _mockGetSpinHistoryCountEnhanced = vi.mocked(getSpinHistoryCountEnhanced);
 
 const mockSpinHistory = [
   {

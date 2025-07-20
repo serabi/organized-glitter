@@ -17,12 +17,21 @@ import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
 import { RandomizerWheel } from '@/components/randomizer/RandomizerWheel';
 import { ProjectSelector } from '@/components/randomizer/ProjectSelector';
 import { SpinHistory } from '@/components/randomizer/SpinHistory';
 import { useRandomizer } from '@/hooks/useRandomizer';
 import { useAuth } from '@/hooks/useAuth';
-import { Shuffle, ExternalLink, Lightbulb } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { Shuffle, ExternalLink, Lightbulb, Home, Share2 } from 'lucide-react';
 import { createLogger } from '@/utils/secureLogger';
 
 const logger = createLogger('ProjectRandomizer');
@@ -70,6 +79,7 @@ const logger = createLogger('ProjectRandomizer');
  */
 const ProjectRandomizer: React.FC = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
 
   /** Main randomizer hook providing all state and actions */
   const {
@@ -87,6 +97,7 @@ const ProjectRandomizer: React.FC = () => {
     selectNoProjects,
     handleSpinComplete,
     clearLastResult,
+    getShareableUrl,
   } = useRandomizer();
 
   React.useEffect(() => {
@@ -96,9 +107,65 @@ const ProjectRandomizer: React.FC = () => {
     });
   }, [availableProjects.length, selectedProjectIds.size]);
 
+  const handleShare = React.useCallback(async () => {
+    try {
+      const shareUrl = getShareableUrl();
+      
+      if (navigator.share && stats.selectedCount > 0) {
+        // Use native sharing if available and there are selected projects
+        await navigator.share({
+          title: 'Project Randomizer Configuration',
+          text: `Check out my randomizer setup with ${stats.selectedCount} selected projects!`,
+          url: shareUrl,
+        });
+        logger.debug('Native share completed');
+      } else {
+        // Fallback to clipboard
+        await navigator.clipboard.writeText(shareUrl);
+        toast({
+          title: 'URL Copied!',
+          description: stats.selectedCount > 0 
+            ? `Shareable URL with ${stats.selectedCount} selected projects copied to clipboard.`
+            : 'Randomizer URL copied to clipboard.',
+        });
+        logger.debug('URL copied to clipboard', { selectedCount: stats.selectedCount });
+      }
+    } catch (error) {
+      logger.error('Share failed', { error });
+      toast({
+        title: 'Share Failed',
+        description: 'Unable to share or copy URL. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  }, [getShareableUrl, stats.selectedCount, toast]);
+
   if (error) {
     return (
       <MainLayout>
+        {/* Breadcrumb Navigation */}
+        <div className="container mx-auto max-w-7xl px-3 pb-4 pt-4 sm:px-4">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link to="/" className="flex items-center gap-1">
+                    <Home className="h-4 w-4" />
+                    Dashboard
+                  </Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage className="flex items-center gap-1">
+                  <Shuffle className="h-4 w-4" />
+                  Project Randomizer
+                </BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+
         <div className="container mx-auto px-4 py-8">
           <Alert variant="destructive">
             <AlertDescription>
@@ -112,15 +179,55 @@ const ProjectRandomizer: React.FC = () => {
 
   return (
     <MainLayout>
+      {/* Breadcrumb Navigation */}
+      <div className="container mx-auto max-w-7xl px-3 pb-4 pt-4 sm:px-4">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link to="/" className="flex items-center gap-1">
+                  <Home className="h-4 w-4" />
+                  Dashboard
+                </Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage className="flex items-center gap-1">
+                <Shuffle className="h-4 w-4" />
+                Project Randomizer
+              </BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </div>
+
       <div className="container mx-auto max-w-7xl px-3 py-4 sm:px-4 sm:py-6 md:py-8">
         {/* Page Header - Enhanced Mobile Layout */}
         <div className="mb-6 md:mb-8">
-          <div className="mb-3 flex items-center gap-2 sm:gap-3 md:mb-4">
-            <Shuffle className="h-6 w-6 text-primary sm:h-8 sm:w-8" />
-            <h1 className="text-2xl font-bold sm:text-3xl">Project Randomizer</h1>
+          <div className="mb-3 flex items-center justify-between md:mb-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Shuffle className="h-6 w-6 text-primary sm:h-8 sm:w-8" />
+              <h1 className="text-2xl font-bold sm:text-3xl">Project Randomizer</h1>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleShare}
+              className="flex items-center gap-2"
+              title={stats.selectedCount > 0 ? `Share configuration with ${stats.selectedCount} selected projects` : 'Share randomizer URL'}
+            >
+              <Share2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Share</span>
+            </Button>
           </div>
           <p className="text-base text-muted-foreground sm:text-lg">
             Can't decide which project to work on? Let the wheel choose for you!
+            {stats.selectedCount > 0 && (
+              <span className="ml-2 font-medium text-primary">
+                ({stats.selectedCount} projects selected)
+              </span>
+            )}
           </p>
         </div>
 
@@ -158,7 +265,16 @@ const ProjectRandomizer: React.FC = () => {
                     )}
                     <div className="flex flex-col gap-2 sm:flex-row sm:justify-center sm:gap-3">
                       <Button asChild>
-                        <Link to={`/projects/${lastSpinResult.id}`}>
+                        <Link 
+                          to={`/projects/${lastSpinResult.id}`}
+                          state={{
+                            from: 'randomizer',
+                            randomizerState: {
+                              selectedProjects: Array.from(selectedProjectIds),
+                              shareUrl: getShareableUrl(),
+                            }
+                          }}
+                        >
                           <ExternalLink className="mr-2 h-4 w-4" />
                           View Project
                         </Link>

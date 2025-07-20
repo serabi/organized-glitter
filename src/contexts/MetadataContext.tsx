@@ -141,19 +141,19 @@ export const MetadataProvider = React.memo(({ children }: MetadataProviderProps)
   // Use useCallback for refresh functions to prevent recreation and reduce re-renders
   const refresh = useCallback(async () => {
     await Promise.all([companiesQuery.refetch(), artistsQuery.refetch(), tagsQuery.refetch()]);
-  }, [companiesQuery.refetch, artistsQuery.refetch, tagsQuery.refetch]);
+  }, [companiesQuery, artistsQuery, tagsQuery]);
 
   const refreshCompanies = useCallback(async () => {
     await companiesQuery.refetch();
-  }, [companiesQuery.refetch]);
+  }, [companiesQuery]);
 
   const refreshArtists = useCallback(async () => {
     await artistsQuery.refetch();
-  }, [artistsQuery.refetch]);
+  }, [artistsQuery]);
 
   const refreshTags = useCallback(async () => {
     await tagsQuery.refetch();
-  }, [tagsQuery.refetch]);
+  }, [tagsQuery]);
 
   const value: MetadataContextType = useMemo(
     () => ({

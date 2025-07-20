@@ -43,6 +43,12 @@ interface TouchFeedbackState {
   feedbackMessage: string;
 }
 
+interface FeedbackData {
+  intensity?: 'light' | 'medium' | 'heavy';
+  message?: string;
+  duration?: number;
+}
+
 const DEFAULT_OPTIONS: Required<TouchFeedbackOptions> = {
   enableHaptic: true,
   enableRipple: true,
@@ -240,7 +246,7 @@ export const useEnhancedTouchFeedback = (options: TouchFeedbackOptions = {}) => 
    * Manual feedback trigger
    */
   const triggerFeedback = useCallback(
-    (type: 'haptic' | 'message', data?: any) => {
+    (type: 'haptic' | 'message', data?: FeedbackData) => {
       switch (type) {
         case 'haptic':
           triggerHapticFeedback(data?.intensity || opts.hapticIntensity);

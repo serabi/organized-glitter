@@ -16,9 +16,9 @@
  * - Analytics metadata capture
  * - Enhanced validation and recovery strategies
  *
- * @author Enhanced for randomizer optimization
+ * @author serabi
  * @version 2.0.0
- * @since 2025-01-17
+ * @since 2025-07-17
  */
 
 import { pb } from '@/lib/pocketbase';
@@ -32,6 +32,12 @@ import { Collections } from '@/types/pocketbase.types';
 import type { PocketBaseError } from '@/types/pocketbase-common';
 
 const logger = createLogger('RandomizerService');
+
+interface QueryOptions {
+  filter: string;
+  sort: string;
+  expand?: string;
+}
 
 const RANDOMIZER_COLLECTION = 'randomizer_spins';
 
@@ -687,7 +693,7 @@ export async function getSpinHistoryEnhanced(
       expandProject,
     });
 
-    const queryOptions: any = {
+    const queryOptions: QueryOptions = {
       filter: pb.filter('user = {:userId}', { userId }),
       sort: '-spun_at', // Most recent first
     };
@@ -1075,7 +1081,7 @@ export async function getLastSpinEnhanced(
 
     logger.debug('Fetching enhanced last spin', { userId, expandProject });
 
-    const queryOptions: any = {
+    const queryOptions: QueryOptions = {
       sort: '-spun_at',
     };
 
@@ -1370,7 +1376,7 @@ export async function validateRandomizerCollection(): Promise<ValidationResult> 
       await pb.collection(RANDOMIZER_COLLECTION).getList(1, 1, { fields: 'id' });
       exists = true;
       logger.debug('Collection exists and is accessible');
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error?.status === 404) {
         issues.push('Collection "randomizer_spins" does not exist');
         exists = false;
@@ -1397,7 +1403,7 @@ export async function validateRandomizerCollection(): Promise<ValidationResult> 
             selected_count: 1,
             spun_at: new Date().toISOString(),
           });
-        } catch (error: any) {
+        } catch (error: unknown) {
           // Expected to fail due to invalid data, but we can analyze the error
           if (error?.data) {
             const errorData = error.data;
@@ -1442,7 +1448,7 @@ export async function validateRandomizerCollection(): Promise<ValidationResult> 
             fields: 'id',
           });
           hasProperRules = true;
-        } catch (error: any) {
+        } catch (error: unknown) {
           if (error?.status === 400 && error?.message?.includes('filter')) {
             issues.push('API rules may not be properly configured for user-based filtering');
           } else if (error?.status === 403) {
@@ -1456,7 +1462,7 @@ export async function validateRandomizerCollection(): Promise<ValidationResult> 
         // Note: We cannot easily validate indexes without admin access to collection schema
         // For now, assume indexes are present if collection is accessible
         hasIndexes = true;
-      } catch (error: any) {
+      } catch (error: unknown) {
         issues.push(
           `Failed to validate collection configuration: ${error?.message || 'Unknown error'}`
         );

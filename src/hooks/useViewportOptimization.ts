@@ -109,7 +109,7 @@ export const useViewportOptimization = (options: ViewportOptimizationOptions = {
     // Get memory usage if available
     let memoryUsage: number | undefined;
     if ('memory' in performance) {
-      const memory = (performance as any).memory;
+      const memory = (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory;
       memoryUsage = memory ? Math.round(memory.usedJSHeapSize / 1024 / 1024) : undefined;
     }
 
