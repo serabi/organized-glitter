@@ -136,6 +136,7 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
 
   // Accessibility and mobile support
   const {
+    announce,
     announceSpinStart,
     announceSpinResult,
     announceKeyboardInstructions,
@@ -247,7 +248,7 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
   // Update the ref with the current handleSpin function
   handleSpinRef.current = handleSpin;
 
-  // Enhanced keyboard navigation handler with accessibility support
+  // Enhanced keyboard navigation handler with comprehensive accessibility support
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
       if (isSpinning) return;
@@ -258,11 +259,39 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
           event.preventDefault();
           if (!disabled && projects.length > 0) {
             handleSpin();
+          } else if (projects.length === 0) {
+            announceSpinStart(0); // This will announce no projects available
+          } else if (disabled) {
+            announce('Wheel is currently disabled. Please wait or check your selection.');
           }
           break;
         case 'Escape':
           event.preventDefault();
           removeFocus();
+          announce('Focus removed from randomizer wheel.');
+          break;
+        case 'Tab':
+          // Allow default tab behavior but provide audio feedback
+          if (!event.shiftKey) {
+            announce('Navigating to next interactive element.');
+          } else {
+            announce('Navigating to previous interactive element.');
+          }
+          break;
+        case 'ArrowUp':
+        case 'ArrowDown':
+        case 'ArrowLeft':
+        case 'ArrowRight':
+          event.preventDefault();
+          announce(`Use Enter or Space to spin the wheel. Currently ${projects.length} projects available.`);
+          break;
+        case 'Home':
+          event.preventDefault();
+          announce(`Randomizer wheel with ${projects.length} projects. Use Enter or Space to spin.`);
+          break;
+        case 'End':
+          event.preventDefault();
+          announce('End of wheel interaction. Use Tab to navigate to other elements.');
           break;
         case 'F1':
         case '?':
@@ -273,18 +302,42 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
             announceKeyboardInstructions();
           }
           break;
+        case 'h':
+        case 'H':
+          // Help shortcut
+          event.preventDefault();
+          announce(`Randomizer wheel help: ${projects.length} projects available. Use Enter or Space to spin. Use F1 for detailed instructions.`);
+          break;
+        case 'r':
+        case 'R':
+          // Refresh/read current state
+          event.preventDefault();
+          if (projects.length > 0) {
+            const projectList = projects.slice(0, 5).map(p => p.title).join(', ');
+            const moreText = projects.length > 5 ? ` and ${projects.length - 5} more` : '';
+            announce(`${projects.length} projects selected: ${projectList}${moreText}. Press Enter to spin.`);
+          } else {
+            announce('No projects selected for randomizer. Please select projects from the list below.');
+          }
+          break;
         default:
+          // Announce unhandled keys for better user feedback
+          if (event.key.length === 1 && /[a-zA-Z0-9]/.test(event.key)) {
+            announce('Use Enter or Space to spin, F1 for help, or Tab to navigate.');
+          }
           break;
       }
     },
     [
       isSpinning,
       disabled,
-      projects.length,
+      projects,
       handleSpin,
       removeFocus,
       announceKeyboardInstructions,
       announceTouchInstructions,
+      announceSpinStart,
+      announce,
       isTouchDevice
     ]
   );

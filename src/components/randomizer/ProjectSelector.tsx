@@ -217,11 +217,58 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
                 }}
                 role="button"
                 tabIndex={0}
-                aria-label={`${isSelected ? 'Deselect' : 'Select'} project: ${project.title}`}
+                aria-label={`${isSelected ? 'Deselect' : 'Select'} project: ${project.title}${
+                  project.company || project.artist 
+                    ? ` by ${[project.company, project.artist].filter(Boolean).join(' • ')}`
+                    : ''
+                }`}
+                aria-describedby={`project-${project.id}-details`}
                 onKeyDown={e => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    onProjectToggle(project.id);
+                  switch (e.key) {
+                    case 'Enter':
+                    case ' ':
+                      e.preventDefault();
+                      onProjectToggle(project.id);
+                      break;
+                    case 'ArrowUp':
+                    case 'ArrowDown':
+                      e.preventDefault();
+                      // Find next/previous project item and focus it
+                      const currentIndex = projects.findIndex(p => p.id === project.id);
+                      const nextIndex = e.key === 'ArrowDown' 
+                        ? Math.min(currentIndex + 1, projects.length - 1)
+                        : Math.max(currentIndex - 1, 0);
+                      
+                      if (nextIndex !== currentIndex) {
+                        const nextElement = document.querySelector(
+                          `[role="button"][aria-label*="${projects[nextIndex].title}"]`
+                        ) as HTMLElement;
+                        if (nextElement) {
+                          nextElement.focus();
+                        }
+                      }
+                      break;
+                    case 'Home':
+                      e.preventDefault();
+                      // Focus first project
+                      const firstElement = document.querySelector(
+                        '[role="button"][aria-label*="project:"]'
+                      ) as HTMLElement;
+                      if (firstElement) {
+                        firstElement.focus();
+                      }
+                      break;
+                    case 'End':
+                      e.preventDefault();
+                      // Focus last project
+                      const allElements = document.querySelectorAll('[role="button"][aria-label*="project:"]');
+                      const lastElement = allElements[allElements.length - 1] as HTMLElement;
+                      if (lastElement) {
+                        lastElement.focus();
+                      }
+                      break;
+                    default:
+                      break;
                   }
                 }}
               >
@@ -286,6 +333,15 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
                             <span>{project.artist}</span>
                           </>
                         )}
+                      </div>
+                      {/* Hidden details for screen readers */}
+                      <div id={`project-${project.id}-details`} className="sr-only">
+                        Project {project.title}
+                        {project.company && `, Company: ${project.company}`}
+                        {project.artist && `, Artist: ${project.artist}`}
+                        . Currently {isSelected ? 'selected' : 'not selected'} for randomizer.
+                        Use Enter or Space to {isSelected ? 'deselect' : 'select'}.
+                        Use arrow keys to navigate between projects.
                       </div>
                     </div>
                   </div>

@@ -135,10 +135,22 @@ export const useAccessibilityAnnouncements = () => {
    */
   const announceSpinStart = useCallback(
     (projectCount: number) => {
-      announce(
-        `Spinning wheel to select from ${projectCount} project${projectCount !== 1 ? 's' : ''}...`,
-        { priority: 'assertive', clearPrevious: true }
-      );
+      if (projectCount === 0) {
+        announce(
+          'Cannot spin wheel: No projects selected. Please select at least 2 projects from the list below.',
+          { priority: 'assertive', clearPrevious: true }
+        );
+      } else if (projectCount === 1) {
+        announce(
+          'Cannot spin wheel: Only 1 project selected. Please select at least 2 projects for meaningful randomization.',
+          { priority: 'assertive', clearPrevious: true }
+        );
+      } else {
+        announce(
+          `Spinning wheel to randomly select from ${projectCount} projects. Please wait for the result...`,
+          { priority: 'assertive', clearPrevious: true }
+        );
+      }
     },
     [announce]
   );
@@ -162,7 +174,7 @@ export const useAccessibilityAnnouncements = () => {
    */
   const announceKeyboardInstructions = useCallback(() => {
     announce(
-      'Use Enter or Space to spin the wheel. Use Escape to exit focus. Use Tab to navigate between elements.',
+      'Keyboard navigation: Enter or Space to spin wheel. Arrow keys for information. Home and End for navigation. H for help shortcuts. R to read current state. Escape to exit focus. Tab to navigate between elements.',
       { priority: 'polite' }
     );
   }, [announce]);
@@ -171,9 +183,10 @@ export const useAccessibilityAnnouncements = () => {
    * Announce touch gesture instructions
    */
   const announceTouchInstructions = useCallback(() => {
-    announce('Tap the spin button or swipe up on the wheel to start spinning.', {
-      priority: 'polite',
-    });
+    announce(
+      'Touch navigation: Tap the spin button to start spinning. You can also swipe up on the wheel area. Long press for additional help. Double tap for quick access to controls.',
+      { priority: 'polite' }
+    );
   }, [announce]);
 
   // Cleanup on unmount

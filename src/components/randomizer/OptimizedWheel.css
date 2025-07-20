@@ -257,34 +257,105 @@
   }
 }
 
-/* High Contrast Mode Support */
+/* Enhanced High Contrast Mode Support for WCAG 2.1 AA */
 @media (prefers-contrast: high) {
   .wheel {
-    border-width: calc(var(--wheel-border-width) * 1.5);
-    border-color: currentColor;
+    border-width: calc(var(--wheel-border-width) * 2);
+    border-color: ButtonText;
+    background: ButtonFace;
   }
 
   .wheel-pointer {
-    background: currentColor;
+    background: ButtonText;
     box-shadow:
-      0 0 0 2px white,
-      0 0 0 4px currentColor;
+      0 0 0 3px ButtonFace,
+      0 0 0 6px ButtonText;
   }
 
   .wheel__label {
+    color: ButtonText;
     text-shadow:
-      -2px -2px 0 white,
-      2px -2px 0 white,
-      -2px 2px 0 white,
-      2px 2px 0 white;
+      -2px -2px 0 ButtonFace,
+      2px -2px 0 ButtonFace,
+      -2px 2px 0 ButtonFace,
+      2px 2px 0 ButtonFace,
+      0 0 4px ButtonFace;
+    font-weight: 700;
+  }
+
+  .wheel-container:focus-visible {
+    box-shadow:
+      0 0 0 4px Highlight,
+      0 0 0 8px ButtonFace;
+    outline: 4px solid Highlight;
+  }
+
+  .wheel-button {
+    background: ButtonFace;
+    color: ButtonText;
+    border: 2px solid ButtonText;
+  }
+
+  .wheel-button:hover:not(:disabled) {
+    background: Highlight;
+    color: HighlightText;
   }
 }
 
-/* Focus Visible Support */
+/* Windows High Contrast Mode */
+@media (forced-colors: active) {
+  .wheel {
+    border-color: ButtonText;
+    background: ButtonFace;
+    forced-color-adjust: none;
+  }
+
+  .wheel-pointer {
+    background: ButtonText;
+    forced-color-adjust: none;
+  }
+
+  .wheel__label {
+    color: ButtonText;
+    forced-color-adjust: none;
+  }
+
+  .wheel-container:focus-visible {
+    outline: 3px solid Highlight;
+    outline-offset: 2px;
+  }
+}
+
+/* Enhanced Focus Visible Support for WCAG 2.1 AA */
 .wheel-container:focus-visible {
   box-shadow:
-    0 0 0 2px hsl(var(--primary)),
-    0 0 0 4px hsl(var(--primary) / 0.2);
+    0 0 0 3px hsl(var(--primary)),
+    0 0 0 6px hsl(var(--primary) / 0.3);
+  outline: 3px solid transparent; /* For Windows High Contrast Mode */
+}
+
+/* Keyboard Focus Indicator */
+.wheel-container:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.wheel-container:focus-visible::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border: 3px solid hsl(var(--primary));
+  border-radius: 50%;
+  pointer-events: none;
+  animation: focus-pulse 2s ease-in-out infinite;
+}
+
+@keyframes focus-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }
 
 /* Enhanced Touch Support */
@@ -390,14 +461,128 @@
   font-weight: 400;
 }
 
-/* Accessibility Enhancements */
+/* Enhanced Accessibility for WCAG 2.1 AA Compliance */
 .wheel-container[aria-disabled='true'] {
   opacity: 0.6;
   cursor: not-allowed;
+  filter: grayscale(50%);
 }
 
 .wheel-container:focus-within {
   outline: none;
+}
+
+/* Improved Color Contrast */
+.wheel__label {
+  /* Enhanced text shadow for better contrast ratio */
+  text-shadow:
+    -2px -2px 0 rgba(0, 0, 0, 0.9),
+    2px -2px 0 rgba(0, 0, 0, 0.9),
+    -2px 2px 0 rgba(0, 0, 0, 0.9),
+    2px 2px 0 rgba(0, 0, 0, 0.9),
+    0 0 4px rgba(0, 0, 0, 0.8);
+  font-weight: 600; /* Bolder text for better readability */
+  min-height: 20px; /* Ensure minimum touch target size */
+}
+
+/* Enhanced Button Accessibility */
+.wheel-button {
+  min-height: 44px; /* WCAG minimum touch target size */
+  min-width: 44px;
+  position: relative;
+}
+
+.wheel-button:focus-visible {
+  outline: 3px solid hsl(var(--primary));
+  outline-offset: 2px;
+  box-shadow: 
+    0 0 0 2px white,
+    0 0 0 5px hsl(var(--primary)),
+    0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Skip Link for Screen Readers */
+.wheel-skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  padding: 8px;
+  text-decoration: none;
+  border-radius: 4px;
+  z-index: 1000;
+  font-weight: 600;
+}
+
+.wheel-skip-link:focus {
+  top: 6px;
+}
+
+/* Enhanced Touch Targets */
+.wheel-container--touch .wheel__label {
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Motion Sensitivity */
+@media (prefers-reduced-motion: reduce) {
+  .wheel-container:focus-visible::after {
+    animation: none;
+  }
+  
+  .wheel-touch-feedback {
+    animation: none;
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Enhanced Error States */
+.wheel-container--error {
+  border: 3px solid hsl(var(--destructive));
+  background: hsl(var(--destructive) / 0.1);
+}
+
+.wheel-container--error:focus-visible {
+  box-shadow:
+    0 0 0 3px hsl(var(--destructive)),
+    0 0 0 6px hsl(var(--destructive) / 0.3);
+}
+
+/* Loading State Accessibility */
+.wheel-container--loading {
+  cursor: wait;
+}
+
+.wheel-container--loading::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wheel-container--loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 32px;
+  height: 32px;
+  margin: -16px 0 0 -16px;
+  border: 3px solid hsl(var(--primary) / 0.3);
+  border-top: 3px solid hsl(var(--primary));
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  z-index: 6;
 }
 
 /* Screen Reader Only Content */

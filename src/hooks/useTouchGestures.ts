@@ -382,32 +382,44 @@ export const useWheelTouchGestures = (onSpin: () => void, disabled: boolean = fa
       onSwipe: event => {
         if (disabled) return;
 
-        // Only respond to upward swipes for spinning
-        if (event.direction === 'up' && event.velocity && event.velocity > 0.2) {
+        // Enhanced swipe detection for better accessibility
+        if (event.direction === 'up' && event.velocity && event.velocity > 0.15) {
           onSpin();
-          showTouchFeedback('Swipe detected - spinning!');
+          showTouchFeedback('Swipe up detected - spinning wheel!');
+          triggerHapticFeedback('medium'); // Stronger feedback for successful gesture
           logger.info('Wheel spin triggered by swipe gesture', {
             direction: event.direction,
             velocity: event.velocity,
             distance: event.distance,
           });
-        } else if (event.direction === 'up') {
-          showTouchFeedback('Swipe faster to spin!');
+        } else if (event.direction === 'up' && event.velocity && event.velocity > 0.05) {
+          showTouchFeedback('Swipe up faster to spin the wheel!');
+          triggerHapticFeedback('light'); // Light feedback for attempted gesture
+        } else if (event.direction === 'down') {
+          showTouchFeedback('Swipe up to spin the wheel');
+          triggerHapticFeedback('light');
+        } else if (event.direction === 'left' || event.direction === 'right') {
+          showTouchFeedback('Swipe up on the wheel to spin');
+          triggerHapticFeedback('light');
         }
       },
       onTap: () => {
         if (disabled) return;
-        // Tap gestures are handled by the button, not the wheel itself
+        // Provide feedback for tap on wheel area
+        showTouchFeedback('Tap the spin button below or swipe up to spin');
+        triggerHapticFeedback('light');
       },
       onLongPress: () => {
         if (disabled) return;
-        showTouchFeedback('Use swipe up gesture or tap the spin button');
+        showTouchFeedback('Touch help: Swipe up on wheel or tap spin button. Double tap for quick access.');
+        triggerHapticFeedback('medium');
       },
     },
     {
-      swipeThreshold: 30, // Lower threshold for wheel
-      velocityThreshold: 0.15, // Require some velocity for spin
+      swipeThreshold: 25, // Lower threshold for better accessibility
+      velocityThreshold: 0.1, // Lower velocity requirement
       enableHaptics: true,
+      enableSoundFeedback: false, // Keep sound feedback disabled for now
     }
   );
 

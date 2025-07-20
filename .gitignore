@@ -184,3 +184,7 @@ STEP_5_COMPLETION_SUMMARY.md
 .vscode/extensions.json
 .kiro/specs/projects-service-optimization/design.md
 .kiro/specs/projects-service-optimization/requirements.md
+.windsurfrules
+.superdesign
+.superdesign/*
+.cursor/rules/design.mdc
