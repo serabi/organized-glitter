@@ -78,12 +78,13 @@ Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
 const createMockProjects = (count: number): Project[] => {
   return Array.from({ length: count }, (_, index) => ({
     id: `project-${index}`,
+    userId: `user-${index % 3}`, // Add required userId field
     title: `Project ${index + 1}`,
     company: index % 2 === 0 ? `Company ${index}` : undefined,
     artist: index % 3 === 0 ? `Artist ${index}` : undefined,
     status: 'progress' as const,
-    created: new Date().toISOString(),
-    updated: new Date().toISOString(),
+    createdAt: new Date().toISOString(), // Rename from 'created' to 'createdAt'
+    updatedAt: new Date().toISOString(), // Rename from 'updated' to 'updatedAt'
   }));
 };
 

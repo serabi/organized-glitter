@@ -83,8 +83,9 @@ export function createEntityCreateMutation<TData extends Record<string, unknown>
           filterBuilder.equals('user', userId);
           filterBuilder.equals('name', processedData.name as string);
 
+          const filterString = filterBuilder.build();
           const duplicates = await pb.collection(config.collection).getList(1, 1, {
-            filter: filterBuilder.build(),
+            filter: filterString,
           });
 
           if (duplicates.items.length > 0) {
@@ -192,8 +193,9 @@ export function createEntityUpdateMutation<TData extends Record<string, unknown>
           filterBuilder.equals('name', processedData.name as string);
           filterBuilder.notEquals('id', id);
 
+          const filterString = filterBuilder.build();
           const duplicates = await pb.collection(config.collection).getList(1, 1, {
-            filter: filterBuilder.build(),
+            filter: filterString,
           });
 
           if (duplicates.items.length > 0) {

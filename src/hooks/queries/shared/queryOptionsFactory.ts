@@ -10,11 +10,11 @@ import { Collections, CompaniesResponse, ArtistsResponse } from '@/types/pocketb
 import { TagService } from '@/lib/tags';
 import { queryKeys, CompanyQueryParams } from '../queryKeys';
 import { createLogger } from '@/utils/secureLogger';
-import { 
-  getStandardQueryConfig, 
-  getFrequentQueryConfig, 
-  createRequestKey, 
-  createQueryTimer 
+import {
+  getStandardQueryConfig,
+  getFrequentQueryConfig,
+  createRequestKey,
+  createQueryTimer,
 } from './queryUtils';
 import type { Tag } from '@/types/tag';
 
