@@ -16,6 +16,7 @@ import { useEffect } from 'react';
 import {
   getSpinHistoryEnhanced,
   getSpinHistoryCountEnhanced,
+  isRandomizerError,
   type RandomizerSpinExpand,
 } from '@/services/pocketbase/randomizerService';
 import type { RandomizerSpinsResponse } from '@/types/pocketbase.types';
@@ -164,13 +165,13 @@ export const useSpinHistory = ({
     refetchOnWindowFocus: false, // Don't refetch when window gains focus
     retry: (failureCount, error) => {
       // Enhanced error handling with RandomizerError support
-      if (error && typeof error === 'object' && 'type' in error && 'canRetry' in error) {
-        const randomizerError = error as { type: string; canRetry: boolean };
+      if (isRandomizerError(error)) {
         logger.debug('RandomizerError detected', {
-          type: randomizerError.type,
-          canRetry: randomizerError.canRetry,
+          type: error.type,
+          canRetry: error.canRetry,
+          suggestedAction: error.suggestedAction,
         });
-        return randomizerError.canRetry && failureCount < 2;
+        return error.canRetry && failureCount < 2;
       }
 
       // Legacy error handling for backward compatibility

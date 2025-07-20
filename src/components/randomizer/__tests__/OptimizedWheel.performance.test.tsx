@@ -141,7 +141,7 @@ describe('OptimizedWheel Performance Tests', () => {
     it('should track render performance metrics', async () => {
       const projects = createMockProjects(10);
       // Mock console methods to capture performance logs
-      const consoleSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'debug').mockImplementation(() => { });
 
       render(<OptimizedWheel projects={projects} onSpinComplete={mockOnSpinComplete} />);
 
@@ -218,7 +218,7 @@ describe('OptimizedWheel Performance Tests', () => {
       // Mock high memory usage
       mockPerformance.memory.usedJSHeapSize = 60 * 1024 * 1024; // 60MB (above 50MB threshold)
 
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
 
       render(<OptimizedWheel projects={projects} onSpinComplete={mockOnSpinComplete} />);
 

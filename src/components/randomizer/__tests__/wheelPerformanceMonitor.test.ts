@@ -278,7 +278,11 @@ describe('useWheelPerformanceMonitoring Hook', () => {
     hook.recordMetric(metric);
     const summary = hook.getPerformanceSummary();
 
-    expect(summary.totalMetrics).toBeGreaterThan(0);
+    expect(summary.totalMetrics).toBe(1);
+    expect(summary.averageRenderTime).toBe(10);
+    expect(summary.maxRenderTime).toBe(10);
+    expect(summary.renderModeDistribution).toEqual({ css: 1 });
+    expect(summary.performanceGrade).toBe('excellent');
   });
 });
 

@@ -85,6 +85,44 @@ function createRandomizerError(
 }
 
 /**
+ * Type guard function to check if an error is a RandomizerError
+ *
+ * Provides a centralized and type-safe way to identify RandomizerError instances
+ * with proper type narrowing for TypeScript.
+ *
+ * @param error - The error object to check
+ * @returns True if the error is a RandomizerError, false otherwise
+ *
+ * @example
+ * ```typescript
+ * try {
+ *   await someRandomizerOperation();
+ * } catch (error) {
+ *   if (isRandomizerError(error)) {
+ *     // TypeScript now knows error is RandomizerError
+ *     console.log(`Error type: ${error.type}`);
+ *     console.log(`Can retry: ${error.canRetry}`);
+ *     console.log(`Suggested action: ${error.suggestedAction}`);
+ *   }
+ * }
+ * ```
+ */
+export function isRandomizerError(error: unknown): error is RandomizerError {
+  return (
+    error instanceof Error &&
+    typeof error === 'object' &&
+    error !== null &&
+    'type' in error &&
+    'canRetry' in error &&
+    'suggestedAction' in error &&
+    typeof (error as any).type === 'string' &&
+    typeof (error as any).canRetry === 'boolean' &&
+    typeof (error as any).suggestedAction === 'string' &&
+    Object.values(RandomizerErrorType).includes((error as any).type)
+  );
+}
+
+/**
  * Expand type for project relations in spin history
  */
 export interface RandomizerSpinExpand {

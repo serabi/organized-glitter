@@ -14,6 +14,7 @@ export class PocketBaseSubscriptionManager implements SubscriptionManager {
   private subscriptions: Map<string, SubscriptionCleanup> = new Map();
   private pb: PocketBase;
   private isCleaningUp: boolean = false;
+  private beforeUnloadHandler?: () => void;
   private subscriptionStats: {
     totalCreated: number;
     totalDestroyed: number;
@@ -35,9 +36,10 @@ export class PocketBaseSubscriptionManager implements SubscriptionManager {
   private setupCleanupHandlers(): void {
     // Only cleanup on actual page unload to prevent constant subscription cycling
     if (typeof window !== 'undefined') {
-      window.addEventListener('beforeunload', () => {
+      this.beforeUnloadHandler = () => {
         this.unsubscribeAll();
-      });
+      };
+      window.addEventListener('beforeunload', this.beforeUnloadHandler);
 
       // Removed aggressive visibility change handler that was causing constant cleanup cycles
       // Tab switching, minimizing, etc. should not destroy subscriptions
@@ -279,8 +281,9 @@ export class PocketBaseSubscriptionManager implements SubscriptionManager {
     this.unsubscribeAll();
 
     // Remove event listeners - only beforeunload since we removed visibilitychange
-    if (typeof window !== 'undefined') {
-      window.removeEventListener('beforeunload', this.unsubscribeAll);
+    if (typeof window !== 'undefined' && this.beforeUnloadHandler) {
+      window.removeEventListener('beforeunload', this.beforeUnloadHandler);
+      this.beforeUnloadHandler = undefined;
     }
   }
 }
