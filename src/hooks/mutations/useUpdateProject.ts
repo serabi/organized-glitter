@@ -165,7 +165,7 @@ export const useUpdateProject = () => {
 
           // Invalidate all project queries that include status counts
           queryClient.invalidateQueries({
-            queryKey: queryKeys.projects.list(user.id),
+            queryKey: queryKeys.projects.lists(),
           });
 
           // Invalidate dashboard stats for current year

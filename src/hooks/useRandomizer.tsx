@@ -160,39 +160,42 @@ export const useRandomizer = () => {
 
     const urlParams = new URLSearchParams(window.location.search);
     const projectsParam = urlParams.get('projects');
-    
+
     if (projectsParam) {
       const projectIds = projectsParam.split(',').filter(id => id.trim());
-      const validProjectIds = projectIds.filter(id => 
+      const validProjectIds = projectIds.filter(id =>
         availableProjects.some(project => project.id === id)
       );
-      
+
       if (validProjectIds.length > 0) {
         const newSelectedIds = new Set(validProjectIds);
         setSelectedProjectIds(newSelectedIds);
-        logger.debug('Loaded selected projects from URL', { 
-          urlProjectIds: projectIds, 
-          validProjectIds: validProjectIds 
+        logger.debug('Loaded selected projects from URL', {
+          urlProjectIds: projectIds,
+          validProjectIds: validProjectIds,
         });
       }
     }
   }, [availableProjects]);
 
   // Project selection handlers
-  const toggleProject = useCallback((projectId: string) => {
-    setSelectedProjectIds(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(projectId)) {
-        newSet.delete(projectId);
-        logger.debug('Project deselected', { projectId });
-      } else {
-        newSet.add(projectId);
-        logger.debug('Project selected', { projectId });
-      }
-      updateUrlParams(newSet);
-      return newSet;
-    });
-  }, [updateUrlParams]);
+  const toggleProject = useCallback(
+    (projectId: string) => {
+      setSelectedProjectIds(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(projectId)) {
+          newSet.delete(projectId);
+          logger.debug('Project deselected', { projectId });
+        } else {
+          newSet.add(projectId);
+          logger.debug('Project selected', { projectId });
+        }
+        updateUrlParams(newSet);
+        return newSet;
+      });
+    },
+    [updateUrlParams]
+  );
 
   const selectAllProjects = useCallback(() => {
     const allIds = new Set(availableProjects.map(p => p.id));

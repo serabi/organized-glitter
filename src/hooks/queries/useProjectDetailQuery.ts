@@ -181,20 +181,13 @@ export const useProjectDetailQuery = (
   isAuthenticated?: boolean,
   initialCheckComplete?: boolean
 ) => {
-  // Log auth state for debugging
-  if (process.env.NODE_ENV === 'development') {
-    projectDetailLogger.debug('Auth state:', {
-      projectId,
-      isAuthenticated,
-      initialCheckComplete,
-      enabled: !!projectId && (isAuthenticated ?? true) && (initialCheckComplete ?? true),
-    });
-  }
+  // Only log auth state once when query is first enabled
+  const isQueryEnabled = !!projectId && (isAuthenticated ?? true) && (initialCheckComplete ?? true);
 
   return useQuery({
     queryKey: queryKeys.projects.detail(projectId!),
     queryFn: () => fetchProjectDetail(projectId!),
-    enabled: !!projectId && (isAuthenticated ?? true) && (initialCheckComplete ?? true),
+    enabled: isQueryEnabled,
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: (failureCount, error) => {
       // Log retry attempts for debugging

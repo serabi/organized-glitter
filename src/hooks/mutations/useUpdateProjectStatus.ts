@@ -74,13 +74,13 @@ export const useUpdateProjectStatus = () => {
       }
 
       // Cancel any outgoing refetches to prevent race conditions
-      await queryClient.cancelQueries({ queryKey: queryKeys.projects.list(user.id) });
+      await queryClient.cancelQueries({ queryKey: queryKeys.projects.lists() });
       await queryClient.cancelQueries({ queryKey: queryKeys.projects.detail(projectId) });
 
       // Snapshot the previous values for rollback
-      const previousProjects = queryClient.getQueryData(queryKeys.projects.list(user.id));
+      const previousProjects = queryClient.getQueryData(queryKeys.projects.lists());
       const previousStatusCounts = queryClient.getQueryData([
-        ...queryKeys.projects.list(user.id),
+        ...queryKeys.projects.lists(),
         'status-counts',
       ]);
 
@@ -202,14 +202,14 @@ export const useUpdateProjectStatus = () => {
       try {
         // Rollback project lists
         if (context?.previousProjects && user?.id) {
-          queryClient.setQueryData(queryKeys.projects.list(user.id), context.previousProjects);
+          queryClient.setQueryData(queryKeys.projects.lists(), context.previousProjects);
           logger.debug('Rolled back project lists cache');
         }
 
         // Rollback status counts
         if (context?.previousStatusCounts && user?.id) {
           queryClient.setQueryData(
-            [...queryKeys.projects.list(user.id), 'status-counts'],
+            [...queryKeys.projects.lists(), 'status-counts'],
             context.previousStatusCounts
           );
           logger.debug('Rolled back status counts cache');
@@ -239,7 +239,7 @@ export const useUpdateProjectStatus = () => {
 
         // If rollback fails, invalidate caches to ensure consistency
         if (user?.id) {
-          queryClient.invalidateQueries({ queryKey: queryKeys.projects.list(user.id) });
+          queryClient.invalidateQueries({ queryKey: queryKeys.projects.lists() });
           queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(projectId) });
         }
       }
@@ -274,7 +274,7 @@ export const useUpdateProjectStatus = () => {
       // Ensure fresh data after a short delay to allow server sync
       setTimeout(() => {
         if (user?.id) {
-          queryClient.invalidateQueries({ queryKey: queryKeys.projects.list(user.id) });
+          queryClient.invalidateQueries({ queryKey: queryKeys.projects.lists() });
           queryClient.invalidateQueries({
             queryKey: queryKeys.projects.detail(variables.projectId),
           });

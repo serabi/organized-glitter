@@ -431,7 +431,10 @@ const MemoizedWheelLabel = memo<{
   );
 
   return (
-    <div className="wheel__label wheel__label--optimized wheel__label--contrast-boost" style={labelStyle}>
+    <div
+      className="wheel__label wheel__label--optimized wheel__label--contrast-boost"
+      style={labelStyle}
+    >
       {displayText}
     </div>
   );

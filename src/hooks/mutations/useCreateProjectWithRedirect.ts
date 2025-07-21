@@ -1,5 +1,4 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { startTransition } from 'react';
 import { pb } from '@/lib/pocketbase';
 import { Collections, ProjectsResponse } from '@/types/pocketbase.types';
 import { queryKeys } from '../queries/queryKeys';
@@ -211,8 +210,11 @@ export const useCreateProjectWithRedirect = () => {
     onSuccess: async data => {
       logger.info('✅ Project created successfully, initiating navigation');
 
+      // Ensure React state updates are flushed before navigation
+      await new Promise(resolve => setTimeout(resolve, 0));
+
       // Use our new navigation system for optimistic navigation
-      const navigationResult = await navigateToProject(data.id, {
+      const navigationResult = navigateToProject(data.id, {
         projectData: data,
         successMessage: `"${data.title}" has been added to your collection.`,
         replace: true, // Replace current history entry since we're coming from form
@@ -221,15 +223,19 @@ export const useCreateProjectWithRedirect = () => {
 
       if (!navigationResult.success) {
         logger.error('❌ Navigation failed:', navigationResult.error);
-        // Navigation hook already handles fallbacks and user feedback
+        // Show fallback toast since navigation failed
+        toast({
+          title: 'Navigation Warning',
+          description: `Project "${data.title}" was created but navigation failed. Please check your project list.`,
+          variant: 'default',
+        });
+      } else {
+        logger.info('✅ Navigation to project detail successful');
       }
 
-      // Add delay before cache invalidation to ensure navigation and React Router context is fully settled
-      await new Promise(resolve => setTimeout(resolve, 150));
-
-      // Defer cache invalidation to happen after navigation
-      // Use startTransition to mark cache updates as non-urgent
-      startTransition(() => {
+      // Add delay before cache invalidation to ensure navigation is complete
+      // Removed startTransition wrapper to prevent React Router conflicts
+      setTimeout(() => {
         // Invalidate all project lists for this user
         queryClient.invalidateQueries({
           queryKey: queryKeys.projects.lists(),
@@ -255,7 +261,7 @@ export const useCreateProjectWithRedirect = () => {
         }
 
         logger.info('Project creation cache invalidation completed');
-      });
+      }, 300); // Increased delay to ensure navigation completes
     },
 
     onError: error => {

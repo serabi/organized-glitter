@@ -101,6 +101,12 @@ const ProjectDetail = () => {
     logger.debug('Optimistic navigation detected:', navigationState);
   }
 
+  // Check if we have optimistic project data from navigation
+  const hasOptimisticData =
+    navigationState?.fromNavigation &&
+    navigationState?.projectData &&
+    navigationState?.projectId === projectId;
+
   // Use our project detail hook with the service layer
   const {
     project,
@@ -185,12 +191,26 @@ const ProjectDetail = () => {
     });
   };
 
-  // Show loading state while fetching project data or during auth check
-  if (loading || authLoading || !initialCheckComplete) {
+  // Use optimistic data while loading if available
+  const effectiveProject = project || (hasOptimisticData ? navigationState?.projectData : null);
+  const effectiveLoading = loading && !hasOptimisticData;
+
+  logger.debug('Project loading state:', {
+    hasProject: !!project,
+    hasOptimisticData,
+    effectiveLoading,
+    loading,
+    authLoading,
+    initialCheckComplete,
+  });
+
+  // Show loading state while fetching project data or during auth check (unless we have optimistic data)
+  if (effectiveLoading || authLoading || !initialCheckComplete) {
     logger.debug('Showing loading state:', {
-      loading,
+      effectiveLoading,
       authLoading,
       initialCheckComplete,
+      hasOptimisticData,
     });
     return (
       <MainLayout isAuthenticated={true}>
@@ -199,8 +219,14 @@ const ProjectDetail = () => {
     );
   }
 
-  // Show not found state if project doesn't exist (but only after auth is confirmed)
-  if (!project && !loading && isAuthenticated && initialCheckComplete) {
+  // Show not found state if project doesn't exist (but only after auth is confirmed and no optimistic data)
+  if (
+    !effectiveProject &&
+    !loading &&
+    !hasOptimisticData &&
+    isAuthenticated &&
+    initialCheckComplete
+  ) {
     logger.debug('Showing ProjectNotFound - confirmed project does not exist');
     return (
       <MainLayout isAuthenticated={true}>
@@ -210,7 +236,7 @@ const ProjectDetail = () => {
   }
 
   // If we get here without a project and without proper auth state, show loading
-  if (!project) {
+  if (!effectiveProject) {
     logger.debug('No project data yet, continuing to show loading...');
     return (
       <MainLayout isAuthenticated={true}>
@@ -220,7 +246,7 @@ const ProjectDetail = () => {
   }
 
   // Cast project to ProjectType to ensure type safety
-  const typedProject: ProjectType = project;
+  const typedProject: ProjectType = effectiveProject as ProjectType;
 
   return (
     <MainLayout isAuthenticated={true}>
@@ -229,10 +255,14 @@ const ProjectDetail = () => {
           <ProjectDetailView
             project={typedProject}
             isMobile={isMobile}
-            navigationState={navigationState ? {
-              from: navigationState.from,
-              randomizerState: navigationState.randomizerState
-            } : undefined}
+            navigationState={
+              navigationState
+                ? {
+                    from: navigationState.from,
+                    randomizerState: navigationState.randomizerState,
+                  }
+                : undefined
+            }
             onStatusChange={handleUpdateStatus}
             onUpdateNotes={handleUpdateNotes}
             onArchive={handleArchive}

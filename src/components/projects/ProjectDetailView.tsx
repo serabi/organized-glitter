@@ -104,8 +104,8 @@ const ProjectDetailView = ({
           {/* Navigation area - Back to Dashboard or Randomizer */}
           <div className="mb-2 flex items-center gap-4">
             {navigationState?.from === 'randomizer' && navigationState?.randomizerState ? (
-              <Link 
-                to={navigationState.randomizerState.shareUrl} 
+              <Link
+                to={navigationState.randomizerState.shareUrl}
                 className="inline-block text-accent hover:underline"
               >
                 &larr; Back to Randomizer

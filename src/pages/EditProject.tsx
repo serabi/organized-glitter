@@ -13,7 +13,10 @@ import { ArrowLeft, Save, Archive, Trash2, X } from 'lucide-react';
 import { ProjectMainTabSimple } from '@/components/projects/tabs/ProjectMainTabSimple';
 import { ProjectStatsTabSimple } from '@/components/projects/tabs/ProjectStatsTabSimple';
 import { logger } from '@/utils/logger';
+import { createLogger } from '@/utils/secureLogger';
 // Debug component removed for PocketBase migration
+
+const pageLogger = createLogger('EditProject');
 
 const EditProject = () => {
   const { id } = useParams<{ id: string }>();
@@ -30,7 +33,6 @@ const EditProject = () => {
     formData,
     navigationState,
     clearNavigationError,
-    handleFormChange,
     handleFormDataChange,
     handleSubmit,
     handleArchive,
@@ -153,11 +155,26 @@ const EditProject = () => {
               <Button
                 onClick={async () => {
                   if (formData) {
+                    pageLogger.debug('📝 Manual save button clicked', {
+                      projectId: id,
+                      hasFormData: !!formData,
+                    });
                     try {
                       await handleSubmit(formData);
+                      pageLogger.info('✅ Manual save completed successfully', {
+                        projectId: id,
+                      });
                     } catch (error) {
+                      pageLogger.error('❌ Manual save failed', {
+                        projectId: id,
+                        error,
+                      });
                       logger.error('Error submitting form:', error);
                     }
+                  } else {
+                    pageLogger.warn('🚫 Manual save clicked but no form data available', {
+                      projectId: id,
+                    });
                   }
                 }}
                 disabled={submitting || !formData}

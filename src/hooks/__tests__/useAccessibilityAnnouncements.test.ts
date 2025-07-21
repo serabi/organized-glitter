@@ -185,7 +185,9 @@ describe('useAccessibilityAnnouncements', () => {
       vi.advanceTimersByTime(100);
     });
 
-    expect(mockStatusRegion.textContent).toBe('Spinning wheel to randomly select from 5 projects. Please wait for the result...');
+    expect(mockStatusRegion.textContent).toBe(
+      'Spinning wheel to randomly select from 5 projects. Please wait for the result...'
+    );
   });
 
   it('should announce spin result correctly', () => {

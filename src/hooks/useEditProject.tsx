@@ -144,33 +144,83 @@ export const useEditProject = (projectId: string | undefined) => {
 
   // Form data change handler (full data)
   const handleFormDataChange = useCallback((data: ProjectFormValues) => {
-    setFormData(data);
-    logger.debug('Form data updated', { data });
+    setFormData(prev => {
+      // Only update if data actually changed to prevent infinite loops
+      if (prev && JSON.stringify(prev) === JSON.stringify(data)) {
+        return prev;
+      }
+      logger.debug('Form data updated', { data });
+      return data;
+    });
   }, []);
 
   // Submit handler with unified mutation
   const handleSubmit = useCallback(
     async (data: ProjectFormValues) => {
       if (!project || !data) {
-        logger.error('Missing project or form data for submit');
+        logger.error('🚫 Missing project or form data for submit', {
+          hasProject: !!project,
+          hasData: !!data,
+        });
         return;
       }
 
       try {
         setSubmitting(true);
-        logger.debug('Starting project update', { projectId: project.id });
+        logger.debug('🚀 Starting project update', {
+          projectId: project.id,
+          hasImageFile: !!data.imageFile,
+          mutationState: updateProjectMutation.status,
+        });
 
         // Use unified mutation with proper typing
         const formWithFile = { ...data, id: project.id };
-        await updateProjectMutation.mutateAsync(formWithFile);
+        logger.debug('🔄 Calling mutation with data', {
+          projectId: project.id,
+          formDataKeys: Object.keys(formWithFile),
+          hasImageFile: !!formWithFile.imageFile,
+        });
+
+        const result = await updateProjectMutation.mutateAsync(formWithFile);
+        logger.info('✅ Mutation completed successfully', {
+          projectId: project.id,
+          resultId: result?.id,
+        });
 
         // Navigate back to project detail
-        navigateToProject(project.id);
+        logger.debug('🧭 Attempting navigation to project detail', {
+          projectId: project.id,
+        });
+
+        const navigationResult = navigateToProject(project.id);
+        logger.debug('🧭 Navigation result', {
+          projectId: project.id,
+          success: navigationResult.success,
+          error: navigationResult.error,
+        });
+
+        if (!navigationResult.success) {
+          logger.error('🚫 Navigation failed after successful mutation', {
+            projectId: project.id,
+            navigationError: navigationResult.error,
+          });
+        } else {
+          logger.info('✅ Navigation completed successfully', {
+            projectId: project.id,
+          });
+        }
       } catch (error) {
-        logger.error('Error updating project', { error, projectId: project.id });
+        logger.error('❌ Error updating project', {
+          error: error instanceof Error ? error.message : error,
+          projectId: project.id,
+          mutationState: updateProjectMutation.status,
+        });
         // Error handling is already done in the mutation
       } finally {
         setSubmitting(false);
+        logger.debug('🏁 Submit handler completed', {
+          projectId: project.id,
+        });
       }
     },
     [project, updateProjectMutation, navigateToProject]

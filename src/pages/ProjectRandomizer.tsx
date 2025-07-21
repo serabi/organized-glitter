@@ -110,7 +110,7 @@ const ProjectRandomizer: React.FC = () => {
   const handleShare = React.useCallback(async () => {
     try {
       const shareUrl = getShareableUrl();
-      
+
       if (navigator.share && stats.selectedCount > 0) {
         // Use native sharing if available and there are selected projects
         await navigator.share({
@@ -124,9 +124,10 @@ const ProjectRandomizer: React.FC = () => {
         await navigator.clipboard.writeText(shareUrl);
         toast({
           title: 'URL Copied!',
-          description: stats.selectedCount > 0 
-            ? `Shareable URL with ${stats.selectedCount} selected projects copied to clipboard.`
-            : 'Randomizer URL copied to clipboard.',
+          description:
+            stats.selectedCount > 0
+              ? `Shareable URL with ${stats.selectedCount} selected projects copied to clipboard.`
+              : 'Randomizer URL copied to clipboard.',
         });
         logger.debug('URL copied to clipboard', { selectedCount: stats.selectedCount });
       }
@@ -215,7 +216,11 @@ const ProjectRandomizer: React.FC = () => {
               size="sm"
               onClick={handleShare}
               className="flex items-center gap-2"
-              title={stats.selectedCount > 0 ? `Share configuration with ${stats.selectedCount} selected projects` : 'Share randomizer URL'}
+              title={
+                stats.selectedCount > 0
+                  ? `Share configuration with ${stats.selectedCount} selected projects`
+                  : 'Share randomizer URL'
+              }
             >
               <Share2 className="h-4 w-4" />
               <span className="hidden sm:inline">Share</span>
@@ -265,14 +270,14 @@ const ProjectRandomizer: React.FC = () => {
                     )}
                     <div className="flex flex-col gap-2 sm:flex-row sm:justify-center sm:gap-3">
                       <Button asChild>
-                        <Link 
+                        <Link
                           to={`/projects/${lastSpinResult.id}`}
                           state={{
                             from: 'randomizer',
                             randomizerState: {
                               selectedProjects: Array.from(selectedProjectIds),
                               shareUrl: getShareableUrl(),
-                            }
+                            },
                           }}
                         >
                           <ExternalLink className="mr-2 h-4 w-4" />
