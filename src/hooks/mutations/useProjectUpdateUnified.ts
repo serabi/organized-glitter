@@ -1,5 +1,5 @@
 /**
- * Unified project update mutation hook with proper file upload handling
+ * Unified project update mutation hook with file upload handling
  * Replaces fragmented update logic with a single, type-safe approach
  */
 
@@ -10,6 +10,7 @@ import { queryKeys } from '../queries/queryKeys';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { createLogger } from '@/utils/secureLogger';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
 import { ClientResponseError } from 'pocketbase';
 import type { ProjectUpdatePayload, ProjectFormWithFile } from '@/types/file-upload';
 import { mapFormDataToPocketBase } from '@/utils/field-mapping';
@@ -29,6 +30,7 @@ export const useProjectUpdateUnified = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
+  const userTimezone = useUserTimezone();
 
   return useMutation({
     mutationFn: async (
@@ -54,12 +56,13 @@ export const useProjectUpdateUnified = () => {
 
         projectId = formPayload.id;
 
-        // Map form data to PocketBase format
-        const mappedData = mapFormDataToPocketBase(formPayload);
+        // Map form data to PocketBase format with user timezone
+        const mappedData = mapFormDataToPocketBase(formPayload, userTimezone);
 
         // Auto-set date_completed when status changes to 'completed'
         if (mappedData.status === 'completed' && !mappedData.date_completed) {
-          mappedData.date_completed = new Date().toISOString().split('T')[0];
+          const { toUserDateString } = await import('@/utils/timezoneUtils');
+          mappedData.date_completed = toUserDateString(new Date(), userTimezone);
           logger.debug('Auto-setting date_completed for completed project');
         }
 

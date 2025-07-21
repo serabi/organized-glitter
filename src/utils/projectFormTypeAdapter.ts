@@ -1,16 +1,23 @@
 import { ProjectFormSchemaType } from '@/schemas/project.schema';
 import { ProjectFormValues } from '@/types/project';
+import { toUserDateString } from '@/utils/timezoneUtils';
 
 /**
  * Converts ProjectFormSchemaType (Zod schema output) to ProjectFormValues (legacy form interface)
  * This ensures type compatibility between the form schema and existing form handlers
  */
-export function convertSchemaToFormValues(data: ProjectFormSchemaType): ProjectFormValues {
-  // Helper function to safely convert dates to strings
+export function convertSchemaToFormValues(
+  data: ProjectFormSchemaType,
+  userTimezone?: string
+): ProjectFormValues {
+  // Helper function to safely convert dates to strings using timezone-aware conversion
   const dateToString = (date: Date | string | null | undefined): string | undefined => {
     if (!date) return undefined;
     if (typeof date === 'string') return date;
-    if (date instanceof Date) return date.toISOString().split('T')[0];
+    if (date instanceof Date) {
+      // Use timezone-aware conversion instead of naive UTC conversion
+      return toUserDateString(date, userTimezone) || undefined;
+    }
     return undefined;
   };
 

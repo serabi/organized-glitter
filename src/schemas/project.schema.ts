@@ -57,38 +57,106 @@ export const BaseProjectFormObjectSchema = z.object({
   datePurchased: z.preprocess(
     arg => {
       if (!arg || arg === '') return undefined;
-      if (typeof arg === 'string' && arg.trim() !== '') return new Date(arg);
+      if (typeof arg === 'string' && arg.trim() !== '') return arg;
       if (arg instanceof Date) return arg;
       return undefined;
     },
-    z.date({ invalid_type_error: 'Invalid purchase date' }).optional().nullable()
+    z
+      .union([z.string(), z.date()])
+      .optional()
+      .nullable()
+      .refine(
+        value => {
+          if (!value) return true;
+          if (typeof value === 'string') {
+            // Validate YYYY-MM-DD format
+            return /^\d{4}-\d{2}-\d{2}$/.test(value);
+          }
+          if (value instanceof Date) {
+            return !isNaN(value.getTime());
+          }
+          return false;
+        },
+        { message: 'Invalid purchase date format' }
+      )
   ),
   dateReceived: z.preprocess(
     arg => {
       if (!arg || arg === '') return undefined;
-      if (typeof arg === 'string' && arg.trim() !== '') return new Date(arg);
+      if (typeof arg === 'string' && arg.trim() !== '') return arg;
       if (arg instanceof Date) return arg;
       return undefined;
     },
-    z.date({ invalid_type_error: 'Invalid received date' }).optional().nullable()
+    z
+      .union([z.string(), z.date()])
+      .optional()
+      .nullable()
+      .refine(
+        value => {
+          if (!value) return true;
+          if (typeof value === 'string') {
+            // Validate YYYY-MM-DD format
+            return /^\d{4}-\d{2}-\d{2}$/.test(value);
+          }
+          if (value instanceof Date) {
+            return !isNaN(value.getTime());
+          }
+          return false;
+        },
+        { message: 'Invalid received date format' }
+      )
   ),
   dateStarted: z.preprocess(
     arg => {
       if (!arg || arg === '') return undefined;
-      if (typeof arg === 'string' && arg.trim() !== '') return new Date(arg);
+      if (typeof arg === 'string' && arg.trim() !== '') return arg;
       if (arg instanceof Date) return arg;
       return undefined;
     },
-    z.date({ invalid_type_error: 'Invalid start date' }).optional().nullable()
+    z
+      .union([z.string(), z.date()])
+      .optional()
+      .nullable()
+      .refine(
+        value => {
+          if (!value) return true;
+          if (typeof value === 'string') {
+            // Validate YYYY-MM-DD format
+            return /^\d{4}-\d{2}-\d{2}$/.test(value);
+          }
+          if (value instanceof Date) {
+            return !isNaN(value.getTime());
+          }
+          return false;
+        },
+        { message: 'Invalid start date format' }
+      )
   ),
   dateCompleted: z.preprocess(
     arg => {
       if (!arg || arg === '') return undefined;
-      if (typeof arg === 'string' && arg.trim() !== '') return new Date(arg);
+      if (typeof arg === 'string' && arg.trim() !== '') return arg;
       if (arg instanceof Date) return arg;
       return undefined;
     },
-    z.date({ invalid_type_error: 'Invalid completion date' }).optional().nullable()
+    z
+      .union([z.string(), z.date()])
+      .optional()
+      .nullable()
+      .refine(
+        value => {
+          if (!value) return true;
+          if (typeof value === 'string') {
+            // Validate YYYY-MM-DD format
+            return /^\d{4}-\d{2}-\d{2}$/.test(value);
+          }
+          if (value instanceof Date) {
+            return !isNaN(value.getTime());
+          }
+          return false;
+        },
+        { message: 'Invalid completion date format' }
+      )
   ),
   generalNotes: z.string().max(5000, 'Notes must be 5000 characters or less').optional().nullable(),
   imageUrl: z
@@ -133,10 +201,21 @@ export const BaseProjectFormObjectSchema = z.object({
     .nullable(), // Changed from tagNames to tagIds
 });
 
+// Helper function to convert date field to Date object for comparison
+const toDateForComparison = (dateField: string | Date | null | undefined): Date | null => {
+  if (!dateField) return null;
+  if (typeof dateField === 'string') return new Date(dateField);
+  if (dateField instanceof Date) return dateField;
+  return null;
+};
+
 // Apply refinements to the base object schema
 export const ProjectFormSchema = BaseProjectFormObjectSchema.refine(
   data => {
-    if (data.datePurchased && data.dateStarted && data.datePurchased > data.dateStarted) {
+    const purchasedDate = toDateForComparison(data.datePurchased);
+    const startedDate = toDateForComparison(data.dateStarted);
+
+    if (purchasedDate && startedDate && purchasedDate > startedDate) {
       return false;
     }
     return true;
@@ -147,7 +226,10 @@ export const ProjectFormSchema = BaseProjectFormObjectSchema.refine(
   }
 ).refine(
   data => {
-    if (data.dateStarted && data.dateCompleted && data.dateStarted > data.dateCompleted) {
+    const startedDate = toDateForComparison(data.dateStarted);
+    const completedDate = toDateForComparison(data.dateCompleted);
+
+    if (startedDate && completedDate && startedDate > completedDate) {
       return false;
     }
     return true;

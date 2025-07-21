@@ -30,12 +30,12 @@ export function mapFormDataToPocketBase(
 
   // Helper function to format dates for PocketBase (YYYY-MM-DD format only)
   const formatDateForPocketBase = (
-    value: string | undefined,
+    value: string | Date | undefined,
     userTimezone?: string
   ): string | null => {
     if (!value || value === '') return null;
 
-    // Use timezone-safe conversion
+    // Use timezone-safe conversion that handles both strings and Date objects
     return toUserDateString(value, userTimezone);
   };
 
