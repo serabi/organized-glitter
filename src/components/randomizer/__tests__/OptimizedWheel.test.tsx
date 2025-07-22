@@ -481,23 +481,45 @@ describe('OptimizedWheel', () => {
 
     it('optimizes re-renders with React.memo', () => {
       const renderSpy = vi.fn();
-
-      // Create a wrapper component to track renders
-      const TestWrapper = ({ projects }: { projects: typeof mockProjects }) => {
+      
+      // Create a component that tracks when OptimizedWheel actually renders
+      const SpiedOptimizedWheel = React.memo((props: React.ComponentProps<typeof OptimizedWheel>) => {
         renderSpy();
-        return <OptimizedWheel projects={projects} onSpinComplete={mockOnSpinComplete} />;
-      };
+        return <OptimizedWheel {...props} />;
+      });
 
-      const { rerender } = render(<TestWrapper projects={mockProjects} />);
+      const { rerender } = render(
+        <SpiedOptimizedWheel projects={mockProjects} onSpinComplete={mockOnSpinComplete} />
+      );
 
       // Initial render
       expect(renderSpy).toHaveBeenCalledTimes(1);
 
       // Re-render with same props should not trigger re-render due to memo
-      rerender(<TestWrapper projects={mockProjects} />);
+      rerender(
+        <SpiedOptimizedWheel projects={mockProjects} onSpinComplete={mockOnSpinComplete} />
+      );
 
-      // Should still be only 1 call due to memoization
-      expect(renderSpy).toHaveBeenCalledTimes(2); // Parent re-renders but child is memoized
+      // Should still be only 1 call due to memoization (props haven't changed)
+      expect(renderSpy).toHaveBeenCalledTimes(1);
+
+      // Now test with changed props to verify re-rendering works
+      const changedProjects = [...mockProjects, { 
+        id: 'new-project', 
+        title: 'New Project', 
+        description: 'A new test project',
+        company: 'Test Company',
+        status: 'planned' as const,
+        datePurchased: new Date().toISOString(),
+        artist: 'Test Artist'
+      }];
+
+      rerender(
+        <SpiedOptimizedWheel projects={changedProjects} onSpinComplete={mockOnSpinComplete} />
+      );
+
+      // Should trigger re-render when props change
+      expect(renderSpy).toHaveBeenCalledTimes(2);
     });
   });
 });

@@ -33,6 +33,31 @@ import type { PocketBaseError } from '@/types/pocketbase-common';
 
 const logger = createLogger('RandomizerService');
 
+/**
+ * Safely truncates userId for logging to prevent sensitive data exposure
+ * Shows first 3 and last 3 characters with asterisks in between
+ * @param userId - The userId to truncate
+ * @returns Truncated userId safe for logging
+ */
+const truncateUserId = (userId: string): string => {
+  if (!userId || typeof userId !== 'string') return '[INVALID_USER_ID]';
+  if (userId.length <= 6) return '*'.repeat(userId.length);
+  return `${userId.slice(0, 3)}${'*'.repeat(Math.max(3, userId.length - 6))}${userId.slice(-3)}`;
+};
+
+/**
+ * Safely redacts userId from filter strings for logging
+ * @param filter - PocketBase filter string that may contain userId
+ * @returns Filter with userId redacted
+ */
+const redactFilterUserId = (filter: string): string => {
+  if (!filter || typeof filter !== 'string') return filter;
+  // Replace any userId that looks like a 15-character PocketBase ID
+  return filter.replace(/([a-zA-Z0-9]{15})/g, match => {
+    return truncateUserId(match);
+  });
+};
+
 interface QueryOptions {
   filter: string;
   sort: string;
@@ -446,7 +471,7 @@ async function paginatedBatchDelete(
 
   logger.debug('Starting paginated batch deletion', {
     collectionName,
-    filter,
+    filter: redactFilterUserId(filter),
     sort,
     pageSize,
     batchDelayMs,
@@ -508,7 +533,7 @@ async function paginatedBatchDelete(
     } catch (error) {
       logger.error('Failed to fetch records batch during deletion', {
         collectionName,
-        filter,
+        filter: redactFilterUserId(filter),
         error,
       });
       throw error; // Re-throw fetch errors as they indicate fundamental issues
@@ -518,7 +543,7 @@ async function paginatedBatchDelete(
   logger.debug('Paginated batch deletion completed', {
     collectionName,
     totalDeleted,
-    filter,
+    filter: redactFilterUserId(filter),
   });
 
   return totalDeleted;
@@ -577,6 +602,7 @@ export async function createSpinEnhanced(
       selected_projects: params.selected_projects,
       selected_count: params.selected_projects.length,
       spun_at: new Date().toISOString(),
+      ...('metadata' in params && params.metadata ? { metadata: params.metadata } : {}),
     };
 
     const record = await pb
@@ -870,7 +896,7 @@ export async function getSpinHistoryCountEnhanced(userId: string): Promise<numbe
       );
     }
 
-    logger.debug('Fetching enhanced spin history count', { userId });
+    logger.debug('Fetching enhanced spin history count', { userId: truncateUserId(userId) });
 
     // Fetch only the first record to get totalItems count
     const result = await pb.collection(Collections.RandomizerSpins).getList(1, 1, {
@@ -989,7 +1015,9 @@ export async function clearSpinHistoryEnhanced(userId: string): Promise<number> 
       );
     }
 
-    logger.debug('Clearing enhanced spin history using paginated deletion', { userId });
+    logger.debug('Clearing enhanced spin history using paginated deletion', {
+      userId: truncateUserId(userId),
+    });
 
     const totalDeleted = await paginatedBatchDelete(Collections.RandomizerSpins, {
       filter: pb.filter('user = {:userId}', { userId }),
@@ -997,10 +1025,10 @@ export async function clearSpinHistoryEnhanced(userId: string): Promise<number> 
     });
 
     if (totalDeleted === 0) {
-      logger.debug('No spin history to clear', { userId });
+      logger.debug('No spin history to clear', { userId: truncateUserId(userId) });
     } else {
       logger.info('Enhanced spin history cleared successfully', {
-        userId,
+        userId: truncateUserId(userId),
         totalDeleted,
       });
     }
@@ -1117,7 +1145,7 @@ export async function getLastSpinEnhanced(
       );
     }
 
-    logger.debug('Fetching enhanced last spin', { userId, expandProject });
+    logger.debug('Fetching enhanced last spin', { userId: truncateUserId(userId), expandProject });
 
     const queryOptions: QueryOptions = {
       sort: '-spun_at',
@@ -1145,7 +1173,7 @@ export async function getLastSpinEnhanced(
     if (error && typeof error === 'object' && 'status' in error) {
       const pbError = error as PocketBaseError;
       if (pbError.status === 404) {
-        logger.debug('No spin records found for user', { userId });
+        logger.debug('No spin records found for user', { userId: truncateUserId(userId) });
         return null;
       }
     }
@@ -1295,10 +1323,10 @@ export async function cleanupOldSpinsEnhanced(
     });
 
     if (totalDeleted === 0) {
-      logger.debug('No old spins to cleanup', { userId, daysToKeep });
+      logger.debug('No old spins to cleanup', { userId: truncateUserId(userId), daysToKeep });
     } else {
       logger.info('Enhanced old spins cleaned up successfully', {
-        userId,
+        userId: truncateUserId(userId),
         totalDeleted,
         daysToKeep,
         cutoffDate: cutoffISO,
@@ -1645,7 +1673,7 @@ export async function getSpinStatisticsEnhanced(
     cutoffDate.setDate(cutoffDate.getDate() - daysBack);
     const cutoffISO = cutoffDate.toISOString();
 
-    logger.debug('Fetching enhanced spin statistics', { userId, daysBack });
+    logger.debug('Fetching enhanced spin statistics', { userId: truncateUserId(userId), daysBack });
 
     // Get all spins within the time range
     const spins = await pb
@@ -1780,7 +1808,7 @@ export async function performBatchOperation(
         filter = pb.filter('user = {:userId}', { userId });
         sort = 'created';
         break;
-      case 'cleanup':
+      case 'cleanup': {
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - 90); // 90 days default
         const cutoffISO = cutoffDate.toISOString();
@@ -1790,6 +1818,7 @@ export async function performBatchOperation(
         });
         sort = 'spun_at';
         break;
+      }
       default:
         throw createRandomizerError(
           RandomizerErrorType.VALIDATION_ERROR,

@@ -235,6 +235,7 @@ Project randomizer spin history for tracking which projects users have randomly 
 - `project` (relation to projects, optional, set null on delete)
 - `project_title` (text, required) - Stores project title for historical reference
 - `selected_projects` (JSON, required) - Array of project IDs that were available during spin
+- `metadata` (JSON, optional) - Analytics metadata including selection time, device type, and spin method
 - `spun_at` (date, required) - Timestamp when the spin occurred
 - `created`, `updated` (auto-managed timestamps)
 
