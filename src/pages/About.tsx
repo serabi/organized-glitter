@@ -1,8 +1,5 @@
 import MainLayout from '@/components/layout/MainLayout';
-import { MessageCircle, ExternalLink, Heart } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { showUserReportDialog } from '@/components/FeedbackDialogStore';
+import { Heart } from 'lucide-react';
 
 const About = () => {
   return (
@@ -50,91 +47,19 @@ const About = () => {
           </div>
         </section>
 
-        <section className="rounded-lg border border-border/50 bg-white p-6 shadow-sm transition-shadow hover:shadow-md dark:border-border/30 dark:bg-[#1a1a1a]">
-          <h2 className="mb-6 flex items-center gap-2 text-2xl font-semibold">
-            <MessageCircle className="h-6 w-6" />
-            Get in Touch
-          </h2>
-
-          <div className="space-y-6">
-            <p className="leading-relaxed text-foreground/90">
-              I'd love to hear from you about your experience with Organized Glitter, if you have
-              feature suggestions, or even just to connect with other diamond painters!
-            </p>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              {/* Feedback Button */}
-              <Card className="transition-shadow hover:shadow-md">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <MessageCircle className="h-5 w-5 text-primary" />
-                    Send Feedback
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="mb-4 text-sm text-muted-foreground">
-                    Use the built-in feedback system to share thoughts or report bugs.
-                  </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      showUserReportDialog({
-                        title: 'Share Your Feedback',
-                        subtitle:
-                          "Tell me about your experience with Organized Glitter, suggest features, or report any issues you've encountered.",
-                        currentPage: 'About Page',
-                      });
-                    }}
-                    className="w-full"
-                  >
-                    <MessageCircle className="mr-2 h-4 w-4" />
-                    Send A Message
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* Feature Requests */}
-              <Card className="transition-shadow hover:shadow-md">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <ExternalLink className="h-5 w-5 text-primary" />
-                    Feature Requests
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="mb-4 text-sm text-muted-foreground">
-                    Vote on upcoming features and submit detailed feature requests.
-                  </p>
-                  <Button variant="outline" size="sm" asChild className="w-full">
-                    <a
-                      href="https://organizedglitter.featurebase.app"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <ExternalLink className="mr-2 h-4 w-4" />
-                      Visit Featurebase
-                    </a>
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="mt-8 rounded-lg border border-amber-200 bg-amber-50 p-6 shadow-sm dark:border-amber-800/70 dark:bg-amber-900/30">
-              <div className="flex items-start gap-3">
-                <Heart className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
-                <div>
-                  <p className="text-sm leading-relaxed text-amber-800 dark:text-amber-100">
-                    <span className="font-semibold text-amber-900 dark:text-amber-50">
-                      A labor of love:
-                    </span>{' '}
-                    This app is maintained by one person who is learning as she goes, and is free of
-                    charge to use. Please be understanding when reporting bugs or looking for
-                    features to be added. Some changes may take awhile depending on complexity and
-                    my time.
-                  </p>
-                </div>
-              </div>
+        <section className="rounded-lg border border-amber-200 bg-amber-50 p-6 shadow-sm dark:border-amber-800/70 dark:bg-amber-900/30">
+          <div className="flex items-start gap-3">
+            <Heart className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+            <div>
+              <p className="text-sm leading-relaxed text-amber-800 dark:text-amber-100">
+                <span className="font-semibold text-amber-900 dark:text-amber-50">
+                  A labor of love:
+                </span>{' '}
+                This app is maintained by one person who is learning as she goes, and is free of
+                charge to use. Please be understanding when reporting bugs or looking for
+                features to be added. Some changes may take awhile depending on complexity and
+                my time.
+              </p>
             </div>
           </div>
         </section>
