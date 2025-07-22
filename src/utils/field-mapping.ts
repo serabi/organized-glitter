@@ -35,7 +35,13 @@ export function mapFormDataToPocketBase(
   ): string | null => {
     if (!value || value === '') return null;
 
-    // Use timezone-safe conversion that handles both strings and Date objects
+    // If value is already a YYYY-MM-DD string (from HTML5 date input), return as-is
+    // HTML5 date inputs already represent the user's intended date
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      return value;
+    }
+
+    // Use timezone-safe conversion only for Date objects or other string formats
     return toUserDateString(value, userTimezone);
   };
 

@@ -22,10 +22,13 @@ import { ProjectFormValues } from '@/types/project';
 import { NewProjectMainTab } from '@/components/projects/tabs/NewProjectMainTab';
 import { NewProjectStatsTab } from '@/components/projects/tabs/NewProjectStatsTab';
 import { secureLogger } from '../utils/secureLogger';
+import { mapFormDataToPocketBase } from '@/utils/field-mapping';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
 
 const NewProject = () => {
   const { user, isLoading: authLoading } = useAuth();
   const { companyNames, artistNames, isLoading } = useMetadata();
+  const userTimezone = useUserTimezone();
   const createProjectMutation = useCreateProjectWithRedirect();
   const createCompanyMutation = useCreateCompany();
   const createArtistMutation = useCreateArtist();
@@ -135,24 +138,12 @@ const NewProject = () => {
         });
       }
 
-      // Create the project
+      // Create the project using timezone-aware field mapping
+      const mappedFormData = mapFormDataToPocketBase(data, userTimezone);
       const projectData = {
         title: data.title.trim(),
         user: user.id,
-        status: data.status || 'wishlist',
-        company: data.company || null,
-        artist: data.artist || null,
-        drill_shape: data.drillShape || null,
-        date_purchased: data.datePurchased || null,
-        date_received: data.dateReceived || null,
-        date_started: data.dateStarted || null,
-        date_completed: data.dateCompleted || null,
-        general_notes: data.generalNotes || null,
-        source_url: data.sourceUrl || null,
-        total_diamonds: data.totalDiamonds ? Number(data.totalDiamonds) : null,
-        width: data.width ? Number(data.width) : null,
-        height: data.height ? Number(data.height) : null,
-        kit_category: data.kit_category || 'full',
+        ...mappedFormData,
         image: data.imageFile || null,
         tagIds: data.tags?.map(tag => tag.id) || [],
       };

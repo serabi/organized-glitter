@@ -1,8 +1,9 @@
 // filepath: /Users/sarahwolffmilligan/Development/lovable/organized-glitter/src/hooks/useProgressNoteForm.ts
 import { useState, useCallback } from 'react';
-import { format } from 'date-fns';
 import { useProgressNoteFormTracking } from './useProgressNoteFormTracking';
 import { useProgressImageCompression } from './useProgressImageCompression';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
+import { getCurrentDateInUserTimezone } from '@/utils/timezoneUtils';
 import { analytics } from '@/services/analytics';
 import { logger } from '@/utils/logger';
 import {
@@ -29,7 +30,8 @@ export const useProgressNoteForm = ({
   onSuccess,
   disabled = false,
 }: UseProgressNoteFormProps) => {
-  const [date, setDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
+  const userTimezone = useUserTimezone();
+  const [date, setDate] = useState<string>(getCurrentDateInUserTimezone(userTimezone));
   const [content, setContent] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,10 +44,10 @@ export const useProgressNoteForm = ({
   const resetForm = useCallback(() => {
     setContent('');
     setImageFile(null);
-    setDate(format(new Date(), 'yyyy-MM-dd'));
+    setDate(getCurrentDateInUserTimezone(userTimezone));
     setErrors({});
     resetCompressionState();
-  }, [resetCompressionState]);
+  }, [resetCompressionState, userTimezone]);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
