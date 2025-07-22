@@ -21,7 +21,6 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ProjectType, ProjectStatus, ProgressNote } from '@/types/project';
-import { PocketBaseUser } from '@/contexts/AuthContext.types';
 import ImageGallery from '@/components/projects/ImageGallery';
 import ProjectDetails from '@/components/projects/ProjectDetails';
 import ProjectNotes from '@/components/projects/form/ProjectNotes';
@@ -49,6 +48,14 @@ interface ProjectDetailViewProps {
   };
   /** Whether the interface is in mobile mode */
   isMobile: boolean;
+  /** Navigation state from the previous page */
+  navigationState?: {
+    from?: string;
+    randomizerState?: {
+      selectedProjects: string[];
+      shareUrl: string;
+    };
+  };
   /** Handler for project status changes */
   onStatusChange: (status: ProjectStatus) => void;
   /** Handler for updating project notes */
@@ -61,8 +68,6 @@ interface ProjectDetailViewProps {
   navigateToEdit: () => void;
   /** Whether any operation is currently submitting */
   isSubmitting?: boolean;
-  /** Current authenticated user */
-  user: PocketBaseUser | null;
 }
 
 /**
@@ -84,23 +89,32 @@ interface ProjectDetailViewProps {
 const ProjectDetailView = ({
   project,
   isMobile,
+  navigationState,
   onStatusChange,
   onUpdateNotes,
   onArchive,
   onDelete,
   navigateToEdit,
   isSubmitting = false,
-  user,
 }: ProjectDetailViewProps) => {
   return (
     <div className="container mx-auto px-4 py-6">
       <div className="mb-6 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
         <div className="flex-1">
-          {/* Navigation area - Back to Dashboard */}
+          {/* Navigation area - Back to Dashboard or Randomizer */}
           <div className="mb-2 flex items-center gap-4">
-            <Link to="/dashboard" className="inline-block text-accent hover:underline">
-              &larr; Back to Dashboard
-            </Link>
+            {navigationState?.from === 'randomizer' && navigationState?.randomizerState ? (
+              <Link
+                to={navigationState.randomizerState.shareUrl}
+                className="inline-block text-accent hover:underline"
+              >
+                &larr; Back to Randomizer
+              </Link>
+            ) : (
+              <Link to="/dashboard" className="inline-block text-accent hover:underline">
+                &larr; Back to Dashboard
+              </Link>
+            )}
           </div>
           <h1 className="text-2xl font-bold">{project.title || 'Untitled Project'}</h1>
           {!project.title && <p className="text-red-500">Warning: Project title is missing</p>}

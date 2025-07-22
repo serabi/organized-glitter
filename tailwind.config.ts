@@ -18,9 +18,18 @@ export default {
         '2xl': '1400px',
       },
     },
+    screens: {
+      xs: '480px',
+      sm: '640px',
+      md: '768px',
+      lg: '1024px',
+      xl: '1280px',
+      '2xl': '1536px',
+    },
     extend: {
       spacing: {
-        '120': '30rem', // 480px for tablet wheel size
+        '105': '26.25rem', // 420px for tablet landscape wheel size
+        '120': '30rem', // 480px for large tablet wheel size
         '140': '35rem', // 560px for desktop wheel size
       },
       colors: {

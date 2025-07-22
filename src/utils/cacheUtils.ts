@@ -4,7 +4,7 @@
  * This module provides standardized utilities for updating React Query caches
  * with optimistic updates, maintaining sort order and filter states.
  *
- * @author serabi
+ * @author @serabi
  * @since 1.2.0
  */
 
@@ -44,8 +44,7 @@ export interface ProjectsQueryData {
 export const updateProjectInCache = (
   queryClient: QueryClient,
   projectId: string,
-  updatedProject: Project,
-  userId: string
+  updatedProject: Project
 ): void => {
   try {
     // Update the specific project detail cache
@@ -74,7 +73,7 @@ export const updateProjectInCache = (
         }
       });
 
-    // Advanced queries are invalidated by error handler and other mutations
+    // Project queries are invalidated by error handler and other mutations
     // to ensure data freshness without complex optimistic updates
 
     logger.debug(`Successfully updated project ${projectId} in cache`);
@@ -88,9 +87,6 @@ export const updateProjectInCache = (
     });
     queryClient.invalidateQueries({
       queryKey: queryKeys.projects.lists(),
-    });
-    queryClient.invalidateQueries({
-      queryKey: queryKeys.projects.advanced(userId),
     });
   }
 };
@@ -113,11 +109,7 @@ export const updateProjectInCache = (
  * removeProjectFromCache(queryClient, 'project-123', 'user-456');
  * ```
  */
-export const removeProjectFromCache = (
-  queryClient: QueryClient,
-  projectId: string,
-  userId: string
-): void => {
+export const removeProjectFromCache = (queryClient: QueryClient, projectId: string): void => {
   try {
     // Remove the specific project detail cache
     queryClient.removeQueries({
@@ -146,11 +138,6 @@ export const removeProjectFromCache = (
         }
       });
 
-    // Invalidate advanced queries to ensure accurate counts
-    queryClient.invalidateQueries({
-      queryKey: queryKeys.projects.advanced(userId),
-    });
-
     logger.debug(`Successfully removed project ${projectId} from cache`);
   } catch (error) {
     logger.error('Error removing project from cache:', error);
@@ -159,9 +146,6 @@ export const removeProjectFromCache = (
     logger.warn('Falling back to cache invalidation due to removal failure');
     queryClient.invalidateQueries({
       queryKey: queryKeys.projects.lists(),
-    });
-    queryClient.invalidateQueries({
-      queryKey: queryKeys.projects.advanced(userId),
     });
   }
 };
@@ -185,11 +169,7 @@ export const removeProjectFromCache = (
  * addProjectToCache(queryClient, newProjectData, 'user-456');
  * ```
  */
-export const addProjectToCache = (
-  queryClient: QueryClient,
-  newProject: Project,
-  userId: string
-): void => {
+export const addProjectToCache = (queryClient: QueryClient, newProject: Project): void => {
   try {
     // Set the project detail cache
     queryClient.setQueryData(queryKeys.projects.detail(newProject.id), newProject);
@@ -218,11 +198,6 @@ export const addProjectToCache = (
         }
       });
 
-    // Invalidate advanced queries to ensure accurate counts
-    queryClient.invalidateQueries({
-      queryKey: queryKeys.projects.advanced(userId),
-    });
-
     logger.debug(`Successfully added project ${newProject.id} to cache`);
   } catch (error) {
     logger.error('Error adding project to cache:', error);
@@ -231,9 +206,6 @@ export const addProjectToCache = (
     logger.warn('Falling back to cache invalidation due to addition failure');
     queryClient.invalidateQueries({
       queryKey: queryKeys.projects.lists(),
-    });
-    queryClient.invalidateQueries({
-      queryKey: queryKeys.projects.advanced(userId),
     });
   }
 };

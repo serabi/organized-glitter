@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { logger } from '@/utils/logger';
 
 interface LocationSyncProviderProps {

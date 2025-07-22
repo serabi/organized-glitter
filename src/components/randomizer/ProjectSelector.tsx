@@ -5,17 +5,18 @@
  * for inclusion in the randomizer wheel. Features checkbox selection, batch operations,
  * loading states, and responsive design with accessibility support.
  *
- * @author Generated with Claude Code
+ * @author @serabi
  * @version 1.0.0
- * @since 2024-06-28
+ * @since 2025-06-28
  */
 
 import React, { useMemo } from 'react';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Project } from '@/types/project';
 import { createLogger } from '@/utils/secureLogger';
+import { useIsMobile, useIsTouchDevice } from '@/hooks/use-mobile';
+import { RippleEffect } from '@/components/ui/ripple-effect';
 
 const logger = createLogger('ProjectSelector');
 
@@ -102,6 +103,8 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
   onSelectNone,
   isLoading = false,
 }) => {
+  const isMobile = useIsMobile();
+  const isTouchDevice = useIsTouchDevice();
   /**
    * Memoized statistics about project selection state
    * @type {Object} stats - Selection statistics
@@ -121,18 +124,35 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
+      <div className={`${isMobile ? 'space-y-3' : 'space-y-4'}`}>
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Select Projects</h3>
-          <div className="text-sm text-muted-foreground">Loading...</div>
+          <h3 className={`font-semibold ${isMobile ? 'text-base' : 'text-lg'}`}>Select Projects</h3>
+          <div className={`text-muted-foreground ${isMobile ? 'text-xs' : 'text-sm'}`}>
+            Loading...
+          </div>
         </div>
         <div className="space-y-2">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="flex items-center space-x-3 rounded-lg border p-3">
-              <div className="h-4 w-4 animate-pulse rounded bg-gray-200" />
+            <div
+              key={i}
+              className={`flex items-center rounded-lg border ${
+                isMobile ? 'space-x-2 p-2.5' : 'space-x-3 p-3'
+              }`}
+            >
+              <div
+                className={`animate-pulse rounded bg-gray-200 ${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`}
+              />
               <div className="flex-1">
-                <div className="mb-2 h-4 w-3/4 animate-pulse rounded bg-gray-200" />
-                <div className="h-3 w-1/2 animate-pulse rounded bg-gray-100" />
+                <div
+                  className={`mb-2 animate-pulse rounded bg-gray-200 ${
+                    isMobile ? 'h-3 w-3/4' : 'h-4 w-3/4'
+                  }`}
+                />
+                <div
+                  className={`animate-pulse rounded bg-gray-100 ${
+                    isMobile ? 'h-2 w-1/2' : 'h-3 w-1/2'
+                  }`}
+                />
               </div>
             </div>
           ))}
@@ -143,48 +163,90 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
 
   if (projects.length === 0) {
     return (
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Select Projects</h3>
-        <div className="py-8 text-center text-muted-foreground">
-          <p className="mb-2 text-base">No projects in progress</p>
-          <p className="text-sm">Start some projects from your stash to use the randomizer!</p>
+      <div className={`${isMobile ? 'space-y-3' : 'space-y-4'}`}>
+        <h3 className={`font-semibold ${isMobile ? 'text-base' : 'text-lg'}`}>Select Projects</h3>
+        <div className={`text-center text-muted-foreground ${isMobile ? 'py-6' : 'py-8'}`}>
+          <p className={`mb-2 ${isMobile ? 'text-sm' : 'text-base'}`}>No projects in progress</p>
+          <p className={`${isMobile ? 'text-xs' : 'text-sm'}`}>
+            Start some projects from your stash to use the randomizer!
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {/* Header with selection controls */}
+    <div className={`${isMobile ? 'space-y-3' : 'space-y-4'}`}>
+      {/* Header with selection controls - Enhanced Mobile Layout */}
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Select Projects</h3>
-        <div className="text-sm text-muted-foreground">
+        <h3 className={`font-semibold ${isMobile ? 'text-base' : 'text-lg'}`}>Select Projects</h3>
+        <div className={`text-muted-foreground ${isMobile ? 'text-xs' : 'text-sm'}`}>
           {stats.selected} of {stats.total} selected
         </div>
       </div>
 
-      {/* Quick selection buttons */}
-      <div className="flex gap-2">
-        <Button variant="outline" size="sm" onClick={onSelectAll} disabled={stats.allSelected}>
-          Select All
-        </Button>
-        <Button variant="outline" size="sm" onClick={onSelectNone} disabled={stats.noneSelected}>
-          Select None
-        </Button>
+      {/* Quick selection buttons with enhanced accessibility and touch feedback */}
+      <div className={`flex gap-2 ${isMobile ? 'flex-col' : 'flex-row'}`}>
+        <RippleEffect
+          duration={300}
+          color="rgba(168, 85, 247, 0.2)"
+          disabled={stats.allSelected}
+          className={isMobile ? 'w-full' : ''}
+        >
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onSelectAll}
+            disabled={stats.allSelected}
+            className={`${isTouchDevice ? 'min-h-[44px] touch-manipulation active:scale-95' : ''} ${
+              isMobile ? 'w-full' : ''
+            } transition-transform duration-150`}
+            aria-label={`Select all ${stats.total} projects for randomizer`}
+          >
+            Select All
+          </Button>
+        </RippleEffect>
+        <RippleEffect
+          duration={300}
+          color="rgba(168, 85, 247, 0.2)"
+          disabled={stats.noneSelected}
+          className={isMobile ? 'w-full' : ''}
+        >
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onSelectNone}
+            disabled={stats.noneSelected}
+            className={`${isTouchDevice ? 'min-h-[44px] touch-manipulation active:scale-95' : ''} ${
+              isMobile ? 'w-full' : ''
+            } transition-transform duration-150`}
+            aria-label="Deselect all projects"
+          >
+            Select None
+          </Button>
+        </RippleEffect>
       </div>
 
-      {/* Project list */}
-      <ScrollArea className="h-96">
-        <div className="space-y-2 pr-4">
+      {/* Project list - Enhanced Mobile Scrolling */}
+      <ScrollArea
+        className={`${isMobile ? 'h-80' : 'h-96'} ${isTouchDevice ? 'overscroll-contain' : ''}`}
+      >
+        <div className={`space-y-2 ${isMobile ? 'pr-2' : 'pr-4'}`}>
           {projects.map(project => {
             const isSelected = selectedProjects.has(project.id);
 
             return (
               <div
                 key={project.id}
-                className={`flex cursor-pointer items-center space-x-3 rounded-lg border p-3 transition-colors hover:bg-accent/50 ${
-                  isSelected ? 'border-primary bg-accent' : ''
-                }`}
+                className={`flex cursor-pointer items-center rounded-lg border transition-all duration-200 focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 hover:bg-accent/50 ${
+                  isSelected
+                    ? 'border-primary bg-primary/10 shadow-md ring-1 ring-primary/20'
+                    : 'hover:border-border/60'
+                } ${
+                  isTouchDevice
+                    ? 'min-h-[44px] touch-manipulation active:scale-95 active:bg-accent/70'
+                    : ''
+                } ${isMobile ? 'space-x-2 p-2.5' : 'space-x-3 p-3'}`}
                 onClick={() => {
                   logger.debug('Project selection toggled', {
                     projectId: project.id,
@@ -194,17 +256,76 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
                   });
                   onProjectToggle(project.id);
                 }}
-              >
-                <Checkbox
-                  checked={isSelected}
-                  onCheckedChange={() => onProjectToggle(project.id)}
-                  aria-label={`Select ${project.title}`}
-                  className="data-[state=checked]:border-primary data-[state=checked]:bg-primary"
-                />
+                role="button"
+                tabIndex={0}
+                aria-label={`${isSelected ? 'Deselect' : 'Select'} project: ${project.title}${
+                  project.company || project.artist
+                    ? ` by ${[project.company, project.artist].filter(Boolean).join(' • ')}`
+                    : ''
+                }. ${isSelected ? 'Currently selected' : 'Not selected'}`}
+                aria-describedby={`project-${project.id}-details`}
+                onKeyDown={e => {
+                  switch (e.key) {
+                    case 'Enter':
+                    case ' ':
+                      e.preventDefault();
+                      onProjectToggle(project.id);
+                      break;
+                    case 'ArrowUp':
+                    case 'ArrowDown': {
+                      e.preventDefault();
+                      // Find next/previous project item and focus it
+                      const currentIndex = projects.findIndex(p => p.id === project.id);
+                      const nextIndex =
+                        e.key === 'ArrowDown'
+                          ? Math.min(currentIndex + 1, projects.length - 1)
+                          : Math.max(currentIndex - 1, 0);
 
+                      if (nextIndex !== currentIndex) {
+                        const nextElement = document.querySelector(
+                          `[role="button"][aria-label*="${projects[nextIndex].title}"]`
+                        ) as HTMLElement;
+                        if (nextElement) {
+                          nextElement.focus();
+                        }
+                      }
+                      break;
+                    }
+                    case 'Home': {
+                      e.preventDefault();
+                      // Focus first project
+                      const firstElement = document.querySelector(
+                        '[role="button"][aria-label*="project:"]'
+                      ) as HTMLElement;
+                      if (firstElement) {
+                        firstElement.focus();
+                      }
+                      break;
+                    }
+                    case 'End': {
+                      e.preventDefault();
+                      // Focus last project
+                      const allElements = document.querySelectorAll(
+                        '[role="button"][aria-label*="project:"]'
+                      );
+                      const lastElement = allElements[allElements.length - 1] as HTMLElement;
+                      if (lastElement) {
+                        lastElement.focus();
+                      }
+                      break;
+                    }
+                    default:
+                      break;
+                  }
+                }}
+              >
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded bg-gray-200">
+                  <div className={`flex items-center ${isMobile ? 'gap-2' : 'gap-2'}`}>
+                    <div
+                      className={`flex flex-shrink-0 items-center justify-center rounded bg-gray-200 ${
+                        isMobile ? 'h-6 w-6' : 'h-8 w-8'
+                      }`}
+                    >
                       {project.imageUrl ? (
                         <img
                           src={project.imageUrl}
@@ -244,8 +365,14 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium">{project.title}</p>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <p className={`truncate font-medium ${isMobile ? 'text-sm' : 'text-base'}`}>
+                        {project.title}
+                      </p>
+                      <div
+                        className={`flex items-center gap-2 text-muted-foreground ${
+                          isMobile ? 'gap-1.5 text-xs' : 'gap-2 text-sm'
+                        }`}
+                      >
                         {project.company && <span>{project.company}</span>}
                         {project.artist && (
                           <>
@@ -253,6 +380,15 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
                             <span>{project.artist}</span>
                           </>
                         )}
+                      </div>
+                      {/* Hidden details for screen readers */}
+                      <div id={`project-${project.id}-details`} className="sr-only">
+                        Project {project.title}
+                        {project.company && `, Company: ${project.company}`}
+                        {project.artist && `, Artist: ${project.artist}`}. Currently{' '}
+                        {isSelected ? 'selected' : 'not selected'} for randomizer. Use Enter or
+                        Space to {isSelected ? 'deselect' : 'select'}. Use arrow keys to navigate
+                        between projects.
                       </div>
                     </div>
                   </div>
@@ -263,10 +399,10 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
         </div>
       </ScrollArea>
 
-      {/* Selection summary */}
+      {/* Selection summary - Enhanced Mobile Layout */}
       {stats.selected > 0 && (
-        <div className="rounded-lg border bg-accent/50 p-3">
-          <p className="text-sm font-medium">
+        <div className={`rounded-lg border bg-accent/50 ${isMobile ? 'p-2.5' : 'p-3'}`}>
+          <p className={`font-medium ${isMobile ? 'text-xs' : 'text-sm'}`}>
             {stats.selected} project{stats.selected !== 1 ? 's' : ''} ready for randomizer
           </p>
           {stats.selected === 1 && (

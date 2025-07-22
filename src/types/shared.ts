@@ -91,29 +91,6 @@ export type ProjectPersistPayload = Required<Pick<ProjectFormValues, 'tags' | 't
   ProjectFormValues;
 
 /**
- * Pagination options for queries
- */
-export interface PaginationOptions {
-  page?: number;
-  pageSize?: number;
-}
-
-/**
- * Response type for paginated data
- */
-export interface PaginatedResponse<T> {
-  data: T[];
-  pagination: {
-    currentPage: number;
-    pageSize: number;
-    totalItems: number;
-    totalPages: number;
-    hasNextPage: boolean;
-    hasPreviousPage: boolean;
-  };
-}
-
-/**
  * Type for project creation DTO
  */
 export interface ProjectCreateDTO {

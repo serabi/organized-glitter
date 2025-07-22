@@ -33,20 +33,30 @@ type CollapsibleDashboardFiltersProps = Record<string, never>;
 const LOCAL_STORAGE_KEY = 'dashboardFiltersMobileCollapsed';
 
 const CollapsibleDashboardFiltersComponent: React.FC<CollapsibleDashboardFiltersProps> = () => {
+  // All hooks must be called before any early returns
   const isMobile = useIsMobile();
   const { getActiveFilterCount } = useFilterActionsOnly();
 
   const [isOpen, setIsOpen] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
-      const storedState = localStorage.getItem(LOCAL_STORAGE_KEY);
-      return storedState ? JSON.parse(storedState) === true : true; // Default to closed
+      try {
+        const storedState = localStorage.getItem(LOCAL_STORAGE_KEY);
+        return storedState ? JSON.parse(storedState) === true : true; // Default to open
+      } catch {
+        // Handle invalid JSON gracefully
+        return true; // Default to open
+      }
     }
-    return true; // Default to closed on server
+    return true; // Default to open on server
   });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(isOpen));
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(isOpen));
+      } catch {
+        // Handle localStorage errors gracefully - removed console.warn to avoid console usage
+      }
     }
   }, [isOpen]);
 
@@ -64,11 +74,12 @@ const CollapsibleDashboardFiltersComponent: React.FC<CollapsibleDashboardFilters
     [toggleOpen]
   );
 
-  const activeFilterCount = getActiveFilterCount ? getActiveFilterCount() : 0;
-
-  if (!isMobile) {
-    return null; // On desktop, this component renders nothing
+  // Handle SSR and mobile check - early returns after all hooks
+  if (typeof window === 'undefined' || !isMobile) {
+    return null;
   }
+
+  const activeFilterCount = getActiveFilterCount ? getActiveFilterCount() : 0;
 
   return (
     <div className="mb-4 rounded-lg border border-gray-200 shadow-sm dark:border-gray-700 lg:hidden">
@@ -76,14 +87,14 @@ const CollapsibleDashboardFiltersComponent: React.FC<CollapsibleDashboardFilters
         id="filters-header"
         role="button"
         tabIndex={0}
-        aria-expanded={!isOpen}
+        aria-expanded={isOpen}
         aria-controls="filters-content"
         onClick={toggleOpen}
         onKeyDown={handleKeyDown}
         className="flex cursor-pointer items-center justify-between rounded-t-lg bg-gray-50 p-3 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
       >
         <div className="flex items-center">
-          {!isOpen ? (
+          {isOpen ? (
             <ChevronDown size={20} className="mr-2 text-gray-600 dark:text-gray-400" />
           ) : (
             <ChevronRight size={20} className="mr-2 text-gray-600 dark:text-gray-400" />
@@ -98,10 +109,10 @@ const CollapsibleDashboardFiltersComponent: React.FC<CollapsibleDashboardFilters
         role="region"
         aria-labelledby="filters-header"
         className={`overflow-hidden transition-all duration-300 ease-in-out ${
-          !isOpen ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
+          isOpen ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
         }`}
       >
-        {!isOpen && (
+        {isOpen && (
           <div className="border-t border-gray-200 p-0 dark:border-gray-700">
             {/* DashboardFilters will consume context internally */}
             <DashboardFilters />

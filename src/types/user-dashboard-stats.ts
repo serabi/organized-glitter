@@ -4,13 +4,13 @@
  * @created 2025-07-04
  */
 
-import { BaseRecord } from '@/types/pocketbase.types';
+import { BaseSystemFields } from '@/types/pocketbase.types';
 
 /**
  * User Dashboard Stats record interface
  * Stores pre-computed project counts for fast dashboard loading
  */
-export interface UserDashboardStatsRecord extends BaseRecord {
+export interface UserDashboardStatsRecord extends BaseSystemFields {
   id: string;
   user: string; // Relation to users collection
 
@@ -30,22 +30,6 @@ export interface UserDashboardStatsRecord extends BaseRecord {
 }
 
 /**
- * Input data for creating/updating dashboard stats
- */
-export interface UserDashboardStatsInput {
-  user: string;
-  all: number;
-  wishlist: number;
-  purchased: number;
-  stash: number;
-  progress: number;
-  completed: number;
-  destashed: number;
-  archived: number;
-  total_projects: number;
-}
-
-/**
  * Status change event for updating dashboard stats
  */
 export interface ProjectStatusChangeEvent {
@@ -53,14 +37,4 @@ export interface ProjectStatusChangeEvent {
   oldStatus?: string | null;
   newStatus: string;
   operation: 'create' | 'update' | 'delete';
-}
-
-/**
- * Dashboard stats validation result
- */
-export interface DashboardStatsValidation {
-  isValid: boolean;
-  expectedTotal: number;
-  actualTotal: number;
-  discrepancies: Record<string, number>;
 }

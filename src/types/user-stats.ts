@@ -70,19 +70,3 @@ export interface CreateStatsParams {
   projects_included: number;
   cache_version?: string;
 }
-
-/**
- * Service response with fallback information
- */
-export interface StatsWithFallback {
-  stats: {
-    completed_count: number;
-    started_count: number;
-    in_progress_count: number;
-    total_diamonds: number;
-    estimated_drills: number;
-  };
-  source: 'cache' | 'realtime' | 'partial';
-  cached_at?: IsoDateString;
-  calculation_time_ms?: number;
-}

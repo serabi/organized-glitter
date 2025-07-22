@@ -27,7 +27,7 @@ import { createLogger } from '@/utils/secureLogger';
 import EditCompanyDialog from './EditCompanyDialog';
 import { Link } from 'react-router-dom';
 import { CompaniesResponse } from '@/types/pocketbase.types';
-import { useDeleteCompany } from '@/hooks/mutations/useDeleteCompany';
+import { useDeleteCompany } from '@/hooks/mutations/useCompanyMutations';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -168,7 +168,7 @@ const CompanyTable = ({ companies, loading, onCompanyUpdated }: CompanyTableProp
     if (!companyToDelete) return;
 
     deleteCompanyMutation.mutate(
-      { id: companyToDelete.id, name: companyToDelete.name },
+      { id: companyToDelete.id },
       {
         onSettled: () => {
           setShowDeleteConfirmDialog(false);

@@ -99,6 +99,14 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
     return () => observer.disconnect();
   }, [lazy, hasIntersected, progressive]);
 
+  // Handle progressive loading upgrade with smart quality selection
+  const handleProgressiveUpgrade = React.useCallback(() => {
+    if (progressive && progressiveImageQuery.placeholderUrl) {
+      // Use the smart loading function that chooses appropriate next quality level
+      progressiveImageQuery.loadNextQuality();
+    }
+  }, [progressive, progressiveImageQuery]);
+
   // Smart quality upgrade trigger based on visibility
   useEffect(() => {
     if (!progressive || !hasIntersected || !placeholderLoaded) return;
@@ -163,24 +171,6 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
     }
     return singleImageQuery.imageUrl;
   };
-
-  // Determine loading state
-  const isLoading = progressive
-    ? progressiveImageQuery.isPlaceholderLoading
-    : singleImageQuery.isLoading;
-
-  // Determine error state
-  const error = progressive
-    ? null // Progressive loading handles errors gracefully
-    : singleImageQuery.error;
-
-  // Handle progressive loading upgrade with smart quality selection
-  const handleProgressiveUpgrade = React.useCallback(() => {
-    if (progressive && progressiveImageQuery.placeholderUrl) {
-      // Use the smart loading function that chooses appropriate next quality level
-      progressiveImageQuery.loadNextQuality();
-    }
-  }, [progressive, progressiveImageQuery]);
 
   // Enhanced auto-upgrade logic with transition management
   useEffect(() => {
@@ -491,8 +481,8 @@ export const GalleryImage: React.FC<GalleryImageProps> = ({
   filename,
   alt,
   className = 'w-full h-32 object-cover rounded',
-  index,
-  totalImages,
+  index: _index,
+  totalImages: _totalImages,
   ...props
 }) => {
   return (

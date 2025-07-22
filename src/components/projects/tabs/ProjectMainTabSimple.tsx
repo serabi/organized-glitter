@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ProjectType, ProjectFormValues, ProjectStatus } from '@/types/project';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,9 +15,9 @@ import { InlineTagManager } from '@/components/tags/InlineTagManager';
 import { Tag } from '@/types/tag';
 import { ProjectImageSection } from '@/components/projects/form-sections/ProjectImageSection';
 import { useImageUpload } from '@/hooks/useImageUpload';
-import { useProjectUpdateUnified } from '@/hooks/mutations/useProjectUpdateUnified';
 import ArtistSelect from '@/components/projects/form/ArtistSelect';
 import CompanySelect from '@/components/projects/form/CompanySelect';
+import { createLogger } from '@/utils/secureLogger';
 
 // Type-safe status options that match ProjectStatus type
 const STATUS_OPTIONS: Record<ProjectStatus, string> = {
@@ -30,6 +30,8 @@ const STATUS_OPTIONS: Record<ProjectStatus, string> = {
   destashed: 'Destashed',
 } as const;
 
+const logger = createLogger('ProjectMainTabSimple');
+
 interface ProjectMainTabSimpleProps {
   project: ProjectType;
   formData: ProjectFormValues | null;
@@ -37,7 +39,6 @@ interface ProjectMainTabSimpleProps {
   artists: string[];
   isSubmitting: boolean;
   onChange: (data: ProjectFormValues) => void;
-  onSave?: (data: ProjectFormValues) => void;
 }
 
 export const ProjectMainTabSimple = ({
@@ -47,27 +48,51 @@ export const ProjectMainTabSimple = ({
   artists,
   isSubmitting,
   onChange,
-  onSave,
 }: ProjectMainTabSimpleProps) => {
-  const [projectTags, setProjectTags] = useState<Tag[]>(formData?.tags || project.tags || []);
+  const [projectTags, setProjectTags] = useState<Tag[]>([]);
+
+  // Sync projectTags with formData to prevent infinite loops
+  useEffect(() => {
+    const currentTags = formData?.tags || project.tags || [];
+    if (JSON.stringify(projectTags) !== JSON.stringify(currentTags)) {
+      setProjectTags(currentTags);
+    }
+  }, [formData?.tags, project.tags, projectTags]);
 
   // Initialize image upload hook with proper parameters
   const imageUploadHook = useImageUpload('project-images', 'project-image');
 
-  // Initialize unified project update mutation
-  const updateProjectMutation = useProjectUpdateUnified();
-
-  // Handle image change events with unified save
+  // Handle image change events (no auto-save)
   const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    logger.debug('🖼️ Image change initiated', {
+      projectId: project.id,
+      hasFormData: !!formData,
+    });
+
     const file = await imageUploadHook.handleImageChange(event);
+    logger.debug('🖼️ Image upload hook completed', {
+      projectId: project.id,
+      fileSelected: !!file,
+      fileName: file?.name,
+    });
+
     if (file && formData) {
       const updatedData = { ...formData, imageFile: file };
+      logger.debug('🖼️ Image selected, updating form data (will save on manual submit)', {
+        projectId: project.id,
+        hasImageFile: !!updatedData.imageFile,
+        fileName: file.name,
+      });
       onChange(updatedData);
-
-      // Auto-save when image is selected and onSave is provided
-      if (onSave) {
-        onSave(updatedData);
-      }
+      logger.info('🖼️ Image added to form data - click "Update Project" to save', {
+        projectId: project.id,
+      });
+    } else {
+      logger.warn('🖼️ Image change aborted', {
+        projectId: project.id,
+        hasFile: !!file,
+        hasFormData: !!formData,
+      });
     }
   };
 
@@ -88,10 +113,13 @@ export const ProjectMainTabSimple = ({
   };
 
   const handleTagsChange = (tags: Tag[]) => {
-    setProjectTags(tags);
-    if (formData) {
-      const updatedData = { ...formData, tags };
-      onChange(updatedData);
+    // Only update if tags actually changed to prevent loops
+    if (JSON.stringify(projectTags) !== JSON.stringify(tags)) {
+      setProjectTags(tags);
+      if (formData) {
+        const updatedData = { ...formData, tags };
+        onChange(updatedData);
+      }
     }
   };
 

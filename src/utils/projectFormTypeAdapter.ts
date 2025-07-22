@@ -1,21 +1,31 @@
 import { ProjectFormSchemaType } from '@/schemas/project.schema';
 import { ProjectFormValues } from '@/types/project';
+import { toUserDateString } from '@/utils/timezoneUtils';
 
 /**
  * Converts ProjectFormSchemaType (Zod schema output) to ProjectFormValues (legacy form interface)
  * This ensures type compatibility between the form schema and existing form handlers
  */
-export function convertSchemaToFormValues(data: ProjectFormSchemaType): ProjectFormValues {
-  // Helper function to safely convert dates to strings
+export function convertSchemaToFormValues(
+  data: ProjectFormSchemaType,
+  userTimezone?: string
+): ProjectFormValues {
+  // Helper function to safely convert dates to strings using timezone-aware conversion
   const dateToString = (date: Date | string | null | undefined): string | undefined => {
     if (!date) return undefined;
     if (typeof date === 'string') return date;
-    if (date instanceof Date) return date.toISOString().split('T')[0];
+    if (date instanceof Date) {
+      // Use timezone-aware conversion instead of naive UTC conversion
+      return toUserDateString(date, userTimezone) || undefined;
+    }
     return undefined;
   };
 
-  return {
-    ...data,
+  const result: ProjectFormValues = {
+    // Copy all common fields
+    title: data.title,
+    userId: data.userId,
+    status: data.status,
     // Convert dates safely to strings for form compatibility
     datePurchased: dateToString(data.datePurchased),
     dateReceived: dateToString(data.dateReceived),
@@ -40,10 +50,15 @@ export function convertSchemaToFormValues(data: ProjectFormSchemaType): ProjectF
       typeof data._imageReplacement === 'string'
         ? data._imageReplacement === 'true'
         : !!data._imageReplacement,
+    // Handle optional fields specific to ProjectFormValues
+    id: data.id,
+    imageFile: data.imageFile || undefined,
     // tagNames is not available on ProjectFormSchemaType, it has tagIds.
     // ProjectFormValues has an optional tagNames, so it will be undefined here.
-    // tagNames: data.tagNames || undefined, // This line causes the error
+    tagNames: undefined,
   };
+
+  return result;
 }
 
 /**

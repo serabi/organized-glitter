@@ -1,28 +1,27 @@
 /**
  * Comprehensive mock type definitions for testing
  * @author @serabi
- * @created 2025-01-14
+ * @created 2025-07-14
  */
 
 import type { Mock } from 'vitest';
-import type { QueryClient, UseMutationResult, UseQueryResult } from '@tanstack/react-query';
 import type { NavigateFunction } from 'react-router-dom';
-import type { Project, ProjectFormValues } from './shared';
-import type { ProjectsResponse, RandomizerSpinsResponse } from './pocketbase.types';
+import type { Project, ProjectFormValues, ProjectStatus } from './shared';
+import type { ProjectsResponse } from './pocketbase.types';
 
 // Core mock function type
-export type MockFn<T extends (...args: unknown[]) => unknown> = Mock<Parameters<T>, ReturnType<T>>;
+export type MockFn<T extends (...args: unknown[]) => unknown> = Mock<T>;
 
 // React Query Mocks
-export interface MockQueryClient extends Partial<QueryClient> {
-  getQueryData: MockFn<(queryKey: unknown[]) => unknown>;
-  setQueryData: MockFn<(queryKey: unknown[], data: unknown) => void>;
-  invalidateQueries: MockFn<(filters?: { queryKey?: unknown[] }) => Promise<void>>;
-  cancelQueries: MockFn<(filters?: { queryKey?: unknown[] }) => Promise<void>>;
-  refetchQueries: MockFn<(filters?: { queryKey?: unknown[] }) => Promise<void>>;
+export interface MockQueryClient {
+  getQueryData: MockFn<(queryKey: readonly unknown[]) => unknown>;
+  setQueryData: MockFn<(queryKey: readonly unknown[], data: unknown) => void>;
+  invalidateQueries: MockFn<(filters?: { queryKey?: readonly unknown[] }) => Promise<void>>;
+  cancelQueries: MockFn<(filters?: { queryKey?: readonly unknown[] }) => Promise<void>>;
+  refetchQueries: MockFn<(filters?: { queryKey?: readonly unknown[] }) => Promise<void>>;
 }
 
-export interface MockUseQueryResult<TData = unknown> extends Partial<UseQueryResult<TData>> {
+export interface MockUseQueryResult<TData = unknown> {
   data?: TData;
   isLoading?: boolean;
   isError?: boolean;
@@ -30,8 +29,7 @@ export interface MockUseQueryResult<TData = unknown> extends Partial<UseQueryRes
   refetch?: MockFn<() => Promise<{ data: TData }>>;
 }
 
-export interface MockUseMutationResult<TData = unknown, TVariables = unknown>
-  extends Partial<UseMutationResult<TData, Error, TVariables>> {
+export interface MockUseMutationResult<TData = unknown, TVariables = unknown> {
   mutate?: MockFn<(variables: TVariables) => void>;
   mutateAsync?: MockFn<(variables: TVariables) => Promise<TData>>;
   isLoading?: boolean;
@@ -113,13 +111,13 @@ export interface MockCreateSpinParams {
 export interface MockProjectData extends Partial<Project> {
   id: string;
   title: string;
-  status: string;
+  status: ProjectStatus;
   userId: string;
 }
 
 export interface MockProjectFormData extends Partial<ProjectFormValues> {
   title: string;
-  status: string;
+  status: ProjectStatus;
 }
 
 // Context Mocks
@@ -196,8 +194,3 @@ export interface MockLogger {
 
 // Utility type for creating test data factories
 export type TestDataFactory<T> = (overrides?: Partial<T>) => T;
-
-// Common test helper types
-export type MockSetup<T = unknown> = () => T;
-export type MockCleanup = () => void;
-export type MockReset = () => void;

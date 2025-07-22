@@ -1,7 +1,7 @@
 import React, { lazy, Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
 import type { ComponentProps } from 'react';
-import type { Legend, Tooltip, LegendProps } from 'recharts';
+import type { Legend, Tooltip, LegendProps, LegendPayload } from 'recharts';
 import * as RechartsPrimitive from 'recharts';
 import type { ChartConfig } from './chart';
 
@@ -62,11 +62,12 @@ type ChartTooltipContentProps = React.ComponentProps<typeof Tooltip> &
 
 type ChartLegendProps = LegendProps;
 
-type ChartLegendContentProps = React.ComponentProps<'div'> &
-  Pick<LegendProps, 'payload' | 'verticalAlign'> & {
-    hideIcon?: boolean;
-    nameKey?: string;
-  };
+type ChartLegendContentProps = React.ComponentProps<'div'> & {
+  payload?: ReadonlyArray<LegendPayload>;
+  verticalAlign?: 'top' | 'middle' | 'bottom';
+  hideIcon?: boolean;
+  nameKey?: string;
+};
 
 // Lazy loaded chart components with loading fallbacks and proper typing
 export const ChartContainer = React.forwardRef<HTMLDivElement, ChartContainerProps>(

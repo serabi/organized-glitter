@@ -1,5 +1,5 @@
 /**
- * Unified project update mutation hook with proper file upload handling
+ * Unified project update mutation hook with file upload handling
  * Replaces fragmented update logic with a single, type-safe approach
  */
 
@@ -10,6 +10,7 @@ import { queryKeys } from '../queries/queryKeys';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { createLogger } from '@/utils/secureLogger';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
 import { ClientResponseError } from 'pocketbase';
 import type { ProjectUpdatePayload, ProjectFormWithFile } from '@/types/file-upload';
 import { mapFormDataToPocketBase } from '@/utils/field-mapping';
@@ -29,6 +30,7 @@ export const useProjectUpdateUnified = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
+  const userTimezone = useUserTimezone();
 
   return useMutation({
     mutationFn: async (
@@ -54,12 +56,13 @@ export const useProjectUpdateUnified = () => {
 
         projectId = formPayload.id;
 
-        // Map form data to PocketBase format
-        const mappedData = mapFormDataToPocketBase(formPayload);
+        // Map form data to PocketBase format with user timezone
+        const mappedData = mapFormDataToPocketBase(formPayload, userTimezone);
 
         // Auto-set date_completed when status changes to 'completed'
         if (mappedData.status === 'completed' && !mappedData.date_completed) {
-          mappedData.date_completed = new Date().toISOString().split('T')[0];
+          const { toUserDateString } = await import('@/utils/timezoneUtils');
+          mappedData.date_completed = toUserDateString(new Date(), userTimezone);
           logger.debug('Auto-setting date_completed for completed project');
         }
 
@@ -150,20 +153,21 @@ export const useProjectUpdateUnified = () => {
     onSuccess: async (data, _variables, context) => {
       const projectId = context?.projectId || data.id;
 
+      logger.info('🎉 Project update mutation succeeded', {
+        projectId,
+        resultTitle: data.title,
+        hasContext: !!context,
+      });
+
       // Update the project detail in cache
       queryClient.setQueryData(queryKeys.projects.detail(projectId), data);
+      logger.debug('📝 Updated project detail in cache', { projectId });
 
       // Invalidate all project lists to refresh data
       queryClient.invalidateQueries({
         queryKey: queryKeys.projects.lists(),
       });
-
-      // Invalidate advanced projects query to update the Advanced Edit page
-      if (user?.id) {
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.projects.advanced(user.id),
-        });
-      }
+      logger.debug('🔄 Invalidated project lists cache');
 
       // Invalidate dashboard stats cache when project is updated
       if (user?.id) {
@@ -171,7 +175,10 @@ export const useProjectUpdateUnified = () => {
         queryClient.invalidateQueries({
           queryKey: [...queryKeys.stats.overview(user.id), 'dashboard', currentYear],
         });
-        logger.info('Dashboard stats cache invalidated after project update');
+        logger.debug('📊 Dashboard stats cache invalidated after project update', {
+          userId: user.id,
+          currentYear,
+        });
       }
 
       toast({
@@ -179,19 +186,31 @@ export const useProjectUpdateUnified = () => {
         description: `"${data.title}" has been updated successfully.`,
       });
 
-      logger.info('Project update successful, cache update initiated');
+      logger.info('✅ Project update successful, cache update initiated', {
+        projectId,
+        title: data.title,
+      });
     },
 
     onError: (error, _variables, context) => {
+      const projectId = context?.projectId || 'unknown';
+
+      logger.error('💥 Project update mutation failed', {
+        projectId,
+        error: error instanceof Error ? error.message : error,
+        errorType: error?.constructor?.name,
+      });
+
       // Rollback optimistic update
       if (context?.previousProject && context?.projectId) {
         queryClient.setQueryData(
           queryKeys.projects.detail(context.projectId),
           context.previousProject
         );
+        logger.debug('🔄 Rolled back optimistic update', { projectId: context.projectId });
       }
 
-      logger.error('Project update failed:', error);
+      logger.error('❌ Project update failed:', error);
 
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       const lowerErrorMessage = errorMessage.toLowerCase();

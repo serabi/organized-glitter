@@ -188,11 +188,15 @@ export type ProjectsRecord = {
 	width?: number
 }
 
-export type RandomizerSpinsRecord<Tselected_projects = unknown> = {
+export type RandomizerSpinsRecord<Tmetadata = unknown, Tselected_projects = unknown> = {
 	created?: IsoDateString
 	id: string
+	metadata?: null | Tmetadata
 	project: RecordIdString
+	project_artist?: string
+	project_company?: string
 	project_title: string
+	selected_count?: number
 	selected_projects: null | Tselected_projects
 	spun_at: IsoDateString
 	updated?: IsoDateString
@@ -283,7 +287,7 @@ export type CompaniesResponse<Texpand = unknown> = Required<CompaniesRecord> & B
 export type ProgressNotesResponse<Texpand = unknown> = Required<ProgressNotesRecord> & BaseSystemFields<Texpand>
 export type ProjectTagsResponse<Texpand = unknown> = Required<ProjectTagsRecord> & BaseSystemFields<Texpand>
 export type ProjectsResponse<Texpand = unknown> = Required<ProjectsRecord> & BaseSystemFields<Texpand>
-export type RandomizerSpinsResponse<Tselected_projects = unknown, Texpand = unknown> = Required<RandomizerSpinsRecord<Tselected_projects>> & BaseSystemFields<Texpand>
+export type RandomizerSpinsResponse<Tmetadata = unknown, Tselected_projects = unknown, Texpand = unknown> = Required<RandomizerSpinsRecord<Tmetadata, Tselected_projects>> & BaseSystemFields<Texpand>
 export type TagsResponse<Texpand = unknown> = Required<TagsRecord> & BaseSystemFields<Texpand>
 export type UserDashboardSettingsResponse<Tnavigation_context = unknown, Texpand = unknown> = Required<UserDashboardSettingsRecord<Tnavigation_context>> & BaseSystemFields<Texpand>
 export type UserDashboardStatsResponse<Texpand = unknown> = Required<UserDashboardStatsRecord> & BaseSystemFields<Texpand>

@@ -121,36 +121,3 @@ export interface LegacyOverviewStats {
   inProgressCount: number;
   totalDiamonds: number;
 }
-
-/**
- * Convert YearlyStats to legacy format for backward compatibility
- */
-export function toLegacyStats(stats: YearlyStats): LegacyOverviewStats {
-  return {
-    completedCount: stats.completed_count,
-    inProgressCount: stats.in_progress_count,
-    totalDiamonds: stats.total_diamonds,
-  };
-}
-
-/**
- * Validate cache data with runtime type checking
- */
-export function validateCacheData(data: unknown): CachedStatsRecord {
-  try {
-    return CachedStatsRecordSchema.parse(data);
-  } catch (error) {
-    throw new StatsServiceError('Invalid cache data format', 'VALIDATION_ERROR', error);
-  }
-}
-
-/**
- * Validate stats result with runtime type checking
- */
-export function validateStatsResult(data: unknown): StatsResult {
-  try {
-    return StatsResultSchema.parse(data);
-  } catch (error) {
-    throw new StatsServiceError('Invalid stats result format', 'VALIDATION_ERROR', error);
-  }
-}

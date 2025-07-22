@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Trash2, FileText, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ArtistsResponse } from '@/types/pocketbase.types';
-import { useDeleteArtist } from '@/hooks/mutations/useDeleteArtist';
+import { useDeleteArtist } from '@/hooks/mutations/useArtistMutations';
 import EditArtistDialog from './EditArtistDialog';
 import {
   AlertDialog,
@@ -57,12 +57,15 @@ const ArtistTable = ({ artists, loading }: ArtistTableProps) => {
   const confirmDeleteArtist = async () => {
     if (!artistToDelete) return;
 
-    deleteArtistMutation.mutate(artistToDelete.id, {
-      onSuccess: () => {
-        setShowDeleteConfirmDialog(false);
-        setArtistToDelete(null);
-      },
-    });
+    deleteArtistMutation.mutate(
+      { id: artistToDelete.id },
+      {
+        onSuccess: () => {
+          setShowDeleteConfirmDialog(false);
+          setArtistToDelete(null);
+        },
+      }
+    );
   };
 
   if (loading) {

@@ -61,42 +61,54 @@ export function ThankYouMessage() {
               <div className="rounded-lg border border-pink-100 bg-white/80 p-5 shadow-sm dark:border-pink-800/50 dark:bg-gray-800/50">
                 <div className="space-y-4">
                   <div className="inline-flex items-center rounded-full bg-pink-100 px-3 py-1 text-sm font-medium text-pink-800 dark:bg-pink-900/30 dark:text-pink-300">
-                    2025-07-13
+                    2025-07-21
                   </div>
                   <div className="space-y-3 text-gray-700 dark:text-gray-300">
                     <p>
-                      Updated/fixed the stats count on the{' '}
-                      <Link
-                        to="/dashboard"
-                        className="inline-flex items-center gap-1 font-medium text-pink-600 underline decoration-pink-300 transition-colors hover:text-pink-700 hover:decoration-pink-500 dark:text-pink-400 dark:hover:text-pink-300"
-                      >
-                        Dashboard page
-                        <ExternalLink className="h-3 w-3" />
-                      </Link>
-                      - including adding a new filter that filters Wishlisted and Archived projects
-                      from the "All" tab count. Also merged the Advanced View and the Advanced Edit
-                      pages together into the{' '}
-                      <Link
-                        to="/advanced-edit"
-                        className="inline-flex items-center gap-1 font-medium text-pink-600 underline decoration-pink-300 transition-colors hover:text-pink-700 hover:decoration-pink-500 dark:text-pink-400 dark:hover:text-pink-300"
-                      >
-                        Advanced Project Editor page
-                        <ExternalLink className="h-3 w-3" />
-                      </Link>
-                      . (The Advanced Project Editor page is currently read-only - I will re-add
-                      edit functionality in the next update.)
+                      Major update to help make the code base cleaner. Visible changes:
                     </p>
+                    <ul className="ml-4 list-disc space-y-1">
+                      <li>Removed the Advanced Edit page for now</li>
+                      <li>
+                        Updated the{' '}
+                        <Link
+                          to="/dashboard"
+                          className="inline-flex items-center gap-1 font-medium text-pink-600 underline decoration-pink-300 transition-colors hover:text-pink-700 hover:decoration-pink-500 dark:text-pink-400 dark:hover:text-pink-300"
+                        >
+                          Dashboard page
+                          <ExternalLink className="h-3 w-3" />
+                        </Link>{' '}
+                        to be better formatted for various sized screens
+                      </li>
+                      <li>
+                        Updated the{' '}
+                        <Link
+                          to="/randomizer"
+                          className="inline-flex items-center gap-1 font-medium text-pink-600 underline decoration-pink-300 transition-colors hover:text-pink-700 hover:decoration-pink-500 dark:text-pink-400 dark:hover:text-pink-300"
+                        >
+                          Randomizer page
+                          <ExternalLink className="h-3 w-3" />
+                        </Link>{' '}
+                        to work better
+                      </li>
+                      <li>Updated a bug with the time zone settings - the dates should now work correctly!</li>
+                    </ul>
                     <p>
-                      Added time zone support in order to fix a bug where some users saw dates
-                      displayed incorrectly. You can set your preferred time zone in your{' '}
-                      <Link
-                        to="/profile?tab=preferences"
-                        className="inline-flex items-center gap-1 font-medium text-pink-600 underline decoration-pink-300 transition-colors hover:text-pink-700 hover:decoration-pink-500 dark:text-pink-400 dark:hover:text-pink-300"
+                      As always, please reach out if you have any{' '}
+                      <button
+                        onClick={() =>
+                          showUserReportDialog({
+                            title: 'Share Your Feedback',
+                            subtitle:
+                              "We'd love to hear your thoughts about these updates and Organized Glitter!",
+                            currentPage: 'Overview - Updates Section',
+                          })
+                        }
+                        className="font-medium text-pink-600 underline decoration-pink-300 transition-colors hover:text-pink-700 hover:decoration-pink-500 dark:text-pink-400 dark:hover:text-pink-300"
                       >
-                        profile
-                        <ExternalLink className="h-3 w-3" />
-                      </Link>
-                      .
+                        feedback
+                      </button>{' '}
+                      or discover any bugs.
                     </p>
                   </div>
                 </div>

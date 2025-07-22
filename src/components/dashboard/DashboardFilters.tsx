@@ -36,8 +36,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useFiltersFull } from '@/contexts/FilterProvider';
 import { useAvailableYears } from '@/hooks/queries/useAvailableYears';
-import { useDashboardData } from '@/hooks/useDashboardData';
-import { useAuth } from '@/hooks/useAuth';
 import { secureLogger } from '@/utils/secureLogger';
 import { DashboardValidSortField } from '@/features/dashboard/dashboard.constants'; // Import type from constants
 
@@ -49,7 +47,6 @@ import { DashboardValidSortField } from '@/features/dashboard/dashboard.constant
 export type DashboardFiltersProps = Record<string, never>;
 
 const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(() => {
-  const { user } = useAuth();
   const {
     filters,
     updateSearchTerm,
@@ -73,7 +70,6 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
     getActiveFilterCount,
     searchInputRef,
     isSearchPending,
-    debouncedSearchTerm,
   } = useFiltersFull();
 
   // Get available years from the appropriate hook

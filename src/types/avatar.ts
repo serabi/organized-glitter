@@ -43,11 +43,3 @@ export const AVATAR_COLORS = [
   '#00d2d3', // Cyan
   '#ff9f43', // Orange
 ];
-
-// Avatar size presets
-export const AVATAR_SIZES = {
-  small: 32,
-  medium: 64,
-  large: 128,
-  xlarge: 200,
-} as const;

@@ -3,8 +3,8 @@ import { describe, it, expect, vi, beforeEach, beforeAll, afterAll, MockInstance
 import { ImageUpload } from '../ImageUpload';
 
 // Mock functions for URL methods
-const mockCreateObjectURL = vi.fn((_obj: Blob | MediaSource): string => 'blob:mock-url-12345');
-const mockRevokeObjectURL = vi.fn((_url: string): void => undefined);
+const mockCreateObjectURL = vi.fn((): string => 'blob:mock-url-12345');
+const mockRevokeObjectURL = vi.fn((): void => undefined);
 
 let createObjectURLSpy: MockInstance<(obj: Blob | MediaSource) => string> | undefined;
 let revokeObjectURLSpy: MockInstance<(url: string) => void> | undefined;

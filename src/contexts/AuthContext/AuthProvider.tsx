@@ -43,7 +43,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = React.memo(({ children 
       try {
         // Check if already authenticated with PocketBase
         const isValid = pb.authStore.isValid;
-        const currentUser = pb.authStore.record as PocketBaseUser | null;
+        const currentUser = pb.authStore.record as unknown as PocketBaseUser | null;
 
         authLogger.debug('Initial auth check:', {
           isValid,

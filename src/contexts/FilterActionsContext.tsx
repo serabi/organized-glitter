@@ -7,15 +7,7 @@
  * @updated 2025-07-10
  */
 
-import React, {
-  createContext,
-  useContext,
-  useCallback,
-  useMemo,
-  useRef,
-  useEffect,
-  ReactNode,
-} from 'react';
+import React, { createContext, useCallback, useMemo, useRef, ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { createLogger, performanceLogger } from '@/utils/secureLogger';
 import { ProjectFilterStatus } from '@/types/project';
@@ -23,7 +15,6 @@ import { DashboardValidSortField } from '@/features/dashboard/dashboard.constant
 import {
   FilterState,
   FilterAction,
-  FilterDispatch,
   SortDirectionType,
   ViewType,
   ChangeSource,

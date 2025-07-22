@@ -196,7 +196,7 @@ export const UIProvider: React.FC<UIProviderProps> = ({ children }) => {
     try {
       const saved = localStorage.getItem('dashboard-view-type');
       return (saved as ViewType) || 'grid';
-    } catch (error) {
+    } catch (_error) {
       logger.debug('Failed to load view type from localStorage, using default');
       return 'grid';
     }

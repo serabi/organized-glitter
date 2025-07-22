@@ -3,7 +3,7 @@
  * Provides type safety for image uploads and project mutations
  */
 
-import type { ProjectFormValues, Project } from './shared';
+import type { ProjectFormValues } from './shared';
 
 /**
  * Data structure for file upload operations
@@ -63,36 +63,4 @@ export interface ProjectFormWithFile extends ProjectFormValues {
   imageFile?: File | null;
   /** Flag indicating image replacement */
   _imageReplacement?: boolean | string;
-}
-
-/**
- * Response from file upload operations
- */
-export interface FileUploadResponse {
-  /** Success status */
-  success: boolean;
-  /** URL of the uploaded file */
-  url?: string;
-  /** Error message if upload failed */
-  error?: string;
-  /** File metadata */
-  metadata?: {
-    filename: string;
-    size: number;
-    type: string;
-  };
-}
-
-/**
- * Options for file upload operations
- */
-export interface FileUploadOptions {
-  /** Maximum file size in bytes */
-  maxSize?: number;
-  /** Allowed file types */
-  allowedTypes?: string[];
-  /** Whether to compress the image */
-  compress?: boolean;
-  /** Quality for compression (0-1) */
-  quality?: number;
 }

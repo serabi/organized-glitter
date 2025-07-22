@@ -12,7 +12,8 @@ import { Loader2, Search } from 'lucide-react';
 import { useArtists } from '@/hooks/queries/useArtists';
 
 const ArtistListTab = () => {
-  const { data: artists = [], isLoading: loading } = useArtists();
+  const { data: artistsData = [], isLoading: loading } = useArtists();
+  const artists = Array.isArray(artistsData) ? artistsData : [];
   return (
     <div className="dark:glass-card rounded-lg bg-diamond-100 text-diamond-900 shadow dark:text-foreground">
       <div className="border-b border-gray-200 p-6">

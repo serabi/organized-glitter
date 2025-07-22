@@ -38,6 +38,7 @@ export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
       <BrowserRouter
         future={{
           v7_relativeSplatPath: true,
+          v7_startTransition: true,
         }}
         key="main-router"
       >

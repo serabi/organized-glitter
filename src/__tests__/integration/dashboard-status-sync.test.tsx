@@ -9,18 +9,19 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
+import React from 'react';
 import { pb } from '../../lib/pocketbase';
 import { useUpdateProjectStatusMutation } from '../../hooks/mutations/useProjectDetailMutations';
 import { StatsProvider } from '../../contexts/StatsContext';
-import { FiltersProvider } from '../../contexts/FiltersContext';
 import { UIProvider } from '../../contexts/UIContext';
 import { RecentlyEditedProvider } from '../../contexts/RecentlyEditedContext';
 import { updateDashboardStats } from '../../services/dashboardStatsService';
 import { queryKeys } from '../../hooks/queries/queryKeys';
+import { FilterProvider } from '../../contexts/FilterProvider';
 
 // Mock dependencies
-vi.mock('@/lib/pocketbase');
-vi.mock('@/services/pocketbase/dashboardStatsService');
+vi.mock('../../lib/pocketbase');
+vi.mock('../../services/dashboardStatsService');
 vi.mock('@/hooks/useRealtimeProjectSync', () => ({
   useRealtimeProjectSync: () => ({ isConnected: true }),
 }));
@@ -56,23 +57,15 @@ const TestWrapper = ({ children, user = { id: 'test-user-id', email: 'test@test.
     },
   });
 
-  const authContextValue = {
-    user,
-    isAuthenticated: !!user,
-    login: vi.fn(),
-    logout: vi.fn(),
-    isLoading: false,
-  };
-
   return (
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
         <StatsProvider>
-          <FiltersProvider user={user}>
+          <FilterProvider user={user}>
             <UIProvider>
               <RecentlyEditedProvider>{children}</RecentlyEditedProvider>
             </UIProvider>
-          </FiltersProvider>
+          </FilterProvider>
         </StatsProvider>
       </MemoryRouter>
     </QueryClientProvider>
@@ -128,9 +121,6 @@ describe('Dashboard Status Synchronization', () => {
     await waitFor(() => {
       expect(cancelQueriesSpy).toHaveBeenCalledWith({
         queryKey: queryKeys.projects.detail(projectId),
-      });
-      expect(cancelQueriesSpy).toHaveBeenCalledWith({
-        queryKey: queryKeys.projects.advanced(userId),
       });
       expect(cancelQueriesSpy).toHaveBeenCalledWith({
         queryKey: queryKeys.projects.lists(),

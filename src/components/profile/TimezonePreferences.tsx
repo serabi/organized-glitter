@@ -27,12 +27,7 @@ import {
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { Clock } from 'lucide-react';
-import {
-  COMMON_TIMEZONES,
-  getTimezonesByRegion,
-  TIMEZONE_REGIONS,
-  detectUserTimezone,
-} from '@/utils/timezoneUtils';
+import { getTimezonesByRegion, TIMEZONE_REGIONS, detectUserTimezone } from '@/utils/timezoneUtils';
 import { useUserTimezone } from '@/hooks/useUserTimezone';
 import { createLogger } from '@/utils/secureLogger';
 

@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { createLogger } from '@/utils/secureLogger';
 import { dashboardSyncMonitor } from '@/utils/dashboardSyncMonitor';
+import { statusOptions } from '@/hooks/useProjectStatus';
 
 const logger = createLogger('useProjectDetailMutations');
 
@@ -15,77 +16,6 @@ const logger = createLogger('useProjectDetailMutations');
 const PROJECT_STATUS = {
   ARCHIVED: 'archived' as const,
 } satisfies Record<string, ProjectStatus>;
-
-// Helper function to invalidate project-related queries with precise targeting
-const invalidateProjectQueries = async (
-  queryClient: ReturnType<typeof useQueryClient>,
-  projectId?: string,
-  userId?: string,
-  isDeletion?: boolean
-) => {
-  const invalidations: Promise<void>[] = [];
-
-  // Handle project-specific cache based on operation type
-  if (projectId) {
-    if (isDeletion) {
-      // For deletions, remove the project and related data completely from cache to prevent 404 refetch attempts
-      // removeQueries is synchronous in TanStack Query v5, so handle separately from async invalidations
-      queryClient.removeQueries({ queryKey: queryKeys.projects.detail(projectId), exact: true });
-      queryClient.removeQueries({
-        queryKey: queryKeys.progressNotes.list(projectId),
-        exact: true,
-      });
-    } else {
-      // For non-deletion operations, invalidate to trigger refetch with fresh data
-      invalidations.push(
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.projects.detail(projectId),
-          exact: true,
-        })
-      );
-    }
-  }
-
-  // Precisely invalidate project lists - avoid broad invalidation
-  if (userId) {
-    invalidations.push(
-      // Only invalidate advanced projects for this specific user
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.projects.advanced(userId),
-        exact: true,
-      })
-    );
-
-    // For paginated lists, we use exact: false but with specific user context
-    invalidations.push(
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.projects.lists(),
-        exact: false,
-        refetchType: 'active', // Only refetch currently active queries
-      })
-    );
-  } else {
-    // Fallback: broader invalidation if no userId
-    invalidations.push(
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.projects.lists(),
-        refetchType: 'active',
-      })
-    );
-  }
-
-  // Precisely invalidate tag stats with exact matching
-  invalidations.push(
-    queryClient.invalidateQueries({
-      queryKey: queryKeys.tags.stats(),
-      exact: true,
-      refetchType: 'none', // Mark stale but don't refetch immediately
-    })
-  );
-
-  // Wait for all invalidations to complete
-  await Promise.all(invalidations);
-};
 
 // Helper function to handle common error logging and toast
 const handleMutationError = (
@@ -113,6 +43,26 @@ export const useUpdateProjectStatusMutation = () => {
     mutationFn: async ({ projectId, status }: { projectId: string; status: ProjectStatus }) => {
       logger.debug('Updating project status:', { projectId, status });
 
+      // Validate status value
+      const validStatuses = statusOptions;
+      if (!validStatuses.includes(status)) {
+        throw new Error(
+          `Invalid project status: ${status}. Must be one of: ${validStatuses.join(', ')}`
+        );
+      }
+
+      // Validate projectId
+      if (!projectId || typeof projectId !== 'string' || projectId.trim().length === 0) {
+        throw new Error('Invalid project ID: must be a non-empty string');
+      }
+
+      // Log the update attempt for debugging
+      logger.debug('Status update validation passed:', {
+        projectId: projectId.substring(0, 8) + '...',
+        status,
+        validStatuses,
+      });
+
       const updateData: { status: ProjectStatus; date_completed?: string } = { status };
 
       // Auto-set date_completed when status changes to 'completed'
@@ -129,12 +79,23 @@ export const useUpdateProjectStatusMutation = () => {
     onMutate: async ({ projectId, status }) => {
       const endTiming = dashboardSyncMonitor.startTiming('status-update-mutation');
 
+      // Defensive check for required data
+      if (!user?.id) {
+        logger.warn('Status update attempted without authenticated user');
+        throw new Error('User authentication required');
+      }
+
+      if (!projectId) {
+        logger.warn('Status update attempted without project ID');
+        throw new Error('Project ID required');
+      }
+
       // Record the mutation start
       dashboardSyncMonitor.recordEvent({
         type: 'status_update',
         projectId,
         status,
-        userId: user?.id,
+        userId: user.id,
         success: true,
         metadata: { phase: 'onMutate' },
       });
@@ -143,7 +104,6 @@ export const useUpdateProjectStatusMutation = () => {
       if (user?.id) {
         await Promise.all([
           queryClient.cancelQueries({ queryKey: queryKeys.projects.detail(projectId) }),
-          queryClient.cancelQueries({ queryKey: queryKeys.projects.advanced(user.id) }),
           queryClient.cancelQueries({ queryKey: queryKeys.projects.lists() }),
           queryClient.cancelQueries({ queryKey: queryKeys.stats.overview(user.id) }),
         ]);
@@ -151,9 +111,6 @@ export const useUpdateProjectStatusMutation = () => {
 
       // Snapshot the previous values for rollback
       const previousProjectDetail = queryClient.getQueryData(queryKeys.projects.detail(projectId));
-      const previousAdvancedProjects = user?.id
-        ? queryClient.getQueryData(queryKeys.projects.advanced(user.id))
-        : undefined;
       const previousDashboardStats = user?.id
         ? queryClient.getQueryData([
             ...queryKeys.stats.overview(user.id),
@@ -165,7 +122,6 @@ export const useUpdateProjectStatusMutation = () => {
       // Return context object for rollback
       return {
         previousProjectDetail,
-        previousAdvancedProjects,
         previousDashboardStats,
         projectId,
         status,
@@ -173,6 +129,19 @@ export const useUpdateProjectStatusMutation = () => {
       };
     },
     onError: (err, variables, context) => {
+      // Enhanced error logging to capture more details
+      const errorDetails = {
+        message: err instanceof Error ? err.message : 'Unknown error',
+        name: err instanceof Error ? err.name : undefined,
+        stack: err instanceof Error ? err.stack : undefined,
+        errorObject: err,
+        projectId: variables.projectId,
+        status: variables.status,
+        userId: user?.id,
+      };
+
+      logger.error('Status update mutation failed with detailed error:', errorDetails);
+
       // Record the error
       dashboardSyncMonitor.recordEvent({
         type: 'status_update',
@@ -180,8 +149,12 @@ export const useUpdateProjectStatusMutation = () => {
         status: variables.status,
         userId: user?.id,
         success: false,
-        error: err instanceof Error ? err.message : 'Unknown error',
-        metadata: { phase: 'onError' },
+        error: err instanceof Error ? err.message : String(err),
+        metadata: {
+          phase: 'onError',
+          errorName: err instanceof Error ? err.name : undefined,
+          errorDetails: errorDetails,
+        },
       });
 
       // Roll back the optimistic updates using snapshots
@@ -190,12 +163,6 @@ export const useUpdateProjectStatusMutation = () => {
           queryClient.setQueryData(
             queryKeys.projects.detail(context.projectId),
             context.previousProjectDetail
-          );
-        }
-        if (context.previousAdvancedProjects && user?.id) {
-          queryClient.setQueryData(
-            queryKeys.projects.advanced(user.id),
-            context.previousAdvancedProjects
           );
         }
         if (context.previousDashboardStats && user?.id) {
@@ -540,17 +507,6 @@ export const useArchiveProjectMutation = () => {
       // Optimistic cache updates - immediate UI feedback
       if (user?.id) {
         // Modern React 18+ handles batching automatically - no need for manual batching
-        // Optimistically update project status in advanced projects list
-        queryClient.setQueryData(queryKeys.projects.advanced(user.id), (oldData: unknown) => {
-          if (!oldData || typeof oldData !== 'object' || !('projects' in oldData)) return oldData;
-          const data = oldData as { projects: Array<{ id: string; [key: string]: unknown }> };
-          return {
-            ...data,
-            projects: data.projects.map(p =>
-              p.id === projectId ? { ...p, status: PROJECT_STATUS.ARCHIVED } : p
-            ),
-          };
-        });
 
         // Optimistically update any paginated project lists
         queryClient.setQueriesData(
@@ -707,20 +663,6 @@ export const useDeleteProjectMutation = () => {
         queryClient.removeQueries({ queryKey: queryKeys.projects.detail(projectId) });
         // Remove any progress notes for the deleted project
         queryClient.removeQueries({ queryKey: queryKeys.progressNotes.list(projectId) });
-
-        // Optimistically update advanced projects list by removing the deleted project
-        queryClient.setQueryData(queryKeys.projects.advanced(user.id), (oldData: unknown) => {
-          if (!oldData || typeof oldData !== 'object' || !('projects' in oldData)) return oldData;
-          const data = oldData as {
-            projects: Array<{ id: string; [key: string]: unknown }>;
-            totalItems: number;
-          };
-          return {
-            ...data,
-            projects: data.projects.filter(p => p.id !== projectId),
-            totalItems: Math.max(0, data.totalItems - 1),
-          };
-        });
 
         // Optimistically update any paginated project lists by removing the deleted project
         queryClient.setQueriesData(

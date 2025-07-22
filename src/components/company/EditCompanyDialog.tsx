@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useUpdateCompany } from '@/hooks/mutations/useUpdateCompany';
+import { useUpdateCompany } from '@/hooks/mutations/useCompanyMutations';
 import FormField from '@/components/projects/form/FormField';
 
 interface EditCompanyDialogProps {
@@ -45,7 +45,7 @@ const EditCompanyDialog = ({ company, onCompanyUpdated }: EditCompanyDialogProps
       new URL(url);
       setUrlError('');
       return true;
-    } catch (e) {
+    } catch {
       setUrlError('Please enter a valid URL (e.g., https://example.com)');
       return false;
     }
@@ -78,13 +78,15 @@ const EditCompanyDialog = ({ company, onCompanyUpdated }: EditCompanyDialogProps
     try {
       await updateCompanyMutation.mutateAsync({
         id: company.id,
-        name: companyName,
-        website_url: companyUrl || undefined,
+        data: {
+          name: companyName,
+          website_url: companyUrl || undefined,
+        },
       });
 
       setIsDialogOpen(false);
       onCompanyUpdated();
-    } catch (error) {
+    } catch {
       // Error handling is done in the mutation hook
     }
   };

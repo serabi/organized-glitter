@@ -6,9 +6,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { createLogger } from '@/utils/secureLogger';
 import { ClientResponseError } from 'pocketbase';
-import { updateProjectInCache } from '@/utils/cacheUtils';
-import { useMetadata } from '@/contexts/MetadataContext';
-import type { Project } from '@/types/project';
 import { getCurrentDateString } from '@/utils/dateHelpers';
 import { useUserTimezone } from '@/hooks/useUserTimezone';
 
@@ -152,13 +149,35 @@ export const useUpdateProject = () => {
       // NOTE: Using optimistic updates to prevent position jumping during edits.
       // The visual order remains stable for all updates until user explicitly changes sorting.
 
-      // Only invalidate dashboard stats cache when project is updated (especially status changes)
+      // Smart cache invalidation - only invalidate what actually changed
       if (user?.id) {
-        const currentYear = new Date().getFullYear();
+        // Always invalidate project lists (for updated project data)
         queryClient.invalidateQueries({
-          queryKey: [...queryKeys.stats.overview(user.id), 'dashboard', currentYear],
+          queryKey: queryKeys.projects.lists(),
         });
-        logger.info('Dashboard stats cache invalidated after project update');
+
+        // Only invalidate status counts if status actually changed
+        if (variables.status) {
+          logger.info('Status update detected - invalidating status count caches', {
+            newStatus: variables.status,
+            projectId: data.id,
+          });
+
+          // Invalidate all project queries that include status counts
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.projects.lists(),
+          });
+
+          // Invalidate dashboard stats for current year
+          const currentYear = new Date().getFullYear();
+          queryClient.invalidateQueries({
+            queryKey: [...queryKeys.stats.overview(user.id), 'dashboard', currentYear],
+          });
+        } else {
+          logger.info('Non-status update - preserving status count cache for performance');
+        }
+
+        logger.info('Cache invalidation completed');
       }
 
       toast({

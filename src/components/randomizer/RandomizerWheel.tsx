@@ -1,19 +1,27 @@
 /**
  * @fileoverview Interactive Randomizer Wheel Component
  *
- * A beautiful, accessible spinning wheel component that randomly selects from a list of projects.
+ * An accessible spinning wheel component that randomly selects from a list of projects.
  * Features smooth animations, comprehensive accessibility support, responsive design, and
  * integration with the Organized Glitter brand color palette.
  *
- * @author Generated with Claude Code
+ * @author @serabi
  * @version 1.0.0
- * @since 2024-06-28
+ * @since 2025-06-28
  */
 
 import React, { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Project } from '@/types/project';
 import { createLogger } from '@/utils/secureLogger';
+import {
+  useAccessibilityAnnouncements,
+  useFocusManagement,
+} from '@/hooks/useAccessibilityAnnouncements';
+import { useWheelTouchGestures } from '@/hooks/useTouchGestures';
+import { useIsMobile, useIsTouchDevice } from '@/hooks/use-mobile';
+import { useEnhancedTouchFeedback } from '@/hooks/useEnhancedTouchFeedback';
+import { RippleEffect } from '@/components/ui/ripple-effect';
 
 const logger = createLogger('RandomizerWheel');
 
@@ -126,14 +134,25 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
   const [isSpinning, setIsSpinning] = useState(false);
   /** Current rotation angle in degrees */
   const [rotation, setRotation] = useState(0);
-  /** The last selected project result */
-  const [selectedResult, setSelectedResult] = useState<Project | null>(null);
   /** Current window size for responsive calculations */
   const [windowSize, setWindowSize] = useState({ width: 1024, height: 768 });
   /** Reference to the wheel DOM element for focus management */
   const wheelRef = useRef<HTMLDivElement>(null);
-  /** Reference to screen reader announcement area */
-  const resultAnnouncementRef = useRef<HTMLDivElement>(null);
+
+  // Accessibility and mobile support
+  const {
+    announce,
+    announceSpinStart,
+    announceSpinResult,
+    announceKeyboardInstructions,
+    announceTouchInstructions,
+    liveRegionRef,
+    statusRef,
+  } = useAccessibilityAnnouncements();
+
+  const { removeFocus } = useFocusManagement();
+  const isMobile = useIsMobile();
+  const isTouchDevice = useIsTouchDevice();
 
   // Update window size for responsive calculations
   React.useEffect(() => {
@@ -148,16 +167,32 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
     }
   }, []);
 
+  // Forward declaration for handleSpin function
+  const handleSpinRef = useRef<() => void>();
+
+  // Touch gesture support for wheel
+  const { wheelTouchHandlers, touchFeedback, triggerHapticFeedback } = useWheelTouchGestures(
+    () => handleSpinRef.current?.(),
+    disabled || isSpinning
+  );
+
+  // Enhanced touch feedback for better mobile experience
+  const enhancedTouchFeedback = useEnhancedTouchFeedback({
+    enableHaptic: true,
+    enableRipple: true,
+    enableScale: false, // Don't scale the whole wheel
+    hapticIntensity: 'medium',
+    duration: 400,
+  });
+
   const handleSpin = useCallback(() => {
     if (isSpinning || projects.length === 0) return;
 
     logger.debug('Starting wheel spin', { projectCount: projects.length });
     setIsSpinning(true);
 
-    // Announce spin start to screen readers
-    if (resultAnnouncementRef.current) {
-      resultAnnouncementRef.current.textContent = `Spinning wheel to select from ${projects.length} projects...`;
-    }
+    // Announce spin start with accessibility support
+    announceSpinStart(projects.length);
 
     // Check for reduced motion preference
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -195,22 +230,39 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
     setTimeout(() => {
       setIsSpinning(false);
       if (selectedProject) {
-        setSelectedResult(selectedProject);
         onSpinComplete(selectedProject);
         logger.info('Wheel spin completed', {
           selectedProjectId: selectedProject.id,
           selectedProjectTitle: selectedProject.title,
         });
 
-        // Announce result to screen readers
-        if (resultAnnouncementRef.current) {
-          resultAnnouncementRef.current.textContent = `Spin complete! Selected project: ${selectedProject.title}`;
+        // Announce result with accessibility support
+        const projectDetails = [selectedProject.company, selectedProject.artist]
+          .filter(Boolean)
+          .join(' • ');
+        announceSpinResult(selectedProject.title, projectDetails);
+
+        // Trigger haptic feedback for touch devices
+        if (isTouchDevice) {
+          triggerHapticFeedback('medium');
         }
       }
     }, animationDuration);
-  }, [isSpinning, projects, rotation, onSpinComplete]);
+  }, [
+    isSpinning,
+    projects,
+    rotation,
+    onSpinComplete,
+    announceSpinStart,
+    announceSpinResult,
+    isTouchDevice,
+    triggerHapticFeedback,
+  ]);
 
-  // Keyboard navigation handler
+  // Update the ref with the current handleSpin function
+  handleSpinRef.current = handleSpin;
+
+  // Enhanced keyboard navigation handler with comprehensive accessibility support
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
       if (isSpinning) return;
@@ -221,28 +273,116 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
           event.preventDefault();
           if (!disabled && projects.length > 0) {
             handleSpin();
+          } else if (projects.length === 0) {
+            announceSpinStart(0); // This will announce no projects available
+          } else if (disabled) {
+            announce('Wheel is currently disabled. Please wait or check your selection.');
           }
           break;
         case 'Escape':
           event.preventDefault();
-          if (wheelRef.current) {
-            wheelRef.current.blur();
+          removeFocus();
+          announce('Focus removed from randomizer wheel.');
+          break;
+        case 'Tab':
+          // Allow default tab behavior but provide audio feedback
+          if (!event.shiftKey) {
+            announce('Navigating to next interactive element.');
+          } else {
+            announce('Navigating to previous interactive element.');
+          }
+          break;
+        case 'ArrowUp':
+        case 'ArrowDown':
+        case 'ArrowLeft':
+        case 'ArrowRight':
+          event.preventDefault();
+          announce(
+            `Use Enter or Space to spin the wheel. Currently ${projects.length} projects available.`
+          );
+          break;
+        case 'Home':
+          event.preventDefault();
+          announce(
+            `Randomizer wheel with ${projects.length} projects. Use Enter or Space to spin.`
+          );
+          break;
+        case 'End':
+          event.preventDefault();
+          announce('End of wheel interaction. Use Tab to navigate to other elements.');
+          break;
+        case 'F1':
+        case '?':
+          event.preventDefault();
+          if (isTouchDevice) {
+            announceTouchInstructions();
+          } else {
+            announceKeyboardInstructions();
+          }
+          break;
+        case 'h':
+        case 'H':
+          // Help shortcut
+          event.preventDefault();
+          announce(
+            `Randomizer wheel help: ${projects.length} projects available. Use Enter or Space to spin. Use F1 for detailed instructions.`
+          );
+          break;
+        case 'r':
+        case 'R':
+          // Refresh/read current state
+          event.preventDefault();
+          if (projects.length > 0) {
+            const projectList = projects
+              .slice(0, 5)
+              .map(p => p.title)
+              .join(', ');
+            const moreText = projects.length > 5 ? ` and ${projects.length - 5} more` : '';
+            announce(
+              `${projects.length} projects selected: ${projectList}${moreText}. Press Enter to spin.`
+            );
+          } else {
+            announce(
+              'No projects selected for randomizer. Please select projects from the list below.'
+            );
           }
           break;
         default:
+          // Announce unhandled keys for better user feedback
+          if (event.key.length === 1 && /[a-zA-Z0-9]/.test(event.key)) {
+            announce('Use Enter or Space to spin, F1 for help, or Tab to navigate.');
+          }
           break;
       }
     },
-    [isSpinning, disabled, projects.length, handleSpin]
+    [
+      isSpinning,
+      disabled,
+      projects,
+      handleSpin,
+      removeFocus,
+      announceKeyboardInstructions,
+      announceTouchInstructions,
+      announceSpinStart,
+      announce,
+      isTouchDevice,
+    ]
   );
 
-  // Empty wheel state - show beautiful gradient circle
+  // Empty wheel state with enhanced accessibility
   if (projects.length === 0) {
     return (
       <div className="flex flex-col items-center space-y-6">
+        {/* Accessibility live regions */}
+        <div ref={liveRegionRef} aria-live="polite" aria-atomic="true" className="sr-only" />
+        <div ref={statusRef} aria-live="assertive" aria-atomic="true" className="sr-only" />
+
         {/* Screen Reader Instructions */}
         <div className="sr-only" id="wheel-instructions">
           Project randomizer wheel. Select some projects from the list below to start spinning.
+          {isTouchDevice &&
+            ' You can also swipe up on the wheel to spin when projects are selected.'}
+          Press F1 or question mark for help.
         </div>
 
         {/* Empty Wheel Container */}
@@ -261,17 +401,20 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
           </div>
 
           {/* Empty Wheel with Gradient */}
-          <div className="relative h-72 w-72 overflow-hidden rounded-full border-4 border-flamingo-300 bg-gradient-to-br from-diamond-400 via-flamingo-400 via-peach-400 to-mauve-400 opacity-60 sm:h-120 sm:w-120 lg:h-140 lg:w-140">
+          <div className="relative h-60 w-60 overflow-hidden rounded-full border-4 border-flamingo-300 bg-gradient-to-br from-diamond-400 via-flamingo-400 to-mauve-400 opacity-60 xs:h-72 xs:w-72 sm:h-80 sm:w-80 md:h-96 md:w-96 lg:h-105 lg:w-105 xl:h-140 xl:w-140">
             {/* Center content */}
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center text-white drop-shadow-lg">
                 <p className="text-lg font-semibold">Select projects below</p>
                 <p className="text-sm opacity-90">to get started!</p>
+                {isTouchDevice && (
+                  <p className="mt-1 text-xs opacity-80">Swipe up to spin when ready</p>
+                )}
               </div>
             </div>
 
             {/* Subtle pulse animation */}
-            <div className="absolute inset-0 animate-pulse rounded-full bg-gradient-to-br from-diamond-300 via-flamingo-300 via-peach-300 to-mauve-300 opacity-30"></div>
+            <div className="absolute inset-0 animate-pulse rounded-full bg-gradient-to-br from-diamond-300 via-flamingo-300 to-mauve-300 opacity-30"></div>
           </div>
         </div>
 
@@ -291,41 +434,97 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
 
   const segmentAngle = 360 / projects.length;
 
-  // Responsive wheel sizes matching CSS classes:
-  // Mobile: h-72 w-72 = 288px, Tablet: sm:h-96 sm:w-96 = 384px, Desktop: lg:h-140 lg:w-140 = 560px
+  // Enhanced responsive wheel sizes with tablet landscape/portrait optimization:
+  // Very small mobile: 240px, Mobile: 288px, Large mobile: 320px
+  // Tablet portrait: 384px, Tablet landscape: 420px, Desktop: 560px
   const getWheelSize = () => {
-    if (windowSize.width >= 1024) return 560; // lg breakpoint - desktop
-    if (windowSize.width >= 640) return 384; // sm breakpoint - tablet
-    return 288; // mobile default
+    const { width, height } = windowSize;
+    const isLandscape = width > height;
+
+    // Desktop (1024px+)
+    if (width >= 1024) return 560;
+
+    // Large tablet landscape (920px+)
+    if (width >= 920 && isLandscape) return 480;
+
+    // Tablet landscape (768px+) - optimize for landscape mode
+    if (width >= 768 && isLandscape) return 420;
+
+    // Tablet portrait or larger (640px+)
+    if (width >= 640) return 384;
+
+    // Large mobile (480px+)
+    if (width >= 480) return 320;
+
+    // Small mobile (360px+)
+    if (width >= 360) return 288;
+
+    // Very small mobile (default)
+    return 240;
   };
 
   const wheelSize = getWheelSize();
   const radius = wheelSize / 2;
 
-  // Calculate responsive text properties based on wheel size and project count
+  // Enhanced responsive text properties based on wheel size and project count
   const getTextProperties = () => {
     const projectCount = projects.length;
+    const { width, height } = windowSize;
+    const isLandscape = width > height;
 
-    // Base properties by screen size
-    if (windowSize.width >= 1024) {
-      // Desktop: larger wheel (560px)
+    // Desktop: larger wheel (560px)
+    if (width >= 1024) {
       if (projectCount <= 4) return { fontSize: 18, strokeWidth: 3, maxChars: 15 };
       if (projectCount <= 8) return { fontSize: 16, strokeWidth: 3, maxChars: 12 };
       if (projectCount <= 15) return { fontSize: 14, strokeWidth: 2, maxChars: 10 };
       return { fontSize: 12, strokeWidth: 2, maxChars: 8 };
-    } else if (windowSize.width >= 640) {
-      // Tablet: medium wheel (384px)
+    }
+
+    // Large tablet landscape: enhanced wheel (480px)
+    if (width >= 920 && isLandscape) {
+      if (projectCount <= 4) return { fontSize: 17, strokeWidth: 2, maxChars: 14 };
+      if (projectCount <= 8) return { fontSize: 15, strokeWidth: 2, maxChars: 11 };
+      if (projectCount <= 15) return { fontSize: 13, strokeWidth: 2, maxChars: 9 };
+      return { fontSize: 11, strokeWidth: 2, maxChars: 7 };
+    }
+
+    // Tablet landscape: optimized wheel (420px)
+    if (width >= 768 && isLandscape) {
+      if (projectCount <= 4) return { fontSize: 16, strokeWidth: 2, maxChars: 13 };
+      if (projectCount <= 8) return { fontSize: 14, strokeWidth: 2, maxChars: 10 };
+      if (projectCount <= 15) return { fontSize: 12, strokeWidth: 2, maxChars: 8 };
+      return { fontSize: 10, strokeWidth: 1, maxChars: 6 };
+    }
+
+    // Tablet portrait: medium wheel (384px)
+    if (width >= 640) {
       if (projectCount <= 4) return { fontSize: 16, strokeWidth: 2, maxChars: 12 };
       if (projectCount <= 8) return { fontSize: 14, strokeWidth: 2, maxChars: 10 };
       if (projectCount <= 15) return { fontSize: 12, strokeWidth: 2, maxChars: 8 };
       return { fontSize: 10, strokeWidth: 1, maxChars: 6 };
-    } else {
-      // Mobile: small wheel (288px)
+    }
+
+    // Large mobile: enhanced wheel (320px)
+    if (width >= 480) {
+      if (projectCount <= 4) return { fontSize: 15, strokeWidth: 2, maxChars: 11 };
+      if (projectCount <= 8) return { fontSize: 13, strokeWidth: 2, maxChars: 9 };
+      if (projectCount <= 15) return { fontSize: 11, strokeWidth: 1, maxChars: 7 };
+      return { fontSize: 9, strokeWidth: 1, maxChars: 5 };
+    }
+
+    // Small mobile: standard wheel (288px)
+    if (width >= 360) {
       if (projectCount <= 4) return { fontSize: 14, strokeWidth: 2, maxChars: 10 };
       if (projectCount <= 8) return { fontSize: 12, strokeWidth: 2, maxChars: 8 };
       if (projectCount <= 15) return { fontSize: 10, strokeWidth: 1, maxChars: 6 };
       return { fontSize: 8, strokeWidth: 1, maxChars: 4 };
     }
+
+    // Very small mobile: compact wheel (240px)
+    if (projectCount <= 4) return { fontSize: 12, strokeWidth: 1, maxChars: 8 };
+    if (projectCount <= 8) return { fontSize: 10, strokeWidth: 1, maxChars: 6 };
+    if (projectCount <= 15) return { fontSize: 8, strokeWidth: 1, maxChars: 4 };
+    return { fontSize: 7, strokeWidth: 1, maxChars: 3 };
   };
 
   const textProps = getTextProperties();
@@ -334,16 +533,21 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
   const projectList = projects.map(p => p.title).join(', ');
 
   return (
-    <div className="flex flex-col items-center space-y-6">
+    <div className="flex flex-col items-center space-y-3 sm:space-y-4 md:space-y-6">
+      {/* Accessibility live regions */}
+      <div ref={liveRegionRef} aria-live="polite" aria-atomic="true" className="sr-only" />
+      <div ref={statusRef} aria-live="assertive" aria-atomic="true" className="sr-only" />
+
       {/* Screen Reader Content */}
       <div className="sr-only">
         <div id="wheel-description">
           Project randomizer wheel with {projects.length} projects: {projectList}
         </div>
         <div id="wheel-instructions">
-          Press Enter or Space to spin the wheel. Use Escape to exit focus.
+          Press Enter or Space to spin the wheel. Use Escape to exit focus. Use Tab to navigate.
+          {isTouchDevice && ' You can also tap the wheel or swipe up to spin.'}
+          Press F1 or question mark for help.
         </div>
-        <div ref={resultAnnouncementRef} aria-live="polite" aria-atomic="true" />
 
         {/* Alternative content - project list for screen readers */}
         <div id="project-alternatives">
@@ -361,145 +565,209 @@ export const RandomizerWheel: React.FC<RandomizerWheelProps> = ({
         </div>
       </div>
 
-      {/* Wheel Container */}
-      <div
-        className="relative rounded-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-        role="application"
-        aria-label={`Project randomizer wheel with ${projects.length} projects`}
-        aria-describedby="wheel-description wheel-instructions project-alternatives"
-        tabIndex={0}
-        onKeyDown={handleKeyDown}
-      >
-        {/* Pointer Line */}
-        <div
-          className="absolute left-1/2 top-0 z-10 -translate-x-1/2 -translate-y-2 transform"
-          aria-hidden="true"
-        >
-          <div className="h-8 w-0.5 bg-flamingo-300 shadow-lg sm:h-10 sm:w-1 lg:h-12 lg:w-1.5"></div>
+      {/* Touch feedback for mobile users */}
+      {isTouchDevice && touchFeedback && (
+        <div className="wheel-touch-feedback" role="status" aria-live="polite">
+          {touchFeedback}
         </div>
+      )}
 
-        {/* Wheel */}
+      {/* Enhanced Wheel Container with Touch Support and Visual Feedback */}
+      <RippleEffect
+        duration={600}
+        color="rgba(168, 85, 247, 0.4)"
+        disabled={disabled || isSpinning}
+        className={`relative rounded-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+          isTouchDevice ? 'cursor-pointer' : ''
+        }`}
+        onClick={() => {
+          if (!disabled && !isSpinning) {
+            enhancedTouchFeedback.triggerFeedback('haptic', { intensity: 'medium' });
+            handleSpin();
+          }
+        }}
+      >
         <div
-          ref={wheelRef}
-          className={`duration-3000 relative h-72 w-72 overflow-hidden rounded-full border-4 border-flamingo-300 transition-transform ease-out sm:h-96 sm:w-96 lg:h-140 lg:w-140 ${
-            isSpinning ? 'animate-spin-custom' : ''
-          }`}
-          style={{
-            transform: `rotate(${rotation}deg)`,
-            transformOrigin: 'center',
+          role="application"
+          aria-label={`Project randomizer wheel with ${projects.length} projects`}
+          aria-describedby="wheel-description wheel-instructions project-alternatives"
+          tabIndex={0}
+          onKeyDown={handleKeyDown}
+          onFocus={() => {
+            if (isTouchDevice) {
+              announceTouchInstructions();
+            } else {
+              announceKeyboardInstructions();
+            }
           }}
-          aria-hidden="true"
+          {...(isTouchDevice ? wheelTouchHandlers : {})}
         >
-          {projects.map((project, index) => {
-            const startAngle = index * segmentAngle;
-            const colorHex = getWheelColor(index);
+          {/* Pointer Line */}
+          <div
+            className="absolute left-1/2 top-0 z-10 -translate-x-1/2 -translate-y-2 transform"
+            aria-hidden="true"
+          >
+            <div className="h-8 w-0.5 bg-flamingo-300 shadow-lg sm:h-10 sm:w-1 lg:h-12 lg:w-1.5"></div>
+          </div>
 
-            // Calculate the path for the pie slice
-            const startAngleRad = (startAngle * Math.PI) / 180;
-            const endAngleRad = ((startAngle + segmentAngle) * Math.PI) / 180;
+          {/* Wheel */}
+          <div
+            ref={wheelRef}
+            className={`duration-3000 relative h-60 w-60 overflow-hidden rounded-full border-4 border-flamingo-300 transition-transform ease-out xs:h-72 xs:w-72 sm:h-80 sm:w-80 md:h-96 md:w-96 lg:h-105 lg:w-105 xl:h-140 xl:w-140 ${
+              isSpinning ? 'animate-spin-custom' : ''
+            }`}
+            style={{
+              transform: `rotate(${rotation}deg)`,
+              transformOrigin: 'center',
+            }}
+            aria-hidden="true"
+          >
+            {projects.map((project, index) => {
+              const startAngle = index * segmentAngle;
+              const colorHex = getWheelColor(index);
 
-            const x1 = radius + radius * Math.cos(startAngleRad);
-            const y1 = radius + radius * Math.sin(startAngleRad);
-            const x2 = radius + radius * Math.cos(endAngleRad);
-            const y2 = radius + radius * Math.sin(endAngleRad);
+              // Calculate the path for the pie slice
+              const startAngleRad = (startAngle * Math.PI) / 180;
+              const endAngleRad = ((startAngle + segmentAngle) * Math.PI) / 180;
 
-            const largeArcFlag = segmentAngle > 180 ? 1 : 0;
+              const x1 = radius + radius * Math.cos(startAngleRad);
+              const y1 = radius + radius * Math.sin(startAngleRad);
+              const x2 = radius + radius * Math.cos(endAngleRad);
+              const y2 = radius + radius * Math.sin(endAngleRad);
 
-            const pathData = [
-              `M ${radius} ${radius}`,
-              `L ${x1} ${y1}`,
-              `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`,
-              'Z',
-            ].join(' ');
+              const largeArcFlag = segmentAngle > 180 ? 1 : 0;
 
-            // Text position (middle of the segment)
-            const textAngle = startAngle + segmentAngle / 2;
-            const textAngleRad = (textAngle * Math.PI) / 180;
-            const textRadius = radius * 0.7;
-            const textX = radius + textRadius * Math.cos(textAngleRad);
-            const textY = radius + textRadius * Math.sin(textAngleRad);
+              const pathData = [
+                `M ${radius} ${radius}`,
+                `L ${x1} ${y1}`,
+                `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`,
+                'Z',
+              ].join(' ');
 
-            return (
-              <svg
-                key={project.id}
-                className="absolute inset-0 h-full w-full"
-                viewBox={`0 0 ${wheelSize} ${wheelSize}`}
-              >
-                {/* Segment background */}
-                <path d={pathData} fill={colorHex} stroke="#fda4af" strokeWidth="3" opacity="0.9" />
+              // Text position (middle of the segment)
+              const textAngle = startAngle + segmentAngle / 2;
+              const textAngleRad = (textAngle * Math.PI) / 180;
+              const textRadius = radius * 0.7;
+              const textX = radius + textRadius * Math.cos(textAngleRad);
+              const textY = radius + textRadius * Math.sin(textAngleRad);
 
-                {/* Pattern overlay for better accessibility */}
-                <path
-                  d={pathData}
-                  fill="none"
-                  stroke="white"
-                  strokeWidth="1"
-                  strokeDasharray={index % 2 === 0 ? '5,5' : 'none'}
-                  opacity="0.3"
-                />
-
-                {/* Project title text with better contrast - stroke outline layer */}
-                <text
-                  x={textX}
-                  y={textY}
-                  fill="none"
-                  stroke="black"
-                  strokeWidth={textProps.strokeWidth}
-                  strokeLinejoin="round"
-                  strokeLinecap="round"
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  fontSize={textProps.fontSize}
-                  fontWeight="500"
-                  style={{
-                    transform: `rotate(${textAngle}deg)`,
-                    transformOrigin: `${textX}px ${textY}px`,
-                  }}
+              return (
+                <svg
+                  key={project.id}
+                  className="absolute inset-0 h-full w-full"
+                  viewBox={`0 0 ${wheelSize} ${wheelSize}`}
                 >
-                  {project.title.length > textProps.maxChars
-                    ? `${project.title.substring(0, textProps.maxChars - 3)}...`
-                    : project.title}
-                </text>
-                {/* Project title text - white fill layer */}
-                <text
-                  x={textX}
-                  y={textY}
-                  fill="white"
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  fontSize={textProps.fontSize}
-                  fontWeight="500"
-                  className="drop-shadow-sm"
-                  style={{
-                    transform: `rotate(${textAngle}deg)`,
-                    transformOrigin: `${textX}px ${textY}px`,
-                  }}
-                >
-                  {project.title.length > textProps.maxChars
-                    ? `${project.title.substring(0, textProps.maxChars - 3)}...`
-                    : project.title}
-                </text>
-              </svg>
-            );
-          })}
+                  {/* Segment background */}
+                  <path
+                    d={pathData}
+                    fill={colorHex}
+                    stroke="#fda4af"
+                    strokeWidth="3"
+                    opacity="0.9"
+                  />
+
+                  {/* Pattern overlay for better accessibility */}
+                  <path
+                    d={pathData}
+                    fill="none"
+                    stroke="white"
+                    strokeWidth="1"
+                    strokeDasharray={index % 2 === 0 ? '5,5' : 'none'}
+                    opacity="0.3"
+                  />
+
+                  {/* Project title text with better contrast - stroke outline layer */}
+                  <text
+                    x={textX}
+                    y={textY}
+                    fill="none"
+                    stroke="black"
+                    strokeWidth={textProps.strokeWidth}
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fontSize={textProps.fontSize}
+                    fontWeight="500"
+                    style={{
+                      transform: `rotate(${textAngle}deg)`,
+                      transformOrigin: `${textX}px ${textY}px`,
+                    }}
+                  >
+                    {project.title.length > textProps.maxChars
+                      ? `${project.title.substring(0, textProps.maxChars - 3)}...`
+                      : project.title}
+                  </text>
+                  {/* Project title text - white fill layer */}
+                  <text
+                    x={textX}
+                    y={textY}
+                    fill="white"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fontSize={textProps.fontSize}
+                    fontWeight="500"
+                    className="drop-shadow-sm"
+                    style={{
+                      transform: `rotate(${textAngle}deg)`,
+                      transformOrigin: `${textX}px ${textY}px`,
+                    }}
+                  >
+                    {project.title.length > textProps.maxChars
+                      ? `${project.title.substring(0, textProps.maxChars - 3)}...`
+                      : project.title}
+                  </text>
+                </svg>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      </RippleEffect>
 
-      {/* Spin Button */}
-      <Button
-        onClick={handleSpin}
+      {/* Enhanced Spin Button with Accessibility and Touch Feedback */}
+      <RippleEffect
+        duration={400}
+        color="rgba(255, 255, 255, 0.4)"
         disabled={disabled || isSpinning || projects.length === 0}
-        size="lg"
-        className="bg-gradient-to-r from-primary to-mauve-500 px-8 py-3 text-lg font-semibold text-white shadow-lg hover:from-primary/90 hover:to-mauve-500/90"
-        aria-label={
-          isSpinning
-            ? `Spinning wheel to select from ${projects.length} projects`
-            : `Spin the wheel to randomly select from ${projects.length} projects`
-        }
-        aria-describedby="wheel-description"
       >
-        {isSpinning ? 'Spinning...' : 'Spin the Wheel!'}
-      </Button>
+        <Button
+          onClick={handleSpin}
+          disabled={disabled || isSpinning || projects.length === 0}
+          size="lg"
+          className={`bg-gradient-to-r from-primary to-mauve-500 px-8 py-3 text-lg font-semibold text-white shadow-lg hover:from-primary/90 hover:to-mauve-500/90 ${
+            isTouchDevice ? 'min-h-[48px] touch-manipulation active:scale-95' : ''
+          } ${isMobile ? 'w-full max-w-[280px]' : ''} transition-transform duration-150`}
+          aria-label={
+            isSpinning
+              ? `Spinning wheel to select from ${projects.length} projects`
+              : `Spin the wheel to randomly select from ${projects.length} projects${
+                  isTouchDevice ? '. You can also swipe up on the wheel' : ''
+                }`
+          }
+          aria-describedby="wheel-description wheel-instructions"
+        >
+          {isSpinning ? (
+            <>
+              <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-transparent border-t-current" />
+              Spinning...
+            </>
+          ) : (
+            <>
+              Spin the Wheel!
+              {isTouchDevice && <span className="mt-1 block text-xs opacity-70">or swipe ↑</span>}
+            </>
+          )}
+        </Button>
+      </RippleEffect>
+
+      {/* Additional touch instructions for mobile */}
+      {isTouchDevice && !isSpinning && (
+        <div className="mt-2 text-center">
+          <p className="text-sm text-muted-foreground">
+            Tap the button above or swipe up on the wheel to spin
+          </p>
+        </div>
+      )}
 
       {/* Custom CSS for the spin animation */}
       <style>{`
