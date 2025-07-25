@@ -1,45 +1,17 @@
 import * as React from 'react';
 import * as RechartsPrimitive from 'recharts';
-
-// Define our own types since Recharts doesn't export these consistently
-type ValueType = string | number;
-type NameType = string | number;
-
-interface Payload<TValueType = ValueType, TNameType = NameType> {
-  value: TValueType;
-  name: TNameType;
-  dataKey?: string | number;
-  payload: Record<string, unknown>;
-  color?: string;
-  [key: string]: unknown;
-}
-
-interface LegendPayload {
-  value: string | number;
-  type?: string;
-  color?: string;
-  dataKey?: string | number;
-  [key: string]: unknown;
-}
-
 import { cn } from '@/lib/utils';
+import type {
+  ValueType,
+  NameType,
+  Payload,
+  LegendPayload,
+  ChartConfig,
+  ChartContextProps,
+} from './chart-types';
 
 // Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { light: '', dark: '.dark' } as const;
-
-export type ChartConfig = {
-  [k in string]: {
-    label?: React.ReactNode;
-    icon?: React.ComponentType;
-  } & (
-    | { color?: string; theme?: never }
-    | { color?: never; theme: Record<keyof typeof THEMES, string> }
-  );
-};
-
-type ChartContextProps = {
-  config: ChartConfig;
-};
 
 const ChartContext = React.createContext<ChartContextProps | null>(null);
 

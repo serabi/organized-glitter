@@ -1,18 +1,13 @@
 import React, { lazy, Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
-import type { ComponentProps } from 'react';
-import type { Legend, Tooltip, LegendProps } from 'recharts';
-import * as RechartsPrimitive from 'recharts';
-import type { ChartConfig } from './chart';
-
-// Local LegendPayload interface to match chart.tsx
-interface LegendPayload {
-  value: string | number;
-  type?: string;
-  color?: string;
-  dataKey?: string | number;
-  [key: string]: unknown;
-}
+import type { Legend } from 'recharts';
+import type {
+  ChartContainerProps,
+  ChartTooltipProps,
+  ChartTooltipContentProps,
+  ChartLegendProps,
+  ChartLegendContentProps,
+} from './chart-types';
 
 // Lazy load the heavy chart components
 const LazyChartContainer = lazy(() =>
@@ -52,31 +47,6 @@ const ChartLoading = () => (
   </div>
 );
 
-// Type definitions based on the chart components
-type ChartContainerProps = React.ComponentProps<'div'> & {
-  config: ChartConfig;
-  children: React.ComponentProps<typeof RechartsPrimitive.ResponsiveContainer>['children'];
-};
-
-type ChartTooltipProps = ComponentProps<typeof Tooltip>;
-
-type ChartTooltipContentProps = React.ComponentProps<typeof Tooltip> &
-  React.ComponentProps<'div'> & {
-    hideLabel?: boolean;
-    hideIndicator?: boolean;
-    indicator?: 'line' | 'dot' | 'dashed';
-    nameKey?: string;
-    labelKey?: string;
-  };
-
-type ChartLegendProps = LegendProps;
-
-type ChartLegendContentProps = React.ComponentProps<'div'> & {
-  payload?: ReadonlyArray<LegendPayload>;
-  verticalAlign?: 'top' | 'middle' | 'bottom';
-  hideIcon?: boolean;
-  nameKey?: string;
-};
 
 // Lazy loaded chart components with loading fallbacks and proper typing
 export const ChartContainer = React.forwardRef<HTMLDivElement, ChartContainerProps>(
@@ -121,4 +91,4 @@ ChartLegendContent.displayName = 'ChartLegendContent';
 
 // Re-export the ChartStyle since it's lightweight
 export { ChartStyle } from './chart';
-export type { ChartConfig } from './chart';
+export type { ChartConfig } from './chart-types';
