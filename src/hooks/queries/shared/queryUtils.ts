@@ -63,7 +63,7 @@ export const getStandardQueryConfig = () => ({
   gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
   refetchOnWindowFocus: false, // Reduce unnecessary refetches
   refetchOnReconnect: false, // Reduce blinking on reconnect
-  notifyOnChangeProps: ['data', 'error', 'isLoading', 'isError'],
+  notifyOnChangeProps: ['data', 'error', 'isLoading', 'isError'] as const,
   retry: standardRetryConfig,
   retryDelay: standardRetryDelay,
 });
@@ -78,7 +78,7 @@ export const getFrequentQueryConfig = () => ({
   gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
   refetchOnWindowFocus: false,
   refetchOnReconnect: false,
-  notifyOnChangeProps: ['data', 'error', 'isLoading', 'isError'],
+  notifyOnChangeProps: ['data', 'error', 'isLoading', 'isError'] as const,
   retry: standardRetryConfig,
   retryDelay: standardRetryDelay,
 });
@@ -203,7 +203,7 @@ export const getStatusCountQueryConfig = () => ({
   refetchOnWindowFocus: false, // Never refetch on focus - rely on invalidation
   refetchOnReconnect: false, // Never refetch on reconnect - rely on invalidation
   placeholderData: (previousData: unknown) => previousData, // Show stale data immediately (stale-while-revalidate)
-  notifyOnChangeProps: ['data', 'error', 'isLoading', 'isError'],
+  notifyOnChangeProps: ['data', 'error', 'isLoading', 'isError'] as const,
   retry: standardRetryConfig,
   retryDelay: standardRetryDelay,
 });

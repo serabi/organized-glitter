@@ -1,6 +1,26 @@
 import * as React from 'react';
 import * as RechartsPrimitive from 'recharts';
-import type { ValueType, NameType, Payload, LegendPayload } from 'recharts';
+
+// Define our own types since Recharts doesn't export these consistently
+type ValueType = string | number;
+type NameType = string | number;
+
+interface Payload<TValueType = ValueType, TNameType = NameType> {
+  value: TValueType;
+  name: TNameType;
+  dataKey?: string | number;
+  payload: Record<string, unknown>;
+  color?: string;
+  [key: string]: unknown;
+}
+
+interface LegendPayload {
+  value: string | number;
+  type?: string;
+  color?: string;
+  dataKey?: string | number;
+  [key: string]: unknown;
+}
 
 import { cn } from '@/lib/utils';
 

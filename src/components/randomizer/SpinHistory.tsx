@@ -5,9 +5,9 @@
  * navigation to selected projects, and history management features. Includes
  * responsive design and comprehensive error handling.
  *
- * @author Generated with Claude Code
+ * @author serabi
  * @version 1.0.0
- * @since 2024-06-28
+ * @since 2025-06-28
  */
 
 import React, { useState } from 'react';
@@ -226,7 +226,7 @@ export const SpinHistory: React.FC<SpinHistoryProps> = ({ userId, onClearHistory
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <span>{formatDate(spin.spun_at)}</span>
                       <span>•</span>
-                      <span>{spin.selected_projects.length} options</span>
+                      <span>{spin.selected_projects?.length ?? 0} options</span>
                     </div>
                   </div>
 

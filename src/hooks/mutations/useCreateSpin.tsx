@@ -271,6 +271,7 @@ export const useCreateSpin = () => {
         selected_projects: variables.selected_projects,
         selected_count: variables.selected_projects.length,
         spun_at: new Date().toISOString(),
+        metadata: variables.metadata || null,
         created: new Date().toISOString(),
         updated: new Date().toISOString(),
         collectionId: 'randomizer_spins',

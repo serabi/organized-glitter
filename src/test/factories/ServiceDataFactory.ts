@@ -4,7 +4,8 @@
  * @created 2025-07-16
  */
 
-import type { ProjectType, ProjectFilterStatus } from '@/types/project';
+import type { ProjectType } from '@/types/project';
+import type { ProjectStatus } from '@/types/project-status';
 import type { Tag } from '@/types/tag';
 import type { TestDataFactory } from '@/types/test-utils';
 
@@ -17,35 +18,21 @@ export const ProjectFactory: TestDataFactory<ProjectType> = (overrides = {}) => 
     title: 'Test Project',
     company: 'Test Company',
     artist: 'Test Artist',
-    status: 'progress' as ProjectFilterStatus,
-    kit_category: 'standard',
-    drill_shape: 'round',
+    status: 'progress' as ProjectStatus,
+    kit_category: 'full',
     drillShape: 'round',
     tags: [],
-    size: '30x40cm',
-    difficulty: 'medium',
-    general_notes: 'Test notes',
+    width: 30,
+    height: 40,
     generalNotes: 'Test notes',
-    price: '29.99',
-    currency: 'USD',
-    date_purchased: '2024-01-15',
     datePurchased: '2024-01-15',
-    date_received: '2024-01-20',
     dateReceived: '2024-01-20',
-    date_started: '2024-02-01',
     dateStarted: '2024-02-01',
-    date_completed: null,
     dateCompleted: null,
-    hours_spent: 0,
-    hoursSpent: 0,
-    image: 'test-image.jpg',
     imageUrl: 'https://example.com/test-image.jpg',
     userId: 'test-user-id',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
-    collectionId: 'projects',
-    collectionName: 'projects',
-    expand: undefined,
   };
 
   return { ...defaultProject, ...overrides };
@@ -58,12 +45,11 @@ export const TagFactory: TestDataFactory<Tag> = (overrides = {}) => {
   const defaultTag: Tag = {
     id: `tag-${Math.random().toString(36).substr(2, 9)}`,
     name: 'Test Tag',
+    slug: 'test-tag',
     color: '#3B82F6',
     userId: 'test-user-id',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
-    collectionId: 'tags',
-    collectionName: 'tags',
   };
 
   return { ...defaultTag, ...overrides };
@@ -102,10 +88,7 @@ export class ProjectVariationFactory {
   static completed(overrides: Partial<ProjectType> = {}): ProjectType {
     return ProjectFactory({
       status: 'completed',
-      date_completed: '2024-06-01',
       dateCompleted: '2024-06-01',
-      hours_spent: 120,
-      hoursSpent: 120,
       ...overrides,
     });
   }
@@ -116,14 +99,9 @@ export class ProjectVariationFactory {
   static wishlist(overrides: Partial<ProjectType> = {}): ProjectType {
     return ProjectFactory({
       status: 'wishlist',
-      date_purchased: null,
       datePurchased: null,
-      date_received: null,
       dateReceived: null,
-      date_started: null,
       dateStarted: null,
-      price: null,
-      currency: null,
       ...overrides,
     });
   }
@@ -145,8 +123,8 @@ export class ProjectVariationFactory {
   static miniKit(overrides: Partial<ProjectType> = {}): ProjectType {
     return ProjectFactory({
       kit_category: 'mini',
-      size: '15x20cm',
-      price: '9.99',
+      width: 15,
+      height: 20,
       ...overrides,
     });
   }
@@ -156,11 +134,8 @@ export class ProjectVariationFactory {
    */
   static large(overrides: Partial<ProjectType> = {}): ProjectType {
     return ProjectFactory({
-      size: '60x80cm',
-      difficulty: 'hard',
-      price: '89.99',
-      hours_spent: 300,
-      hoursSpent: 300,
+      width: 60,
+      height: 80,
       ...overrides,
     });
   }
@@ -172,13 +147,9 @@ export class ProjectVariationFactory {
     return ProjectFactory({
       company: null,
       artist: null,
-      size: null,
-      difficulty: null,
-      price: null,
-      currency: null,
-      image: null,
+      width: null,
+      height: null,
       imageUrl: null,
-      general_notes: null,
       generalNotes: null,
       ...overrides,
     });
@@ -191,7 +162,6 @@ export class ProjectVariationFactory {
     const longText = 'A'.repeat(1000);
     return ProjectFactory({
       title: longText,
-      general_notes: longText,
       generalNotes: longText,
       ...overrides,
     });
@@ -248,7 +218,7 @@ export class FilterScenarioFactory {
    * Creates projects for testing status filtering
    */
   static statusFilteringProjects(): ProjectType[] {
-    const statuses: ProjectFilterStatus[] = [
+    const statuses: ProjectStatus[] = [
       'wishlist',
       'purchased',
       'stash',
@@ -290,7 +260,6 @@ export class FilterScenarioFactory {
       Array.from({ length: 2 }, (_, index) =>
         ProjectFactory({
           title: `Project ${year}-${index + 1}`,
-          date_completed: `${year}-06-15`,
           dateCompleted: `${year}-06-15`,
           status: 'completed',
         })
@@ -416,7 +385,7 @@ export class BulkDataFactory {
         title: `Performance Test Project ${index + 1}`,
         status: ['wishlist', 'purchased', 'progress', 'completed'][
           index % 4
-        ] as ProjectFilterStatus,
+        ] as ProjectStatus,
       })
     );
   }

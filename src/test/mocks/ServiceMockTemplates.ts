@@ -143,21 +143,21 @@ export class ServiceMockTemplates {
         );
 
         // Apply status filter if present
-        if (options.filter?.includes('status =')) {
+        if (typeof options.filter === 'string' && options.filter.includes('status =')) {
           const statusMatch = options.filter.match(/status = "([^"]+)"/);
           if (statusMatch) {
             const status = statusMatch[1];
-            items = items.filter((item: Record<string, unknown>) => item.status === status);
+            items = items.filter((item) => (item as any).status === status);
           }
         }
 
         // Apply search filter if present
-        if (options.filter?.includes('title ~')) {
+        if (typeof options.filter === 'string' && options.filter.includes('title ~')) {
           const titleMatch = options.filter.match(/title ~ "%([^"]+)%"/);
           if (titleMatch) {
             const searchTerm = titleMatch[1].toLowerCase();
-            items = items.filter((item: Record<string, unknown>) =>
-              (item.title as string).toLowerCase().includes(searchTerm)
+            items = items.filter((item) =>
+              ((item as any).title as string).toLowerCase().includes(searchTerm)
             );
           }
         }
@@ -210,7 +210,7 @@ export class ServiceMockTemplates {
       let tags = [...mockTags];
 
       // Apply user filter if present
-      if (options.filter?.includes('user =')) {
+      if (typeof options.filter === 'string' && options.filter.includes('user =')) {
         const userMatch = options.filter.match(/user = "([^"]+)"/);
         if (userMatch) {
           const userId = userMatch[1];
@@ -227,7 +227,7 @@ export class ServiceMockTemplates {
         ...data,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-      });
+      }) as any; // Type assertion needed due to mock collection interface
     });
   }
 
