@@ -53,6 +53,18 @@ const logger = createLogger('useNavigateToProject');
 // Simplified navigation context for basic functionality
 export interface NavigationContext {
   timestamp: number;
+  preservationContext?: {
+    scrollPosition?: number;
+    timestamp?: number;
+    editedProjectId?: string;
+    isEditNavigation?: boolean;
+    preEditPosition?: {
+      index: number;
+      page: number;
+      totalItems: number;
+    };
+  };
+  currentPage?: number;
 }
 
 // Navigation result interface
@@ -190,6 +202,7 @@ export const useNavigateToProject = () => {
 interface NavigateToProjectEditOptions {
   replace?: boolean;
   state?: Record<string, unknown>;
+  navigationContext?: NavigationContext;
 }
 
 // Simple navigation to project edit page

@@ -1,89 +1,47 @@
 /**
- * Modern logging system using LogLayer
- * Replaces the entire secureLogger.ts system with a simpler, more powerful approach
+ * Modern logging system using existing secure logger
+ * @author @serabi
+ * @created 2025-07-25
  */
 
-import { LogLayer, ConsoleTransport } from 'loglayer';
-import { redactionPlugin } from '@loglayer/plugin-redaction';
+import { createLogger, performanceLogger, batchApiLogger } from './secureLogger';
 
-const isDevelopment = import.meta.env.DEV;
+// Export simplified loggers for different modules using the existing secure system
+export const authLogger = createLogger('AUTH');
+export const apiLogger = createLogger('API');
+export const dbLogger = createLogger('DATABASE');
+export const uiLogger = createLogger('UI');
 
-// Single logger configuration that replaces all your current loggers
-const createModernLogger = (namespace?: string) => {
-  return new LogLayer({
-    transport: new ConsoleTransport({
-      logger: console,
-      level: isDevelopment ? 'trace' : 'error',
-    }),
-    plugins: [
-      redactionPlugin({
-        paths: [
-          'password',
-          'token',
-          'secret',
-          'key',
-          'auth',
-          'authorization',
-          'vite_supabase_anon_key',
-          'supabase_anon_key',
-          'api_key',
-          'apikey',
-        ],
-        censor: '[REDACTED]',
-      }),
-    ],
-    prefix: namespace ? `[${namespace}]` : undefined,
-    enabled: isDevelopment,
-    contextFieldName: 'context',
-    metadataFieldName: 'metadata',
-    consoleDebug: isDevelopment,
-    errorSerializer: err => ({
-      message: err.message,
-      stack: err.stack,
-      name: err.name,
-    }),
-  });
-};
+// Re-export the existing performance logger
+export { performanceLogger };
 
-// Performance tracking built into LogLayer
+// Create a performance logger that matches the expected interface
 export const createPerformanceLogger = (namespace: string) => {
-  const logger = createModernLogger(namespace);
+  const logger = createLogger(namespace);
 
   return {
     start: (operationId: string, description: string, queryCount?: number) => {
-      const startTime = performance.now();
+      const timerId = `${namespace}-${operationId}`;
 
-      logger
-        .withContext({ operationId, queryCount })
-        .withMetadata({ startTime })
-        .info(`Starting: ${description}`);
+      logger.info(`Starting: ${description}`, { operationId, queryCount });
 
-      return {
-        end: (resultCount?: number, metadata?: Record<string, unknown>) => {
-          const duration = performance.now() - startTime;
-          const efficiency = queryCount ? duration / queryCount : undefined;
-
-          logger
-            .withContext({ operationId })
-            .withMetadata({
-              duration: `${duration.toFixed(2)}ms`,
-              efficiency: efficiency ? `${efficiency.toFixed(1)}ms per query` : undefined,
-              resultCount,
-              ...metadata,
-            })
-            .info(`Completed: ${description}`);
-        },
-      };
+      if (queryCount && queryCount > 1) {
+        return {
+          end: (resultCount?: number, metadata?: Record<string, unknown>) => {
+            batchApiLogger.endBatchOperation(timerId, resultCount, metadata);
+          },
+        };
+      } else {
+        performanceLogger.start(timerId);
+        return {
+          end: (resultCount?: number, metadata?: Record<string, unknown>) => {
+            performanceLogger.end(timerId, { resultCount, ...metadata });
+          },
+        };
+      }
     },
   };
 };
 
-// Export simplified loggers for different modules
-export const authLogger = createModernLogger('AUTH');
-export const apiLogger = createModernLogger('API');
-export const dbLogger = createModernLogger('DATABASE');
-export const uiLogger = createModernLogger('UI');
-export const performanceLogger = createPerformanceLogger('PERFORMANCE');
-
 // Default logger
-export const logger = createModernLogger();
+export const logger = createLogger();

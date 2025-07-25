@@ -1,7 +1,7 @@
 /**
  * Type-safe project filter interfaces for structured query building
  * @author @serabi
- * @created 2025-01-16
+ * @created 2025-07-16
  */
 
 import { ProjectStatus, Project } from './project';
@@ -148,6 +148,10 @@ export interface BatchStatusCountResult {
   counts: StatusBreakdown;
   /** Total across all statuses */
   total: number;
+  /** Query execution duration in milliseconds */
+  queryDuration?: number;
+  /** Optimization method used */
+  optimization?: string;
 }
 
 /**
@@ -202,6 +206,8 @@ export interface ProjectUpdateData {
   source_url?: string;
   /** Image file */
   image?: File | null;
+  /** Index signature for compatibility with Record<string, unknown> */
+  [key: string]: unknown;
 }
 
 /**

@@ -19,16 +19,6 @@ import { useCallback, useMemo } from 'react';
 import { ViewType } from '@/types/project';
 import { secureLogger } from '@/utils/secureLogger';
 
-interface DashboardFilters {
-  selectedCompany?: string;
-  selectedArtist?: string;
-  selectedDrillShape?: string;
-  selectedTag?: string;
-  selectedYearFinished?: string;
-  includeMiniKits?: boolean;
-  viewType?: ViewType;
-}
-
 interface DashboardFilterState {
   selectedCompany: string;
   selectedArtist: string;

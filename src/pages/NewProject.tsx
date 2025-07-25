@@ -4,7 +4,7 @@
  * Full-featured form for creating diamond painting projects using EditProject layout
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAuth } from '@/hooks/useAuth';
 import { useMetadata } from '@/contexts/MetadataContext';
@@ -148,7 +148,7 @@ const NewProject = () => {
         tagIds: data.tags?.map(tag => tag.id) || [],
       };
 
-      const newProject = await createProjectMutation.mutateAsync(projectData);
+      await createProjectMutation.mutateAsync(projectData);
 
       // Success toast and navigation are handled by the mutation hook
       // No manual navigation needed - the hook handles redirect before cache invalidation

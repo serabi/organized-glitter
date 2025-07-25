@@ -20,10 +20,10 @@ export const useEditProjectLogic = ({ projectId }: UseEditProjectLogicProps) => 
     submitting,
     companies,
     artists,
-    handleUpdateProject,
-    handleArchiveProject,
-    handleDeleteProject,
-    refreshLists,
+    handleSubmit: handleUpdateProject,
+    handleArchive: handleArchiveProject,
+    handleDelete: handleDeleteProject,
+    refetchProject: refreshLists,
   } = useEditProject(projectId);
 
   // Update form data when project loads
@@ -101,14 +101,11 @@ export const useEditProjectLogic = ({ projectId }: UseEditProjectLogicProps) => 
         _imageReplacement: data._imageReplacement,
       };
 
-      // Call the original handleUpdateProject with success callback to reset form state
-      await handleUpdateProject(dataToSubmit, {
-        onSuccess: () => {
-          secureLogger.debug('Resetting form dirty state after successful update');
-          setIsDirty(false);
-          setHasSelectedNewImage(false);
-        },
-      });
+      // Call the original handleUpdateProject and reset form state after success
+      await handleUpdateProject(dataToSubmit);
+      secureLogger.debug('Resetting form dirty state after successful update');
+      setIsDirty(false);
+      setHasSelectedNewImage(false);
     } catch (error) {
       secureLogger.error('Error submitting form:', error);
       throw error;

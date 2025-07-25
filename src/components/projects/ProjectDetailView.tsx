@@ -37,6 +37,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { formatDate } from '@/lib/utils';
+import { PocketBaseUser } from '@/contexts/AuthContext.types';
 
 /**
  * Props for the ProjectDetailView component
@@ -68,6 +69,8 @@ interface ProjectDetailViewProps {
   navigateToEdit: () => void;
   /** Whether any operation is currently submitting */
   isSubmitting?: boolean;
+  /** Current authenticated user */
+  user: PocketBaseUser | null;
 }
 
 /**
@@ -96,6 +99,7 @@ const ProjectDetailView = ({
   onDelete,
   navigateToEdit,
   isSubmitting = false,
+  user: _user,
 }: ProjectDetailViewProps) => {
   return (
     <div className="container mx-auto px-4 py-6">

@@ -105,8 +105,8 @@ export const useUpdateProject = () => {
       // Optimistically update the project detail if it exists in cache
       if (previousProject) {
         queryClient.setQueryData(queryKeys.projects.detail(variables.id), {
-          ...previousProject,
-          ...variables,
+          ...(previousProject as Record<string, unknown>),
+          ...(variables as Record<string, unknown>),
         });
       }
 

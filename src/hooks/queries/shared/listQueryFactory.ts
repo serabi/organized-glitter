@@ -145,8 +145,8 @@ export function createFullListQuery<TData = unknown>(config: ListQueryConfig<TDa
           filters.push(config.additionalFilters);
         }
 
-        return executeListQuery(config, authenticatedUserId, 'full list query', () =>
-          pb.collection(config.collection).getFullList({
+        return executeListQuery(config, authenticatedUserId, 'full list query', async () => {
+          const items = await pb.collection(config.collection).getFullList({
             filter: filters.join(' && '),
             sort: config.sortField || 'name',
             requestKey: createRequestKey(
@@ -154,8 +154,9 @@ export function createFullListQuery<TData = unknown>(config: ListQueryConfig<TDa
               authenticatedUserId,
               config.requestKeySuffix || 'all'
             ),
-          })
-        );
+          });
+          return { items, totalItems: items.length };
+        });
       },
       enabled: !!userId,
       ...getStandardQueryConfig(),

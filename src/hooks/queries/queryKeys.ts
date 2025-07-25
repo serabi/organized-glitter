@@ -83,7 +83,7 @@ const createStableKey = (obj: Record<string, unknown>): string => {
       stableObj[key] = [...value].sort();
     } else if (typeof value === 'object' && value !== null) {
       // Recursively stabilize nested objects using the same logic
-      stableObj[key] = createStableKey(value);
+      stableObj[key] = createStableKey(value as Record<string, unknown>);
     } else {
       // Preserve primitive values (string, number, boolean, null) as-is
       stableObj[key] = value;
@@ -103,6 +103,7 @@ export interface ProjectQueryParams {
   sortDirection: SortDirectionType;
   currentPage: number;
   pageSize: number;
+  [key: string]: unknown;
 }
 
 /**

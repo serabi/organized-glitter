@@ -6,14 +6,17 @@
  * displays and count-only operations with comprehensive caching, error handling,
  * and background refresh capabilities.
  *
- * @author Enhanced for randomizer optimization
+ * @author serabi
  * @version 2.0.0
  * @since 2025-01-17
  */
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { getSpinHistoryCountEnhanced } from '@/services/pocketbase/randomizerService';
+import {
+  getSpinHistoryCountEnhanced,
+  isRandomizerError,
+} from '@/services/pocketbase/randomizerService';
 import { randomizerQueryKeys } from '@/hooks/queries/useSpinHistory';
 import { createLogger } from '@/utils/secureLogger';
 
@@ -174,15 +177,14 @@ export const useSpinHistoryCount = ({
     refetchIntervalInBackground: false, // Only refetch when tab is active
     retry: (failureCount, error) => {
       // Enhanced error handling with RandomizerError support
-      if (error && typeof error === 'object' && 'type' in error) {
-        const randomizerError = error as { type: string; canRetry: boolean };
+      if (isRandomizerError(error)) {
         logger.debug('RandomizerError detected in count query', {
-          type: randomizerError.type,
-          canRetry: randomizerError.canRetry,
+          type: error.type,
+          canRetry: error.canRetry,
           failureCount,
           userId,
         });
-        return randomizerError.canRetry && failureCount < 3; // Increased retry count
+        return error.canRetry && failureCount < 3; // Increased retry count
       }
 
       // Legacy error handling for backward compatibility
@@ -221,24 +223,7 @@ export const useSpinHistoryCount = ({
       });
       return delay;
     },
-    // Enhanced error handling
-    onError: error => {
-      logger.error('Spin history count query failed', {
-        error,
-        userId,
-        enableBackgroundRefresh,
-        staleTime,
-        cacheTime,
-      });
-    },
-    // Success logging for debugging
-    onSuccess: data => {
-      logger.debug('Spin history count query succeeded', {
-        count: data,
-        userId,
-        timestamp: new Date().toISOString(),
-      });
-    },
+    // Note: React Query v5 removed onError/onSuccess - handle errors in components if needed
   });
 };
 

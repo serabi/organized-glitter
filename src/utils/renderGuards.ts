@@ -48,7 +48,7 @@ export const useRenderGuard = (componentName: string, threshold: number = 10) =>
 /**
  * Throttle logging to prevent log spam
  */
-export const useThrottledLogger = (componentName: string, intervalMs: number = 1000) => {
+export const useThrottledLogger = (_componentName: string, intervalMs: number = 1000) => {
   const lastLogTimeRef = useRef(0);
   const logCountRef = useRef(0);
 

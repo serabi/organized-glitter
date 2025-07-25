@@ -10,7 +10,7 @@ import {
   UseDashboardFiltersReturn,
 } from './useDashboardFiltersSimplified';
 
-export { UseDashboardFiltersReturn };
+export type { UseDashboardFiltersReturn };
 
 export const useDashboardFilters = (projects: ProjectType[]): UseDashboardFiltersReturn => {
   return useDashboardFiltersSimplified(projects);

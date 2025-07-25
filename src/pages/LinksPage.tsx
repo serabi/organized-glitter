@@ -45,13 +45,15 @@ const thingsIveTalkedAbout = [
 
 const affiliateLinks = [
   {
-    title: 'Check out ArtDot\'s new kits - and use my affiliate link to get $10 off your first order!',
+    title:
+      "Check out ArtDot's new kits - and use my affiliate link to get $10 off your first order!",
     brand: 'ArtDot',
     url: 'https://www.artdot.com?loloyal_referral_code=G7BvKA9xR9rJ&utm_source=loloyal&utm_medium=referral&utm_campaign=loloyal_referrals',
     featured: true,
   },
   {
-    title: 'Use `PAR-F6NP7SF` to get 5% off your first order! Great source for the Disney mystery coloring books.',
+    title:
+      'Use `PAR-F6NP7SF` to get 5% off your first order! Great source for the Disney mystery coloring books.',
     brand: 'Lireka',
     url: 'https://www.lireka.com/en',
     featured: true,
@@ -114,10 +116,11 @@ const LinksPage: React.FC = () => {
                 </Avatar>
               </div>
               <h1 className="text-xl font-bold">{profileConfig.name}</h1>
-              <p className="text-sm leading-relaxed text-muted-foreground italic">{profileConfig.bio}</p>
+              <p className="text-sm italic leading-relaxed text-muted-foreground">
+                {profileConfig.bio}
+              </p>
             </CardHeader>
           </Card>
-
 
           {/* Primary Action Links */}
           <div className="mb-6 space-y-3">
@@ -147,20 +150,25 @@ const LinksPage: React.FC = () => {
 
           {/* Things I've Talked About */}
           <div className="space-y-3">
-            <h2 className="text-center text-sm font-medium text-muted-foreground">Things I've Talked About</h2>
+            <h2 className="text-center text-sm font-medium text-muted-foreground">
+              Things I've Talked About
+            </h2>
             {thingsIveTalkedAbout.map((item, index) => (
               <Card
                 key={index}
-                className="cursor-pointer transition-all hover:shadow-md hover:scale-[1.01] border-pink-200/40 dark:border-pink-800/10"
+                className="cursor-pointer border-pink-200/40 transition-all hover:scale-[1.01] hover:shadow-md dark:border-pink-800/10"
                 onClick={() => handleLinkClick(item.url, item.title)}
                 style={{
-                  background: 'linear-gradient(135deg, rgba(252, 231, 243, 0.4) 0%, rgba(237, 233, 254, 0.4) 50%, rgba(219, 234, 254, 0.4) 100%)'
+                  background:
+                    'linear-gradient(135deg, rgba(252, 231, 243, 0.4) 0%, rgba(237, 233, 254, 0.4) 50%, rgba(219, 234, 254, 0.4) 100%)',
                 }}
               >
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <div className="flex-1 text-left">
-                      <p className="text-sm text-foreground leading-relaxed font-medium">{item.title}</p>
+                      <p className="text-sm font-medium leading-relaxed text-foreground">
+                        {item.title}
+                      </p>
                     </div>
                     <ExternalLink className="h-4 w-4 text-purple-300" />
                   </div>
@@ -173,29 +181,38 @@ const LinksPage: React.FC = () => {
 
           {/* Affiliate Links */}
           <div className="space-y-3">
-            <h2 className="text-center text-sm font-medium text-muted-foreground">Affiliate Links</h2>
+            <h2 className="text-center text-sm font-medium text-muted-foreground">
+              Affiliate Links
+            </h2>
             {affiliateLinks.map((link, index) => (
               <Card
                 key={index}
-                className={`cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02] ${
+                className={`cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg ${
                   link.featured ? 'border-pink-200/40 dark:border-pink-800/10' : ''
                 }`}
                 onClick={() => handleLinkClick(link.url, link.title)}
-                style={link.featured ? {
-                  background: 'linear-gradient(135deg, rgba(252, 231, 243, 0.4) 0%, rgba(237, 233, 254, 0.4) 50%, rgba(219, 234, 254, 0.4) 100%)'
-                } : {}}
+                style={
+                  link.featured
+                    ? {
+                        background:
+                          'linear-gradient(135deg, rgba(252, 231, 243, 0.4) 0%, rgba(237, 233, 254, 0.4) 50%, rgba(219, 234, 254, 0.4) 100%)',
+                      }
+                    : {}
+                }
               >
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <div className="flex-1 text-left">
                       <div className="mb-2">
-                        <span className="font-bold text-lg text-pink-600 dark:text-pink-200">{link.brand}</span>
+                        <span className="text-lg font-bold text-pink-600 dark:text-pink-200">
+                          {link.brand}
+                        </span>
                       </div>
-                      <p className="text-sm text-foreground leading-relaxed">{link.title}</p>
+                      <p className="text-sm leading-relaxed text-foreground">{link.title}</p>
                     </div>
                     <div className="flex flex-col items-center gap-1">
                       <ExternalLink className="h-4 w-4 text-purple-300" />
-                      <span className="text-xs text-purple-300 font-medium">Shop Now</span>
+                      <span className="text-xs font-medium text-purple-300">Shop Now</span>
                     </div>
                   </div>
                 </CardContent>
@@ -209,7 +226,7 @@ const LinksPage: React.FC = () => {
               variant="outline"
               size="sm"
               onClick={() => handleSocialClick('Instagram', profileConfig.social.instagram)}
-              className="rounded-full gap-2"
+              className="gap-2 rounded-full"
             >
               <Camera className="h-4 w-4" />
               Follow on Instagram

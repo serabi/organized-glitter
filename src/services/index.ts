@@ -20,3 +20,6 @@ export * as statsService from '@/services/statsService';
 // PocketBase data services
 export * as projectsService from '@/services/pocketbase/projects.service';
 export * as randomizerService from '@/services/pocketbase/randomizerService';
+
+// File handling service
+export { FilesService } from '@/services/pocketbase/files.service';

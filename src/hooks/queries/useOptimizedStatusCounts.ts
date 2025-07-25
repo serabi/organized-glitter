@@ -17,15 +17,6 @@ import { ProjectFilters } from '@/types/projectFilters';
 const logger = createLogger('useOptimizedStatusCounts');
 
 /**
- * Supported data structures for cached query data
- */
-type QueryDataStructure =
-  | Project[] // Plain array
-  | { projects: Project[]; totalItems?: number; totalPages?: number } // Object with projects property
-  | { items: Project[]; totalItems?: number; totalPages?: number } // Object with items property
-  | { data: Project[]; totalItems?: number; totalPages?: number }; // Object with data property
-
-/**
  * Result from extracting projects from various data structures
  */
 interface ExtractedProjectData {

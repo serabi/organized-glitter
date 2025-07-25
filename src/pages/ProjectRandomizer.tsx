@@ -88,7 +88,6 @@ const ProjectRandomizer: React.FC = () => {
     selectedProjectIds,
     lastSpinResult,
     stats,
-    isLoading,
     isLoadingProjects,
     isCreatingSpin,
     error,

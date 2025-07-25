@@ -97,6 +97,7 @@ export const useProjectDeleteStatsUpdate = () => {
       await updateStats({
         userId,
         oldStatus: projectStatus,
+        newStatus: '', // Empty string for delete operations
         operation: 'delete',
       });
     },

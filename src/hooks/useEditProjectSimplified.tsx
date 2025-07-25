@@ -594,7 +594,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
           // Use optimistic updates instead of cache invalidation to preserve sort order
           // This maintains the user's current dashboard filters and sort preferences
           startTransition(() => {
-            updateProjectInCache(queryClient, projectId, response.data, user?.id || '');
+            updateProjectInCache(queryClient, projectId, response.data);
             logger.info('Project update optimistic cache updates completed');
           });
         } else {
