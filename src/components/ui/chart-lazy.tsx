@@ -1,9 +1,18 @@
 import React, { lazy, Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
 import type { ComponentProps } from 'react';
-import type { Legend, Tooltip, LegendProps, LegendPayload } from 'recharts';
+import type { Legend, Tooltip, LegendProps } from 'recharts';
 import * as RechartsPrimitive from 'recharts';
 import type { ChartConfig } from './chart';
+
+// Local LegendPayload interface to match chart.tsx
+interface LegendPayload {
+  value: string | number;
+  type?: string;
+  color?: string;
+  dataKey?: string | number;
+  [key: string]: unknown;
+}
 
 // Lazy load the heavy chart components
 const LazyChartContainer = lazy(() =>

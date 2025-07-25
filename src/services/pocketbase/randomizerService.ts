@@ -59,7 +59,7 @@ const redactFilterUserId = (filter: string): string => {
 };
 
 interface QueryOptions {
-  filter: string;
+  filter?: string;
   sort: string;
   expand?: string;
 }
@@ -1443,14 +1443,15 @@ export async function validateRandomizerCollection(): Promise<ValidationResult> 
       exists = true;
       logger.debug('Collection exists and is accessible');
     } catch (error: unknown) {
-      if (error?.status === 404) {
+      const errorObj = error as { status?: number; message?: string };
+      if (errorObj?.status === 404) {
         issues.push('Collection "randomizer_spins" does not exist');
         exists = false;
-      } else if (error?.status === 403) {
+      } else if (errorObj?.status === 403) {
         issues.push('Collection exists but API rules prevent access - check authentication');
         exists = true; // Collection exists but has access issues
       } else {
-        issues.push(`Failed to access collection: ${error?.message || 'Unknown error'}`);
+        issues.push(`Failed to access collection: ${errorObj?.message || 'Unknown error'}`);
         exists = false;
       }
     }
@@ -1471,8 +1472,9 @@ export async function validateRandomizerCollection(): Promise<ValidationResult> 
           });
         } catch (error: unknown) {
           // Expected to fail due to invalid data, but we can analyze the error
-          if (error?.data) {
-            const errorData = error.data;
+          const errorObj = error as { data?: unknown };
+          if (errorObj?.data) {
+            const errorData = errorObj.data;
 
             // Check for missing required fields
             const requiredFields = [
@@ -1515,9 +1517,10 @@ export async function validateRandomizerCollection(): Promise<ValidationResult> 
           });
           hasProperRules = true;
         } catch (error: unknown) {
-          if (error?.status === 400 && error?.message?.includes('filter')) {
+          const errorObj = error as { status?: number; message?: string };
+          if (errorObj?.status === 400 && errorObj?.message?.includes('filter')) {
             issues.push('API rules may not be properly configured for user-based filtering');
-          } else if (error?.status === 403) {
+          } else if (errorObj?.status === 403) {
             issues.push('API rules are too restrictive - users cannot access their own data');
           } else {
             // Other errors might be expected (like no records found)

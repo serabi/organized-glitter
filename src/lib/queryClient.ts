@@ -1,4 +1,4 @@
-import { QueryClient, Query } from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
 import { createLogger } from '@/utils/secureLogger';
 
 // Define proper error interface
@@ -26,65 +26,6 @@ if (typeof window !== 'undefined') {
   };
 }
 
-/**
- * Global error handler for React Query that gracefully handles PocketBase 404 errors
- * and prevents them from surfacing to users during navigation and cache invalidation.
- */
-function handleQueryError(error: unknown, query: Query | undefined): boolean {
-  // DIAGNOSTIC: Log query object state for debugging production issues
-  if (!query) {
-    logger.criticalError(
-      'Query object is undefined in handleQueryError - this indicates a React Query bug or timing issue'
-    );
-    return false; // Don't retry if query object is missing
-  }
-
-  if (!query.queryKey) {
-    logger.criticalError('Query object exists but queryKey is undefined', {
-      queryState: query?.state,
-      queryHash: query?.queryHash,
-      hasObservers: query?.observers?.length > 0,
-    });
-    return false; // Don't retry if queryKey is missing
-  }
-
-  // Handle PocketBase 404 errors gracefully
-  if (error && typeof error === 'object' && 'status' in error) {
-    const status = (error as { status: number }).status;
-
-    if (status === 404) {
-      // Log 404s for debugging but don't surface to users
-      logger.debug(`Query ${query.queryKey?.join('.')} returned 404 - likely stale cache`);
-
-      // Don't retry 404s - they indicate the resource no longer exists
-      return false;
-    }
-
-    // Handle other client errors (4xx) - usually don't retry
-    if (status >= 400 && status < 500) {
-      logger.warn(`Query ${query.queryKey?.join('.')} returned client error: ${status}`);
-      return false;
-    }
-
-    // Handle server errors (5xx) - retry with backoff
-    if (status >= 500) {
-      logger.error(`Query ${query.queryKey?.join('.')} returned server error: ${status}`);
-      return true; // Allow retries for server errors
-    }
-  }
-
-  // Handle network errors and other failures
-  if (error instanceof Error) {
-    if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-      logger.warn(`Network error for query ${query.queryKey?.join('.')}: ${error.message}`);
-      return true; // Retry network errors
-    }
-  }
-
-  // Default: allow retry for unknown errors
-  logger.error(`Unknown error for query ${query.queryKey?.join('.')}: ${error}`);
-  return true;
-}
 
 export const queryClient = new QueryClient({
   defaultOptions: {

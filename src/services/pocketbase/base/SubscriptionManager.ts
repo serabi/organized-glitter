@@ -1,7 +1,7 @@
 /**
  * Subscription manager for PocketBase realtime updates with proper cleanup
  * @author @serabi
- * @created 2025-01-16
+ * @created 2025-07-16
  */
 
 import PocketBase from 'pocketbase';
@@ -64,7 +64,7 @@ export class PocketBaseSubscriptionManager implements SubscriptionManager {
 
     try {
       // Create PocketBase subscription
-      const unsubscribe = this.pb.collection(collection).subscribe(
+      const unsubscribePromise = this.pb.collection(collection).subscribe(
         filter || '*',
         e => {
           try {
@@ -82,6 +82,13 @@ export class PocketBaseSubscriptionManager implements SubscriptionManager {
           // Additional subscription options can be added here
         }
       );
+
+      // Create a wrapper function that handles the Promise
+      const unsubscribe = () => {
+        unsubscribePromise.then(fn => fn()).catch(error => {
+          logger.error('Error unsubscribing', { error, collection, filter, subscriptionId });
+        });
+      };
 
       const cleanup: SubscriptionCleanup = {
         unsubscribe,

@@ -73,7 +73,7 @@ export const loginWithPassword = async (data: LoginData): Promise<AuthResult> =>
 
     const handledError = ErrorHandler.handleError(error, 'Password authentication');
     const errorMessage =
-      handledError.userMessage || 'Authentication failed. Please check your credentials.';
+      ErrorHandler.getUserMessage(handledError) || 'Authentication failed. Please check your credentials.';
 
     analytics.auth.loginFailed('email', errorMessage);
     analytics.error.authenticationFailed('email', errorMessage);
@@ -137,7 +137,7 @@ export const registerWithPassword = async (data: RegisterData): Promise<AuthResu
 
     const handledError = ErrorHandler.handleError(error, 'User registration');
     const errorMessage =
-      handledError.userMessage || 'An unknown error occurred during registration.';
+      ErrorHandler.getUserMessage(handledError) || 'An unknown error occurred during registration.';
 
     return {
       success: false,
@@ -251,7 +251,7 @@ export const loginWithOAuth2 = async (provider: 'google' | 'discord'): Promise<A
 
     const handledError = ErrorHandler.handleError(error, `${provider} authentication`);
     const errorMessage =
-      handledError.userMessage || `${provider} authentication failed. Please try again.`;
+      ErrorHandler.getUserMessage(handledError) || `${provider} authentication failed. Please try again.`;
 
     return {
       success: false,
@@ -278,7 +278,7 @@ export const requestPasswordReset = async (email: string): Promise<AuthResult> =
     authLogger.error('Password reset request failed:', error);
 
     const handledError = ErrorHandler.handleError(error, 'Password reset request');
-    const errorMessage = handledError.userMessage || 'Failed to send password reset email';
+    const errorMessage = ErrorHandler.getUserMessage(handledError) || 'Failed to send password reset email';
 
     return {
       success: false,
@@ -309,7 +309,7 @@ export const confirmPasswordReset = async (
     authLogger.error('Password reset confirmation failed:', error);
 
     const handledError = ErrorHandler.handleError(error, 'Password reset confirmation');
-    const errorMessage = handledError.userMessage || 'Failed to reset password';
+    const errorMessage = ErrorHandler.getUserMessage(handledError) || 'Failed to reset password';
 
     return {
       success: false,
@@ -336,7 +336,7 @@ export const confirmEmailVerification = async (token: string): Promise<AuthResul
     authLogger.error('Email verification confirmation failed:', error);
 
     const handledError = ErrorHandler.handleError(error, 'Email verification confirmation');
-    let errorMessage = handledError.userMessage || 'Failed to verify email';
+    let errorMessage = ErrorHandler.getUserMessage(handledError) || 'Failed to verify email';
 
     // Keep the specific token expired handling for better UX
     if (error instanceof ClientResponseError && error.data) {

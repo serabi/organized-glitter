@@ -221,24 +221,7 @@ export const useSpinHistoryCount = ({
       });
       return delay;
     },
-    // Enhanced error handling
-    onError: error => {
-      logger.error('Spin history count query failed', {
-        error,
-        userId,
-        enableBackgroundRefresh,
-        staleTime,
-        cacheTime,
-      });
-    },
-    // Success logging for debugging
-    onSuccess: data => {
-      logger.debug('Spin history count query succeeded', {
-        count: data,
-        userId,
-        timestamp: new Date().toISOString(),
-      });
-    },
+    // Note: React Query v5 removed onError/onSuccess - handle errors in components if needed
   });
 };
 

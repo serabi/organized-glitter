@@ -226,7 +226,7 @@ export const SpinHistory: React.FC<SpinHistoryProps> = ({ userId, onClearHistory
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <span>{formatDate(spin.spun_at)}</span>
                       <span>•</span>
-                      <span>{spin.selected_projects?.length ?? 0} options</span>
+                      <span>{(spin.selected_projects as string[])?.length ?? 0} options</span>
                     </div>
                   </div>
 
