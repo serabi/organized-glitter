@@ -1486,7 +1486,9 @@ export async function validateRandomizerCollection(): Promise<ValidationResult> 
               'selected_projects',
             ];
             const missingFields = requiredFields.filter(
-              field => (errorData as any)[field] && (errorData as any)[field].code === 'validation_required'
+              field =>
+                (errorData as any)[field] &&
+                (errorData as any)[field].code === 'validation_required'
             );
 
             if (missingFields.length === 0) {
@@ -1793,7 +1795,7 @@ export async function performBatchOperation(
       );
     }
 
-    const { batchSize = 50, delayMs = 10, maxRetries = 3, onProgress } = options;
+    const { batchSize = 50, delayMs = 10, maxRetries = 3 } = options;
 
     logger.debug('Starting enhanced batch operation', {
       userId,

@@ -26,7 +26,6 @@ if (typeof window !== 'undefined') {
   };
 }
 
-
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

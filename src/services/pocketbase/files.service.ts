@@ -62,12 +62,26 @@ interface FileValidationConfig {
 const VALIDATION_CONFIGS: Record<FileUploadContext, FileValidationConfig> = {
   'project-image': {
     maxSizeMB: 50,
-    allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif'],
+    allowedTypes: [
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/webp',
+      'image/heic',
+      'image/heif',
+    ],
     allowedExtensions: ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif'],
   },
   'progress-note': {
     maxSizeMB: 50,
-    allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif'],
+    allowedTypes: [
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/webp',
+      'image/heic',
+      'image/heif',
+    ],
     allowedExtensions: ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif'],
   },
   avatar: {
@@ -153,15 +167,15 @@ export class FilesService {
       }
     } catch (error) {
       logger.error(`Compression failed for context ${context}:`, error);
-      
+
       // If compression fails but file is acceptable size, return original
       const targetSizeMB = context === 'avatar' ? 2 : 5; // Conservative targets
-      
+
       if (file.size <= targetSizeMB * 1024 * 1024) {
         logger.info('Using original file as fallback (acceptable size)');
         return file;
       }
-      
+
       throw error;
     }
   }
@@ -170,7 +184,14 @@ export class FilesService {
    * Upload file to PocketBase with validation and compression
    */
   static async uploadFile(file: File, options: FileUploadOptions): Promise<FileUploadResult> {
-    const { context, collection, recordId, fieldName = 'image', compress = true, onProgress } = options;
+    const {
+      context,
+      collection,
+      recordId,
+      fieldName = 'image',
+      compress = true,
+      onProgress,
+    } = options;
 
     try {
       // Validate file
@@ -191,15 +212,17 @@ export class FilesService {
       if (compress) {
         onProgress?.(10);
         const originalSize = file.size;
-        
-        processedFile = await this.compressFile(file, context, (progress) => {
+
+        processedFile = await this.compressFile(file, context, progress => {
           // Map compression progress to 10-80% range
-          onProgress?.(10 + (progress * 0.7));
+          onProgress?.(10 + progress * 0.7);
         });
-        
+
         if (processedFile.size !== originalSize) {
           compressionRatio = Math.round(((originalSize - processedFile.size) / originalSize) * 100);
-          logger.info(`File compressed: ${(originalSize / 1024 / 1024).toFixed(2)}MB → ${(processedFile.size / 1024 / 1024).toFixed(2)}MB (${compressionRatio}% reduction)`);
+          logger.info(
+            `File compressed: ${(originalSize / 1024 / 1024).toFixed(2)}MB → ${(processedFile.size / 1024 / 1024).toFixed(2)}MB (${compressionRatio}% reduction)`
+          );
         }
       }
 
@@ -216,7 +239,7 @@ export class FilesService {
 
       // Upload to PocketBase
       const url = await this.uploadToPocketBase(processedFile, collection, recordId, fieldName);
-      
+
       onProgress?.(100);
 
       return {
@@ -295,7 +318,9 @@ export class FilesService {
       }
     }
 
-    throw new Error(`Upload failed after ${maxRetries} attempts: ${lastError?.message || 'Unknown error'}`);
+    throw new Error(
+      `Upload failed after ${maxRetries} attempts: ${lastError?.message || 'Unknown error'}`
+    );
   }
 
   /**

@@ -19,7 +19,6 @@ import { useCallback, useMemo } from 'react';
 import { ViewType } from '@/types/project';
 import { secureLogger } from '@/utils/secureLogger';
 
-
 interface DashboardFilterState {
   selectedCompany: string;
   selectedArtist: string;

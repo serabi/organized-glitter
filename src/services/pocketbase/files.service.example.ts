@@ -24,7 +24,7 @@ export async function uploadProjectImage(file: File, projectId: string) {
       recordId: projectId,
       fieldName: 'image',
       compress: true,
-      onProgress: (progress) => {
+      onProgress: progress => {
         console.log(`Upload progress: ${progress}%`);
       },
     });
@@ -32,8 +32,8 @@ export async function uploadProjectImage(file: File, projectId: string) {
     console.log('Upload successful:', {
       url: result.url,
       originalSize: `${(result.originalSize / 1024 / 1024).toFixed(2)}MB`,
-      compressedSize: result.compressedSize 
-        ? `${(result.compressedSize / 1024 / 1024).toFixed(2)}MB` 
+      compressedSize: result.compressedSize
+        ? `${(result.compressedSize / 1024 / 1024).toFixed(2)}MB`
         : 'No compression',
       savings: result.compressionRatio ? `${result.compressionRatio}%` : 'None',
     });
@@ -93,49 +93,57 @@ export function getProjectImageUrl(project: any, size: 'thumbnail' | 'card' | 'f
  */
 export async function deleteProjectImage(projectId: string) {
   const success = await FilesService.deleteFile('projects', projectId, 'image');
-  
+
   if (success) {
     console.log('Image deleted successfully');
   } else {
     console.error('Failed to delete image');
   }
-  
+
   return success;
 }
 
 /**
  * Example: Check if file should be compressed before upload
  */
-export function shouldCompressBeforeUpload(file: File, context: 'project-image' | 'progress-note' | 'avatar') {
+export function shouldCompressBeforeUpload(
+  file: File,
+  context: 'project-image' | 'progress-note' | 'avatar'
+) {
   const needsCompression = FilesService.shouldCompressFile(file, context);
-  
+
   if (needsCompression) {
-    console.log(`File ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB) should be compressed`);
+    console.log(
+      `File ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB) should be compressed`
+    );
   } else {
     console.log(`File ${file.name} is already optimally sized`);
   }
-  
+
   return needsCompression;
 }
 
 /**
  * Example: Validate file before showing upload UI
  */
-export function validateFileForUpload(file: File, context: 'project-image' | 'progress-note' | 'avatar') {
+export function validateFileForUpload(
+  file: File,
+  context: 'project-image' | 'progress-note' | 'avatar'
+) {
   const validation = FilesService.validateFile(file, context);
-  
+
   if (!validation.isValid) {
     // Show error to user
     alert(`Upload error: ${validation.error}`);
     return false;
   }
-  
+
   if (validation.warnings) {
     // Show warnings to user
     validation.warnings.forEach(warning => {
       console.warn(`Upload warning: ${warning}`);
     });
   }
-  
+
   return true;
 }

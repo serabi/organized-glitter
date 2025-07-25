@@ -73,7 +73,8 @@ export const loginWithPassword = async (data: LoginData): Promise<AuthResult> =>
 
     const handledError = ErrorHandler.handleError(error, 'Password authentication');
     const errorMessage =
-      ErrorHandler.getUserMessage(handledError) || 'Authentication failed. Please check your credentials.';
+      ErrorHandler.getUserMessage(handledError) ||
+      'Authentication failed. Please check your credentials.';
 
     analytics.auth.loginFailed('email', errorMessage);
     analytics.error.authenticationFailed('email', errorMessage);
@@ -251,7 +252,8 @@ export const loginWithOAuth2 = async (provider: 'google' | 'discord'): Promise<A
 
     const handledError = ErrorHandler.handleError(error, `${provider} authentication`);
     const errorMessage =
-      ErrorHandler.getUserMessage(handledError) || `${provider} authentication failed. Please try again.`;
+      ErrorHandler.getUserMessage(handledError) ||
+      `${provider} authentication failed. Please try again.`;
 
     return {
       success: false,
@@ -278,7 +280,8 @@ export const requestPasswordReset = async (email: string): Promise<AuthResult> =
     authLogger.error('Password reset request failed:', error);
 
     const handledError = ErrorHandler.handleError(error, 'Password reset request');
-    const errorMessage = ErrorHandler.getUserMessage(handledError) || 'Failed to send password reset email';
+    const errorMessage =
+      ErrorHandler.getUserMessage(handledError) || 'Failed to send password reset email';
 
     return {
       success: false,

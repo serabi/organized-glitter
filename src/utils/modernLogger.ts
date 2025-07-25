@@ -22,9 +22,9 @@ export const createPerformanceLogger = (namespace: string) => {
   return {
     start: (operationId: string, description: string, queryCount?: number) => {
       const timerId = `${namespace}-${operationId}`;
-      
+
       logger.info(`Starting: ${description}`, { operationId, queryCount });
-      
+
       if (queryCount && queryCount > 1) {
         return {
           end: (resultCount?: number, metadata?: Record<string, unknown>) => {

@@ -9,6 +9,7 @@ This directory contains PocketBase integration services that follow consistent p
 File handling service that consolidates upload, compression, and validation patterns.
 
 **Features:**
+
 - Context-aware validation (project images, progress notes, avatars)
 - Automatic image compression with progress tracking
 - Consistent error handling and retry logic
@@ -16,6 +17,7 @@ File handling service that consolidates upload, compression, and validation patt
 - Support for thumbnails and file URLs
 
 **Usage:**
+
 ```typescript
 import { FilesService } from '@/services/pocketbase/files.service';
 
@@ -25,7 +27,7 @@ const result = await FilesService.uploadFile(file, {
   collection: 'projects',
   recordId: projectId,
   compress: true,
-  onProgress: (progress) => console.log(`${progress}%`),
+  onProgress: progress => console.log(`${progress}%`),
 });
 
 // Get file URL with thumbnail
@@ -42,6 +44,7 @@ Optimized service for project data operations with structured filtering and perf
 ### Base Services (`base/`)
 
 Foundation classes providing:
+
 - `BaseService`: Generic CRUD operations
 - `FilterBuilder`: Type-safe query building
 - `ErrorHandler`: Consistent error handling
@@ -77,7 +80,7 @@ Services are fully typed with TypeScript:
 // Type-safe options
 const options: FileUploadOptions = {
   context: 'project-image', // Autocomplete available
-  collection: 'projects',   // Only valid collections
+  collection: 'projects', // Only valid collections
   recordId: 'abc123',
   compress: true,
 };

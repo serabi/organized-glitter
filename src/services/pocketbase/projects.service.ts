@@ -639,33 +639,6 @@ export class ProjectsService {
   }
 
   /**
-   * Check if we should use chunked counting approach for large datasets
-   */
-  private async shouldUseChunkedCounting(baseFilter: string): Promise<boolean> {
-    try {
-      // Quick count check with minimal overhead
-      const sampleResult = await pb.collection('projects').getList(1, 1, {
-        filter: baseFilter,
-        fields: 'id', // Minimal field for counting
-        skipTotal: false, // We need total count for this check
-        requestKey: `size-check-${Date.now()}-${Math.random().toString(36).substring(2)}`,
-      });
-
-      const totalItems = sampleResult.totalItems;
-      logger.debug('📏 Dataset size check:', {
-        totalItems,
-        threshold: 1000,
-        shouldUseChunked: totalItems > 1000,
-      });
-
-      return totalItems > 1000; // Use chunked approach for >1000 projects
-    } catch (error) {
-      logger.warn('Failed to check dataset size, using single query approach', error);
-      return false; // Fallback to single query
-    }
-  }
-
-  /**
    * Enhanced status counting with performance optimizations
    * Includes automatic fallback strategies and improved error handling
    */
@@ -796,80 +769,6 @@ export class ProjectsService {
       batchApiLogger.endBatchOperation(batchId, 0, { error: String(error) });
       throw ErrorHandler.handleError(error, 'Optimized status counting');
     }
-  }
-
-  /**
-   * Chunked status counting for very large datasets
-   */
-  private async getBatchStatusCountsChunked(
-    baseFilters: ProjectFilters,
-    baseFilter: string,
-    _batchId: string
-  ): Promise<BatchStatusCountResult> {
-    logger.debug('📊 Starting chunked status counting for large dataset');
-
-    const counts: StatusBreakdown = {
-      wishlist: 0,
-      purchased: 0,
-      stash: 0,
-      progress: 0,
-      completed: 0,
-      archived: 0,
-      destashed: 0,
-    };
-
-    let total = 0;
-    let page = 1;
-    const pageSize = 500; // Process in chunks of 500
-    let hasMore = true;
-
-    while (hasMore) {
-      try {
-        const uniqueRequestKey = `chunked-${page}-${Date.now()}-${Math.random().toString(36).substring(2)}`;
-
-        const result = await pb.collection('projects').getList(page, pageSize, {
-          filter: baseFilter,
-          fields: 'status',
-          skipTotal: page > 1, // Only get total on first page
-          requestKey: uniqueRequestKey,
-        });
-
-        // Process this chunk
-        result.items.forEach(project => {
-          const status = project.status as keyof StatusBreakdown;
-          if (status && Object.prototype.hasOwnProperty.call(counts, status)) {
-            counts[status]++;
-            total++;
-          }
-        });
-
-        hasMore = result.items.length === pageSize;
-        page++;
-
-        logger.debug(`📄 Processed chunk ${page - 1}:`, {
-          itemsInChunk: result.items.length,
-          totalProcessed: total,
-          hasMore,
-        });
-
-        // Safety limit to prevent infinite loops
-        if (page > 50) {
-          logger.warn('⚠️ Chunked counting exceeded page limit, stopping');
-          break;
-        }
-      } catch (error) {
-        logger.error(`Failed to process chunk ${page}:`, error);
-        break;
-      }
-    }
-
-    logger.debug('✅ Chunked status counting completed', {
-      totalChunks: page - 1,
-      totalCounted: total,
-      finalCounts: counts,
-    });
-
-    return { counts, total };
   }
 
   /**

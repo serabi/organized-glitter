@@ -147,7 +147,7 @@ export class ServiceMockTemplates {
           const statusMatch = options.filter.match(/status = "([^"]+)"/);
           if (statusMatch) {
             const status = statusMatch[1];
-            items = items.filter((item) => (item as any).status === status);
+            items = items.filter(item => (item as any).status === status);
           }
         }
 
@@ -156,7 +156,7 @@ export class ServiceMockTemplates {
           const titleMatch = options.filter.match(/title ~ "%([^"]+)%"/);
           if (titleMatch) {
             const searchTerm = titleMatch[1].toLowerCase();
-            items = items.filter((item) =>
+            items = items.filter(item =>
               ((item as any).title as string).toLowerCase().includes(searchTerm)
             );
           }

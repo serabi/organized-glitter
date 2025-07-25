@@ -85,9 +85,11 @@ export class PocketBaseSubscriptionManager implements SubscriptionManager {
 
       // Create a wrapper function that handles the Promise
       const unsubscribe = () => {
-        unsubscribePromise.then(fn => fn()).catch(error => {
-          logger.error('Error unsubscribing', { error, collection, filter, subscriptionId });
-        });
+        unsubscribePromise
+          .then(fn => fn())
+          .catch(error => {
+            logger.error('Error unsubscribing', { error, collection, filter, subscriptionId });
+          });
       };
 
       const cleanup: SubscriptionCleanup = {

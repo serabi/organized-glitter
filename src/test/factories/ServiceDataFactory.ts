@@ -383,9 +383,7 @@ export class BulkDataFactory {
     return Array.from({ length: count }, (_, index) =>
       ProjectFactory({
         title: `Performance Test Project ${index + 1}`,
-        status: ['wishlist', 'purchased', 'progress', 'completed'][
-          index % 4
-        ] as ProjectStatus,
+        status: ['wishlist', 'purchased', 'progress', 'completed'][index % 4] as ProjectStatus,
       })
     );
   }

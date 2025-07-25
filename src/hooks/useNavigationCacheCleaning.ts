@@ -222,7 +222,6 @@ export function useCacheCleaning() {
  * based on navigation patterns and query usage.
  */
 export function useSmartCacheOptimization() {
-  const _queryClient = useQueryClient();
   const location = useLocation();
   const { cleanStaleQueries, getCacheStats } = useCacheCleaning();
   const statsRef = useRef({ navigationCount: 0, lastOptimization: 0 });

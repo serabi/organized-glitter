@@ -16,7 +16,6 @@ import { ProjectFilters } from '@/types/projectFilters';
 
 const logger = createLogger('useOptimizedStatusCounts');
 
-
 /**
  * Result from extracting projects from various data structures
  */
