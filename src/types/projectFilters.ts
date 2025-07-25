@@ -148,6 +148,10 @@ export interface BatchStatusCountResult {
   counts: StatusBreakdown;
   /** Total across all statuses */
   total: number;
+  /** Query execution duration in milliseconds */
+  queryDuration?: number;
+  /** Optimization method used */
+  optimization?: string;
 }
 
 /**

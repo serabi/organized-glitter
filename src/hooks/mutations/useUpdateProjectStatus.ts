@@ -21,6 +21,7 @@ const logger = createLogger('useUpdateProjectStatus');
 interface UpdateProjectStatusData {
   projectId: string;
   newStatus: string;
+  currentStatus?: string;
 }
 
 interface MutationContext {

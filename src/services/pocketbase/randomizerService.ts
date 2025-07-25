@@ -1486,7 +1486,7 @@ export async function validateRandomizerCollection(): Promise<ValidationResult> 
               'selected_projects',
             ];
             const missingFields = requiredFields.filter(
-              field => errorData[field] && errorData[field].code === 'validation_required'
+              field => (errorData as any)[field] && (errorData as any)[field].code === 'validation_required'
             );
 
             if (missingFields.length === 0) {
@@ -1496,7 +1496,7 @@ export async function validateRandomizerCollection(): Promise<ValidationResult> 
             }
 
             // Check if new optional fields are recognized
-            if (!errorData.project_company && !errorData.project_artist) {
+            if (!(errorData as any).project_company && !(errorData as any).project_artist) {
               // Fields are likely present if no validation errors for them
               logger.debug(
                 'Optional fields (project_company, project_artist) appear to be configured'
@@ -1533,7 +1533,7 @@ export async function validateRandomizerCollection(): Promise<ValidationResult> 
         hasIndexes = true;
       } catch (error: unknown) {
         issues.push(
-          `Failed to validate collection configuration: ${error?.message || 'Unknown error'}`
+          `Failed to validate collection configuration: ${(error as any)?.message || 'Unknown error'}`
         );
       }
     }

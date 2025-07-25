@@ -1049,7 +1049,7 @@ export class ProjectsService {
       logger.debug('Fetching single project', { id });
 
       const expandStr = this.buildExpandString(expand);
-      const record = await this.baseService.getOne(id, { expand: expandStr });
+      const record = await this.baseService.getOne(id, expandStr ? [expandStr] : undefined);
 
       return this.transformRecord(record as ProjectsResponse, companyMap, artistMap);
     } catch (error) {
