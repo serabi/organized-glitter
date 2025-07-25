@@ -64,9 +64,7 @@ export function ThankYouMessage() {
                     2025-07-21
                   </div>
                   <div className="space-y-3 text-gray-700 dark:text-gray-300">
-                    <p>
-                      Major update to help make the code base cleaner. Visible changes:
-                    </p>
+                    <p>Major update to help make the code base cleaner. Visible changes:</p>
                     <ul className="ml-4 list-disc space-y-1">
                       <li>Removed the Advanced Edit page for now</li>
                       <li>
@@ -91,7 +89,10 @@ export function ThankYouMessage() {
                         </Link>{' '}
                         to work better
                       </li>
-                      <li>Updated a bug with the time zone settings - the dates should now work correctly!</li>
+                      <li>
+                        Updated a bug with the time zone settings - the dates should now work
+                        correctly!
+                      </li>
                     </ul>
                     <p>
                       As always, please reach out if you have any{' '}

@@ -8,10 +8,12 @@ interface MainLayoutProps {
   children: React.ReactNode;
   isAuthenticated?: boolean;
   showLoader?: boolean;
+  hideNav?: boolean;
+  hideFooter?: boolean;
 }
 
 const MainLayout = memo(
-  ({ children, isAuthenticated = false, showLoader = false }: MainLayoutProps) => {
+  ({ children, isAuthenticated = false, showLoader = false, hideNav = false, hideFooter = false }: MainLayoutProps) => {
     const { user, isLoading } = useAuth();
 
     // Use the user from context if available, otherwise use the prop
@@ -21,20 +23,20 @@ const MainLayout = memo(
     if (isLoading && showLoader) {
       return (
         <div className="flex min-h-screen flex-col">
-          <Navbar isAuthenticated={false} />
+          {!hideNav && <Navbar isAuthenticated={false} />}
           <main className="flex-grow">
             <LoadingState />
           </main>
-          <Footer />
+          {!hideFooter && <Footer />}
         </div>
       );
     }
 
     return (
       <div className="flex min-h-screen flex-col">
-        <Navbar isAuthenticated={isLoggedIn} />
+        {!hideNav && <Navbar isAuthenticated={isLoggedIn} />}
         <main className="flex-grow">{children}</main>
-        <Footer />
+        {!hideFooter && <Footer />}
       </div>
     );
   }

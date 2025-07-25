@@ -5,6 +5,7 @@
 ### 1. Service Logging (ProjectsService)
 
 **BEFORE (Current System):**
+
 ```typescript
 import { createLogger, batchApiLogger } from '@/utils/secureLogger';
 
@@ -21,7 +22,7 @@ async getBatchStatusCounts(baseFilters: ProjectFilters): Promise<BatchStatusCoun
 
   try {
     // ... business logic ...
-    
+
     if (this.config.enablePerformanceLogging) {
       const endTime = performance.now();
       batchApiLogger.endBatchOperation(batchId, total, {
@@ -38,6 +39,7 @@ async getBatchStatusCounts(baseFilters: ProjectFilters): Promise<BatchStatusCoun
 ```
 
 **AFTER (LogLayer):**
+
 ```typescript
 import { apiLogger, performanceLogger } from '@/utils/modernLogger';
 
@@ -52,16 +54,16 @@ async getBatchStatusCounts(baseFilters: ProjectFilters): Promise<BatchStatusCoun
       .debug('Starting status count operation');
 
     // ... business logic ...
-    
+
     perf.end(total, { totalCounts: total, statusBreakdown: counts });
-    
+
     return { counts, total };
   } catch (error) {
     apiLogger
       .withError(error)
       .withContext({ operation: 'getBatchStatusCounts' })
       .error('Status counting failed');
-    
+
     perf.end(0, { error: error.message });
     throw ErrorHandler.handleError(error, 'Status counting');
   }
@@ -71,6 +73,7 @@ async getBatchStatusCounts(baseFilters: ProjectFilters): Promise<BatchStatusCoun
 ### 2. Hook Logging (useDashboardPersistence)
 
 **BEFORE:**
+
 ```typescript
 import { secureLogger } from '@/utils/secureLogger';
 
@@ -82,6 +85,7 @@ try {
 ```
 
 **AFTER:**
+
 ```typescript
 import { uiLogger } from '@/utils/modernLogger';
 
@@ -99,6 +103,7 @@ try {
 ### 3. Authentication Service
 
 **BEFORE:**
+
 ```typescript
 import { createLogger } from '@/utils/secureLogger';
 
@@ -108,6 +113,7 @@ authLogger.debug('Processing login attempt', { email: userData.email });
 ```
 
 **AFTER:**
+
 ```typescript
 import { authLogger } from '@/utils/modernLogger';
 
@@ -120,15 +126,18 @@ authLogger
 ## Code Reduction Summary
 
 ### Files You Can DELETE:
+
 - `src/utils/secureLogger.ts` (300+ lines) → DELETED
 - All logger mocking in tests → SIMPLIFIED
 
 ### Files You Can SIMPLIFY:
+
 - Every service file: Remove complex logger setup
 - Every hook: Simplified error logging
 - Test files: Minimal mocking needed
 
 ### New Capabilities You Get:
+
 1. **Structured Context**: Every log can carry persistent context
 2. **Rich Metadata**: Per-log metadata without manual serialization
 3. **Built-in Performance**: No more manual timing logic
@@ -140,6 +149,7 @@ authLogger
 ## Migration Impact
 
 ### Lines of Code Reduction:
+
 - **secureLogger.ts**: 300+ lines → 50 lines (-83%)
 - **Service files**: ~5-10 lines per file → 2-3 lines (-60%)
 - **Test mocks**: ~10-15 lines per test → 2-3 lines (-80%)
@@ -147,6 +157,7 @@ authLogger
 ### Total Estimated Reduction: **~500-800 lines of code**
 
 ### Maintenance Benefits:
+
 - Single logging configuration
 - Consistent API across all modules
 - Better debugging information

@@ -56,9 +56,8 @@ const About = () => {
                   A labor of love:
                 </span>{' '}
                 This app is maintained by one person who is learning as she goes, and is free of
-                charge to use. Please be understanding when reporting bugs or looking for
-                features to be added. Some changes may take awhile depending on complexity and
-                my time.
+                charge to use. Please be understanding when reporting bugs or looking for features
+                to be added. Some changes may take awhile depending on complexity and my time.
               </p>
             </div>
           </div>

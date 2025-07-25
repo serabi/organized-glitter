@@ -24,10 +24,10 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  to="/profile#support"
+                  to="/links"
                   className="text-muted-foreground transition-colors hover:text-accent"
                 >
-                  Support Us
+                  Social Media
                 </Link>
               </li>
             </ul>
@@ -41,7 +41,7 @@ const Footer = () => {
                   to="/about"
                   className="text-muted-foreground transition-colors hover:text-accent"
                 >
-                  About & Contact
+                  About
                 </Link>
               </li>
               <li>
