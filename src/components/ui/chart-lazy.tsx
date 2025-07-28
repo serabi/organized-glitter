@@ -47,7 +47,6 @@ const ChartLoading = () => (
   </div>
 );
 
-
 // Lazy loaded chart components with loading fallbacks and proper typing
 export const ChartContainer = React.forwardRef<HTMLDivElement, ChartContainerProps>(
   (props, ref) => (
