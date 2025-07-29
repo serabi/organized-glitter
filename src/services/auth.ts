@@ -191,7 +191,6 @@ export const loginWithOAuth2 = async (provider: 'google' | 'discord'): Promise<A
 
     const user = await ensureBetaTester(authData.record as PocketBaseUser);
 
-
     return {
       success: true,
       user,
