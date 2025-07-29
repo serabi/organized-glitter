@@ -73,7 +73,7 @@ export const useProjectDetailReactQuery = (projectId: string | undefined) => {
         currentStatus: project.status,
       });
       return true;
-    } catch (error) {
+    } catch (_error) {
       return false;
     }
   };
@@ -136,7 +136,7 @@ export const useProjectDetailReactQuery = (projectId: string | undefined) => {
     try {
       await archiveProjectMutation.mutateAsync({ projectId });
       return true;
-    } catch (error) {
+    } catch (_error) {
       return false;
     }
   };
@@ -150,7 +150,7 @@ export const useProjectDetailReactQuery = (projectId: string | undefined) => {
     try {
       await deleteProjectMutation.mutateAsync({ projectId });
       return true;
-    } catch (error) {
+    } catch (_error) {
       return false;
     }
   };

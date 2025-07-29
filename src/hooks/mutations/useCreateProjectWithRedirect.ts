@@ -54,7 +54,7 @@ export const useCreateProjectWithRedirect = () => {
               pb.filter('name = {:name} && user = {:user}', { name: data.company, user: data.user })
             );
           companyId = companyRecord?.id || null;
-        } catch (error) {
+        } catch (_error) {
           logger.warn('Company not found:', data.company);
           companyId = null;
         }
@@ -68,7 +68,7 @@ export const useCreateProjectWithRedirect = () => {
               pb.filter('name = {:name} && user = {:user}', { name: data.artist, user: data.user })
             );
           artistId = artistRecord?.id || null;
-        } catch (error) {
+        } catch (_error) {
           logger.warn('Artist not found:', data.artist);
           artistId = null;
         }

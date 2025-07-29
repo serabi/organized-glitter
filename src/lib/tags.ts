@@ -220,7 +220,7 @@ export class TagService {
           if (existingTag.user !== userId) {
             return createErrorResponse(new Error('Unauthorized access to tag'));
           }
-        } catch (error) {
+        } catch (_error) {
           return createErrorResponse(new Error('Tag not found or access denied'));
         }
 
@@ -288,7 +288,7 @@ export class TagService {
           if (existingTag.user !== userId) {
             return createErrorResponse(new Error('Unauthorized access to tag'));
           }
-        } catch (error) {
+        } catch (_error) {
           return createErrorResponse(new Error('Tag not found or access denied'));
         }
 
@@ -408,7 +408,7 @@ export class TagService {
           if (tag.user !== userId) {
             return createErrorResponse(new Error('Unauthorized access to tag'));
           }
-        } catch (error) {
+        } catch (_error) {
           return createErrorResponse(new Error('Tag not found or access denied'));
         }
 

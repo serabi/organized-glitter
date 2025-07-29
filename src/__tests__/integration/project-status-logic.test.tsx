@@ -9,7 +9,7 @@ import {
   describe,
   it,
   expect,
-  vi,
+  // vi,
   waitFor,
   renderWithProviders,
   screen,
@@ -39,7 +39,7 @@ const ProjectStatusManager = () => {
     const currentDate = new Date().toISOString();
 
     try {
-      let updatedProject = { ...project };
+      const updatedProject = { ...project };
 
       // Business Logic: Status transition rules
       switch (newStatus) {

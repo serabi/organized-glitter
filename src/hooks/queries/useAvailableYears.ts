@@ -23,7 +23,7 @@ async function fetchAvailableYears(userId: string): Promise<number[]> {
         if (!isNaN(year)) {
           years.add(year);
         }
-      } catch (e) {
+      } catch (_e) {
         logger.error('Invalid date format for record:', record);
       }
     }

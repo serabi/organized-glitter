@@ -9,7 +9,7 @@ import {
   describe,
   it,
   expect,
-  vi,
+  // vi,
   waitFor,
   renderWithProviders,
   screen,
@@ -45,7 +45,7 @@ const ProjectManagerComponent = () => {
         status: 'wishlist',
       });
       setProjects(prev => [...prev, newProject]);
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to create project');
     } finally {
       setIsLoading(false);
@@ -59,7 +59,7 @@ const ProjectManagerComponent = () => {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 50));
       setProjects(prev => prev.map(p => (p.id === id ? { ...p, status: newStatus } : p)));
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to update project');
     } finally {
       setIsLoading(false);
@@ -73,7 +73,7 @@ const ProjectManagerComponent = () => {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 50));
       setProjects(prev => prev.filter(p => p.id !== id));
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to delete project');
     } finally {
       setIsLoading(false);
