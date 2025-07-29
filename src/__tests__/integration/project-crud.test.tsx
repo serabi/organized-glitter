@@ -5,7 +5,17 @@
  * @created 2025-07-29
  */
 
-import { describe, it, expect, vi, waitFor, renderWithProviders, screen, userEvent, createMockProject } from '@/test-utils';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  waitFor,
+  renderWithProviders,
+  screen,
+  userEvent,
+  createMockProject,
+} from '@/test-utils';
 import React from 'react';
 
 // Simple mock project manager component for testing
@@ -25,14 +35,14 @@ const ProjectManagerComponent = () => {
 
     setIsLoading(true);
     setError('');
-    
+
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 100));
-      const newProject = createMockProject({ 
-        id: `project-${Date.now()}`, 
+      const newProject = createMockProject({
+        id: `project-${Date.now()}`,
         title: title.trim(),
-        status: 'wishlist'
+        status: 'wishlist',
       });
       setProjects(prev => [...prev, newProject]);
     } catch (err) {
@@ -44,13 +54,11 @@ const ProjectManagerComponent = () => {
 
   const updateProjectStatus = async (id: string, newStatus: string) => {
     setIsLoading(true);
-    
+
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 50));
-      setProjects(prev => 
-        prev.map(p => p.id === id ? { ...p, status: newStatus } : p)
-      );
+      setProjects(prev => prev.map(p => (p.id === id ? { ...p, status: newStatus } : p)));
     } catch (err) {
       setError('Failed to update project');
     } finally {
@@ -60,7 +68,7 @@ const ProjectManagerComponent = () => {
 
   const deleteProject = async (id: string) => {
     setIsLoading(true);
-    
+
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 50));
@@ -75,9 +83,9 @@ const ProjectManagerComponent = () => {
   return (
     <div>
       <h1>My Diamond Painting Projects</h1>
-      
+
       {error && <div data-testid="error-message">{error}</div>}
-      
+
       {/* Create Project Form */}
       <div data-testid="create-form">
         <input
@@ -107,11 +115,11 @@ const ProjectManagerComponent = () => {
             <div key={project.id} data-testid={`project-${project.id}`}>
               <h3>{project.title}</h3>
               <div data-testid={`status-${project.id}`}>Status: {project.status}</div>
-              
+
               <select
                 data-testid={`status-select-${project.id}`}
                 value={project.status}
-                onChange={(e) => updateProjectStatus(project.id, e.target.value)}
+                onChange={e => updateProjectStatus(project.id, e.target.value)}
                 disabled={isLoading}
               >
                 <option value="wishlist">Wishlist</option>
@@ -119,7 +127,7 @@ const ProjectManagerComponent = () => {
                 <option value="progress">In Progress</option>
                 <option value="completed">Completed</option>
               </select>
-              
+
               <button
                 data-testid={`delete-btn-${project.id}`}
                 disabled={isLoading}
@@ -148,12 +156,12 @@ describe('Project CRUD Integration', () => {
 
   it('should create a new project', async () => {
     const user = userEvent.setup();
-    
+
     renderWithProviders(<ProjectManagerComponent />);
 
     // Enter project title
     await user.type(screen.getByTestId('project-title-input'), 'New Diamond Painting');
-    
+
     // Create project
     await user.click(screen.getByTestId('create-project-btn'));
 
@@ -172,7 +180,7 @@ describe('Project CRUD Integration', () => {
 
   it('should show error when creating project without title', async () => {
     const user = userEvent.setup();
-    
+
     renderWithProviders(<ProjectManagerComponent />);
 
     // Try to create without title
@@ -187,7 +195,7 @@ describe('Project CRUD Integration', () => {
 
   it('should update project status', async () => {
     const user = userEvent.setup();
-    
+
     renderWithProviders(<ProjectManagerComponent />);
 
     // Change status of first project
@@ -201,7 +209,7 @@ describe('Project CRUD Integration', () => {
 
   it('should delete a project', async () => {
     const user = userEvent.setup();
-    
+
     renderWithProviders(<ProjectManagerComponent />);
 
     // Verify project exists initially
@@ -220,7 +228,7 @@ describe('Project CRUD Integration', () => {
 
   it('should show loading states during operations', async () => {
     const user = userEvent.setup();
-    
+
     renderWithProviders(<ProjectManagerComponent />);
 
     // Test create loading state
@@ -239,7 +247,7 @@ describe('Project CRUD Integration', () => {
 
   it('should handle complete project lifecycle', async () => {
     const user = userEvent.setup();
-    
+
     renderWithProviders(<ProjectManagerComponent />);
 
     // Create project
@@ -252,14 +260,14 @@ describe('Project CRUD Integration', () => {
 
     // Find the new project element
     const projectElements = screen.getAllByTestId(/^project-project-\d+$/);
-    const newProjectElement = projectElements.find(el => 
+    const newProjectElement = projectElements.find(el =>
       el.textContent?.includes('Lifecycle Test Project')
     );
     expect(newProjectElement).toBeDefined();
-    
+
     // Get the project ID from the element
     const projectId = newProjectElement?.getAttribute('data-testid')?.replace('project-', '');
-    
+
     // Update status to progress
     const statusSelect = screen.getByTestId(`status-select-${projectId}`);
     await user.selectOptions(statusSelect, 'progress');
@@ -285,12 +293,12 @@ describe('Project CRUD Integration', () => {
 
   it('should show empty state when all projects are deleted', async () => {
     const user = userEvent.setup();
-    
+
     renderWithProviders(<ProjectManagerComponent />);
 
     // Delete first project
     await user.click(screen.getByTestId('delete-btn-project-1'));
-    
+
     await waitFor(() => {
       expect(screen.queryByTestId('project-project-1')).not.toBeInTheDocument();
     });

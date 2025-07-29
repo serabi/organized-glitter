@@ -1,6 +1,6 @@
 /**
  * Simplified test utilities for Organized Glitter
- * 
+ *
  * Provides minimal, focused testing infrastructure without complex abstractions.
  * Focuses on user-facing functionality and realistic test scenarios.
  */
@@ -13,14 +13,14 @@ import { vi } from 'vitest';
 import type { ProjectType, ProjectStatus } from '@/types/project';
 
 // Re-export commonly used testing functions
-export { 
-  screen, 
-  waitFor, 
-  fireEvent, 
-  cleanup, 
-  act, 
+export {
+  screen,
+  waitFor,
+  fireEvent,
+  cleanup,
+  act,
   renderHook,
-  within 
+  within,
 } from '@testing-library/react';
 export { default as userEvent } from '@testing-library/user-event';
 export { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -67,16 +67,14 @@ const TestWrapper: React.FC<{
 }> = ({ children, queryClient, initialRoute = '/' }) => {
   return (
     <MemoryRouter initialEntries={[initialRoute]}>
-      <QueryClientProvider client={queryClient}>
-        {children}
-      </QueryClientProvider>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     </MemoryRouter>
   );
 };
 
 /**
  * Render a component with all necessary providers
- * 
+ *
  * @param ui - React component to render
  * @param options - Render options including initial route and user state
  * @returns Render result with additional utilities
@@ -85,11 +83,7 @@ export const renderWithProviders = (
   ui: ReactElement,
   options: RenderWithProvidersOptions = {}
 ): RenderResult => {
-  const { 
-    queryClient = createTestQueryClient(), 
-    initialRoute = '/',
-    ...renderOptions 
-  } = options;
+  const { queryClient = createTestQueryClient(), initialRoute = '/', ...renderOptions } = options;
 
   const Wrapper = ({ children }: { children: React.ReactNode }) => (
     <TestWrapper queryClient={queryClient} initialRoute={initialRoute}>
@@ -133,14 +127,16 @@ export const createMockProject = (overrides: Partial<ProjectType> = {}): Project
 /**
  * Create mock user data for testing
  */
-export const createMockUser = (overrides: Partial<{
-  id: string;
-  email: string;
-  username: string;
-  verified: boolean;
-  created: string;
-  updated: string;
-}> = {}) => {
+export const createMockUser = (
+  overrides: Partial<{
+    id: string;
+    email: string;
+    username: string;
+    verified: boolean;
+    created: string;
+    updated: string;
+  }> = {}
+) => {
   return {
     id: 'test-user-id',
     email: 'test@example.com',
@@ -191,7 +187,7 @@ export const createMockPocketBase = () => {
  */
 export const createMockProjects = (count: number = 3): ProjectType[] => {
   const statuses: ProjectStatus[] = ['wishlist', 'purchased', 'stash', 'progress', 'completed'];
-  
+
   return Array.from({ length: count }, (_, index) =>
     createMockProject({
       id: `project-${index + 1}`,
@@ -214,7 +210,7 @@ export const createMockFile = (
 
 /**
  * Render a hook with all necessary providers
- * 
+ *
  * @param hook - Hook function to test
  * @param options - Options including initial route and query client
  * @returns renderHook result with providers
@@ -223,10 +219,7 @@ export const renderHookWithProviders = <T,>(
   hook: () => T,
   options: RenderWithProvidersOptions = {}
 ) => {
-  const { 
-    queryClient = createTestQueryClient(), 
-    initialRoute = '/',
-  } = options;
+  const { queryClient = createTestQueryClient(), initialRoute = '/' } = options;
 
   const Wrapper = ({ children }: { children: React.ReactNode }) => (
     <TestWrapper queryClient={queryClient} initialRoute={initialRoute}>

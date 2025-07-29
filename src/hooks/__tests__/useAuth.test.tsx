@@ -24,7 +24,7 @@ const createMockUseAuth = (overrides = {}) => {
 describe('useAuth hook behavior', () => {
   it('should return unauthenticated state by default', () => {
     const mockAuth = createMockUseAuth();
-    
+
     expect(mockAuth.user).toBeNull();
     expect(mockAuth.isAuthenticated).toBe(false);
     expect(mockAuth.isLoading).toBe(false);
@@ -60,7 +60,7 @@ describe('useAuth hook behavior', () => {
   it('should provide login and logout functions', () => {
     const mockLogin = vi.fn();
     const mockLogout = vi.fn();
-    
+
     const mockAuth = createMockUseAuth({
       login: mockLogin,
       logout: mockLogout,

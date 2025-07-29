@@ -5,7 +5,15 @@
  * @created 2025-07-29
  */
 
-import { describe, it, expect, waitFor, renderWithProviders, screen, userEvent } from '@/test-utils';
+import {
+  describe,
+  it,
+  expect,
+  waitFor,
+  renderWithProviders,
+  screen,
+  userEvent,
+} from '@/test-utils';
 import React from 'react';
 
 // Simple mock auth component for testing
@@ -17,11 +25,11 @@ const AuthTestComponent = () => {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     setError('');
-    
+
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 100));
-      
+
       // Simple validation
       if (email === 'test@example.com' && password === 'password') {
         setUser({ id: 'user-123', email, name: 'Test User' } as any);
@@ -56,13 +64,8 @@ const AuthTestComponent = () => {
     <div>
       <h1>Login</h1>
       {error && <div data-testid="error-message">{error}</div>}
-      
-      <input
-        data-testid="email-input"
-        type="email"
-        placeholder="Email"
-        disabled={isLoading}
-      />
+
+      <input data-testid="email-input" type="email" placeholder="Email" disabled={isLoading} />
       <input
         data-testid="password-input"
         type="password"
@@ -87,7 +90,7 @@ const AuthTestComponent = () => {
 describe('Authentication Flow Integration', () => {
   it('should allow user to login with valid credentials', async () => {
     const user = userEvent.setup();
-    
+
     renderWithProviders(<AuthTestComponent />);
 
     // Fill in login form
@@ -109,7 +112,7 @@ describe('Authentication Flow Integration', () => {
 
   it('should show error message for invalid credentials', async () => {
     const user = userEvent.setup();
-    
+
     renderWithProviders(<AuthTestComponent />);
 
     await user.type(screen.getByTestId('email-input'), 'wrong@example.com');
@@ -126,7 +129,7 @@ describe('Authentication Flow Integration', () => {
 
   it('should show loading state during login', async () => {
     const user = userEvent.setup();
-    
+
     renderWithProviders(<AuthTestComponent />);
 
     await user.type(screen.getByTestId('email-input'), 'test@example.com');
@@ -149,7 +152,7 @@ describe('Authentication Flow Integration', () => {
 
   it('should allow user to logout', async () => {
     const user = userEvent.setup();
-    
+
     renderWithProviders(<AuthTestComponent />);
 
     // Login first
@@ -172,7 +175,7 @@ describe('Authentication Flow Integration', () => {
 
   it('should handle complete login-logout cycle', async () => {
     const user = userEvent.setup();
-    
+
     renderWithProviders(<AuthTestComponent />);
 
     // Initial state - should show login form

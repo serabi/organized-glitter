@@ -11,7 +11,7 @@ import { useMutation } from '@tanstack/react-query';
 // Create a simple mock for useCreateSpin behavior
 const createMockCreateSpin = (options = {}) => {
   return useMutation({
-    mutationFn: vi.fn().mockResolvedValue({ 
+    mutationFn: vi.fn().mockResolvedValue({
       id: 'spin-123',
       user: 'test-user-id',
       project: 'test-project-id',
@@ -30,9 +30,7 @@ const createMockCreateSpin = (options = {}) => {
 
 describe('useCreateSpin mutation behavior', () => {
   it('should start in idle state', () => {
-    const { result } = renderHookWithProviders(() => 
-      createMockCreateSpin()
-    );
+    const { result } = renderHookWithProviders(() => createMockCreateSpin());
 
     expect(result.current.isPending).toBe(false);
     expect(result.current.isError).toBe(false);
@@ -50,8 +48,8 @@ describe('useCreateSpin mutation behavior', () => {
       selected_projects: ['project-1', 'project-2'],
       selected_count: 2,
     });
-    
-    const { result } = renderHookWithProviders(() => 
+
+    const { result } = renderHookWithProviders(() =>
       createMockCreateSpin({ mutationFn: mockMutationFn })
     );
 
@@ -84,8 +82,8 @@ describe('useCreateSpin mutation behavior', () => {
   it('should handle mutation errors', async () => {
     const mockError = new Error('Spin creation failed');
     const mockMutationFn = vi.fn().mockRejectedValue(mockError);
-    
-    const { result } = renderHookWithProviders(() => 
+
+    const { result } = renderHookWithProviders(() =>
       createMockCreateSpin({ mutationFn: mockMutationFn })
     );
 
@@ -111,10 +109,10 @@ describe('useCreateSpin mutation behavior', () => {
     const slowPromise = new Promise(resolve => {
       resolvePromise = resolve;
     });
-    
+
     const mockMutationFn = vi.fn().mockImplementation(() => slowPromise);
-    
-    const { result } = renderHookWithProviders(() => 
+
+    const { result } = renderHookWithProviders(() =>
       createMockCreateSpin({ mutationFn: mockMutationFn })
     );
 
@@ -148,11 +146,11 @@ describe('useCreateSpin mutation behavior', () => {
   it('should call onSuccess callback', async () => {
     const mockOnSuccess = vi.fn();
     const mockMutationFn = vi.fn().mockResolvedValue({ success: true });
-    
-    const { result } = renderHookWithProviders(() => 
-      createMockCreateSpin({ 
+
+    const { result } = renderHookWithProviders(() =>
+      createMockCreateSpin({
         mutationFn: mockMutationFn,
-        onSuccess: mockOnSuccess 
+        onSuccess: mockOnSuccess,
       })
     );
 
@@ -178,17 +176,17 @@ describe('useCreateSpin mutation behavior', () => {
     const mockOnError = vi.fn();
     const mockError = new Error('Test error');
     const mockMutationFn = vi.fn().mockRejectedValue(mockError);
-    
-    const { result } = renderHookWithProviders(() => 
-      createMockCreateSpin({ 
+
+    const { result } = renderHookWithProviders(() =>
+      createMockCreateSpin({
         mutationFn: mockMutationFn,
-        onError: mockOnError 
+        onError: mockOnError,
       })
     );
 
     const spinParams = {
       user: 'test-user-id',
-      project: 'test-project-id', 
+      project: 'test-project-id',
       project_title: 'Test Project',
       selected_projects: ['project-1'],
     };

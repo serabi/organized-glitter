@@ -5,14 +5,24 @@
  * @created 2025-07-29
  */
 
-import { describe, it, expect, vi, waitFor, renderWithProviders, screen, userEvent, createMockProject } from '@/test-utils';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  waitFor,
+  renderWithProviders,
+  screen,
+  userEvent,
+  createMockProject,
+} from '@/test-utils';
 import React from 'react';
 
 // Simple component that demonstrates business logic for project status
 const ProjectStatusManager = () => {
   const [project, setProject] = React.useState(
-    createMockProject({ 
-      id: 'test-project', 
+    createMockProject({
+      id: 'test-project',
       title: 'Test Diamond Painting',
       status: 'wishlist',
       datePurchased: undefined,
@@ -24,13 +34,13 @@ const ProjectStatusManager = () => {
 
   const updateStatus = (newStatus: string) => {
     setValidationError('');
-    
+
     // Business rules for status transitions
     const currentDate = new Date().toISOString();
-    
+
     try {
       let updatedProject = { ...project };
-      
+
       // Business Logic: Status transition rules
       switch (newStatus) {
         case 'purchased':
@@ -40,7 +50,7 @@ const ProjectStatusManager = () => {
           updatedProject.status = 'purchased';
           updatedProject.datePurchased = currentDate;
           break;
-          
+
         case 'progress':
           if (!['purchased', 'stash'].includes(project.status)) {
             throw new Error('Can only start projects that are purchased or in stash');
@@ -51,7 +61,7 @@ const ProjectStatusManager = () => {
             updatedProject.datePurchased = currentDate; // Auto-set if missing
           }
           break;
-          
+
         case 'completed':
           if (project.status !== 'progress') {
             throw new Error('Can only complete projects that are in progress');
@@ -59,14 +69,14 @@ const ProjectStatusManager = () => {
           updatedProject.status = 'completed';
           updatedProject.dateCompleted = currentDate;
           break;
-          
+
         case 'stash':
           if (!['purchased', 'progress'].includes(project.status)) {
             throw new Error('Can only stash purchased projects or pause in-progress ones');
           }
           updatedProject.status = 'stash';
           break;
-          
+
         case 'wishlist':
           // Can always move back to wishlist, but clear dates
           updatedProject.status = 'wishlist';
@@ -74,11 +84,11 @@ const ProjectStatusManager = () => {
           updatedProject.dateStarted = undefined;
           updatedProject.dateCompleted = undefined;
           break;
-          
+
         default:
           updatedProject.status = newStatus;
       }
-      
+
       setProject(updatedProject);
     } catch (error) {
       setValidationError(error instanceof Error ? error.message : 'Status update failed');
@@ -105,23 +115,23 @@ const ProjectStatusManager = () => {
   return (
     <div>
       <h1>Project Status Manager</h1>
-      
+
       <div data-testid="project-info">
         <h2>{project.title}</h2>
         <div data-testid="current-status">Current Status: {project.status}</div>
-        
+
         {project.datePurchased && (
           <div data-testid="date-purchased">
             Purchased: {new Date(project.datePurchased).toLocaleDateString()}
           </div>
         )}
-        
+
         {project.dateStarted && (
           <div data-testid="date-started">
             Started: {new Date(project.dateStarted).toLocaleDateString()}
           </div>
         )}
-        
+
         {project.dateCompleted && (
           <div data-testid="date-completed">
             Completed: {new Date(project.dateCompleted).toLocaleDateString()}
@@ -147,7 +157,7 @@ const ProjectStatusManager = () => {
             Move to {status}
           </button>
         ))}
-        
+
         {/* Test invalid transitions */}
         <button
           data-testid="invalid-action"
@@ -173,14 +183,14 @@ describe('Project Status Business Logic Integration', () => {
 
   it('should transition from wishlist to purchased', async () => {
     const user = userEvent.setup();
-    
+
     renderWithProviders(<ProjectStatusManager />);
 
     await user.click(screen.getByTestId('action-purchased'));
 
     expect(screen.getByTestId('current-status')).toHaveTextContent('Current Status: purchased');
     expect(screen.getByTestId('date-purchased')).toBeInTheDocument();
-    
+
     // Should now show different available actions
     expect(screen.getByTestId('action-progress')).toBeInTheDocument();
     expect(screen.getByTestId('action-stash')).toBeInTheDocument();
@@ -189,19 +199,19 @@ describe('Project Status Business Logic Integration', () => {
 
   it('should transition from purchased to progress and set start date', async () => {
     const user = userEvent.setup();
-    
+
     renderWithProviders(<ProjectStatusManager />);
 
     // First move to purchased
     await user.click(screen.getByTestId('action-purchased'));
-    
+
     // Then move to progress
     await user.click(screen.getByTestId('action-progress'));
 
     expect(screen.getByTestId('current-status')).toHaveTextContent('Current Status: progress');
     expect(screen.getByTestId('date-purchased')).toBeInTheDocument();
     expect(screen.getByTestId('date-started')).toBeInTheDocument();
-    
+
     // Should now show completion and stash options
     expect(screen.getByTestId('action-completed')).toBeInTheDocument();
     expect(screen.getByTestId('action-stash')).toBeInTheDocument();
@@ -209,26 +219,26 @@ describe('Project Status Business Logic Integration', () => {
 
   it('should complete the full project lifecycle', async () => {
     const user = userEvent.setup();
-    
+
     renderWithProviders(<ProjectStatusManager />);
 
     // Wishlist -> Purchased
     await user.click(screen.getByTestId('action-purchased'));
     expect(screen.getByTestId('current-status')).toHaveTextContent('Current Status: purchased');
 
-    // Purchased -> Progress  
+    // Purchased -> Progress
     await user.click(screen.getByTestId('action-progress'));
     expect(screen.getByTestId('current-status')).toHaveTextContent('Current Status: progress');
 
     // Progress -> Completed
     await user.click(screen.getByTestId('action-completed'));
     expect(screen.getByTestId('current-status')).toHaveTextContent('Current Status: completed');
-    
+
     // Should have all dates set
     expect(screen.getByTestId('date-purchased')).toBeInTheDocument();
     expect(screen.getByTestId('date-started')).toBeInTheDocument();
     expect(screen.getByTestId('date-completed')).toBeInTheDocument();
-    
+
     // From completed, should only be able to restart
     expect(screen.getByTestId('action-wishlist')).toBeInTheDocument();
     expect(screen.queryByTestId('action-progress')).not.toBeInTheDocument();
@@ -236,7 +246,7 @@ describe('Project Status Business Logic Integration', () => {
 
   it('should prevent invalid status transitions', async () => {
     const user = userEvent.setup();
-    
+
     renderWithProviders(<ProjectStatusManager />);
 
     // Try to complete a wishlist project (invalid)
@@ -249,29 +259,29 @@ describe('Project Status Business Logic Integration', () => {
     expect(screen.getByTestId('validation-error')).toHaveTextContent(
       'Can only complete projects that are in progress'
     );
-    
+
     // Status should remain unchanged
     expect(screen.getByTestId('current-status')).toHaveTextContent('Current Status: wishlist');
   });
 
   it('should handle stash workflow correctly', async () => {
     const user = userEvent.setup();
-    
+
     renderWithProviders(<ProjectStatusManager />);
 
     // Move to purchased then to progress
     await user.click(screen.getByTestId('action-purchased'));
     await user.click(screen.getByTestId('action-progress'));
-    
+
     // Move to stash
     await user.click(screen.getByTestId('action-stash'));
-    
+
     expect(screen.getByTestId('current-status')).toHaveTextContent('Current Status: stash');
-    
+
     // From stash, should be able to resume progress or return to wishlist
     expect(screen.getByTestId('action-progress')).toBeInTheDocument();
     expect(screen.getByTestId('action-wishlist')).toBeInTheDocument();
-    
+
     // Resume progress
     await user.click(screen.getByTestId('action-progress'));
     expect(screen.getByTestId('current-status')).toHaveTextContent('Current Status: progress');
@@ -279,22 +289,22 @@ describe('Project Status Business Logic Integration', () => {
 
   it('should reset dates when returning to wishlist', async () => {
     const user = userEvent.setup();
-    
+
     renderWithProviders(<ProjectStatusManager />);
 
     // Go through some status changes
     await user.click(screen.getByTestId('action-purchased'));
     await user.click(screen.getByTestId('action-progress'));
-    
+
     // Verify dates are set
     expect(screen.getByTestId('date-purchased')).toBeInTheDocument();
     expect(screen.getByTestId('date-started')).toBeInTheDocument();
-    
+
     // Return to wishlist
     await user.click(screen.getByTestId('action-wishlist'));
-    
+
     expect(screen.getByTestId('current-status')).toHaveTextContent('Current Status: wishlist');
-    
+
     // Dates should be cleared
     expect(screen.queryByTestId('date-purchased')).not.toBeInTheDocument();
     expect(screen.queryByTestId('date-started')).not.toBeInTheDocument();
@@ -303,14 +313,14 @@ describe('Project Status Business Logic Integration', () => {
 
   it('should show appropriate actions for each status', async () => {
     const user = userEvent.setup();
-    
+
     renderWithProviders(<ProjectStatusManager />);
 
     // Wishlist: can only purchase
     expect(screen.getByTestId('action-purchased')).toBeInTheDocument();
     expect(screen.getAllByRole('button')).toHaveLength(2); // purchased + invalid test button
 
-    // Purchased: can progress, stash, or return to wishlist  
+    // Purchased: can progress, stash, or return to wishlist
     await user.click(screen.getByTestId('action-purchased'));
     expect(screen.getByTestId('action-progress')).toBeInTheDocument();
     expect(screen.getByTestId('action-stash')).toBeInTheDocument();

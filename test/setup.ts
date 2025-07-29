@@ -61,10 +61,7 @@ Object.defineProperty(URL, 'revokeObjectURL', {
 // Suppress React Router warnings in tests
 const originalWarn = console.warn;
 console.warn = (...args) => {
-  if (
-    typeof args[0] === 'string' && 
-    args[0].includes('React Router Future Flag Warning')
-  ) {
+  if (typeof args[0] === 'string' && args[0].includes('React Router Future Flag Warning')) {
     return;
   }
   originalWarn(...args);

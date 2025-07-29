@@ -26,7 +26,7 @@
  * - ALWAYS use pb.filter() for parameterized queries
  * - ALWAYS validate field names before using them in filters
  *
- * @author Generated with Claude Code
+ * @author @serabi
  * @version 2.0.0 - Security Hardened
  * @since 2024-06-29
  * @security-review Required for any modifications to field validation

@@ -10,11 +10,11 @@ import { describe, it, expect, renderWithProviders, screen, userEvent } from '@/
 describe('MyComponent', () => {
   it('should handle user interaction', async () => {
     const user = userEvent.setup();
-    
+
     renderWithProviders(<MyComponent />);
-    
+
     await user.click(screen.getByRole('button', { name: 'Submit' }));
-    
+
     expect(screen.getByText('Success!')).toBeInTheDocument();
   });
 });
@@ -23,6 +23,7 @@ describe('MyComponent', () => {
 ## Testing Patterns
 
 ### 1. Component Tests
+
 Focus on user interactions and rendering:
 
 ```typescript
@@ -32,27 +33,28 @@ import { renderWithProviders, screen, userEvent } from '@/test-utils';
 it('should submit form when button is clicked', async () => {
   const user = userEvent.setup();
   renderWithProviders(<ContactForm />);
-  
+
   await user.type(screen.getByLabelText('Email'), 'test@example.com');
   await user.click(screen.getByRole('button', { name: 'Submit' }));
-  
+
   expect(screen.getByText('Form submitted!')).toBeInTheDocument();
 });
 
 // ✅ Test conditional rendering
 it('should show error message for invalid input', () => {
   renderWithProviders(<ContactForm />);
-  
+
   expect(screen.queryByTestId('error-message')).not.toBeInTheDocument();
-  
+
   // Trigger validation
   fireEvent.blur(screen.getByLabelText('Email'));
-  
+
   expect(screen.getByTestId('error-message')).toBeInTheDocument();
 });
 ```
 
 ### 2. Hook Tests
+
 Test behavior with minimal mocking:
 
 ```typescript
@@ -76,19 +78,20 @@ it('should handle loading state', () => {
 ```
 
 ### 3. Integration Tests
+
 Test real user workflows:
 
 ```typescript
 // ✅ Authentication flow
 it('should allow user to login', async () => {
   const user = userEvent.setup();
-  
+
   renderWithProviders(<LoginForm />);
-  
+
   await user.type(screen.getByLabelText('Email'), 'user@example.com');
   await user.type(screen.getByLabelText('Password'), 'password');
   await user.click(screen.getByRole('button', { name: 'Login' }));
-  
+
   await waitFor(() => {
     expect(screen.getByText('Welcome back!')).toBeInTheDocument();
   });
@@ -97,26 +100,26 @@ it('should allow user to login', async () => {
 // ✅ CRUD operations
 it('should create, update, and delete items', async () => {
   const user = userEvent.setup();
-  
+
   renderWithProviders(<ProjectManager />);
-  
+
   // Create
   await user.type(screen.getByPlaceholderText('Project name'), 'New Project');
   await user.click(screen.getByRole('button', { name: 'Create' }));
-  
+
   expect(screen.getByText('New Project')).toBeInTheDocument();
-  
+
   // Update
   await user.click(screen.getByRole('button', { name: 'Edit' }));
   await user.clear(screen.getByDisplayValue('New Project'));
   await user.type(screen.getByDisplayValue(''), 'Updated Project');
   await user.click(screen.getByRole('button', { name: 'Save' }));
-  
+
   expect(screen.getByText('Updated Project')).toBeInTheDocument();
-  
+
   // Delete
   await user.click(screen.getByRole('button', { name: 'Delete' }));
-  
+
   expect(screen.queryByText('Updated Project')).not.toBeInTheDocument();
 });
 ```
@@ -124,16 +127,20 @@ it('should create, update, and delete items', async () => {
 ## Available Utilities
 
 ### Rendering
+
 - `renderWithProviders(component, options)` - Render with all necessary providers
 - `renderHookWithProviders(hook, options)` - Render hooks with providers
 
 ### Mock Factories
+
 - `createMockProject(overrides)` - Create project test data
 - `createMockUser(overrides)` - Create user test data
 - `createMockFile(name, type, size)` - Create file objects for uploads
 
 ### Testing Library Exports
+
 All essential testing-library utilities are re-exported:
+
 - `screen` - Query the rendered DOM
 - `waitFor` - Wait for async operations
 - `fireEvent` - Trigger DOM events
@@ -142,7 +149,9 @@ All essential testing-library utilities are re-exported:
 - `within` - Query within specific elements
 
 ### Vitest Exports
+
 Essential Vitest utilities:
+
 - `describe`, `it`, `expect` - Test structure
 - `beforeEach`, `afterEach` - Test lifecycle
 - `vi` - Mocking utilities
@@ -150,6 +159,7 @@ Essential Vitest utilities:
 ## Writing Good Tests
 
 ### DO ✅
+
 - Test user workflows and interactions
 - Use realistic test data with mock factories
 - Focus on behavior, not implementation
@@ -159,6 +169,7 @@ Essential Vitest utilities:
 - Keep tests simple and focused
 
 ### DON'T ❌
+
 - Test implementation details
 - Mock everything - use real components when possible
 - Write complex test utilities or base classes
@@ -199,13 +210,13 @@ Use the browser-like environment for debugging:
 ```typescript
 it('should debug component state', () => {
   renderWithProviders(<MyComponent />);
-  
+
   // Debug the DOM
   screen.debug();
-  
+
   // Debug specific elements
   screen.debug(screen.getByTestId('my-element'));
-  
+
   // Check what's available
   console.log(screen.getByRole('button')); // Will show available buttons
 });
@@ -214,6 +225,7 @@ it('should debug component state', () => {
 ## Examples
 
 See these files for complete examples:
+
 - `src/__tests__/integration/auth-flow.test.tsx` - Authentication workflow
 - `src/__tests__/integration/project-crud.test.tsx` - CRUD operations
 - `src/__tests__/integration/project-status-logic.test.tsx` - Business logic
@@ -221,6 +233,7 @@ See these files for complete examples:
 - `src/hooks/mutations/__tests__/useCreateSpin.test.tsx` - Mutation testing
 
 This approach prioritizes:
+
 - **User-focused testing** - Tests simulate real user interactions
 - **Minimal boilerplate** - Simple, reusable utilities
 - **Fast execution** - Optimized configuration for speed
