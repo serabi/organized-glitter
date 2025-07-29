@@ -96,7 +96,7 @@ const FilterStateContext = createContext<FilterStateContextType | null>(null);
 /**
  * Default filter state factory
  */
-export const getDefaultFilters = (): FilterState => ({
+const getDefaultFilters = (): FilterState => ({
   activeStatus: 'all',
   selectedCompany: 'all',
   selectedArtist: 'all',
@@ -118,7 +118,7 @@ export const getDefaultFilters = (): FilterState => ({
 /**
  * Validate and sanitize filter state
  */
-export const validateAndSanitizeFilters = (filters: Partial<FilterState>): FilterState => {
+const validateAndSanitizeFilters = (filters: Partial<FilterState>): FilterState => {
   const defaults = getDefaultFilters();
 
   return {

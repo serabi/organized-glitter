@@ -72,27 +72,7 @@ const ResponsiveTabText = ({
   );
 };
 
-/**
- * Predefined text mappings for common status labels
- */
-export const statusTextMappings: Record<string, string> = {
-  'In Progress': 'Progress',
-  'In Stash': 'Stash',
-  Purchased: 'Bought',
-  Completed: 'Done',
-  Destashed: 'Removed',
-  Archived: 'Archive',
-  Wishlist: 'Wish',
-  All: 'All',
-};
 
-/**
- * Helper function to get abbreviated text for status labels
- */
-export const getStatusText = (status: string, abbreviated = false): string => {
-  if (!abbreviated) return status;
-  return statusTextMappings[status] || status;
-};
 
 export default ResponsiveTabText;
 export { useWindowDimensions };
