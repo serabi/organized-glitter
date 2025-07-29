@@ -5,6 +5,8 @@ import type { ProjectStatus } from '@/types/shared';
 import type { ProjectsResponse } from '@/types/pocketbase.types';
 import { projectsToCsv, downloadCsv } from '@/utils/csvExport';
 import { logger } from '@/utils/logger';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
+import { getCurrentDateInUserTimezone } from '@/utils/timezoneUtils';
 
 /**
  * Validate and normalize the kit category field
@@ -38,6 +40,7 @@ type ExportResult = {
 export const useProjectExport = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const userTimezone = useUserTimezone();
 
   const exportProjectsToCsv = useCallback(async (): Promise<ExportResult | undefined> => {
     try {
@@ -132,7 +135,7 @@ export const useProjectExport = () => {
       const csvData = projectsToCsv(formattedProjects);
 
       // Download the CSV file
-      const filename = `diamond-projects-${new Date().toISOString().split('T')[0]}.csv`;
+      const filename = `diamond-projects-${getCurrentDateInUserTimezone(userTimezone)}.csv`;
       downloadCsv(csvData, filename);
 
       // Show success message
@@ -154,7 +157,7 @@ export const useProjectExport = () => {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, userTimezone]);
 
   return {
     exportProjectsToCsv,
