@@ -39,15 +39,33 @@ const convertDatabaseDateToUserTimezone = (dbDate: string | null | undefined, us
   if (!dbDate) return undefined;
   
   try {
-    // Parse the database date as midnight UTC, then format in user timezone
-    const utcDate = fromUserDateString(dbDate, 'UTC');
-    const converted = toUserDateString(utcDate, userTimezone) || undefined;
+    // Convert database dates to YYYY-MM-DD format for HTML5 date inputs
+    // Handle both YYYY-MM-DD and ISO datetime formats from database
+    let converted: string;
+    
+    if (dbDate.includes('T') || dbDate.includes(' ')) {
+      // ISO datetime format - extract just the date part and ignore timezone
+      // For "2024-12-12 00:00:00.000Z" or "2024-12-12T00:00:00.000Z"
+      converted = dbDate.split('T')[0].split(' ')[0];
+    } else if (/^\d{4}-\d{2}-\d{2}$/.test(dbDate)) {
+      // Already YYYY-MM-DD format
+      converted = dbDate;
+    } else {
+      // Fallback: try to parse and extract date
+      const date = new Date(dbDate);
+      if (!isNaN(date.getTime())) {
+        converted = date.toISOString().split('T')[0];
+      } else {
+        converted = dbDate; // Last resort fallback
+      }
+    }
     
     projectDetailLogger.debug('📅 Date conversion during project load', {
       dbDate,
       userTimezone,
       converted,
-      isDifferent: dbDate !== converted
+      isDifferent: dbDate !== converted,
+      inputFormat: dbDate.includes('T') || dbDate.includes(' ') ? 'datetime' : 'dateonly'
     });
     
     return converted;
