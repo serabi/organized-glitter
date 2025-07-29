@@ -1,7 +1,9 @@
 import React, { memo } from 'react';
 import Navbar from './Navbar';
 import Footer from './Footer';
+import BottomNavigation from './BottomNavigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useMobileDevice } from '@/hooks/use-mobile';
 import LoadingState from '@/components/projects/LoadingState';
 
 interface MainLayoutProps {
@@ -21,9 +23,13 @@ const MainLayout = memo(
     hideFooter = false,
   }: MainLayoutProps) => {
     const { user, isLoading } = useAuth();
+    const { isMobile, isTablet } = useMobileDevice();
 
     // Use the user from context if available, otherwise use the prop
     const isLoggedIn = !!user || isAuthenticated;
+
+    // Determine if bottom navigation should be shown (authenticated users on mobile/tablet)
+    const showBottomNav = isLoggedIn && (isMobile || isTablet);
 
     // Show loading state if auth is loading and the showLoader prop is true
     if (isLoading && showLoader) {
@@ -34,6 +40,7 @@ const MainLayout = memo(
             <LoadingState />
           </main>
           {!hideFooter && <Footer />}
+          {showBottomNav && <BottomNavigation />}
         </div>
       );
     }
@@ -41,8 +48,9 @@ const MainLayout = memo(
     return (
       <div className="flex min-h-screen flex-col">
         {!hideNav && <Navbar isAuthenticated={isLoggedIn} />}
-        <main className="flex-grow">{children}</main>
+        <main className={`flex-grow ${showBottomNav ? 'pb-16' : ''}`}>{children}</main>
         {!hideFooter && <Footer />}
+        {showBottomNav && <BottomNavigation />}
       </div>
     );
   }
