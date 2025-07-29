@@ -27,7 +27,7 @@ interface ExtractedProjectData {
 /**
  * Extract projects and metadata from various cached query data structures
  */
-const extractProjectsFromQueryData = (data: any): ExtractedProjectData => {
+const extractProjectsFromQueryData = (data: unknown): ExtractedProjectData => {
   // Handle null/undefined
   if (!data) {
     return { projects: [], totalItems: 0 };
@@ -39,8 +39,23 @@ const extractProjectsFromQueryData = (data: any): ExtractedProjectData => {
     return { projects: data, totalItems: data.length };
   }
 
+  // Type guard for object with projects
+  const hasProjects = (obj: unknown): obj is { projects: Project[]; totalItems?: number } => {
+    return typeof obj === 'object' && obj !== null && 'projects' in obj && Array.isArray((obj as any).projects);
+  };
+
+  // Type guard for object with items
+  const hasItems = (obj: unknown): obj is { items: Project[]; totalItems?: number } => {
+    return typeof obj === 'object' && obj !== null && 'items' in obj && Array.isArray((obj as any).items);
+  };
+
+  // Type guard for object with data
+  const hasData = (obj: unknown): obj is { data: Project[]; totalItems?: number } => {
+    return typeof obj === 'object' && obj !== null && 'data' in obj && Array.isArray((obj as any).data);
+  };
+
   // Case 2: Object with 'projects' property (current pattern)
-  if (data.projects && Array.isArray(data.projects)) {
+  if (hasProjects(data)) {
     logger.debug('Detected {projects: Project[]} structure');
     return {
       projects: data.projects,
@@ -49,7 +64,7 @@ const extractProjectsFromQueryData = (data: any): ExtractedProjectData => {
   }
 
   // Case 3: Object with 'items' property
-  if (data.items && Array.isArray(data.items)) {
+  if (hasItems(data)) {
     logger.debug('Detected {items: Project[]} structure');
     return {
       projects: data.items,
@@ -58,7 +73,7 @@ const extractProjectsFromQueryData = (data: any): ExtractedProjectData => {
   }
 
   // Case 4: Object with 'data' property
-  if (data.data && Array.isArray(data.data)) {
+  if (hasData(data)) {
     logger.debug('Detected {data: Project[]} structure');
     return {
       projects: data.data,
@@ -70,10 +85,10 @@ const extractProjectsFromQueryData = (data: any): ExtractedProjectData => {
   logger.warn('Unrecognized query data structure:', {
     dataType: typeof data,
     isArray: Array.isArray(data),
-    keys: typeof data === 'object' ? Object.keys(data) : 'not-object',
-    hasProjects: 'projects' in (data || {}),
-    hasItems: 'items' in (data || {}),
-    hasData: 'data' in (data || {}),
+    keys: typeof data === 'object' && data !== null ? Object.keys(data) : 'not-object',
+    hasProjects: typeof data === 'object' && data !== null && 'projects' in data,
+    hasItems: typeof data === 'object' && data !== null && 'items' in data,
+    hasData: typeof data === 'object' && data !== null && 'data' in data,
   });
 
   return { projects: [], totalItems: 0 };
@@ -141,7 +156,7 @@ const canDeriveFromCache = (
     let maxTotalItems = 0;
 
     projectQueries.forEach(query => {
-      const data = query.state.data as any;
+      const data = query.state.data as unknown;
       const extracted = extractProjectsFromQueryData(data);
 
       if (extracted.projects.length > 0) {

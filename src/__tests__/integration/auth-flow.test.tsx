@@ -15,6 +15,7 @@ import {
   userEvent,
 } from '@/test-utils';
 import React from 'react';
+import { PocketBaseUser } from '@/contexts/AuthContext.types';
 
 // Simple mock auth component for testing
 const AuthTestComponent = () => {
@@ -32,7 +33,13 @@ const AuthTestComponent = () => {
 
       // Simple validation
       if (email === 'test@example.com' && password === 'password') {
-        setUser({ id: 'user-123', email, name: 'Test User' } as any);
+        setUser({ 
+          id: 'user-123', 
+          email, 
+          name: 'Test User',
+          created: new Date().toISOString(),
+          updated: new Date().toISOString()
+        } as PocketBaseUser);
       } else {
         throw new Error('Invalid credentials');
       }
@@ -51,8 +58,8 @@ const AuthTestComponent = () => {
   if (user) {
     return (
       <div>
-        <div data-testid="user-info">Welcome, {(user as any).name}!</div>
-        <div data-testid="user-email">{(user as any).email}</div>
+        <div data-testid="user-info">Welcome, {user.name}!</div>
+        <div data-testid="user-email">{user.email}</div>
         <button data-testid="logout-btn" onClick={logout}>
           Logout
         </button>
