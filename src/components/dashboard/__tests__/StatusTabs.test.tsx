@@ -1,6 +1,13 @@
+/**
+ * Simplified tests for StatusTabs component
+ * Tests user interactions and tab behavior
+ * @author @serabi
+ * @created 2025-07-29
+ */
+
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { renderWithProviders, screen, fireEvent } from '@/test-utils';
 import StatusTabs from '../StatusTabs';
 import { ProjectFilterStatus } from '@/types/project';
 
@@ -41,7 +48,7 @@ describe('StatusTabs', () => {
 
   describe('rendering', () => {
     it('should render all status tabs with correct labels', () => {
-      render(<StatusTabs />);
+      renderWithProviders(<StatusTabs />);
 
       expect(screen.getByRole('tab', { name: /all/i })).toBeInTheDocument();
       expect(screen.getByRole('tab', { name: /wishlist/i })).toBeInTheDocument();
@@ -54,7 +61,7 @@ describe('StatusTabs', () => {
     });
 
     it('should display correct counts for each status', () => {
-      render(<StatusTabs />);
+      renderWithProviders(<StatusTabs />);
 
       expect(screen.getByText('15')).toBeInTheDocument(); // all
       expect(screen.getByText('3')).toBeInTheDocument(); // wishlist
@@ -67,14 +74,14 @@ describe('StatusTabs', () => {
     it('should mark the active status tab as selected', () => {
       mockContextValue.filters.activeStatus = 'wishlist';
 
-      render(<StatusTabs />);
+      renderWithProviders(<StatusTabs />);
 
       const wishlistTab = screen.getByRole('tab', { name: /wishlist/i });
       expect(wishlistTab).toHaveAttribute('data-state', 'active');
     });
 
     it('should have proper responsive grid classes', () => {
-      render(<StatusTabs />);
+      renderWithProviders(<StatusTabs />);
 
       const tabsList = screen.getByRole('tablist');
       expect(tabsList).toHaveClass(
@@ -90,7 +97,7 @@ describe('StatusTabs', () => {
 
   describe('interactions', () => {
     it('should call updateStatus when a tab is clicked', () => {
-      render(<StatusTabs />);
+      renderWithProviders(<StatusTabs />);
 
       const wishlistTab = screen.getByRole('tab', { name: /wishlist/i });
       fireEvent.click(wishlistTab);
@@ -99,7 +106,7 @@ describe('StatusTabs', () => {
     });
 
     it('should call updateStatus for each status tab', () => {
-      render(<StatusTabs />);
+      renderWithProviders(<StatusTabs />);
 
       const statusTabs = [
         { name: /all/i, value: 'all' },
@@ -122,7 +129,7 @@ describe('StatusTabs', () => {
     });
 
     it('should support keyboard navigation', () => {
-      render(<StatusTabs />);
+      renderWithProviders(<StatusTabs />);
 
       const wishlistTab = screen.getByRole('tab', { name: /wishlist/i });
 
@@ -136,7 +143,7 @@ describe('StatusTabs', () => {
     });
 
     it('should support arrow key navigation between tabs', () => {
-      render(<StatusTabs />);
+      renderWithProviders(<StatusTabs />);
 
       const allTab = screen.getByRole('tab', { name: /all/i });
       const wishlistTab = screen.getByRole('tab', { name: /wishlist/i });
@@ -153,7 +160,7 @@ describe('StatusTabs', () => {
 
   describe('dynamic counts', () => {
     it('should update counts when context changes', () => {
-      const { rerender } = render(<StatusTabs />);
+      renderWithProviders(<StatusTabs />);
 
       // Initial counts
       expect(screen.getByText('15')).toBeInTheDocument();
@@ -171,7 +178,7 @@ describe('StatusTabs', () => {
         archived: 1,
       });
 
-      rerender(<StatusTabs />);
+      renderWithProviders(<StatusTabs />);
 
       expect(screen.getByText('20')).toBeInTheDocument();
       expect(screen.getByText('5')).toBeInTheDocument();
@@ -189,7 +196,7 @@ describe('StatusTabs', () => {
         archived: 0,
       });
 
-      render(<StatusTabs />);
+      renderWithProviders(<StatusTabs />);
 
       // Should display 0 for all tabs
       const countElements = screen.getAllByText('0');
@@ -208,7 +215,7 @@ describe('StatusTabs', () => {
         archived: 49,
       });
 
-      render(<StatusTabs />);
+      renderWithProviders(<StatusTabs />);
 
       expect(screen.getByText('9999')).toBeInTheDocument();
       expect(screen.getByText('1000')).toBeInTheDocument();
@@ -218,7 +225,7 @@ describe('StatusTabs', () => {
 
   describe('accessibility', () => {
     it('should have proper ARIA attributes', () => {
-      render(<StatusTabs />);
+      renderWithProviders(<StatusTabs />);
 
       const tabsList = screen.getByRole('tablist');
       expect(tabsList).toBeInTheDocument();
@@ -233,7 +240,7 @@ describe('StatusTabs', () => {
     });
 
     it('should have tab panels for accessibility', () => {
-      render(<StatusTabs />);
+      renderWithProviders(<StatusTabs />);
 
       // The Tabs component requires TabsContent for proper accessibility
       const tabPanels = screen.getAllByRole('tabpanel', { hidden: true });
@@ -241,7 +248,7 @@ describe('StatusTabs', () => {
     });
 
     it('should have meaningful accessible names', () => {
-      render(<StatusTabs />);
+      renderWithProviders(<StatusTabs />);
 
       expect(screen.getByRole('tab', { name: /all.*15/i })).toBeInTheDocument();
       expect(screen.getByRole('tab', { name: /wishlist.*3/i })).toBeInTheDocument();
@@ -256,13 +263,13 @@ describe('StatusTabs', () => {
 
   describe('memoization', () => {
     it('should be memoized to prevent unnecessary re-renders', () => {
-      const { rerender } = render(<StatusTabs />);
+      renderWithProviders(<StatusTabs />);
 
       // Component should be wrapped with React.memo
       expect(StatusTabs.displayName).toBe('StatusTabsComponent');
 
       // Re-render with same props should not cause issues
-      rerender(<StatusTabs />);
+      renderWithProviders(<StatusTabs />);
 
       // Context should only be called once per render
       expect(mockGetCountsForTabs).toHaveBeenCalled();
@@ -282,7 +289,7 @@ describe('StatusTabs', () => {
         archived: 4,
       });
 
-      render(<StatusTabs />);
+      renderWithProviders(<StatusTabs />);
 
       // Should not crash and should handle undefined/null/NaN values
       expect(screen.getByRole('tablist')).toBeInTheDocument();
@@ -294,7 +301,7 @@ describe('StatusTabs', () => {
       });
 
       // Should not crash when context throws error
-      expect(() => render(<StatusTabs />)).not.toThrow();
+      expect(() => renderWithProviders(<StatusTabs />)).not.toThrow();
     });
   });
 });

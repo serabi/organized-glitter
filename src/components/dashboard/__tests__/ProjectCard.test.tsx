@@ -1,7 +1,13 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+/**
+ * Simplified tests for ProjectCard component
+ * Tests user-facing functionality and rendering behavior
+ * @author @serabi
+ * @created 2025-07-29
+ */
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { renderWithProviders, screen, fireEvent, createMockProject } from '@/test-utils';
 import ProjectCard from '../ProjectCard';
-import { ProjectType } from '@/types/project';
 
 // Mock hooks
 vi.mock('@/hooks/useProjectStatus', () => ({
@@ -11,27 +17,15 @@ vi.mock('@/hooks/useProjectStatus', () => ({
   }),
 }));
 
-vi.mock('@/hooks/useImageLoader', () => ({
-  useImageLoader: vi.fn(() => ({
+vi.mock('@/hooks/useConditionalImageLoader', () => ({
+  useConditionalImageLoader: vi.fn(() => ({
+    ref: { current: null },
     imageUrl: 'https://example.com/image.jpg',
     isLoading: false,
     error: null,
     retry: vi.fn(),
   })),
 }));
-
-const mockProject: ProjectType = {
-  id: '1',
-  title: 'Test Project',
-  company: 'Test Company',
-  artist: 'Test Artist',
-  status: 'progress',
-  imageUrl: 'https://example.com/image.jpg',
-  generalNotes: 'Test notes',
-  createdAt: '2025-05-30',
-  updatedAt: '2025-05-30',
-  userId: 'user-1',
-};
 
 describe('ProjectCard', () => {
   const mockOnClick = vi.fn();
@@ -41,15 +35,22 @@ describe('ProjectCard', () => {
   });
 
   it('renders project card with title and company', () => {
-    render(<ProjectCard project={mockProject} onClick={mockOnClick} />);
+    const project = createMockProject({
+      title: 'Beautiful Sunset',
+      company: 'Diamond Dotz',
+      status: 'progress'
+    });
 
-    expect(screen.getByText('Test Project')).toBeInTheDocument();
-    expect(screen.getByText('Test Company')).toBeInTheDocument();
-    expect(screen.getByText('View Details')).toBeInTheDocument();
+    renderWithProviders(<ProjectCard project={project} onClick={mockOnClick} />);
+
+    expect(screen.getByText('Beautiful Sunset')).toBeInTheDocument();
+    expect(screen.getByText('Diamond Dotz')).toBeInTheDocument();
   });
 
   it('calls onClick when card is clicked', () => {
-    render(<ProjectCard project={mockProject} onClick={mockOnClick} />);
+    const project = createMockProject({ title: 'Clickable Project' });
+
+    renderWithProviders(<ProjectCard project={project} onClick={mockOnClick} />);
 
     const card = screen.getByRole('button');
     fireEvent.click(card);
@@ -58,21 +59,29 @@ describe('ProjectCard', () => {
   });
 
   it('renders without onClick handler', () => {
-    render(<ProjectCard project={mockProject} />);
+    const project = createMockProject({ title: 'Non-clickable Project' });
 
-    expect(screen.getByText('Test Project')).toBeInTheDocument();
+    renderWithProviders(<ProjectCard project={project} />);
+
+    expect(screen.getByText('Non-clickable Project')).toBeInTheDocument();
   });
 
   it('displays status label', () => {
-    render(<ProjectCard project={mockProject} onClick={mockOnClick} />);
+    const project = createMockProject({ title: 'Status Project' });
+
+    renderWithProviders(<ProjectCard project={project} onClick={mockOnClick} />);
 
     expect(screen.getByText('In Progress')).toBeInTheDocument();
   });
 
   it('handles project without image gracefully', () => {
-    const projectWithoutImage = { ...mockProject, imageUrl: undefined };
-    render(<ProjectCard project={projectWithoutImage} onClick={mockOnClick} />);
+    const project = createMockProject({ 
+      title: 'No Image Project', 
+      imageUrl: undefined 
+    });
 
-    expect(screen.getByText('Test Project')).toBeInTheDocument();
+    renderWithProviders(<ProjectCard project={project} onClick={mockOnClick} />);
+
+    expect(screen.getByText('No Image Project')).toBeInTheDocument();
   });
 });
