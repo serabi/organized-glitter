@@ -61,6 +61,77 @@ export function ThankYouMessage() {
               <div className="rounded-lg border border-pink-100 bg-white/80 p-5 shadow-sm dark:border-pink-800/50 dark:bg-gray-800/50">
                 <div className="space-y-4">
                   <div className="inline-flex items-center rounded-full bg-pink-100 px-3 py-1 text-sm font-medium text-pink-800 dark:bg-pink-900/30 dark:text-pink-300">
+                    2025-07-29
+                  </div>
+                  <div className="space-y-3 text-gray-700 dark:text-gray-300">
+                    <p>Mobile experience improvements:</p>
+                    <ul className="ml-4 list-disc space-y-1">
+                      <li>
+                        Added a bottom navigation bar for tablet and phone screens to make it easier
+                        to navigate between{' '}
+                        <Link
+                          to="/overview"
+                          className="inline-flex items-center gap-1 font-medium text-pink-600 underline decoration-pink-300 transition-colors hover:text-pink-700 hover:decoration-pink-500 dark:text-pink-400 dark:hover:text-pink-300"
+                        >
+                          Overview
+                          <ExternalLink className="h-3 w-3" />
+                        </Link>
+                        ,{' '}
+                        <Link
+                          to="/dashboard"
+                          className="inline-flex items-center gap-1 font-medium text-pink-600 underline decoration-pink-300 transition-colors hover:text-pink-700 hover:decoration-pink-500 dark:text-pink-400 dark:hover:text-pink-300"
+                        >
+                          Dashboard
+                          <ExternalLink className="h-3 w-3" />
+                        </Link>
+                        ,{' '}
+                        <Link
+                          to="/randomizer"
+                          className="inline-flex items-center gap-1 font-medium text-pink-600 underline decoration-pink-300 transition-colors hover:text-pink-700 hover:decoration-pink-500 dark:text-pink-400 dark:hover:text-pink-300"
+                        >
+                          Randomizer
+                          <ExternalLink className="h-3 w-3" />
+                        </Link>
+                        , and{' '}
+                        <Link
+                          to="/profile"
+                          className="inline-flex items-center gap-1 font-medium text-pink-600 underline decoration-pink-300 transition-colors hover:text-pink-700 hover:decoration-pink-500 dark:text-pink-400 dark:hover:text-pink-300"
+                        >
+                          Profile
+                          <ExternalLink className="h-3 w-3" />
+                        </Link>
+                      </li>
+                      <li>
+                        The bottom navigation automatically appears on mobile and tablet devices for
+                        easier thumb navigation
+                      </li>
+                      <li>Desktop users will continue to use the top navigation menu as before</li>
+                    </ul>
+                    <p>
+                      This update makes the app more mobile-friendly! Please{' '}
+                      <button
+                        onClick={() =>
+                          showUserReportDialog({
+                            title: 'Share Your Feedback',
+                            subtitle:
+                              "We'd love to hear your thoughts about the new bottom navigation and mobile experience!",
+                            currentPage: 'Overview - Updates Section',
+                          })
+                        }
+                        className="font-medium text-pink-600 underline decoration-pink-300 transition-colors hover:text-pink-700 hover:decoration-pink-500 dark:text-pink-400 dark:hover:text-pink-300"
+                      >
+                        let us know
+                      </button>{' '}
+                      how the new mobile navigation works for you.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Previous Update */}
+              <div className="rounded-lg border border-pink-100 bg-white/80 p-5 shadow-sm dark:border-pink-800/50 dark:bg-gray-800/50">
+                <div className="space-y-4">
+                  <div className="inline-flex items-center rounded-full bg-pink-100 px-3 py-1 text-sm font-medium text-pink-800 dark:bg-pink-900/30 dark:text-pink-300">
                     2025-07-21
                   </div>
                   <div className="space-y-3 text-gray-700 dark:text-gray-300">
