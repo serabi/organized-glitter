@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { pb } from '@/lib/pocketbase';
 import { createLogger } from '@/utils/secureLogger';
+import { toUserDateString, fromUserDateString } from '@/utils/timezoneUtils';
 
 const projectDetailLogger = createLogger('useProjectDetailQuery');
 import {
@@ -31,9 +32,37 @@ interface ProjectWithExpand extends ProjectsResponse {
 }
 
 /**
- * Fetches a single project with all related data (company, artist, tags, progress notes)
+ * Helper function to convert database date strings to user timezone
+ * Database stores dates in YYYY-MM-DD format, typically in UTC context
  */
-const fetchProjectDetail = async (projectId: string): Promise<ProjectType> => {
+const convertDatabaseDateToUserTimezone = (dbDate: string | null | undefined, userTimezone: string): string | undefined => {
+  if (!dbDate) return undefined;
+  
+  try {
+    // Parse the database date as midnight UTC, then format in user timezone
+    const utcDate = fromUserDateString(dbDate, 'UTC');
+    const converted = toUserDateString(utcDate, userTimezone) || undefined;
+    
+    projectDetailLogger.debug('📅 Date conversion during project load', {
+      dbDate,
+      userTimezone,
+      converted,
+      isDifferent: dbDate !== converted
+    });
+    
+    return converted;
+  } catch (error) {
+    projectDetailLogger.warn('Failed to convert database date to user timezone', { dbDate, userTimezone, error });
+    return dbDate; // Fallback to original value
+  }
+};
+
+/**
+ * Fetches a single project with all related data (company, artist, tags, progress notes)
+ * @param projectId - Project ID to fetch
+ * @param userTimezone - User's timezone for date conversion (defaults to UTC)
+ */
+const fetchProjectDetail = async (projectId: string, userTimezone: string = 'UTC'): Promise<ProjectType> => {
   // First, fetch the basic project record without expand to ensure it exists
   let projectRecord: ProjectWithExpand;
 
@@ -153,10 +182,10 @@ const fetchProjectDetail = async (projectId: string): Promise<ProjectType> => {
     drillShape: projectRecord.drill_shape || undefined,
     status: projectRecord.status as ProjectStatus,
     kit_category: projectRecord.kit_category || undefined,
-    datePurchased: projectRecord.date_purchased || undefined,
-    dateReceived: projectRecord.date_received || undefined,
-    dateStarted: projectRecord.date_started || undefined,
-    dateCompleted: projectRecord.date_completed || undefined,
+    datePurchased: convertDatabaseDateToUserTimezone(projectRecord.date_purchased, userTimezone),
+    dateReceived: convertDatabaseDateToUserTimezone(projectRecord.date_received, userTimezone),
+    dateStarted: convertDatabaseDateToUserTimezone(projectRecord.date_started, userTimezone),
+    dateCompleted: convertDatabaseDateToUserTimezone(projectRecord.date_completed, userTimezone),
     generalNotes: projectRecord.general_notes || undefined,
     imageUrl: projectRecord.image
       ? pb.files.getURL({ ...projectRecord, collectionName: 'projects' }, projectRecord.image)
@@ -179,14 +208,15 @@ const fetchProjectDetail = async (projectId: string): Promise<ProjectType> => {
 export const useProjectDetailQuery = (
   projectId: string | undefined,
   isAuthenticated?: boolean,
-  initialCheckComplete?: boolean
+  initialCheckComplete?: boolean,
+  userTimezone: string = 'UTC'
 ) => {
   // Only log auth state once when query is first enabled
   const isQueryEnabled = !!projectId && (isAuthenticated ?? true) && (initialCheckComplete ?? true);
 
   return useQuery({
     queryKey: queryKeys.projects.detail(projectId!),
-    queryFn: () => fetchProjectDetail(projectId!),
+    queryFn: () => fetchProjectDetail(projectId!, userTimezone),
     enabled: isQueryEnabled,
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: (failureCount, error) => {

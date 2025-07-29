@@ -30,6 +30,7 @@ import { useProjectUpdateUnified } from '@/hooks/mutations/useProjectUpdateUnifi
 import { useMetadata } from '@/contexts/MetadataContext';
 import { useServiceToast } from '@/utils/toast-adapter';
 import { createLogger } from '@/utils/secureLogger';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
 
 const logger = createLogger('useEditProject');
 
@@ -70,6 +71,9 @@ const prepareFormInitialData = (project: ProjectType): ProjectFormValues => {
 export const useEditProject = (projectId: string | undefined) => {
   // Authentication state
   const { isAuthenticated, initialCheckComplete, isLoading: authLoading } = useAuth();
+  
+  // User timezone for date conversion
+  const userTimezone = useUserTimezone();
 
   // Data fetching
   const {
@@ -77,7 +81,7 @@ export const useEditProject = (projectId: string | undefined) => {
     isLoading: projectLoading,
     error: projectError,
     refetch: refetchProject,
-  } = useProjectDetailQuery(projectId, isAuthenticated, initialCheckComplete);
+  } = useProjectDetailQuery(projectId, isAuthenticated, initialCheckComplete, userTimezone);
 
   // Mutations for project operations
   const updateProjectMutation = useProjectUpdateUnified();

@@ -6,6 +6,9 @@
 import type { ProjectFormValues } from '@/types/shared';
 import type { ProjectUpdateData } from '@/types/file-upload';
 import { toUserDateString } from '@/utils/timezoneUtils';
+import { createLogger } from '@/utils/secureLogger';
+
+const fieldMappingLogger = createLogger('FieldMapping');
 
 /**
  * Maps camelCase form fields to snake_case PocketBase fields
@@ -33,16 +36,25 @@ export function mapFormDataToPocketBase(
     value: string | Date | undefined,
     userTimezone?: string
   ): string | null => {
-    if (!value || value === '') return null;
-
-    // If value is already a YYYY-MM-DD string (from HTML5 date input), return as-is
-    // HTML5 date inputs already represent the user's intended date
-    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
-      return value;
+    if (!value || value === '') {
+      fieldMappingLogger.debug('📅 Date formatting: null/empty value', { value, userTimezone });
+      return null;
     }
 
-    // Use timezone-safe conversion only for Date objects or other string formats
-    return toUserDateString(value, userTimezone);
+    // Always convert through timezone utilities to ensure consistency
+    // This prevents round-trip timezone conversion bugs where database dates
+    // are incorrectly assumed to be user input
+    const result = toUserDateString(value, userTimezone);
+    
+    fieldMappingLogger.debug('📅 Date formatting during save', {
+      inputValue: value,
+      inputType: typeof value,
+      userTimezone,
+      outputValue: result,
+      isChanged: String(value) !== result
+    });
+    
+    return result;
   };
 
   // Helper function to check if a value looks like a PocketBase ID (15 characters)
@@ -55,6 +67,21 @@ export function mapFormDataToPocketBase(
     if (!value || value === '' || value === 'N/A') return undefined;
     return isValidPocketBaseId(value) ? value : undefined;
   };
+
+  // Log the input form data for debugging
+  fieldMappingLogger.debug('🔄 Starting field mapping', {
+    userTimezone,
+    hasDatePurchased: !!formData.datePurchased,
+    hasDateStarted: !!formData.dateStarted,
+    hasDateCompleted: !!formData.dateCompleted,
+    hasDateReceived: !!formData.dateReceived,
+    dateValues: {
+      datePurchased: formData.datePurchased,
+      dateStarted: formData.dateStarted,
+      dateCompleted: formData.dateCompleted,
+      dateReceived: formData.dateReceived
+    }
+  });
 
   const result: ProjectUpdateData = {
     title: formData.title,
@@ -71,6 +98,16 @@ export function mapFormDataToPocketBase(
     general_notes: safeString(formData.generalNotes),
     source_url: safeString(formData.sourceUrl),
   };
+
+  // Log the final mapped result for debugging
+  fieldMappingLogger.debug('✅ Field mapping completed', {
+    mappedDates: {
+      date_purchased: result.date_purchased,
+      date_started: result.date_started,
+      date_completed: result.date_completed,
+      date_received: result.date_received
+    }
+  });
 
   // Only include company and artist if they are valid PocketBase IDs
   const companyId = safeRelationId(formData.company);
