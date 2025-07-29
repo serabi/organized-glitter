@@ -89,7 +89,7 @@ export const useProgressNoteForm = ({
         setIsSubmitting(false);
       }
     },
-    [date, content, imageFile, disabled, onSubmit, onSuccess, resetForm, errors.image]
+    [date, content, imageFile, onSubmit, onSuccess, resetForm, errors.image]
   );
 
   const handleImageChange = useCallback(
@@ -137,7 +137,7 @@ export const useProgressNoteForm = ({
         }
       }
     },
-    [compressImage, imageFile?.name]
+    [compressImage]
   );
 
   const handleDateChange = useCallback(
@@ -152,7 +152,7 @@ export const useProgressNoteForm = ({
         }));
       }
     },
-    [date, errors.date, errors.form]
+    [errors.date, errors.form]
   );
 
   const handleContentChange = useCallback(
@@ -168,13 +168,13 @@ export const useProgressNoteForm = ({
         }));
       }
     },
-    [content, errors.content, errors.form]
+    [errors.content, errors.form]
   );
 
   const handleClearImage = useCallback(() => {
     setImageFile(null);
     setErrors((prev: ProgressNoteFormErrors) => ({ ...prev, image: undefined, form: undefined }));
-  }, [imageFile?.name]);
+  }, []);
 
   // Updated isFormValid to reflect that content is optional
   const isFormValid = Boolean(date && !errors.date && !errors.image && !errors.form);

@@ -10,7 +10,7 @@
  * @since 2025-07-19
  */
 
-import { useCallback, useRef, useEffect, useState } from 'react';
+import { useCallback, useRef, useEffect, useState, useMemo } from 'react';
 import { createLogger } from '@/utils/secureLogger';
 import { useIsTouchDevice } from '@/hooks/use-mobile';
 
@@ -120,7 +120,7 @@ export const useTouchGestures = (
   callbacks: TouchGestureCallbacks = {},
   config: TouchGestureConfig = {}
 ) => {
-  const mergedConfig = { ...DEFAULT_CONFIG, ...config };
+  const mergedConfig = useMemo(() => ({ ...DEFAULT_CONFIG, ...config }), [config]);
   const touchStateRef = useRef<TouchState>({
     startX: 0,
     startY: 0,

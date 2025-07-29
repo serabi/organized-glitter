@@ -32,7 +32,7 @@ export const useEditProjectLogic = ({ projectId }: UseEditProjectLogicProps) => 
       const initialData = prepareFormInitialData(project);
       setFormData(initialData);
     }
-  }, [project]);
+  }, [project, formData]);
 
   // Handle tab/window close with unsaved changes
   useEffect(() => {

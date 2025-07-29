@@ -31,7 +31,7 @@ export const useAppInitialization = (): void => {
       clearTimeout(emergencyTimeout);
       window.removeEventListener('app-loaded', handleAppLoaded);
     };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- logger is stable, only run once on mount
 
   // Setup global services
   useEffect(() => {
@@ -102,5 +102,5 @@ export const useAppInitialization = (): void => {
     return () => {
       window.removeEventListener('unhandledrejection', handleUnhandledRejection);
     };
-  }, [toast]);
+  }, [toast]); // eslint-disable-line react-hooks/exhaustive-deps -- logger is stable
 };

@@ -9,7 +9,7 @@ import { describe, it, expect, vi, waitFor, act, renderHookWithProviders } from 
 import { useMutation } from '@tanstack/react-query';
 
 // Create a simple mock for useCreateSpin behavior
-const createMockCreateSpin = (options = {}) => {
+const useMockCreateSpin = (options = {}) => {
   return useMutation({
     mutationFn: vi.fn().mockResolvedValue({
       id: 'spin-123',
@@ -30,7 +30,7 @@ const createMockCreateSpin = (options = {}) => {
 
 describe('useCreateSpin mutation behavior', () => {
   it('should start in idle state', () => {
-    const { result } = renderHookWithProviders(() => createMockCreateSpin());
+    const { result } = renderHookWithProviders(() => useMockCreateSpin());
 
     expect(result.current.isPending).toBe(false);
     expect(result.current.isError).toBe(false);
@@ -50,7 +50,7 @@ describe('useCreateSpin mutation behavior', () => {
     });
 
     const { result } = renderHookWithProviders(() =>
-      createMockCreateSpin({ mutationFn: mockMutationFn })
+      useMockCreateSpin({ mutationFn: mockMutationFn })
     );
 
     const spinParams = {
@@ -84,7 +84,7 @@ describe('useCreateSpin mutation behavior', () => {
     const mockMutationFn = vi.fn().mockRejectedValue(mockError);
 
     const { result } = renderHookWithProviders(() =>
-      createMockCreateSpin({ mutationFn: mockMutationFn })
+      useMockCreateSpin({ mutationFn: mockMutationFn })
     );
 
     act(() => {
@@ -113,7 +113,7 @@ describe('useCreateSpin mutation behavior', () => {
     const mockMutationFn = vi.fn().mockImplementation(() => slowPromise);
 
     const { result } = renderHookWithProviders(() =>
-      createMockCreateSpin({ mutationFn: mockMutationFn })
+      useMockCreateSpin({ mutationFn: mockMutationFn })
     );
 
     act(() => {
@@ -148,7 +148,7 @@ describe('useCreateSpin mutation behavior', () => {
     const mockMutationFn = vi.fn().mockResolvedValue({ success: true });
 
     const { result } = renderHookWithProviders(() =>
-      createMockCreateSpin({
+      useMockCreateSpin({
         mutationFn: mockMutationFn,
         onSuccess: mockOnSuccess,
       })
@@ -178,7 +178,7 @@ describe('useCreateSpin mutation behavior', () => {
     const mockMutationFn = vi.fn().mockRejectedValue(mockError);
 
     const { result } = renderHookWithProviders(() =>
-      createMockCreateSpin({
+      useMockCreateSpin({
         mutationFn: mockMutationFn,
         onError: mockOnError,
       })

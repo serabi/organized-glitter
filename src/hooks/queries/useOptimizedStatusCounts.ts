@@ -41,17 +41,17 @@ const extractProjectsFromQueryData = (data: unknown): ExtractedProjectData => {
 
   // Type guard for object with projects
   const hasProjects = (obj: unknown): obj is { projects: Project[]; totalItems?: number } => {
-    return typeof obj === 'object' && obj !== null && 'projects' in obj && Array.isArray((obj as any).projects);
+    return typeof obj === 'object' && obj !== null && 'projects' in obj && Array.isArray((obj as Record<string, unknown>).projects);
   };
 
   // Type guard for object with items
   const hasItems = (obj: unknown): obj is { items: Project[]; totalItems?: number } => {
-    return typeof obj === 'object' && obj !== null && 'items' in obj && Array.isArray((obj as any).items);
+    return typeof obj === 'object' && obj !== null && 'items' in obj && Array.isArray((obj as Record<string, unknown>).items);
   };
 
   // Type guard for object with data
   const hasData = (obj: unknown): obj is { data: Project[]; totalItems?: number } => {
-    return typeof obj === 'object' && obj !== null && 'data' in obj && Array.isArray((obj as any).data);
+    return typeof obj === 'object' && obj !== null && 'data' in obj && Array.isArray((obj as Record<string, unknown>).data);
   };
 
   // Case 2: Object with 'projects' property (current pattern)

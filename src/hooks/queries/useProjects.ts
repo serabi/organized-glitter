@@ -200,7 +200,7 @@ export const useProjects = (
   }, [filters]);
 
   // Memoize stable filters based on signature
-  const stableFilters = useMemo(() => filters, [filtersSignature]);
+  const stableFilters = useMemo(() => filters, [filtersSignature]); // eslint-disable-line react-hooks/exhaustive-deps -- using signature for stable reference
 
   // Memoize query parameters with stable filter reference
   const queryParams: ProjectQueryParams = useMemo(
@@ -266,6 +266,9 @@ export const useProjects = (
     filtersSignature,
     companiesSignature,
     artistsSignature,
+    queryParams,
+    availableCompanies?.length,
+    availableArtists?.length,
   ]);
 
   const query = useQuery({
