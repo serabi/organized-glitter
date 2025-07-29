@@ -5,6 +5,7 @@ import BottomNavigation from './BottomNavigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useMobileDevice } from '@/hooks/use-mobile';
 import LoadingState from '@/components/projects/LoadingState';
+import { clsx } from 'clsx';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -48,7 +49,16 @@ const MainLayout = memo(
     return (
       <div className="flex min-h-screen flex-col">
         {!hideNav && <Navbar isAuthenticated={isLoggedIn} />}
-        <main className={`flex-grow ${showBottomNav ? 'pb-16' : ''}`}>{children}</main>
+        <main
+          className={clsx('flex-grow', showBottomNav && 'pb-16')}
+          style={
+            showBottomNav
+              ? { paddingBottom: 'calc(4rem + env(safe-area-inset-bottom))' }
+              : undefined
+          }
+        >
+          {children}
+        </main>
         {!hideFooter && <Footer />}
         {showBottomNav && <BottomNavigation />}
       </div>
