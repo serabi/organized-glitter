@@ -6,7 +6,7 @@
  */
 
 import React, { ReactElement } from 'react';
-import { render, RenderOptions, RenderResult } from '@testing-library/react';
+import { render, RenderOptions, RenderResult, renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
@@ -105,7 +105,7 @@ export const renderWithProviders = (
  */
 export const createMockProject = (overrides: Partial<ProjectType> = {}): ProjectType => {
   return {
-    id: `project-${Math.random().toString(36).substr(2, 9)}`,
+    id: `project-${Math.random().toString(36).substring(2, 11)}`,
     title: 'Test Diamond Painting',
     status: 'wishlist' as ProjectStatus,
     company: 'Test Company',
@@ -180,7 +180,7 @@ export const createMockPocketBase = () => {
     collection: mockCollection,
     authStore: mockAuthStore,
     files: {
-      getURL: vi.fn((record, filename) => `https://example.com/${filename}`),
+      getURL: vi.fn((_record, filename) => `https://example.com/${filename}`),
       getToken: vi.fn().mockResolvedValue('mock-file-token'),
     },
   };
@@ -207,9 +207,34 @@ export const createMockProjects = (count: number = 3): ProjectType[] => {
 export const createMockFile = (
   name: string = 'test.jpg',
   type: string = 'image/jpeg',
-  size: number = 1024
+  _size: number = 1024
 ): File => {
   return new File(['test content'], name, { type, lastModified: Date.now() });
+};
+
+/**
+ * Render a hook with all necessary providers
+ * 
+ * @param hook - Hook function to test
+ * @param options - Options including initial route and query client
+ * @returns renderHook result with providers
+ */
+export const renderHookWithProviders = <T,>(
+  hook: () => T,
+  options: RenderWithProvidersOptions = {}
+) => {
+  const { 
+    queryClient = createTestQueryClient(), 
+    initialRoute = '/',
+  } = options;
+
+  const Wrapper = ({ children }: { children: React.ReactNode }) => (
+    <TestWrapper queryClient={queryClient} initialRoute={initialRoute}>
+      {children}
+    </TestWrapper>
+  );
+
+  return renderHook(hook, { wrapper: Wrapper });
 };
 
 /**
