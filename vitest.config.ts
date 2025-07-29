@@ -8,9 +8,23 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./test/setup.ts'],
     globals: true,
+    // Fast test execution
+    pool: 'threads',
+    poolOptions: {
+      threads: {
+        singleThread: true,
+      },
+    },
+    // Simple coverage reporting
     coverage: {
-      reporter: ['text', 'json', 'html'],
-      exclude: ['node_modules/', '**/*.d.ts', '**/__tests__/**', '**/test-utils/**'],
+      reporter: ['text', 'html'],
+      exclude: [
+        'node_modules/',
+        '**/*.d.ts',
+        '**/__tests__/**',
+        '**/test-utils/**',
+        'src/types/**',
+      ],
     },
   },
   resolve: {

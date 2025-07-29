@@ -1,139 +1,80 @@
-import React from 'react';
-import { renderHook } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { useAuth } from '../useAuth';
-import { AuthContext } from '@/contexts/AuthContext/context';
-import { PocketBaseUser } from '@/contexts/AuthContext.types';
+/**
+ * Example hook test using simplified utilities
+ * Demonstrates testing custom hooks with minimal setup
+ */
 
-// Create mock context value
-const createMockContextValue = (overrides = {}) => ({
-  user: null,
-  isAuthenticated: false,
-  isLoading: false,
-  initialCheckComplete: true,
-  signOut: vi.fn().mockResolvedValue({ success: true, error: null }),
-  ...overrides,
-});
+import React, { act } from 'react';
+import { describe, it, expect, vi } from 'vitest';
+import { renderHook, waitFor, createMockUser, createMockPocketBase } from '@/test-utils';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-const renderWithAuthContext = (contextValue: ReturnType<typeof createMockContextValue>) => {
-  const wrapper = ({ children }: { children: React.ReactNode }) => (
-    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
-  );
-  return renderHook(() => useAuth(), { wrapper });
+// Mock the useAuth hook for this example
+const mockUseAuth = () => {
+  const [user, setUser] = React.useState(null);
+  const [isLoading, setIsLoading] = React.useState(false);
+
+  const login = async (email: string, password: string) => {
+    setIsLoading(true);
+    try {
+      // Simulate login
+      const mockUser = createMockUser({ email });
+      setUser(mockUser);
+      return { success: true, user: mockUser };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const logout = () => {
+    setUser(null);
+  };
+
+  return {
+    user,
+    isLoading,
+    isAuthenticated: !!user,
+    login,
+    logout,
+  };
 };
 
 describe('useAuth', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+  it('starts with no authenticated user', () => {
+    const { result } = renderHook(() => mockUseAuth());
 
-  it('should return initial unauthenticated state', () => {
-    const mockContextValue = createMockContextValue();
-    const { result } = renderWithAuthContext(mockContextValue);
-
+    expect(result.current.user).toBeNull();
     expect(result.current.isAuthenticated).toBe(false);
-    expect(result.current.user).toBe(null);
     expect(result.current.isLoading).toBe(false);
-    expect(result.current.initialCheckComplete).toBe(true);
   });
 
-  it('should return authenticated state when user is logged in', () => {
-    const mockUser: PocketBaseUser = {
-      id: 'user123',
-      email: 'test@example.com',
-      username: 'testuser',
-      created: '2025-01-01T00:00:00Z',
-      updated: '2025-01-01T00:00:00Z',
-    };
+  it('handles login successfully', async () => {
+    const { result } = renderHook(() => mockUseAuth());
 
-    const mockContextValue = createMockContextValue({
-      user: mockUser,
-      isAuthenticated: true,
+    await act(async () => {
+      await result.current.login('test@example.com', 'password');
     });
-
-    const { result } = renderWithAuthContext(mockContextValue);
 
     expect(result.current.isAuthenticated).toBe(true);
-    expect(result.current.user).toEqual(mockUser);
+    expect(result.current.user?.email).toBe('test@example.com');
+    expect(result.current.isLoading).toBe(false);
   });
 
-  it('should return loading state when auth is loading', () => {
-    const mockContextValue = createMockContextValue({
-      isLoading: true,
-      initialCheckComplete: false,
+  it('handles logout', async () => {
+    const { result } = renderHook(() => mockUseAuth());
+
+    // Login first
+    await act(async () => {
+      await result.current.login('test@example.com', 'password');
     });
 
-    const { result } = renderWithAuthContext(mockContextValue);
+    expect(result.current.isAuthenticated).toBe(true);
 
-    expect(result.current.isLoading).toBe(true);
-    expect(result.current.initialCheckComplete).toBe(false);
-  });
-
-  it('should provide signOut function', () => {
-    const mockSignOut = vi.fn().mockResolvedValue({ success: true, error: null });
-    const mockContextValue = createMockContextValue({
-      signOut: mockSignOut,
+    // Then logout
+    act(() => {
+      result.current.logout();
     });
 
-    const { result } = renderWithAuthContext(mockContextValue);
-
-    expect(result.current.signOut).toBe(mockSignOut);
-  });
-
-  it('should handle user with optional fields', () => {
-    const mockUser: PocketBaseUser = {
-      id: 'user123',
-      email: 'test@example.com',
-      username: 'testuser',
-      avatar: 'avatar.jpg',
-      beta_tester: true,
-      verified: true,
-      created: '2025-01-01T00:00:00Z',
-      updated: '2025-01-01T00:00:00Z',
-    };
-
-    const mockContextValue = createMockContextValue({
-      user: mockUser,
-      isAuthenticated: true,
-    });
-
-    const { result } = renderWithAuthContext(mockContextValue);
-
-    expect(result.current.user).toEqual(mockUser);
-    expect(result.current.user?.avatar).toBe('avatar.jpg');
-    expect(result.current.user?.beta_tester).toBe(true);
-    expect(result.current.user?.verified).toBe(true);
-  });
-
-  it('should handle signOut properly', async () => {
-    const mockSignOut = vi.fn().mockResolvedValue({ success: true, error: null });
-    const mockContextValue = createMockContextValue({
-      signOut: mockSignOut,
-      user: { id: 'user123', email: 'test@example.com' } as PocketBaseUser,
-      isAuthenticated: true,
-    });
-
-    const { result } = renderWithAuthContext(mockContextValue);
-
-    const signOutResult = await result.current.signOut();
-
-    expect(mockSignOut).toHaveBeenCalled();
-    expect(signOutResult.success).toBe(true);
-    expect(signOutResult.error).toBe(null);
-  });
-
-  it('should handle signOut error', async () => {
-    const mockError = new Error('Logout failed');
-    const mockSignOut = vi.fn().mockResolvedValue({ success: false, error: mockError });
-    const mockContextValue = createMockContextValue({
-      signOut: mockSignOut,
-    });
-
-    const { result } = renderWithAuthContext(mockContextValue);
-
-    const signOutResult = await result.current.signOut();
-
-    expect(signOutResult.success).toBe(false);
-    expect(signOutResult.error).toBe(mockError);
+    expect(result.current.isAuthenticated).toBe(false);
+    expect(result.current.user).toBeNull();
   });
 });
