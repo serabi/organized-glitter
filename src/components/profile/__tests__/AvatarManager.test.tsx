@@ -17,10 +17,6 @@ vi.mock('@/lib/pocketbase', () => ({
     },
   },
 }));
-vi.mock('@/utils/posthog', () => ({
-  trackEvent: vi.fn(),
-  captureException: vi.fn(),
-}));
 
 describe('AvatarManager', () => {
   it('should initialize useImageUpload with correct parameters for avatar context', () => {

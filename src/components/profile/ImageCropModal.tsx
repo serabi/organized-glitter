@@ -15,7 +15,6 @@ import {
 import { CropModalProps } from '@/types/avatar';
 import { validateImageFile, createFilePreviewUrl, revokePreviewUrl } from '@/utils/imageUtils';
 import { useToast } from '@/hooks/use-toast';
-import { trackEvent, captureException } from '@/utils/posthog';
 import { logger } from '@/utils/logger';
 
 interface CropData {
@@ -59,19 +58,6 @@ const ImageCropModal: React.FC<CropModalProps> = ({
       const validation = validateImageFile(selectedFile);
 
       if (!validation.isValid) {
-        // Track validation failure for analytics
-        trackEvent('avatar_validation_failed', {
-          file_type: selectedFile.type,
-          file_size_mb: Math.round((selectedFile.size / (1024 * 1024)) * 100) / 100,
-          is_heic:
-            selectedFile.type.includes('heic') ||
-            selectedFile.type.includes('heif') ||
-            selectedFile.name.toLowerCase().includes('.heic') ||
-            selectedFile.name.toLowerCase().includes('.heif'),
-          error_message: validation.error,
-          user_agent: navigator.userAgent.includes('Safari') ? 'safari' : 'other',
-        });
-
         toast({
           variant: 'destructive',
           title: 'Invalid File',
@@ -184,17 +170,6 @@ const ImageCropModal: React.FC<CropModalProps> = ({
     } catch (error) {
       logger.error('Error cropping image:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to crop image';
-
-      // Track cropping error for analytics
-      trackEvent('avatar_crop_error', {
-        error_message: errorMessage,
-        user_agent: navigator.userAgent.includes('Safari') ? 'safari' : 'other',
-      });
-
-      // Capture exception for debugging
-      captureException(error instanceof Error ? error : new Error(errorMessage), {
-        context: 'avatar_crop_canvas_operation',
-      });
 
       toast({
         variant: 'destructive',

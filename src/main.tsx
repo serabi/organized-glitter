@@ -22,7 +22,6 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { InitializationCheck } from './components/InitializationCheck';
 import { queryClient } from './lib/queryClient';
 import { secureLogger } from './utils/secureLogger';
-import { initializeAnalytics, logStartupInfo } from './utils/analyticsInitialization';
 import { initializeUser } from './utils/userInitialization';
 import {
   handleFatalError,
@@ -42,8 +41,6 @@ import './index.css';
 
 // Initialize application services
 const initializeApp = (): void => {
-  initializeAnalytics();
-  logStartupInfo();
   initializeUser();
   setupGlobalErrorHandlers();
   initializePerformanceMonitoring();

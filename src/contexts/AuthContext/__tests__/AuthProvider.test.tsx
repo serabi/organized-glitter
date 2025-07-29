@@ -21,16 +21,6 @@ vi.mock('@/lib/pocketbase', () => ({
   },
 }));
 
-// Mock analytics
-vi.mock('@/services/analytics', () => ({
-  analytics: {
-    identifyUserWithContext: vi.fn(),
-    auth: {
-      signedOut: vi.fn(),
-    },
-  },
-}));
-
 const mockPb = pb as typeof pb & {
   authStore: {
     isValid: boolean;
