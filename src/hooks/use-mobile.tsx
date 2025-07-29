@@ -117,5 +117,9 @@ export function useWindowSize() {
   return { width, height };
 }
 
+// Descriptive aliases for better semantic clarity
+export { useWindowSize as useWindowDimensions };
+export { useMobileDevice as useViewportInfo };
+
 // Hook for checking specific breakpoints
 

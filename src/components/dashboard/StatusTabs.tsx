@@ -44,7 +44,8 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge, type BadgeProps } from '@/components/ui/badge';
-import ResponsiveTabText, { useWindowDimensions } from '@/components/ui/responsive-tab-text';
+import ResponsiveTabText from '@/components/ui/responsive-tab-text';
+import { useWindowDimensions } from '@/hooks/use-mobile';
 import { ProjectFilterStatus } from '@/types/project';
 import { useStats, CountsForTabsType } from '@/contexts/StatsContext';
 import { useStatusFilter } from '@/contexts/FilterProvider';
