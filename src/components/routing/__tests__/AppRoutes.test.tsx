@@ -4,13 +4,12 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import '@testing-library/jest-dom';
 
-// Mock all dependencies first
-const mockUseAuth = vi.fn();
+// Mock all hooks and dependencies first
 vi.mock('@/hooks/useAuth', () => ({
-  useAuth: mockUseAuth,
+  useAuth: vi.fn(),
 }));
-vi.mock('@/hooks/usePostHogPageTracking', () => ({
-  usePostHogPageTracking: () => {},
+vi.mock('@/hooks/useNavigationMonitoring', () => ({
+  useNavigationMonitoring: () => {},
 }));
 
 // Mock all auth components
@@ -115,6 +114,7 @@ vi.mock('@/pages/SupportSuccess', () => ({
 
 // Import the component under test AFTER mocking all dependencies
 import { AppRoutes } from '../AppRoutes';
+import { useAuth } from '@/hooks/useAuth';
 
 // Helper to render routes within a router
 const renderWithRouter = (initialEntries: string[] = ['/']) => {
@@ -127,7 +127,7 @@ const renderWithRouter = (initialEntries: string[] = ['/']) => {
 
 describe('AppRoutes - Authenticated User Routes', () => {
   beforeEach(() => {
-    mockUseAuth.mockReturnValue({
+    vi.mocked(useAuth).mockReturnValue({
       user: { id: '1', email: 'test@example.com' },
       isAuthenticated: true,
       isLoading: false,
@@ -157,7 +157,7 @@ describe('AppRoutes - Authenticated User Routes', () => {
 
 describe('AppRoutes - Unauthenticated User Routes', () => {
   beforeEach(() => {
-    mockUseAuth.mockReturnValue({
+    vi.mocked(useAuth).mockReturnValue({
       user: null,
       isAuthenticated: false,
       isLoading: false,
@@ -188,7 +188,7 @@ describe('AppRoutes - Unauthenticated User Routes', () => {
 
 describe('AppRoutes - Error Handling', () => {
   beforeEach(() => {
-    mockUseAuth.mockReturnValue({
+    vi.mocked(useAuth).mockReturnValue({
       user: null,
       isAuthenticated: false,
       isLoading: false,
@@ -201,7 +201,7 @@ describe('AppRoutes - Error Handling', () => {
   });
 
   it('should render NotFound for profile route with parameters', () => {
-    mockUseAuth.mockReturnValue({
+    vi.mocked(useAuth).mockReturnValue({
       user: { id: '1', email: 'test@example.com' },
       isAuthenticated: true,
       isLoading: false,
@@ -213,7 +213,7 @@ describe('AppRoutes - Error Handling', () => {
 
 describe('AppRoutes - Project Routes', () => {
   beforeEach(() => {
-    mockUseAuth.mockReturnValue({
+    vi.mocked(useAuth).mockReturnValue({
       user: { id: '1', email: 'test@example.com' },
       isAuthenticated: true,
       isLoading: false,
@@ -244,7 +244,7 @@ describe('AppRoutes - Project Routes', () => {
 
 describe('AppRoutes - Data Management Routes', () => {
   beforeEach(() => {
-    mockUseAuth.mockReturnValue({
+    vi.mocked(useAuth).mockReturnValue({
       user: { id: '1', email: 'test@example.com' },
       isAuthenticated: true,
       isLoading: false,

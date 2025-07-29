@@ -1,7 +1,6 @@
 import { pb } from '@/lib/pocketbase';
 import { createLogger } from '@/utils/secureLogger';
 import type { PocketBaseUser } from '@/contexts/AuthContext.types';
-import { analytics } from '@/services/analytics';
 import { ClientResponseError } from 'pocketbase';
 import { ErrorHandler, FieldMapper } from '@/services/pocketbase/base';
 
@@ -32,8 +31,6 @@ export const loginWithPassword = async (data: LoginData): Promise<AuthResult> =>
   try {
     authLogger.debug('Attempting password authentication');
 
-    analytics.auth.loginAttempted('email');
-
     const authData = await pb.collection('users').authWithPassword(data.email, data.password);
 
     authLogger.debug('Password authentication successful, checking verification status');
@@ -62,8 +59,6 @@ export const loginWithPassword = async (data: LoginData): Promise<AuthResult> =>
 
     authLogger.debug('User email verified. Login allowed.', { userId: userRecord.id });
 
-    analytics.auth.loginSucceeded('email', userRecord.id);
-
     return {
       success: true,
       user: userRecord,
@@ -75,9 +70,6 @@ export const loginWithPassword = async (data: LoginData): Promise<AuthResult> =>
     const errorMessage =
       ErrorHandler.getUserMessage(handledError) ||
       'Authentication failed. Please check your credentials.';
-
-    analytics.auth.loginFailed('email', errorMessage);
-    analytics.error.authenticationFailed('email', errorMessage);
 
     return {
       success: false,
@@ -114,16 +106,6 @@ export const registerWithPassword = async (data: RegisterData): Promise<AuthResu
     authLogger.debug('Attempting to create user with data:', createData);
     const newUser = await pb.collection('users').create(createData);
     authLogger.debug('User account created successfully in PocketBase', { userId: newUser.id });
-
-    // Track signup completion in PostHog
-    analytics.auth.signupCompleted('email', {
-      userId: newUser.id,
-      email: newUser.email,
-      username: newUser.username,
-      name: newUser.username, // Use username as name since name field doesn't exist
-      isNewRecord: true,
-    });
-    authLogger.debug('Signup event tracked in PostHog', { userId: newUser.id, method: 'email' });
 
     authLogger.debug('Requesting email verification for:', data.email);
     await pb.collection('users').requestVerification(data.email);
@@ -170,8 +152,6 @@ export const loginWithOAuth2 = async (provider: 'google' | 'discord'): Promise<A
   try {
     authLogger.debug(`Attempting OAuth2 authentication with ${provider}`);
 
-    analytics.auth.loginAttempted(provider);
-
     // Debug: Get auth methods to see what URLs are being constructed (dev only)
     if (import.meta.env.DEV) {
       const authMethods = await pb.collection('users').listAuthMethods();
@@ -211,28 +191,6 @@ export const loginWithOAuth2 = async (provider: 'google' | 'discord'): Promise<A
 
     const user = await ensureBetaTester(authData.record as PocketBaseUser);
 
-    // Track signup completion for new OAuth users
-    const isNewRecord = (authData.meta as Record<string, unknown>)?.isNewRecord;
-    if (isNewRecord) {
-      analytics.auth.signupCompleted(provider, {
-        userId: user.id,
-        email: user.email,
-        username: user.username,
-        name: user.username, // Use username as name since name field doesn't exist
-        isNewRecord: true,
-      });
-      authLogger.debug('New OAuth user signup tracked in PostHog', {
-        userId: user.id,
-        method: provider,
-      });
-    } else {
-      // Track login for existing users
-      analytics.auth.loginSucceeded(provider, user.id);
-      authLogger.debug('Existing OAuth user login tracked in PostHog', {
-        userId: user.id,
-        method: provider,
-      });
-    }
 
     return {
       success: true,

@@ -18,7 +18,6 @@ import { pb } from '@/lib/pocketbase'; // Added import for pb
 import { AvatarConfig, AvatarManagerProps } from '@/types/avatar';
 import ImageCropModal from './ImageCropModal';
 import { dataURLtoFile } from '@/utils/imageUtils';
-import { trackEvent, captureException } from '@/utils/posthog';
 import { logger } from '@/utils/logger';
 
 // Utility functions for iOS Safari detection and HEIC handling
@@ -179,18 +178,6 @@ export function AvatarManager({
         type: file.type,
       });
 
-      // Track file selection for analytics
-      trackEvent('avatar_file_selected', {
-        file_type: file.type,
-        file_size_mb: Math.round((file.size / (1024 * 1024)) * 100) / 100,
-        is_heic:
-          file.type.includes('heic') ||
-          file.type.includes('heif') ||
-          file.name.toLowerCase().includes('.heic') ||
-          file.name.toLowerCase().includes('.heif'),
-        user_agent: navigator.userAgent.includes('Safari') ? 'safari' : 'other',
-      });
-
       setProcessingError(null);
       setIsProcessing(true);
       setFinalCompressedFile(null);
@@ -272,26 +259,6 @@ export function AvatarManager({
       } catch (error) {
         logger.error('Error during initial image processing:', error);
         const errorMessage = error instanceof Error ? error.message : 'Failed to process image.';
-
-        // Track compression failure for analytics
-        trackEvent('avatar_compression_failed', {
-          file_type: file.type,
-          file_size_mb: Math.round((file.size / (1024 * 1024)) * 100) / 100,
-          is_heic:
-            file.type.includes('heic') ||
-            file.type.includes('heif') ||
-            file.name.toLowerCase().includes('.heic') ||
-            file.name.toLowerCase().includes('.heif'),
-          error_message: errorMessage,
-          user_agent: navigator.userAgent.includes('Safari') ? 'safari' : 'other',
-        });
-
-        // Capture exception for debugging
-        captureException(error instanceof Error ? error : new Error(errorMessage), {
-          context: 'avatar_initial_compression',
-          file_type: file.type,
-          file_size: file.size,
-        });
 
         // Provide specific error message for HEIC files
         const isHEIC =
@@ -421,19 +388,6 @@ export function AvatarManager({
         const errorMessage =
           error instanceof Error ? error.message : 'Failed to process cropped image.';
 
-        // Track crop failure for analytics
-        trackEvent('avatar_crop_failed', {
-          error_message: errorMessage,
-          user_agent: navigator.userAgent.includes('Safari') ? 'safari' : 'other',
-        });
-
-        // Capture exception for debugging
-        captureException(error instanceof Error ? error : new Error(errorMessage), {
-          context: 'avatar_crop_compression',
-          original_file_type: uploadFile?.type,
-          original_file_size: uploadFile?.size,
-        });
-
         setProcessingError(`Processing Error: ${errorMessage}`);
         toast({
           title: 'Cropping/Compression Failed',
@@ -510,36 +464,12 @@ export function AvatarManager({
 
       logger.log('[AvatarManager] Calling onAvatarUpdate with config:', avatarConfig);
 
-      // Track successful upload
-      trackEvent('avatar_upload_success', {
-        file_type: finalCompressedFile.type,
-        final_file_size_mb: Math.round((finalCompressedFile.size / (1024 * 1024)) * 100) / 100,
-        user_agent: navigator.userAgent.includes('Safari') ? 'safari' : 'other',
-      });
-
       await onAvatarUpdate(avatarConfig);
       onClose();
     } catch (error) {
       logger.error('Upload error:', error);
       const errorMessage =
         error instanceof Error ? error.message : 'An unknown error occurred during upload.';
-
-      // Track upload failure for analytics
-      trackEvent('avatar_upload_failed', {
-        error_message: errorMessage,
-        file_type: finalCompressedFile?.type,
-        final_file_size_mb: finalCompressedFile
-          ? Math.round((finalCompressedFile.size / (1024 * 1024)) * 100) / 100
-          : 0,
-        user_agent: navigator.userAgent.includes('Safari') ? 'safari' : 'other',
-      });
-
-      // Capture exception for debugging
-      captureException(error instanceof Error ? error : new Error(errorMessage), {
-        context: 'avatar_upload',
-        file_type: finalCompressedFile?.type,
-        file_size: finalCompressedFile?.size,
-      });
 
       setProcessingError(`Upload Failed: ${errorMessage}`);
       toast({

@@ -71,7 +71,7 @@ const prepareFormInitialData = (project: ProjectType): ProjectFormValues => {
 export const useEditProject = (projectId: string | undefined) => {
   // Authentication state
   const { isAuthenticated, initialCheckComplete, isLoading: authLoading } = useAuth();
-  
+
   // User timezone for date conversion
   const userTimezone = useUserTimezone();
 

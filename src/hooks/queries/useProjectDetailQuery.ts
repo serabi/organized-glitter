@@ -35,14 +35,17 @@ interface ProjectWithExpand extends ProjectsResponse {
  * Helper function to convert database date strings to user timezone
  * Database stores dates in YYYY-MM-DD format, typically in UTC context
  */
-const convertDatabaseDateToUserTimezone = (dbDate: string | null | undefined, userTimezone: string): string | undefined => {
+const convertDatabaseDateToUserTimezone = (
+  dbDate: string | null | undefined,
+  userTimezone: string
+): string | undefined => {
   if (!dbDate) return undefined;
-  
+
   try {
     // Convert database dates to YYYY-MM-DD format for HTML5 date inputs
     // Handle both YYYY-MM-DD and ISO datetime formats from database
     let converted: string;
-    
+
     if (dbDate.includes('T') || dbDate.includes(' ')) {
       // ISO datetime format - extract just the date part and ignore timezone
       // For "2024-12-12 00:00:00.000Z" or "2024-12-12T00:00:00.000Z"
@@ -59,18 +62,22 @@ const convertDatabaseDateToUserTimezone = (dbDate: string | null | undefined, us
         converted = dbDate; // Last resort fallback
       }
     }
-    
+
     projectDetailLogger.debug('📅 Date conversion during project load', {
       dbDate,
       userTimezone,
       converted,
       isDifferent: dbDate !== converted,
-      inputFormat: dbDate.includes('T') || dbDate.includes(' ') ? 'datetime' : 'dateonly'
+      inputFormat: dbDate.includes('T') || dbDate.includes(' ') ? 'datetime' : 'dateonly',
     });
-    
+
     return converted;
   } catch (error) {
-    projectDetailLogger.warn('Failed to convert database date to user timezone', { dbDate, userTimezone, error });
+    projectDetailLogger.warn('Failed to convert database date to user timezone', {
+      dbDate,
+      userTimezone,
+      error,
+    });
     return dbDate; // Fallback to original value
   }
 };
@@ -80,7 +87,10 @@ const convertDatabaseDateToUserTimezone = (dbDate: string | null | undefined, us
  * @param projectId - Project ID to fetch
  * @param userTimezone - User's timezone for date conversion (defaults to UTC)
  */
-const fetchProjectDetail = async (projectId: string, userTimezone: string = 'UTC'): Promise<ProjectType> => {
+const fetchProjectDetail = async (
+  projectId: string,
+  userTimezone: string = 'UTC'
+): Promise<ProjectType> => {
   // First, fetch the basic project record without expand to ensure it exists
   let projectRecord: ProjectWithExpand;
 

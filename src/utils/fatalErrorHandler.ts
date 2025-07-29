@@ -3,7 +3,6 @@
  * Provides user-friendly error display when the app fails to load
  */
 
-import { captureException } from './posthog';
 import { logger } from './logger';
 
 interface ErrorDisplayOptions {
@@ -22,12 +21,6 @@ export const handleFatalError = (
   options: ErrorDisplayOptions = {}
 ): void => {
   logger.error(`❌ Fatal error in ${context}:`, error);
-
-  // Capture exception in PostHog for analytics
-  captureException(error, {
-    type: 'fatal_error',
-    context,
-  });
 
   // Dispatch app loaded to hide loading screen even on error
   dispatchAppLoadedEvent();
@@ -81,23 +74,11 @@ export const setupGlobalErrorHandlers = (): void => {
       event.error ||
       new Error(`${event.message} at ${event.filename}:${event.lineno}:${event.colno}`);
 
-    captureException(originalError, {
-      type: 'global_error',
-      filename: event.filename,
-      lineno: event.lineno,
-      colno: event.colno,
-    });
-
     handleFatalError(originalError, 'Global Error');
   });
 
   window.addEventListener('unhandledrejection', event => {
     const error = event.reason instanceof Error ? event.reason : new Error(String(event.reason));
-
-    captureException(error, {
-      type: 'unhandled_promise_rejection',
-      reason: String(event.reason),
-    });
 
     handleFatalError(error, 'Unhandled Promise Rejection');
   });

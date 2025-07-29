@@ -45,15 +45,15 @@ export function mapFormDataToPocketBase(
     // This prevents round-trip timezone conversion bugs where database dates
     // are incorrectly assumed to be user input
     const result = toUserDateString(value, userTimezone);
-    
+
     fieldMappingLogger.debug('📅 Date formatting during save', {
       inputValue: value,
       inputType: typeof value,
       userTimezone,
       outputValue: result,
-      isChanged: String(value) !== result
+      isChanged: String(value) !== result,
     });
-    
+
     return result;
   };
 
@@ -79,8 +79,8 @@ export function mapFormDataToPocketBase(
       datePurchased: formData.datePurchased,
       dateStarted: formData.dateStarted,
       dateCompleted: formData.dateCompleted,
-      dateReceived: formData.dateReceived
-    }
+      dateReceived: formData.dateReceived,
+    },
   });
 
   const result: ProjectUpdateData = {
@@ -105,8 +105,8 @@ export function mapFormDataToPocketBase(
       date_purchased: result.date_purchased,
       date_started: result.date_started,
       date_completed: result.date_completed,
-      date_received: result.date_received
-    }
+      date_received: result.date_received,
+    },
   });
 
   // Only include company and artist if they are valid PocketBase IDs

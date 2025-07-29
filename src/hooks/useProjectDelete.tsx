@@ -2,7 +2,6 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { pb } from '@/lib/pocketbase';
 import { Collections } from '@/types/pocketbase.types';
-import { analytics } from '@/services/analytics';
 import { logger } from '@/utils/logger';
 
 export const useProjectDelete = (projectId: string | undefined) => {
@@ -12,16 +11,7 @@ export const useProjectDelete = (projectId: string | undefined) => {
   const handleDelete = async () => {
     if (!projectId) return;
 
-    let projectStatus: string | undefined;
-
     try {
-      // First get the project to track its status before deletion
-      try {
-        const project = await pb.collection(Collections.Projects).getOne(projectId);
-        projectStatus = project.status;
-      } catch (getProjectError) {
-        logger.warn('Could not get project status before deletion:', getProjectError);
-      }
       // Step 1: Delete all progress notes for this project
       try {
         const progressNotes = await pb.collection(Collections.ProgressNotes).getFullList({
@@ -52,9 +42,6 @@ export const useProjectDelete = (projectId: string | undefined) => {
 
       // Step 3: Delete the project itself
       await pb.collection(Collections.Projects).delete(projectId);
-
-      // Track project deletion analytics
-      analytics.project.deleted(projectId, projectStatus);
 
       toast({
         title: 'Project deleted',
