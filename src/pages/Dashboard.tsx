@@ -51,7 +51,6 @@ const DashboardInternal: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuth();
   const { setRecentlyEditedProjectId } = useRecentlyEdited();
 
   // Check for edit return state in location

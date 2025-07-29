@@ -9,6 +9,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { createLogger } from '@/utils/secureLogger';
 import { dashboardSyncMonitor } from '@/utils/dashboardSyncMonitor';
 import { statusOptions } from '@/hooks/useProjectStatus';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
+import { toUserDateString } from '@/utils/timezoneUtils';
 
 const logger = createLogger('useProjectDetailMutations');
 
@@ -38,6 +40,7 @@ export const useUpdateProjectStatusMutation = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
+  const userTimezone = useUserTimezone();
 
   return useMutation({
     mutationFn: async ({ projectId, status }: { projectId: string; status: ProjectStatus }) => {
@@ -67,7 +70,7 @@ export const useUpdateProjectStatusMutation = () => {
 
       // Auto-set date_completed when status changes to 'completed'
       if (status === 'completed') {
-        updateData.date_completed = new Date().toISOString().split('T')[0];
+        updateData.date_completed = toUserDateString(new Date(), userTimezone);
         logger.debug(
           'Auto-setting date_completed for completed project:',
           updateData.date_completed

@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { toUserDateString, detectUserTimezone } from '@/utils/timezoneUtils';
 
 interface ProjectStatsTabSimpleProps {
   formData: ProjectFormValues | null;
@@ -42,8 +43,10 @@ export const ProjectStatsTabSimple = ({
   const formatDateForInput = (dateString: string | null | undefined): string => {
     if (!dateString) return '';
     try {
-      const date = new Date(dateString);
-      return date.toISOString().split('T')[0];
+      // Use timezone-safe conversion instead of problematic toISOString().split('T')[0]
+      const userTimezone = detectUserTimezone();
+      const result = toUserDateString(dateString, userTimezone);
+      return result || '';
     } catch {
       return '';
     }

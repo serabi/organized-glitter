@@ -30,7 +30,7 @@
  * @version 1.0.0 - Simplified navigation integration
  */
 
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import MainLayout from '@/components/layout/MainLayout';
@@ -71,7 +71,6 @@ const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
   const projectId = id || '';
   const location = useLocation();
-  const navigate = useNavigate();
   const navigateToProjectEdit = useNavigateToProjectEdit();
   const isMobile = useIsMobile();
   const { user, isAuthenticated, initialCheckComplete, isLoading: authLoading } = useAuth();

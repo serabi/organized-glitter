@@ -1,25 +1,17 @@
 import * as React from 'react';
 import * as RechartsPrimitive from 'recharts';
-import type { ValueType, NameType, Payload, LegendPayload } from 'recharts';
-
 import { cn } from '@/lib/utils';
+import type {
+  ValueType,
+  NameType,
+  Payload,
+  LegendPayload,
+  ChartConfig,
+  ChartContextProps,
+} from './chart-types';
 
 // Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { light: '', dark: '.dark' } as const;
-
-export type ChartConfig = {
-  [k in string]: {
-    label?: React.ReactNode;
-    icon?: React.ComponentType;
-  } & (
-    | { color?: string; theme?: never }
-    | { color?: never; theme: Record<keyof typeof THEMES, string> }
-  );
-};
-
-type ChartContextProps = {
-  config: ChartConfig;
-};
 
 const ChartContext = React.createContext<ChartContextProps | null>(null);
 
@@ -254,7 +246,13 @@ const ChartTooltipContent = React.forwardRef<
                 )}
               >
                 {formatter && item?.value !== undefined && item.name ? (
-                  formatter(item.value, item.name, item, index, item.payload)
+                  formatter(
+                    item.value,
+                    item.name,
+                    item,
+                    index,
+                    payload as readonly Payload<ValueType, NameType>[]
+                  )
                 ) : (
                   <>
                     {itemConfig?.icon ? (

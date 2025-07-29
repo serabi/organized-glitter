@@ -12,6 +12,7 @@ import { DbProject } from '@/types/db-project';
 import { Project, ProjectStatus, ProgressNote, ProjectFormValues } from '@/types/shared';
 import { Tag } from '@/types/tag';
 import { logger } from '@/utils/logger';
+import { getCurrentDateInUserTimezone } from '@/utils/timezoneUtils';
 
 /**
  * Extended DbProject interface for handling joined data from database queries
@@ -261,7 +262,7 @@ export function fromDbProject(
           id: note.id || crypto.randomUUID(),
           projectId: projectData.id, // Add the project ID
           content: note.content || '',
-          date: note.date || new Date().toISOString().split('T')[0],
+          date: note.date || getCurrentDateInUserTimezone('UTC'), // Default to UTC since user timezone not available in conversion
           imageUrl: note.imageUrl,
           createdAt: projectData.created_at || new Date().toISOString(),
           updatedAt: projectData.updated_at || new Date().toISOString(),

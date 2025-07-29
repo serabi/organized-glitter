@@ -13,7 +13,13 @@ interface MainLayoutProps {
 }
 
 const MainLayout = memo(
-  ({ children, isAuthenticated = false, showLoader = false, hideNav = false, hideFooter = false }: MainLayoutProps) => {
+  ({
+    children,
+    isAuthenticated = false,
+    showLoader = false,
+    hideNav = false,
+    hideFooter = false,
+  }: MainLayoutProps) => {
     const { user, isLoading } = useAuth();
 
     // Use the user from context if available, otherwise use the prop

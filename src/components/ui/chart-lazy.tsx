@@ -1,9 +1,13 @@
 import React, { lazy, Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
-import type { ComponentProps } from 'react';
-import type { Legend, Tooltip, LegendProps, LegendPayload } from 'recharts';
-import * as RechartsPrimitive from 'recharts';
-import type { ChartConfig } from './chart';
+import type { Legend } from 'recharts';
+import type {
+  ChartContainerProps,
+  ChartTooltipProps,
+  ChartTooltipContentProps,
+  ChartLegendProps,
+  ChartLegendContentProps,
+} from './chart-types';
 
 // Lazy load the heavy chart components
 const LazyChartContainer = lazy(() =>
@@ -42,32 +46,6 @@ const ChartLoading = () => (
     <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
   </div>
 );
-
-// Type definitions based on the chart components
-type ChartContainerProps = React.ComponentProps<'div'> & {
-  config: ChartConfig;
-  children: React.ComponentProps<typeof RechartsPrimitive.ResponsiveContainer>['children'];
-};
-
-type ChartTooltipProps = ComponentProps<typeof Tooltip>;
-
-type ChartTooltipContentProps = React.ComponentProps<typeof Tooltip> &
-  React.ComponentProps<'div'> & {
-    hideLabel?: boolean;
-    hideIndicator?: boolean;
-    indicator?: 'line' | 'dot' | 'dashed';
-    nameKey?: string;
-    labelKey?: string;
-  };
-
-type ChartLegendProps = LegendProps;
-
-type ChartLegendContentProps = React.ComponentProps<'div'> & {
-  payload?: ReadonlyArray<LegendPayload>;
-  verticalAlign?: 'top' | 'middle' | 'bottom';
-  hideIcon?: boolean;
-  nameKey?: string;
-};
 
 // Lazy loaded chart components with loading fallbacks and proper typing
 export const ChartContainer = React.forwardRef<HTMLDivElement, ChartContainerProps>(
@@ -112,4 +90,4 @@ ChartLegendContent.displayName = 'ChartLegendContent';
 
 // Re-export the ChartStyle since it's lightweight
 export { ChartStyle } from './chart';
-export type { ChartConfig } from './chart';
+export type { ChartConfig } from './chart-types';
