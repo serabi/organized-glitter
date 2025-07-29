@@ -84,7 +84,7 @@ Currently built with React, TypeScript, and PocketBase.
 ### Deployment & Monitoring
 
 - **Deployment**: Vercel
-- **Analytics**: Vercel Analytics, PostHog
+- **Analytics**: Vercel Analytics
 
 ## Project Structure
 
@@ -130,7 +130,6 @@ src/
 │   │   ├── dashboardStatsService.ts # Dashboard statistics with caching
 │   │   ├── progressNotesService.ts # Progress notes operations
 │   │   └── projectService.ts     # Project data operations
-│   ├── analytics.ts              # Analytics service
 │   └── auth.ts                   # Authentication service
 ├── styles/                       # CSS stylesheets
 ├── test-utils/                   # Testing utilities

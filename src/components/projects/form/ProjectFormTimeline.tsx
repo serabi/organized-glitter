@@ -1,5 +1,7 @@
 import React from 'react';
 import FormField from './FormField';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
+import { getCurrentDateInUserTimezone } from '@/utils/timezoneUtils';
 
 interface ProjectFormTimelineProps {
   datePurchased: string;
@@ -16,6 +18,9 @@ const ProjectFormTimeline: React.FC<ProjectFormTimelineProps> = ({
   onDateChange,
   isSubmitting,
 }) => {
+  const userTimezone = useUserTimezone();
+  const maxDate = getCurrentDateInUserTimezone(userTimezone);
+
   return (
     <div className="mt-4 rounded-lg border bg-card p-4 shadow-sm">
       <h3 className="mb-3 text-sm font-medium text-muted-foreground">Project Timeline</h3>
@@ -29,7 +34,7 @@ const ProjectFormTimeline: React.FC<ProjectFormTimelineProps> = ({
             onChange={onDateChange}
             disabled={isSubmitting}
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent"
-            max={new Date().toISOString().split('T')[0]}
+            max={maxDate}
           />
         </FormField>
 
@@ -42,7 +47,7 @@ const ProjectFormTimeline: React.FC<ProjectFormTimelineProps> = ({
             onChange={onDateChange}
             disabled={isSubmitting}
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent"
-            max={new Date().toISOString().split('T')[0]}
+            max={maxDate}
             min={datePurchased || ''}
           />
         </FormField>
@@ -56,7 +61,7 @@ const ProjectFormTimeline: React.FC<ProjectFormTimelineProps> = ({
             onChange={onDateChange}
             disabled={isSubmitting}
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent"
-            max={new Date().toISOString().split('T')[0]}
+            max={maxDate}
             min={dateStarted || datePurchased || ''}
           />
         </FormField>

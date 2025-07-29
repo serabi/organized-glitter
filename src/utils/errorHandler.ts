@@ -1,5 +1,4 @@
 import { handleRateLimitError as checkRateLimit, RateLimitInfo } from './rateLimit';
-import { captureException, trackEvent } from './posthog';
 import { logger } from './logger';
 
 type NotificationHandler = (
@@ -30,17 +29,6 @@ async function handleUnhandledRejection(event: PromiseRejectionEvent) {
   const error = event.reason;
   const rateLimitInfo = checkRateLimit(error);
 
-  // Track all unhandled promise rejections for analytics
-  trackEvent('error_unhandled_promise_rejection', {
-    error_type: error?.name || 'unknown',
-    error_message: error?.message || String(error),
-    error_stack: error?.stack || 'no_stack',
-    url: window.location.href,
-    user_agent: navigator.userAgent,
-    timestamp: new Date().toISOString(),
-    is_rate_limit: !!rateLimitInfo,
-  });
-
   if (rateLimitInfo) {
     event.preventDefault();
     showNotification(rateLimitInfo);
@@ -53,20 +41,6 @@ async function handleUnhandledRejection(event: PromiseRejectionEvent) {
 function handleError(event: ErrorEvent) {
   const error = event.error;
   const rateLimitInfo = checkRateLimit(error);
-
-  // Track all uncaught exceptions for analytics
-  trackEvent('error_uncaught_exception', {
-    error_type: error?.name || 'unknown',
-    error_message: error?.message || event.message,
-    error_stack: error?.stack || 'no_stack',
-    filename: event.filename,
-    line_number: event.lineno,
-    column_number: event.colno,
-    url: window.location.href,
-    user_agent: navigator.userAgent,
-    timestamp: new Date().toISOString(),
-    is_rate_limit: !!rateLimitInfo,
-  });
 
   if (rateLimitInfo) {
     event.preventDefault();
@@ -101,15 +75,6 @@ export function withErrorHandling<T extends AnyFunction>(
     try {
       return (await fn(...args)) as Awaited<ReturnType<T>>;
     } catch (error) {
-      // Capture exception in PostHog for analytics (if it's an Error object)
-      if (error instanceof Error) {
-        captureException(error, {
-          type: 'handled_error',
-          function_name: fn.name || 'anonymous',
-          context: 'withErrorHandling',
-        });
-      }
-
       const rateLimitInfo = checkRateLimit(error);
       if (rateLimitInfo) {
         showNotification(rateLimitInfo);

@@ -3,7 +3,6 @@ import { Routes, Route } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { RootRoute } from '@/components/auth/RootRoute';
 import { PageLoading } from '@/components/ui/page-loading';
-import { usePostHogPageTracking } from '@/hooks/usePostHogPageTracking';
 import { useNavigationMonitoring } from '@/hooks/useNavigationMonitoring';
 import { createLogger } from '@/utils/secureLogger';
 import RouteErrorBoundary from '@/components/error/RouteErrorBoundary';
@@ -135,9 +134,6 @@ const ProjectDetailWrapper: React.FC = () => {
  * Handles all route definitions with proper authentication wrapping
  */
 export const AppRoutes: React.FC = () => {
-  // Track pageviews with PostHog
-  usePostHogPageTracking();
-
   // Monitor navigation for debugging routing issues
   useNavigationMonitoring();
 

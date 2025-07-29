@@ -21,6 +21,7 @@ const logger = createLogger('useUpdateProjectStatus');
 interface UpdateProjectStatusData {
   projectId: string;
   newStatus: string;
+  currentStatus?: string;
 }
 
 interface MutationContext {
@@ -147,9 +148,9 @@ export const useUpdateProjectStatus = () => {
       const previousProject = queryClient.getQueryData(queryKeys.projects.detail(projectId));
       if (previousProject) {
         const updatedProject = {
-          ...previousProject,
+          ...(previousProject as Record<string, unknown>),
           status: newStatus,
-        };
+        } as Record<string, unknown>;
 
         // Handle date_completed field based on status
         if (newStatus === 'completed') {
@@ -219,9 +220,9 @@ export const useUpdateProjectStatus = () => {
         const previousProject = queryClient.getQueryData(queryKeys.projects.detail(projectId));
         if (previousProject && context?.oldStatus) {
           const rolledBackProject = {
-            ...previousProject,
+            ...(previousProject as Record<string, unknown>),
             status: context.oldStatus,
-          };
+          } as Record<string, unknown>;
 
           // Restore the original date_completed state
           if (context.oldDateCompleted) {

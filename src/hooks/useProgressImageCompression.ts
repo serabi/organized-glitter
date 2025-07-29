@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { compressProgressImage } from '@/utils/progressImageCompression';
 import { useToast } from '@/hooks/use-toast';
-import { useProgressNoteFormTracking } from './useProgressNoteFormTracking';
 import { logger } from '@/utils/logger';
 
 /**
@@ -17,14 +16,13 @@ interface CompressionProgress {
 /**
  * Custom hook for handling image compression with progress tracking and user feedback.
  * It uses `compressProgressImage` utility for the actual compression,
- * `useToast` for notifications, and `useProgressNoteFormTracking` for logging.
+ * `useToast` for notifications.
  * @returns {Object} An object containing the `compressImage` function, compression state, and a reset function.
  */
 export const useProgressImageCompression = () => {
   const [isCompressing, setIsCompressing] = useState(false);
   const [compressionProgress, setCompressionProgress] = useState<CompressionProgress | null>(null);
   const { toast } = useToast();
-  const { trackImageCompression, trackCompressionFailure } = useProgressNoteFormTracking();
 
   /**
    * Compresses an image file if it exceeds a certain threshold.
@@ -70,15 +68,6 @@ export const useProgressImageCompression = () => {
         });
       });
 
-      // Track compression success
-      trackImageCompression({
-        originalSize: file.size,
-        compressedSize: compressedFile.size,
-        compressionRatio: Math.round((1 - compressedFile.size / file.size) * 100),
-        originalSizeMB: Math.round((file.size / (1024 * 1024)) * 100) / 100,
-        compressedSizeMB: Math.round((compressedFile.size / (1024 * 1024)) * 100) / 100,
-      });
-
       // Show simplified upload success toast
       toast({
         title: 'Image Uploaded',
@@ -88,8 +77,6 @@ export const useProgressImageCompression = () => {
       return compressedFile;
     } catch (error) {
       logger.error('Compression failed:', error);
-
-      trackCompressionFailure(error, file.size);
 
       toast({
         title: 'Compression Failed',

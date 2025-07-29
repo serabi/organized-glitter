@@ -1,6 +1,5 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
 import { logger } from '@/utils/logger';
-import { captureException } from '@/utils/posthog';
 
 /**
  * Data provided to the fallback render function
@@ -151,15 +150,6 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       location: typeof window !== 'undefined' ? window.location.href : 'server',
       userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'server',
       timestamp: errorDetails.timestamp,
-    });
-
-    // Capture exception in PostHog for analytics
-    captureException(error, {
-      type: 'react_error_boundary',
-      componentStack: errorInfo.componentStack,
-      location: typeof window !== 'undefined' ? window.location.href : 'server',
-      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'server',
-      context: this.props.errorContext || {},
     });
 
     this.setState({ error, errorInfo });

@@ -14,9 +14,6 @@ import {
   getSubscriptionManager,
   BaseRecord,
   ServiceConfig,
-  StructuredFilter,
-  ListOptions,
-  ListResult,
   PocketBaseError,
 } from './base';
 
@@ -157,7 +154,7 @@ export const commonServiceConfigs = {
   projects: {
     collection: 'projects',
     defaultSort: '-created',
-    defaultExpand: ['user'],
+    defaultExpand: ['user'] as string[],
     fieldMapping: {
       userId: 'user',
       dateCreated: 'created',

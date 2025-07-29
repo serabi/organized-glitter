@@ -2,8 +2,6 @@ import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { pb } from '@/lib/pocketbase';
 import { AuthContext } from './context';
 import { AuthProviderProps, PocketBaseUser } from '../AuthContext.types';
-import { resetPostHog } from '@/utils/posthog';
-import { analytics } from '@/services/analytics';
 import { createLogger } from '@/utils/secureLogger';
 
 const authLogger = createLogger('AuthProvider');
@@ -61,15 +59,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = React.memo(({ children 
             });
             setUser(currentUser);
             setIsAuthenticated(true);
-
-            // Identify user in PostHog with enhanced context
-            analytics.identifyUserWithContext(currentUser.id, {
-              email: currentUser.email,
-              username: currentUser.username,
-              avatar: currentUser.avatar,
-              beta_tester: currentUser.beta_tester,
-              created: currentUser.created,
-            });
           } else {
             authLogger.debug('No valid session found');
             authLogger.debug('Initial auth check: User IS NOT valid or present.');
@@ -113,24 +102,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = React.memo(({ children 
               setIsAuthenticated(true);
               setIsLoading(false);
               setInitialCheckComplete(true);
-
-              // Identify user in PostHog with enhanced context
-              analytics.identifyUserWithContext(userData.id, {
-                email: userData.email,
-                username: userData.username,
-                avatar: userData.avatar,
-                beta_tester: userData.beta_tester,
-                created: userData.created,
-              });
             } else {
               authLogger.debug('Clearing user state');
               setUser(null);
               setIsAuthenticated(false);
               setIsLoading(false);
               setInitialCheckComplete(true);
-
-              // Reset PostHog analytics on logout
-              resetPostHog();
             }
           }
         });
@@ -178,9 +155,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = React.memo(({ children 
 
       // Clear PocketBase auth store (this is all we need for logout)
       pb.authStore.clear();
-
-      // Track logout event
-      analytics.auth.logout();
 
       authLogger.debug('Logout completed successfully');
       return { success: true, error: null };

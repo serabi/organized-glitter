@@ -3,7 +3,6 @@ import { useToast } from '@/hooks/use-toast';
 import { ProgressNote } from '@/types/project';
 import { pb } from '@/lib/pocketbase';
 import { queryKeys } from './queryKeys';
-import { analytics } from '@/services/analytics';
 import { requireValidAuthStore } from '@/utils/authGuards';
 
 interface AddProgressNoteData {
@@ -110,20 +109,12 @@ export function useAddProgressNoteMutation(projectId: string) {
 
       return progressNote;
     },
-    onSuccess: progressNote => {
+    onSuccess: () => {
       // Show success toast
       toast({
         title: 'Success',
         description: 'Progress note added successfully',
       });
-
-      // Track analytics
-      analytics.progressNote.created(projectId, !!progressNote.imageUrl);
-
-      // Track image upload if present
-      if (progressNote.imageUrl) {
-        analytics.feature.imageUploaded('progress_note', 0); // Size not available from URL
-      }
 
       // Invalidate and refetch progress notes for this project
       queryClient.invalidateQueries({
@@ -136,7 +127,6 @@ export function useAddProgressNoteMutation(projectId: string) {
       });
     },
     onError: (error: Error) => {
-      analytics.error.databaseOperation('create', 'progress_notes', error.message);
       toast({
         title: 'Error',
         description: error.message,
@@ -188,7 +178,6 @@ export function useUpdateProgressNoteMutation(projectId: string) {
       });
     },
     onError: (error: Error) => {
-      analytics.error.databaseOperation('update', 'progress_notes', error.message);
       toast({
         title: 'Error',
         description: error.message,
@@ -225,7 +214,6 @@ export function useDeleteProgressNoteMutation(projectId: string) {
       });
     },
     onError: (error: Error) => {
-      analytics.error.databaseOperation('delete', 'progress_notes', error.message);
       toast({
         title: 'Error',
         description: error.message,
@@ -278,7 +266,6 @@ export function useDeleteProgressNoteImageMutation(projectId: string) {
       });
     },
     onError: (error: Error) => {
-      analytics.error.databaseOperation('update', 'progress_notes', error.message);
       toast({
         title: 'Error',
         description: error.message,
@@ -323,7 +310,6 @@ export function useUpdateGeneralNotesMutation(projectId: string) {
       });
     },
     onError: (error: Error) => {
-      analytics.error.databaseOperation('update', 'projects', error.message);
       toast({
         title: 'Error',
         description: error.message,

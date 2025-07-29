@@ -1,10 +1,8 @@
 // filepath: /Users/sarahwolffmilligan/Development/lovable/organized-glitter/src/hooks/useProgressNoteForm.ts
 import { useState, useCallback } from 'react';
-import { useProgressNoteFormTracking } from './useProgressNoteFormTracking';
 import { useProgressImageCompression } from './useProgressImageCompression';
 import { useUserTimezone } from '@/hooks/useUserTimezone';
 import { getCurrentDateInUserTimezone } from '@/utils/timezoneUtils';
-import { analytics } from '@/services/analytics';
 import { logger } from '@/utils/logger';
 import {
   ProgressNoteFormProps as UseProgressNoteFormProps,
@@ -37,7 +35,6 @@ export const useProgressNoteForm = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<ProgressNoteFormErrors>({});
 
-  const tracking = useProgressNoteFormTracking();
   const { compressImage, isCompressing, compressionProgress, resetCompressionState } =
     useProgressImageCompression();
 
@@ -53,18 +50,6 @@ export const useProgressNoteForm = ({
     async (e: React.FormEvent) => {
       e.preventDefault();
 
-      tracking.trackFormSubmissionStart({
-        hasDate: Boolean(date),
-        hasContent: Boolean(content?.trim()),
-        contentLength: content?.trim().length || 0,
-        hasImage: Boolean(imageFile),
-        imageFileName: imageFile?.name,
-        imageSize: imageFile?.size,
-        imageType: imageFile?.type,
-        selectedDate: date,
-        formDisabled: disabled,
-      });
-
       const currentValidationErrors: ProgressNoteFormErrors = {};
       if (!date) {
         currentValidationErrors.date = 'Date is required';
@@ -77,24 +62,6 @@ export const useProgressNoteForm = ({
       if (Object.keys(currentValidationErrors).length > 0) {
         setErrors(currentValidationErrors);
 
-        // Track form validation errors with analytics
-        const errorMessages: Record<string, string> = {};
-        if (currentValidationErrors.date) errorMessages.date = currentValidationErrors.date;
-        if (currentValidationErrors.image) errorMessages.image = currentValidationErrors.image;
-
-        analytics.error.formValidationFailed('progress_note_form', errorMessages);
-
-        // Track validation failure if it's not solely an image error (which is tracked separately)
-        // Updated condition to reflect that content is optional
-        if (!currentValidationErrors.date) {
-          // This condition might be too restrictive, consider if any field error should trigger general validation tracking
-        } else {
-          tracking.trackValidationFailure(
-            Boolean(currentValidationErrors.date),
-            false, // Content is optional, so pass false for content error tracking here
-            content?.trim().length || 0
-          );
-        }
         return;
       }
       // If we pass this point, field-specific validations are okay, clear them but preserve form error if any
@@ -108,17 +75,7 @@ export const useProgressNoteForm = ({
           imageFile: imageFile || undefined,
         };
 
-        tracking.trackDataPrepared(
-          noteDataToSubmit.date,
-          noteDataToSubmit.content.length,
-          noteDataToSubmit.imageFile
-        );
         await onSubmit(noteDataToSubmit);
-        tracking.trackSubmissionSuccess(
-          noteDataToSubmit.date,
-          noteDataToSubmit.content.length,
-          Boolean(noteDataToSubmit.imageFile)
-        );
         resetForm();
         if (onSuccess) {
           onSuccess();
@@ -127,31 +84,17 @@ export const useProgressNoteForm = ({
         logger.error('Error submitting progress note:', error);
         const errorMessage =
           error instanceof Error ? error.message : 'An unexpected error occurred.';
-        tracking.trackSubmissionError(date, content?.trim().length || 0, Boolean(imageFile), error);
         setErrors({ form: errorMessage });
       } finally {
         setIsSubmitting(false);
       }
     },
-    [date, content, imageFile, disabled, onSubmit, onSuccess, resetForm, tracking, errors.image]
+    [date, content, imageFile, disabled, onSubmit, onSuccess, resetForm, errors.image]
   );
 
   const handleImageChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const selectedFile = e.target.files?.[0] || null;
-
-      tracking.trackImageSelection({
-        hasImage: Boolean(selectedFile),
-        imageMetadata: selectedFile
-          ? {
-              name: selectedFile.name,
-              size: selectedFile.size,
-              type: selectedFile.type,
-              sizeInMB: Math.round((selectedFile.size / (1024 * 1024)) * 100) / 100,
-            }
-          : undefined,
-        previousImageName: imageFile?.name,
-      });
 
       if (!selectedFile) {
         setImageFile(null);
@@ -194,13 +137,12 @@ export const useProgressNoteForm = ({
         }
       }
     },
-    [compressImage, imageFile?.name, tracking]
+    [compressImage, imageFile?.name]
   );
 
   const handleDateChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const newDate = e.target.value;
-      tracking.trackDateChange(date, newDate);
       setDate(newDate);
       if (errors.date || errors.form) {
         setErrors((prev: ProgressNoteFormErrors) => ({
@@ -210,27 +152,13 @@ export const useProgressNoteForm = ({
         }));
       }
     },
-    [date, errors.date, errors.form, tracking]
+    [date, errors.date, errors.form]
   );
 
   const handleContentChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       const newContent = e.target.value;
-      const newContentTrimmed = newContent.trim();
-      const oldContentTrimmed = content.trim();
-      const lengthDifference = Math.abs(newContentTrimmed.length - oldContentTrimmed.length);
-      const isSignificantChange =
-        (newContent.length === 0 && oldContentTrimmed.length > 0) ||
-        (newContent.length > 0 && oldContentTrimmed.length === 0) ||
-        lengthDifference >= 20; // Track every 20 characters of change
 
-      if (isSignificantChange) {
-        tracking.trackContentChange(
-          newContent.length,
-          Boolean(newContentTrimmed),
-          isSignificantChange
-        );
-      }
       setContent(newContent);
       if (errors.content || errors.form) {
         setErrors((prev: ProgressNoteFormErrors) => ({
@@ -240,19 +168,13 @@ export const useProgressNoteForm = ({
         }));
       }
     },
-    [content, errors.content, errors.form, tracking]
+    [content, errors.content, errors.form]
   );
 
   const handleClearImage = useCallback(() => {
-    tracking.trackImageSelection({
-      hasImage: false,
-      imageMetadata: undefined,
-      previousImageName: imageFile?.name,
-    });
-
     setImageFile(null);
     setErrors((prev: ProgressNoteFormErrors) => ({ ...prev, image: undefined, form: undefined }));
-  }, [imageFile?.name, tracking]);
+  }, [imageFile?.name]);
 
   // Updated isFormValid to reflect that content is optional
   const isFormValid = Boolean(date && !errors.date && !errors.image && !errors.form);

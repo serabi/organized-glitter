@@ -36,7 +36,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { formatDate } from '@/lib/utils';
+import { formatDateInUserTimezone, detectUserTimezone } from '@/utils/timezoneUtils';
+import { PocketBaseUser } from '@/contexts/AuthContext.types';
 
 /**
  * Props for the ProjectDetailView component
@@ -68,6 +69,8 @@ interface ProjectDetailViewProps {
   navigateToEdit: () => void;
   /** Whether any operation is currently submitting */
   isSubmitting?: boolean;
+  /** Current authenticated user */
+  user: PocketBaseUser | null;
 }
 
 /**
@@ -96,7 +99,19 @@ const ProjectDetailView = ({
   onDelete,
   navigateToEdit,
   isSubmitting = false,
+  user: _user,
 }: ProjectDetailViewProps) => {
+  // Helper function to format dates consistently using user's timezone
+  const formatProjectDate = (dateString: string | null | undefined): string => {
+    if (!dateString) return 'Not specified';
+
+    try {
+      const userTimezone = detectUserTimezone();
+      return formatDateInUserTimezone(dateString, userTimezone, 'M/d/yyyy');
+    } catch {
+      return 'Invalid date';
+    }
+  };
   return (
     <div className="container mx-auto px-4 py-6">
       <div className="mb-6 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
@@ -230,27 +245,19 @@ const ProjectDetailView = ({
             <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
               <div className="rounded bg-secondary p-4 dark:bg-muted">
                 <h4 className="text-sm font-medium text-muted-foreground">Date Purchased</h4>
-                <p className="text-foreground">
-                  {project.datePurchased ? formatDate(project.datePurchased) : 'Not specified'}
-                </p>
+                <p className="text-foreground">{formatProjectDate(project.datePurchased)}</p>
               </div>
               <div className="rounded bg-secondary p-4 dark:bg-muted">
                 <h4 className="text-sm font-medium text-muted-foreground">Date Received</h4>
-                <p className="text-foreground">
-                  {project.dateReceived ? formatDate(project.dateReceived) : 'Not specified'}
-                </p>
+                <p className="text-foreground">{formatProjectDate(project.dateReceived)}</p>
               </div>
               <div className="rounded bg-secondary p-4 dark:bg-muted">
                 <h4 className="text-sm font-medium text-muted-foreground">Date Started</h4>
-                <p className="text-foreground">
-                  {project.dateStarted ? formatDate(project.dateStarted) : 'Not specified'}
-                </p>
+                <p className="text-foreground">{formatProjectDate(project.dateStarted)}</p>
               </div>
               <div className="rounded bg-secondary p-4 dark:bg-muted">
                 <h4 className="text-sm font-medium text-muted-foreground">Date Completed</h4>
-                <p className="text-foreground">
-                  {project.dateCompleted ? formatDate(project.dateCompleted) : 'Not specified'}
-                </p>
+                <p className="text-foreground">{formatProjectDate(project.dateCompleted)}</p>
               </div>
             </div>
 

@@ -58,22 +58,6 @@ const trackResourceError = (url: string, type: ResourceError['type'], status?: n
 
   logger.warn(`🚨 Resource loading failed: ${type} - ${url}`, { status });
 
-  // Report to analytics if available
-  if (typeof window !== 'undefined' && 'posthog' in window) {
-    (
-      window as Window & {
-        posthog?: { capture: (event: string, data: Record<string, unknown>) => void };
-      }
-    ).posthog?.capture('resource_load_error', {
-      resource_type: type,
-      resource_url: url.replace(window.location.origin, ''), // Remove origin for privacy
-      status_code: status,
-      user_agent: navigator.userAgent,
-      page_url: window.location.pathname,
-      timestamp: error.timestamp,
-    });
-  }
-
   // Special handling for PocketBase file errors
   if (url.includes('data.organizedglitter.app') && type === 'image') {
     logger.error('PocketBase image failed to load - this may indicate URL generation issues:', {
