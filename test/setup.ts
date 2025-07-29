@@ -1,64 +1,56 @@
+/**
+ * Simplified test setup for fast, reliable testing
+ * Only includes essential mocks and configuration
+ * @author @serabi
+ * @created 2025-07-29
+ */
+
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
-// Mock environment variables for testing
+// Essential environment setup
 Object.defineProperty(import.meta, 'env', {
   value: {
-    DEV: true,
-    PROD: false,
     MODE: 'test',
-    VITE_POCKETBASE_URL: 'http://127.0.0.1:8090',
+    VITE_POCKETBASE_URL: 'http://localhost:8090',
     VITE_APP_VERSION: '1.0.0',
-    VITE_APP_URL: 'http://localhost:3000',
   },
   writable: true,
   configurable: true,
 });
 
-// Mock environment utilities
-vi.mock('@/utils/env', () => ({
-  env: {
-    VITE_POCKETBASE_URL: 'http://127.0.0.1:8090',
-    VITE_APP_VERSION: '1.0.0',
-    VITE_APP_URL: 'http://localhost:3000',
-    MODE: 'test',
-  },
-  isProduction: false,
-  isDevelopment: false,
-  isTest: true,
-}));
-
-// Essential browser API mocks for jsdom
+// Core browser API mocks - minimal but complete
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: vi.fn().mockImplementation((query: string) => ({
+  value: vi.fn(() => ({
     matches: false,
-    media: query,
+    media: '',
     onchange: null,
-    addListener: vi.fn(), // deprecated but still used by some libraries
-    removeListener: vi.fn(), // deprecated but still used by some libraries
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
     dispatchEvent: vi.fn(),
   })),
 });
 
-global.IntersectionObserver = vi.fn().mockImplementation(() => ({
+// Observer APIs used by components
+global.IntersectionObserver = vi.fn(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
   disconnect: vi.fn(),
 }));
 
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
+global.ResizeObserver = vi.fn(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
   disconnect: vi.fn(),
 }));
 
-// File API mocks for upload testing
+// URL APIs for file handling
 Object.defineProperty(URL, 'createObjectURL', {
   writable: true,
-  value: vi.fn(() => 'blob:mock-url-12345'),
+  value: vi.fn(() => 'mock:blob-url'),
 });
 
 Object.defineProperty(URL, 'revokeObjectURL', {
@@ -66,9 +58,23 @@ Object.defineProperty(URL, 'revokeObjectURL', {
   value: vi.fn(),
 });
 
-// Form submission mock for jsdom
-if (!HTMLFormElement.prototype.requestSubmit) {
-  HTMLFormElement.prototype.requestSubmit = function () {
-    this.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-  };
-}
+// Suppress React Router warnings in tests
+const originalWarn = console.warn;
+console.warn = (...args) => {
+  if (
+    typeof args[0] === 'string' && 
+    args[0].includes('React Router Future Flag Warning')
+  ) {
+    return;
+  }
+  originalWarn(...args);
+};
+
+// Test cleanup and isolation
+import { afterEach } from 'vitest';
+import { cleanup } from '@testing-library/react';
+
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+});

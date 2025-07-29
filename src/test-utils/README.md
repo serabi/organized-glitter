@@ -1,151 +1,228 @@
-# Simplified Test Utilities
+# Simplified Testing Guide
 
-This directory contains test utilities for Organized Glitter
+A streamlined testing approach focused on user workflows and business value.
 
-## Philosophy
+## Quick Start
 
-- **Minimal abstractions**: Only essential utilities, no complex base classes
-- **User-focused testing**: Test what users see and interact with
-- **Fast execution**: Simple setup for quick test runs
-- **Easy to understand**: Clear, straightforward testing patterns
+```typescript
+import { describe, it, expect, renderWithProviders, screen, userEvent } from '@/test-utils';
 
-## Core Utilities
-
-### `renderWithProviders()`
-
-Renders components with essential React contexts (React Query, Router).
-
-```tsx
-import { renderWithProviders, screen } from '@/test-utils';
-
-test('component renders correctly', () => {
-  renderWithProviders(<MyComponent />);
-  expect(screen.getByText('Hello')).toBeInTheDocument();
+describe('MyComponent', () => {
+  it('should handle user interaction', async () => {
+    const user = userEvent.setup();
+    
+    renderWithProviders(<MyComponent />);
+    
+    await user.click(screen.getByRole('button', { name: 'Submit' }));
+    
+    expect(screen.getByText('Success!')).toBeInTheDocument();
+  });
 });
-```
-
-### Mock Data Factories
-
-Simple functions to create test data without complex patterns.
-
-```tsx
-import { createMockProject, createMockUser } from '@/test-utils';
-
-const project = createMockProject({
-  title: 'Custom Title',
-  status: 'completed'
-});
-
-const user = createMockUser({
-  email: 'test@example.com'
-});
-```
-
-### PocketBase Mocking
-
-Basic PocketBase mock for testing API interactions.
-
-```tsx
-import { createMockPocketBase } from '@/test-utils';
-
-const mockPb = createMockPocketBase();
-mockPb.collection().getList.mockResolvedValue({ items: [] });
 ```
 
 ## Testing Patterns
 
-### Component Tests
+### 1. Component Tests
+Focus on user interactions and rendering:
 
-Focus on rendering and user interactions:
+```typescript
+import { renderWithProviders, screen, userEvent } from '@/test-utils';
 
-```tsx
-describe('Button', () => {
-  it('handles click events', () => {
-    const handleClick = vi.fn();
-    render(<Button onClick={handleClick}>Click me</Button>);
-    
-    fireEvent.click(screen.getByRole('button'));
-    
-    expect(handleClick).toHaveBeenCalled();
+// ✅ Test user interactions
+it('should submit form when button is clicked', async () => {
+  const user = userEvent.setup();
+  renderWithProviders(<ContactForm />);
+  
+  await user.type(screen.getByLabelText('Email'), 'test@example.com');
+  await user.click(screen.getByRole('button', { name: 'Submit' }));
+  
+  expect(screen.getByText('Form submitted!')).toBeInTheDocument();
+});
+
+// ✅ Test conditional rendering
+it('should show error message for invalid input', () => {
+  renderWithProviders(<ContactForm />);
+  
+  expect(screen.queryByTestId('error-message')).not.toBeInTheDocument();
+  
+  // Trigger validation
+  fireEvent.blur(screen.getByLabelText('Email'));
+  
+  expect(screen.getByTestId('error-message')).toBeInTheDocument();
+});
+```
+
+### 2. Hook Tests
+Test behavior with minimal mocking:
+
+```typescript
+import { renderHookWithProviders, act, waitFor } from '@/test-utils';
+
+// ✅ Simple mock-based testing
+const createMockUseMyHook = (overrides = {}) => {
+  const defaults = {
+    data: null,
+    isLoading: false,
+    error: null,
+    refetch: vi.fn(),
+  };
+  return { ...defaults, ...overrides };
+};
+
+it('should handle loading state', () => {
+  const mockHook = createMockUseMyHook({ isLoading: true });
+  expect(mockHook.isLoading).toBe(true);
+});
+```
+
+### 3. Integration Tests
+Test real user workflows:
+
+```typescript
+// ✅ Authentication flow
+it('should allow user to login', async () => {
+  const user = userEvent.setup();
+  
+  renderWithProviders(<LoginForm />);
+  
+  await user.type(screen.getByLabelText('Email'), 'user@example.com');
+  await user.type(screen.getByLabelText('Password'), 'password');
+  await user.click(screen.getByRole('button', { name: 'Login' }));
+  
+  await waitFor(() => {
+    expect(screen.getByText('Welcome back!')).toBeInTheDocument();
   });
 });
-```
 
-### Hook Tests
-
-Test hook behavior with minimal setup:
-
-```tsx
-describe('useAuth', () => {
-  it('returns authentication state', () => {
-    const { result } = renderHook(() => useAuth());
-    
-    expect(result.current.isAuthenticated).toBe(false);
-  });
+// ✅ CRUD operations
+it('should create, update, and delete items', async () => {
+  const user = userEvent.setup();
+  
+  renderWithProviders(<ProjectManager />);
+  
+  // Create
+  await user.type(screen.getByPlaceholderText('Project name'), 'New Project');
+  await user.click(screen.getByRole('button', { name: 'Create' }));
+  
+  expect(screen.getByText('New Project')).toBeInTheDocument();
+  
+  // Update
+  await user.click(screen.getByRole('button', { name: 'Edit' }));
+  await user.clear(screen.getByDisplayValue('New Project'));
+  await user.type(screen.getByDisplayValue(''), 'Updated Project');
+  await user.click(screen.getByRole('button', { name: 'Save' }));
+  
+  expect(screen.getByText('Updated Project')).toBeInTheDocument();
+  
+  // Delete
+  await user.click(screen.getByRole('button', { name: 'Delete' }));
+  
+  expect(screen.queryByText('Updated Project')).not.toBeInTheDocument();
 });
 ```
 
-### Integration Tests
+## Available Utilities
 
-Test user workflows with realistic interactions:
+### Rendering
+- `renderWithProviders(component, options)` - Render with all necessary providers
+- `renderHookWithProviders(hook, options)` - Render hooks with providers
 
-```tsx
-describe('Project Workflow', () => {
-  it('allows creating and updating projects', async () => {
-    renderWithProviders(<ProjectManager />);
-    
-    // Create project
-    await user.type(screen.getByLabelText('Title'), 'New Project');
-    await user.click(screen.getByText('Save'));
-    
-    // Verify project appears
-    expect(screen.getByText('New Project')).toBeInTheDocument();
-  });
+### Mock Factories
+- `createMockProject(overrides)` - Create project test data
+- `createMockUser(overrides)` - Create user test data
+- `createMockFile(name, type, size)` - Create file objects for uploads
+
+### Testing Library Exports
+All essential testing-library utilities are re-exported:
+- `screen` - Query the rendered DOM
+- `waitFor` - Wait for async operations
+- `fireEvent` - Trigger DOM events
+- `userEvent` - Simulate user interactions
+- `act` - Wrap state updates
+- `within` - Query within specific elements
+
+### Vitest Exports
+Essential Vitest utilities:
+- `describe`, `it`, `expect` - Test structure
+- `beforeEach`, `afterEach` - Test lifecycle
+- `vi` - Mocking utilities
+
+## Writing Good Tests
+
+### DO ✅
+- Test user workflows and interactions
+- Use realistic test data with mock factories
+- Focus on behavior, not implementation
+- Write tests that read like user stories
+- Use `screen.getByRole()` for accessibility
+- Test error states and edge cases
+- Keep tests simple and focused
+
+### DON'T ❌
+- Test implementation details
+- Mock everything - use real components when possible
+- Write complex test utilities or base classes
+- Test library code or third-party components
+- Create elaborate test hierarchies
+- Use complex selectors or queries
+- Write tests that are hard to understand
+
+## Test Organization
+
+```
+src/
+├── __tests__/
+│   └── integration/          # User workflow tests
+├── components/
+│   └── __tests__/           # Component interaction tests
+├── hooks/
+│   └── __tests__/           # Hook behavior tests
+├── services/
+│   └── __tests__/           # Service function tests
+└── test-utils/
+    ├── index.tsx            # Test utilities
+    └── README.md            # This guide
+```
+
+## Performance Tips
+
+- Tests run with optimized Vitest configuration
+- Use `screen` queries for better performance
+- Avoid unnecessary `waitFor` calls
+- Use `userEvent` instead of `fireEvent` for realistic interactions
+- Keep test setup minimal - avoid complex mocking
+
+## Debugging Tests
+
+Use the browser-like environment for debugging:
+
+```typescript
+it('should debug component state', () => {
+  renderWithProviders(<MyComponent />);
+  
+  // Debug the DOM
+  screen.debug();
+  
+  // Debug specific elements
+  screen.debug(screen.getByTestId('my-element'));
+  
+  // Check what's available
+  console.log(screen.getByRole('button')); // Will show available buttons
 });
 ```
 
-## What We Removed
+## Examples
 
-- **ServiceTestBase**: 200+ line complex base class
-- **Complex mocking infrastructure**: Over-engineered PocketBase mocks
-- **E2E tests**: Redundant with simpler integration tests
-- **Performance tests**: Unnecessary for this application
-- **Elaborate test utilities**: Multiple abstraction layers
+See these files for complete examples:
+- `src/__tests__/integration/auth-flow.test.tsx` - Authentication workflow
+- `src/__tests__/integration/project-crud.test.tsx` - CRUD operations
+- `src/__tests__/integration/project-status-logic.test.tsx` - Business logic
+- `src/hooks/__tests__/useAuth.test.tsx` - Hook testing patterns
+- `src/hooks/mutations/__tests__/useCreateSpin.test.tsx` - Mutation testing
 
-## What We Kept
-
-- **Essential functionality**: Core testing needs
-- **Critical test coverage**: User-facing features
-- **Fast execution**: Tests run in under 10 seconds
-- **Clear patterns**: Easy to understand and maintain
-
-## Usage Examples
-
-See the example tests in:
-- `src/components/ui/__tests__/Button.test.tsx` - Simple component test
-- `src/components/projects/__tests__/ProjectCard.simple.test.tsx` - Component with providers
-- `src/hooks/__tests__/useAuth.test.tsx` - Hook testing
-- `src/__tests__/integration/project-workflow.test.tsx` - Integration test
-
-## Migration Guide
-
-### Before (Complex)
-```tsx
-class MyTest extends ServiceTestBase {
-  async testSomething() {
-    this.mockCollection.getList.mockResolvedValue(this.createMockListResponse([]));
-    // 20+ lines of setup...
-  }
-}
-```
-
-### After (Simple)
-```tsx
-test('something works', () => {
-  const mockPb = createMockPocketBase();
-  mockPb.collection().getList.mockResolvedValue({ items: [] });
-  // Test the actual behavior
-});
-```
-
-The new approach focuses on what matters: testing that the application works correctly for users.
+This approach prioritizes:
+- **User-focused testing** - Tests simulate real user interactions
+- **Minimal boilerplate** - Simple, reusable utilities
+- **Fast execution** - Optimized configuration for speed
+- **Clear intent** - Tests read like user stories
+- **Maintainability** - Easy to understand and modify
