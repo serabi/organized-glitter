@@ -13,7 +13,7 @@ import { createLogger } from '@/utils/secureLogger';
 import { useUserTimezone } from '@/hooks/useUserTimezone';
 import { ClientResponseError } from 'pocketbase';
 import type { ProjectUpdatePayload, ProjectFormWithFile } from '@/types/file-upload';
-import { mapFormDataToPocketBase } from '@/utils/field-mapping';
+import { mapFormDataToPocketBase, resolveCompanyAndArtistIds } from '@/utils/field-mapping';
 import {
   buildFormDataForUpdate,
   validateFormDataForUpdate,
@@ -64,6 +64,39 @@ export const useProjectUpdateUnified = () => {
           const { toUserDateString } = await import('@/utils/timezoneUtils');
           mappedData.date_completed = toUserDateString(new Date(), userTimezone);
           logger.debug('Auto-setting date_completed for completed project');
+        }
+
+        // CRITICAL FIX: Resolve company and artist names to IDs
+        // This fixes the issue where artist/company names weren't being saved
+        if (user?.id && (mappedData.company || mappedData.artist)) {
+          logger.debug('Resolving company and artist names to IDs', {
+            company: mappedData.company,
+            artist: mappedData.artist,
+            userId: user.id,
+          });
+
+          const { companyId, artistId } = await resolveCompanyAndArtistIds(
+            mappedData.company as string,
+            mappedData.artist as string,
+            user.id
+          );
+
+          // Update mappedData with resolved IDs
+          if (companyId) {
+            mappedData.company = companyId;
+            logger.debug('Resolved company to ID', { companyId });
+          } else {
+            delete mappedData.company; // Remove if not found
+            logger.debug('Company not found, removing from update');
+          }
+
+          if (artistId) {
+            mappedData.artist = artistId;
+            logger.debug('Resolved artist to ID', { artistId });
+          } else {
+            delete mappedData.artist; // Remove if not found
+            logger.debug('Artist not found, removing from update');
+          }
         }
 
         // Use the new FormData builder with proper type handling

@@ -7,6 +7,7 @@ import type { ProjectFormValues } from '@/types/shared';
 import type { ProjectUpdateData } from '@/types/file-upload';
 import { toUserDateString } from '@/utils/timezoneUtils';
 import { createLogger } from '@/utils/secureLogger';
+import { pb } from '@/lib/pocketbase';
 
 const fieldMappingLogger = createLogger('FieldMapping');
 
@@ -57,16 +58,7 @@ export function mapFormDataToPocketBase(
     return result;
   };
 
-  // Helper function to check if a value looks like a PocketBase ID (15 characters)
-  const isValidPocketBaseId = (value: string | undefined): boolean => {
-    return typeof value === 'string' && value.length === 15 && /^[a-zA-Z0-9]+$/.test(value);
-  };
 
-  // Helper function to handle relation fields - only include if they look like valid IDs
-  const safeRelationId = (value: string | undefined): string | undefined => {
-    if (!value || value === '' || value === 'N/A') return undefined;
-    return isValidPocketBaseId(value) ? value : undefined;
-  };
 
   // Log the input form data for debugging
   fieldMappingLogger.debug('🔄 Starting field mapping', {
@@ -109,16 +101,15 @@ export function mapFormDataToPocketBase(
     },
   });
 
-  // Only include company and artist if they are valid PocketBase IDs
-  const companyId = safeRelationId(formData.company);
-  const artistId = safeRelationId(formData.artist);
-
-  if (companyId) {
-    result.company = companyId;
+  // Handle company and artist - they may be names or IDs
+  // For now, we'll store the values as-is and let the mutation resolve them
+  // This maintains backward compatibility while we add name-to-ID resolution
+  if (formData.company && formData.company !== '' && formData.company !== 'N/A') {
+    result.company = formData.company;
   }
 
-  if (artistId) {
-    result.artist = artistId;
+  if (formData.artist && formData.artist !== '' && formData.artist !== 'N/A') {
+    result.artist = formData.artist;
   }
 
   return result;
@@ -189,4 +180,77 @@ export function snakeToCamelCase(obj: Record<string, unknown>): Record<string, u
   }
 
   return result;
+}
+
+/**
+ * Resolves company and artist names to their corresponding PocketBase IDs
+ * @param companyName - Company name to resolve (can be empty, ID, or name)
+ * @param artistName - Artist name to resolve (can be empty, ID, or name)
+ * @param userId - Current user ID for filtering
+ * @returns Promise with resolved IDs or null if not found
+ */
+export async function resolveCompanyAndArtistIds(
+  companyName: string | undefined,
+  artistName: string | undefined,
+  userId: string
+): Promise<{ companyId: string | null; artistId: string | null }> {
+  const logger = createLogger('resolveCompanyAndArtistIds');
+
+  let companyId: string | null = null;
+  let artistId: string | null = null;
+
+  // Resolve company name to ID if provided
+  if (companyName && companyName !== '' && companyName !== 'N/A') {
+    // Check if it's already a valid PocketBase ID
+    if (isValidPocketBaseId(companyName)) {
+      companyId = companyName;
+      logger.debug('Company is already an ID', { companyId });
+    } else {
+      // Try to resolve the name to an ID
+      try {
+        const companyRecord = await pb.collection('companies').getFirstListItem(
+          pb.filter('name = {:name} && user = {:user}', {
+            name: companyName,
+            user: userId,
+          })
+        );
+        companyId = companyRecord?.id || null;
+        logger.debug('Resolved company name to ID', { companyName, companyId });
+      } catch (error) {
+        logger.warn('Company not found, will be saved as null', { companyName, error });
+        companyId = null;
+      }
+    }
+  }
+
+  // Resolve artist name to ID if provided
+  if (artistName && artistName !== '' && artistName !== 'N/A') {
+    // Check if it's already a valid PocketBase ID
+    if (isValidPocketBaseId(artistName)) {
+      artistId = artistName;
+      logger.debug('Artist is already an ID', { artistId });
+    } else {
+      // Try to resolve the name to an ID
+      try {
+        const artistRecord = await pb.collection('artists').getFirstListItem(
+          pb.filter('name = {:name} && user = {:user}', {
+            name: artistName,
+            user: userId,
+          })
+        );
+        artistId = artistRecord?.id || null;
+        logger.debug('Resolved artist name to ID', { artistName, artistId });
+      } catch (error) {
+        logger.warn('Artist not found, will be saved as null', { artistName, error });
+        artistId = null;
+      }
+    }
+  }
+
+  return { companyId, artistId };
+
+  // Helper function to check if a value looks like a PocketBase ID (15 characters)
+  function isValidPocketBaseId(value: string | undefined): boolean {
+    return typeof value === 'string' && value.length === 15 && /^[a-zA-Z0-9]+$/.test(value);
+  }
 }
