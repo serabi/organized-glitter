@@ -55,6 +55,28 @@ const CompanySelect = React.memo(
         .map(company => company.toLowerCase().trim());
     }, [companies]);
 
+    // Deduplicate companies list to handle database duplicates (e.g., multiple "Other" records)
+    const deduplicatedCompanies = useMemo(() => {
+      if (!Array.isArray(companies)) {
+        return [];
+      }
+
+      const seen = new Set<string>();
+      const deduplicated: string[] = [];
+
+      for (const company of companies) {
+        if (company && typeof company === 'string') {
+          const normalized = company.toLowerCase().trim();
+          if (!seen.has(normalized)) {
+            seen.add(normalized);
+            deduplicated.push(company);
+          }
+        }
+      }
+
+      return deduplicated;
+    }, [companies]);
+
     const handleAddCompany = useCallback(
       async (e: React.FormEvent) => {
         e.preventDefault();
@@ -120,16 +142,14 @@ const CompanySelect = React.memo(
                   <SelectValue placeholder="Select a company" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover dark:bg-gray-800 dark:text-gray-100">
-                  <SelectItem value="none">None</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                  {Array.isArray(companies) && companies.length > 0 ? (
-                    companies
-                      .filter(company => company && typeof company === 'string')
-                      .map(company => (
-                        <SelectItem key={company} value={company}>
-                          {company}
-                        </SelectItem>
-                      ))
+                  <SelectItem value="None">None</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                  {deduplicatedCompanies.length > 0 ? (
+                    deduplicatedCompanies.map(company => (
+                      <SelectItem key={company} value={company}>
+                        {company}
+                      </SelectItem>
+                    ))
                   ) : (
                     <SelectItem value="no-companies" disabled>
                       No companies found (click + to add)

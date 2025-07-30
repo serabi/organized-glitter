@@ -8,6 +8,7 @@ import { useNavigateToProject } from '@/hooks/useNavigateToProject';
 import { createLogger } from '@/utils/secureLogger';
 import { ClientResponseError } from 'pocketbase';
 import { TagService } from '@/lib/tags';
+import { resolveCompanyAndArtistIds } from '@/utils/field-mapping';
 
 const logger = createLogger('useCreateProjectWithRedirect');
 
@@ -42,37 +43,20 @@ export const useCreateProjectWithRedirect = () => {
     mutationFn: async (data: CreateProjectData): Promise<ProjectsResponse> => {
       logger.debug('Creating project with redirect:', data);
 
-      // Resolve company and artist names to IDs if they are provided
-      let companyId = null;
-      let artistId = null;
+      // CRITICAL FIX: Use centralized company and artist name resolution
+      // This ensures consistency with the update mutation and fixes the saving issue
+      const { companyId, artistId } = await resolveCompanyAndArtistIds(
+        data.company,
+        data.artist,
+        data.user
+      );
 
-      if (data.company) {
-        try {
-          const companyRecord = await pb
-            .collection('companies')
-            .getFirstListItem(
-              pb.filter('name = {:name} && user = {:user}', { name: data.company, user: data.user })
-            );
-          companyId = companyRecord?.id || null;
-        } catch (_error) {
-          logger.warn('Company not found:', data.company);
-          companyId = null;
-        }
-      }
-
-      if (data.artist) {
-        try {
-          const artistRecord = await pb
-            .collection('artists')
-            .getFirstListItem(
-              pb.filter('name = {:name} && user = {:user}', { name: data.artist, user: data.user })
-            );
-          artistId = artistRecord?.id || null;
-        } catch (_error) {
-          logger.warn('Artist not found:', data.artist);
-          artistId = null;
-        }
-      }
+      logger.debug('Resolved company and artist names to IDs', {
+        company: data.company,
+        artist: data.artist,
+        companyId,
+        artistId,
+      });
 
       // Create FormData for file upload if image is present
       const formData = new FormData();
@@ -91,12 +75,19 @@ export const useCreateProjectWithRedirect = () => {
         }
       });
 
-      // Add resolved company and artist IDs
+      // Add resolved company and artist IDs (only if resolved successfully)
       if (companyId) {
         formData.append('company', companyId);
+        logger.debug('Added resolved company ID to FormData', { companyId });
+      } else if (data.company) {
+        logger.debug('Company not found, excluding from FormData', { company: data.company });
       }
+
       if (artistId) {
         formData.append('artist', artistId);
+        logger.debug('Added resolved artist ID to FormData', { artistId });
+      } else if (data.artist) {
+        logger.debug('Artist not found, excluding from FormData', { artist: data.artist });
       }
 
       // Ensure kit_category always has a value since it's required in PocketBase

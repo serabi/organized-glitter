@@ -8,6 +8,24 @@ interface ProjectDetailsProps {
   onStatusChange?: (status: ProjectStatus) => void;
 }
 
+/**
+ * Smart display helper for company/artist names
+ * Handles cases where expand failed but we have an ID that represents a special value
+ */
+const getDisplayName = (name: string | undefined, fallbackLabel: string): string => {
+  if (!name) {
+    return 'Not specified';
+  }
+
+  // If we have a name, use it
+  if (name && name !== 'undefined' && name !== 'null') {
+    return name;
+  }
+
+  // Fallback for failed expand operations
+  return fallbackLabel;
+};
+
 const ProjectDetails = ({ project, onStatusChange }: ProjectDetailsProps) => {
   return (
     <div className="space-y-5">
@@ -21,11 +39,15 @@ const ProjectDetails = ({ project, onStatusChange }: ProjectDetailsProps) => {
       <div className="space-y-3">
         <div>
           <h3 className="text-sm font-medium text-muted-foreground">Company</h3>
-          <p className="font-medium text-foreground">{project.company || 'Not specified'}</p>
+          <p className="font-medium text-foreground">
+            {getDisplayName(project.company, 'Company not specified')}
+          </p>
         </div>
         <div>
           <h3 className="text-sm font-medium text-muted-foreground">Artist</h3>
-          <p className="font-medium text-foreground">{project.artist || 'Not specified'}</p>
+          <p className="font-medium text-foreground">
+            {getDisplayName(project.artist, 'Artist not specified')}
+          </p>
         </div>
         <div>
           <h3 className="text-sm font-medium text-muted-foreground">Dimensions</h3>
