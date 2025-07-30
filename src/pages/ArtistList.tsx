@@ -40,6 +40,7 @@ const ArtistList = () => {
         timestamp: new Date().toISOString(),
       });
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only effect capturing initial state values
   }, []);
 
   // Log when artists data changes
@@ -51,7 +52,7 @@ const ArtistList = () => {
         timestamp: new Date().toISOString(),
       });
     }
-  }, [artists.length, loading]);
+  }, [artists.length, loading, error]);
 
   // Handle errors from React Query
   useEffect(() => {

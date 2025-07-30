@@ -79,7 +79,7 @@ const resizeImage = async (
     try {
       objectUrl = URL.createObjectURL(file); // Store the object URL
       img.src = objectUrl;
-    } catch (urlError) {
+    } catch (_urlError) {
       if (objectUrl) {
         URL.revokeObjectURL(objectUrl); // Revoke URL on error
       }

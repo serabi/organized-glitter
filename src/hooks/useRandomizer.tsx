@@ -5,7 +5,7 @@
  * Handles project selection, wheel spinning, result recording, and data synchronization
  * with the backend. Integrates multiple React Query hooks and provides a unified API.
  *
- * @author Generated with Claude Code
+ * @author @serabi
  * @version 1.0.0
  * @since 2024-06-28
  */

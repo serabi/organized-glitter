@@ -111,7 +111,7 @@ const NewProject = () => {
       if (data.company && data.company !== 'other' && !companyNames.includes(data.company)) {
         try {
           await createCompanyMutation.mutateAsync({ name: data.company });
-        } catch (error) {
+        } catch (_error) {
           metadataErrors.push(`Failed to create company "${data.company}"`);
         }
       }
@@ -124,7 +124,7 @@ const NewProject = () => {
       ) {
         try {
           await createArtistMutation.mutateAsync({ name: data.artist });
-        } catch (error) {
+        } catch (_error) {
           metadataErrors.push(`Failed to create artist "${data.artist}"`);
         }
       }

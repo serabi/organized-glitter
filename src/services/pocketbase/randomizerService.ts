@@ -140,10 +140,12 @@ export function isRandomizerError(error: unknown): error is RandomizerError {
     'type' in error &&
     'canRetry' in error &&
     'suggestedAction' in error &&
-    typeof (error as any).type === 'string' &&
-    typeof (error as any).canRetry === 'boolean' &&
-    typeof (error as any).suggestedAction === 'string' &&
-    Object.values(RandomizerErrorType).includes((error as any).type)
+    typeof (error as { type?: unknown }).type === 'string' &&
+    typeof (error as { canRetry?: unknown }).canRetry === 'boolean' &&
+    typeof (error as { suggestedAction?: unknown }).suggestedAction === 'string' &&
+    Object.values(RandomizerErrorType).includes(
+      (error as { type?: RandomizerErrorType }).type as RandomizerErrorType
+    )
   );
 }
 
@@ -1487,8 +1489,8 @@ export async function validateRandomizerCollection(): Promise<ValidationResult> 
             ];
             const missingFields = requiredFields.filter(
               field =>
-                (errorData as any)[field] &&
-                (errorData as any)[field].code === 'validation_required'
+                (errorData as Record<string, { code?: string }>)[field]?.code ===
+                'validation_required'
             );
 
             if (missingFields.length === 0) {
@@ -1498,7 +1500,10 @@ export async function validateRandomizerCollection(): Promise<ValidationResult> 
             }
 
             // Check if new optional fields are recognized
-            if (!(errorData as any).project_company && !(errorData as any).project_artist) {
+            if (
+              !(errorData as Record<string, unknown>).project_company &&
+              !(errorData as Record<string, unknown>).project_artist
+            ) {
               // Fields are likely present if no validation errors for them
               logger.debug(
                 'Optional fields (project_company, project_artist) appear to be configured'
@@ -1535,7 +1540,7 @@ export async function validateRandomizerCollection(): Promise<ValidationResult> 
         hasIndexes = true;
       } catch (error: unknown) {
         issues.push(
-          `Failed to validate collection configuration: ${(error as any)?.message || 'Unknown error'}`
+          `Failed to validate collection configuration: ${(error as { message?: string })?.message || 'Unknown error'}`
         );
       }
     }

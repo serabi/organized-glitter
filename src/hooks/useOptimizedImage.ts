@@ -184,9 +184,9 @@ export const useProgressiveImage = ({
     loadNextQuality,
     prefetchHighQuality,
     prefetchMediumQuality,
-    originalUrl: (progressiveUrls as any)?.original || '',
+    originalUrl: (progressiveUrls as Record<string, string>)?.original || '',
     hasMediumQuality: !!(progressiveUrls as Record<string, string>).medium,
-    hasOriginal: !!(progressiveUrls as any)?.original,
+    hasOriginal: !!(progressiveUrls as Record<string, string>)?.original,
   };
 };
 

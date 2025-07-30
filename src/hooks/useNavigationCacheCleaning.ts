@@ -158,7 +158,7 @@ export function useCacheCleaning() {
       const now = Date.now();
       const removedQueries = queryClient.removeQueries({
         predicate: query => {
-          const staleTime = (query.options as any)?.staleTime ?? 0;
+          const staleTime = (query.options as { staleTime?: number })?.staleTime ?? 0;
           const dataUpdatedAt = query.state.dataUpdatedAt;
           return now - dataUpdatedAt > Math.max(staleTime, staleTimeMs);
         },

@@ -399,7 +399,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
               })
             );
             companyId = companyRecord?.id || null;
-          } catch (error) {
+          } catch (_error) {
             logger.warn('Company not found:', dataToSubmit.company);
             toast({
               title: 'Company Not Found',
@@ -419,7 +419,7 @@ export const useEditProjectSimplified = (projectId: string | undefined) => {
               })
             );
             artistId = artistRecord?.id || null;
-          } catch (error) {
+          } catch (_error) {
             logger.warn('Artist not found:', dataToSubmit.artist);
             toast({
               title: 'Artist Not Found',

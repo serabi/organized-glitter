@@ -78,7 +78,10 @@ export async function uploadUserAvatar(file: File, userId: string) {
 /**
  * Example: Get file URL with thumbnail
  */
-export function getProjectImageUrl(project: any, size: 'thumbnail' | 'card' | 'full' = 'card') {
+export function getProjectImageUrl(
+  project: { id: string; image?: string },
+  size: 'thumbnail' | 'card' | 'full' = 'card'
+) {
   const thumbSizes = {
     thumbnail: '150x150',
     card: '300x200f',

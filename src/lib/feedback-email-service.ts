@@ -188,7 +188,7 @@ Technical Error: ${error instanceof Error ? error.message : String(error)}
         emailId: 'mailto-fallback',
         note: 'API failed, opened your default email client as fallback.',
       };
-    } catch (fallbackError) {
+    } catch (_fallbackError) {
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error),

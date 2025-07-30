@@ -11,7 +11,7 @@
  * - Authentication validation for all operations
  * - SQL injection prevention through FilterBuilder utility
  *
- * @author Generated with Claude Code
+ * @author @serabi
  * @version 1.0.0
  * @since 2024-06-29
  */
@@ -220,7 +220,7 @@ export class TagService {
           if (existingTag.user !== userId) {
             return createErrorResponse(new Error('Unauthorized access to tag'));
           }
-        } catch (error) {
+        } catch (_error) {
           return createErrorResponse(new Error('Tag not found or access denied'));
         }
 
@@ -288,7 +288,7 @@ export class TagService {
           if (existingTag.user !== userId) {
             return createErrorResponse(new Error('Unauthorized access to tag'));
           }
-        } catch (error) {
+        } catch (_error) {
           return createErrorResponse(new Error('Tag not found or access denied'));
         }
 
@@ -408,7 +408,7 @@ export class TagService {
           if (tag.user !== userId) {
             return createErrorResponse(new Error('Unauthorized access to tag'));
           }
-        } catch (error) {
+        } catch (_error) {
           return createErrorResponse(new Error('Tag not found or access denied'));
         }
 

@@ -6,7 +6,7 @@
  * managing spin history. Features responsive design, accessibility support,
  * and comprehensive error handling.
  *
- * @author Generated with Claude Code
+ * @author @serabi
  * @version 1.0.0
  * @since 2025-06-28
  */

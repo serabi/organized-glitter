@@ -5,7 +5,7 @@
  * username changes, password management, and account deletion.
  * Uses secure FilterBuilder utility for PocketBase queries to prevent SQL injection.
  *
- * @author Generated with Claude Code
+ * @author @serabi
  * @version 1.0.0
  * @since 2024-06-29
  */

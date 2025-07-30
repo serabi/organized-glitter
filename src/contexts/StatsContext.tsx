@@ -246,7 +246,7 @@ export const StatsProvider: React.FC<StatsProviderProps> = ({ children }) => {
   const shouldShowLoading = !isInitialized || isLoadingProjects;
 
   // Create stable statusCounts signature to prevent unnecessary recalculations
-  const statusCountsSignature = useMemo(() => {
+  const _statusCountsSignature = useMemo(() => {
     if (!statusCounts) return null;
     return `${statusCounts.wishlist}-${statusCounts.purchased}-${statusCounts.stash}-${statusCounts.progress}-${statusCounts.completed}-${statusCounts.destashed}-${statusCounts.archived}`;
   }, [statusCounts]);
@@ -307,7 +307,7 @@ export const StatsProvider: React.FC<StatsProviderProps> = ({ children }) => {
   }, [
     isInitialized,
     isLoadingProjects,
-    statusCountsSignature, // Use signature instead of statusCounts object
+    statusCounts, // Direct dependency since used in computation
     totalItems,
     errorProjects,
     isNetworkSlow,

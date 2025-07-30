@@ -17,7 +17,7 @@ const NotFound = () => {
       timestamp: new Date().toISOString(),
       userAgent: navigator.userAgent.substring(0, 100),
     });
-  }, [location.pathname]);
+  }, [location.pathname, location.search, location.hash, location.state]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100">

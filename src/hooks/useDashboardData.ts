@@ -93,7 +93,7 @@ export const useDashboardData = (
     filters.includeArchived,
     filters.includeWishlist,
     debouncedSearchTerm,
-    selectedTagsSignature, // Use signature instead of array reference
+    filters.selectedTags, // Direct dependency since used in computation
   ]);
 
   // Use render guard to track excessive re-renders (lowered threshold after optimizations)
@@ -137,6 +137,9 @@ export const useDashboardData = (
     selectedTagsSignature,
     filters.activeStatus,
     filters.currentPage,
+    serverFilters,
+    allCompanies?.length,
+    allArtists?.length,
   ]);
 
   // Stabilize all useProjects parameters in a single memoized object

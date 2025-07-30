@@ -109,31 +109,14 @@ export function useIsTouchDevice() {
 }
 
 // New convenience hooks for enhanced breakpoint detection
-export function useIsTablet() {
-  const { isTablet } = useMobileDevice();
-  return isTablet;
-}
-
-export function useIsLandscape() {
-  const { isLandscape } = useMobileDevice();
-  return isLandscape;
-}
-
-export function useScreenSize() {
-  const { screenSize } = useMobileDevice();
-  return screenSize;
-}
 
 export function useWindowSize() {
   const { width, height } = useMobileDevice();
   return { width, height };
 }
 
-// Hook for checking specific breakpoints
-export function useBreakpoint(breakpoint: keyof typeof BREAKPOINTS) {
-  const { width } = useMobileDevice();
-  return width >= BREAKPOINTS[breakpoint];
-}
+// Descriptive aliases for better semantic clarity
+export { useWindowSize as useWindowDimensions };
+export { useMobileDevice as useViewportInfo };
 
-// Export breakpoints for external use
-export { BREAKPOINTS };
+// Hook for checking specific breakpoints
