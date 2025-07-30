@@ -181,7 +181,99 @@ export function snakeToCamelCase(obj: Record<string, unknown>): Record<string, u
 }
 
 /**
+ * Cache for user-specific special records to avoid repeated database calls
+ */
+const specialRecordsCache = new Map<
+  string,
+  { companies: Map<string, string>; artists: Map<string, string> }
+>();
+
+/**
+ * Helper function to get or create special records for a user
+ * @param userId - User ID to create records for
+ * @param recordType - Either 'companies' or 'artists'
+ * @param specialNames - Array of special names to ensure exist
+ * @returns Promise with map of special names to their IDs
+ */
+async function ensureSpecialRecords(
+  userId: string,
+  recordType: 'companies' | 'artists',
+  specialNames: string[]
+): Promise<Map<string, string>> {
+  const logger = createLogger('ensureSpecialRecords');
+
+  // Check cache first
+  if (!specialRecordsCache.has(userId)) {
+    specialRecordsCache.set(userId, { companies: new Map(), artists: new Map() });
+  }
+
+  const userCache = specialRecordsCache.get(userId)!;
+  const typeCache = userCache[recordType];
+
+  // Check if we already have all the special names cached
+  const missingNames = specialNames.filter(name => !typeCache.has(name));
+
+  if (missingNames.length === 0) {
+    logger.debug(`All special ${recordType} records cached for user`, { userId, specialNames });
+    return typeCache;
+  }
+
+  // Fetch existing special records from database
+  try {
+    // Build OR conditions for each special name (PocketBase doesn't support 'in' with arrays properly)
+    const nameConditions = specialNames.map((_, index) => `name = {:name${index}}`).join(' || ');
+    const filterParams: Record<string, string> = { user: userId };
+    specialNames.forEach((name, index) => {
+      filterParams[`name${index}`] = name;
+    });
+
+    const existingRecords = await pb.collection(recordType).getFullList({
+      filter: pb.filter(`user = {:user} && (${nameConditions})`, filterParams),
+    });
+
+    // Update cache with existing records
+    existingRecords.forEach(record => {
+      typeCache.set(record.name, record.id);
+      logger.debug(`Found existing special ${recordType.slice(0, -1)} record`, {
+        name: record.name,
+        id: record.id,
+      });
+    });
+
+    // Create missing records
+    const stillMissingNames = specialNames.filter(name => !typeCache.has(name));
+
+    for (const name of stillMissingNames) {
+      try {
+        logger.debug(`Creating special ${recordType.slice(0, -1)} record`, { name, userId });
+        const newRecord = await pb.collection(recordType).create({
+          name,
+          user: userId,
+        });
+
+        typeCache.set(name, newRecord.id);
+        logger.info(`✅ Created special ${recordType.slice(0, -1)} record`, {
+          name,
+          id: newRecord.id,
+        });
+      } catch (createError) {
+        logger.error(`Failed to create special ${recordType.slice(0, -1)} record`, {
+          name,
+          createError,
+        });
+        // Continue with other records even if one fails
+      }
+    }
+  } catch (error) {
+    logger.error(`Failed to fetch existing special ${recordType} records`, { userId, error });
+  }
+
+  return typeCache;
+}
+
+/**
  * Resolves company and artist names to their corresponding PocketBase IDs
+ * Auto-creates user-specific special records ("Other", "None", "Unknown") as needed
  * @param companyName - Company name to resolve (can be empty, ID, or name)
  * @param artistName - Artist name to resolve (can be empty, ID, or name)
  * @param userId - Current user ID for filtering
@@ -197,14 +289,24 @@ export async function resolveCompanyAndArtistIds(
   let companyId: string | null = null;
   let artistId: string | null = null;
 
+  // Define special values that need database records
+  const specialCompanyNames = ['Other', 'None'];
+  const specialArtistNames = ['Other', 'Unknown'];
+
+  // Ensure special records exist for this user
+  await Promise.all([
+    ensureSpecialRecords(userId, 'companies', specialCompanyNames),
+    ensureSpecialRecords(userId, 'artists', specialArtistNames),
+  ]);
+
   // Resolve company name to ID if provided
   if (companyName && companyName !== '' && companyName !== 'N/A') {
-    // Check if it's already a valid PocketBase ID
     if (isValidPocketBaseId(companyName)) {
+      // Check if it's already a valid PocketBase ID
       companyId = companyName;
       logger.debug('Company is already an ID', { companyId });
     } else {
-      // Try to resolve the name to an ID
+      // Try to resolve the name to an ID (including special names)
       try {
         const companyRecord = await pb.collection('companies').getFirstListItem(
           pb.filter('name = {:name} && user = {:user}', {
@@ -223,12 +325,12 @@ export async function resolveCompanyAndArtistIds(
 
   // Resolve artist name to ID if provided
   if (artistName && artistName !== '' && artistName !== 'N/A') {
-    // Check if it's already a valid PocketBase ID
     if (isValidPocketBaseId(artistName)) {
+      // Check if it's already a valid PocketBase ID
       artistId = artistName;
       logger.debug('Artist is already an ID', { artistId });
     } else {
-      // Try to resolve the name to an ID
+      // Try to resolve the name to an ID (including special names)
       try {
         const artistRecord = await pb.collection('artists').getFirstListItem(
           pb.filter('name = {:name} && user = {:user}', {

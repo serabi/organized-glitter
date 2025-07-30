@@ -57,6 +57,28 @@ const ArtistSelect = React.memo(
         .map(artist => artist.toLowerCase().trim());
     }, [artists]);
 
+    // Deduplicate artists list to handle database duplicates (e.g., multiple "Other" records)
+    const deduplicatedArtists = useMemo(() => {
+      if (!Array.isArray(artists)) {
+        return [];
+      }
+
+      const seen = new Set<string>();
+      const deduplicated: string[] = [];
+
+      for (const artist of artists) {
+        if (artist && typeof artist === 'string') {
+          const normalized = artist.toLowerCase().trim();
+          if (!seen.has(normalized)) {
+            seen.add(normalized);
+            deduplicated.push(artist);
+          }
+        }
+      }
+
+      return deduplicated;
+    }, [artists]);
+
     const handleAddArtist = useCallback(
       async (e: React.FormEvent) => {
         e.preventDefault();
@@ -125,16 +147,14 @@ const ArtistSelect = React.memo(
                   <SelectValue placeholder="Select artist" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover dark:bg-gray-800 dark:text-gray-100">
-                  <SelectItem value="unknown">Unknown</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                  {Array.isArray(artists) && artists.length > 0 ? (
-                    artists
-                      .filter(artist => artist && typeof artist === 'string')
-                      .map(artist => (
-                        <SelectItem key={artist} value={artist}>
-                          {artist}
-                        </SelectItem>
-                      ))
+                  <SelectItem value="Unknown">Unknown</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                  {deduplicatedArtists.length > 0 ? (
+                    deduplicatedArtists.map(artist => (
+                      <SelectItem key={artist} value={artist}>
+                        {artist}
+                      </SelectItem>
+                    ))
                   ) : (
                     <SelectItem value="no-artists" disabled>
                       No artists found (click + to add)

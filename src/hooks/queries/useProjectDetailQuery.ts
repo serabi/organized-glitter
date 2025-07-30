@@ -198,13 +198,30 @@ const fetchProjectDetail = async (
   // Progress notes are now fetched separately by the ProgressNotes component
   // This eliminates duplicate fetching and improves loading performance
 
+  // Helper function to clean up expanded names (handles corrupted/concatenated values)
+  const cleanExpandedName = (expandedName: string | undefined): string | undefined => {
+    if (!expandedName) return undefined;
+
+    // Handle concatenated duplicates like "OtherOther" -> "Other"
+    const knownSpecialValues = ['Other', 'None', 'Unknown'];
+    for (const special of knownSpecialValues) {
+      // Check if the string is a repeated special value
+      const pattern = new RegExp(`^(${special})+$`, 'i');
+      if (pattern.test(expandedName)) {
+        return special;
+      }
+    }
+
+    return expandedName;
+  };
+
   // Convert to ProjectType
   const projectData: ProjectType = {
     id: projectRecord.id,
     userId: projectRecord.user,
     title: projectRecord.title || 'Untitled Project',
-    company: projectRecord.expand?.company?.name || undefined,
-    artist: projectRecord.expand?.artist?.name || undefined,
+    company: cleanExpandedName(projectRecord.expand?.company?.name),
+    artist: cleanExpandedName(projectRecord.expand?.artist?.name),
     width: projectRecord.width || undefined,
     height: projectRecord.height || undefined,
     drillShape: projectRecord.drill_shape || undefined,
