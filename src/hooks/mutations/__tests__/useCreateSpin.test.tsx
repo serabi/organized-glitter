@@ -30,7 +30,12 @@ vi.doMock('@/hooks/use-toast', () => ({
 vi.doMock('@/hooks/queries/useSpinHistory', () => ({
   randomizerQueryKeys: {
     all: ['randomizer'],
-    history: vi.fn((userId: string, options?: object) => ['randomizer', 'history', userId, options]),
+    history: vi.fn((userId: string, options?: object) => [
+      'randomizer',
+      'history',
+      userId,
+      options,
+    ]),
     count: vi.fn((userId: string) => ['randomizer', 'count', userId]),
   },
 }));
@@ -87,13 +92,15 @@ describe('useCreateSpin hook', () => {
       expect(result.current.isSuccess).toBe(true);
     });
 
-    expect(mockCreateSpinEnhanced).toHaveBeenCalledWith(expect.objectContaining({
-      user: spinParams.user,
-      project: spinParams.project,
-      project_title: spinParams.project_title,
-      selected_projects: spinParams.selected_projects,
-      metadata: expect.any(Object),
-    }));
+    expect(mockCreateSpinEnhanced).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user: spinParams.user,
+        project: spinParams.project,
+        project_title: spinParams.project_title,
+        selected_projects: spinParams.selected_projects,
+        metadata: expect.any(Object),
+      })
+    );
     expect(result.current.data).toEqual(mockResponse);
   });
 
@@ -112,9 +119,12 @@ describe('useCreateSpin hook', () => {
       });
     });
 
-    await waitFor(() => {
-      expect(result.current.isError).toBe(true);
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(result.current.isError).toBe(true);
+      },
+      { timeout: 3000 }
+    );
 
     expect(result.current.error).toBe(mockError);
     expect(result.current.isSuccess).toBe(false);
@@ -134,7 +144,7 @@ describe('useCreateSpin hook', () => {
       result.current.mutate({
         user: 'test-user-id',
         project: 'test-project-id',
-        project_title: 'Test Project',  
+        project_title: 'Test Project',
         selected_projects: ['project-1'],
       });
     });
@@ -212,9 +222,12 @@ describe('useCreateSpin hook', () => {
       result.current.mutate(spinParams);
     });
 
-    await waitFor(() => {
-      expect(result.current.isError).toBe(true);
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(result.current.isError).toBe(true);
+      },
+      { timeout: 3000 }
+    );
 
     expect(mockToast).toHaveBeenCalledWith({
       title: 'Action Required',

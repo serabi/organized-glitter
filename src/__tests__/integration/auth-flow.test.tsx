@@ -33,12 +33,12 @@ const AuthTestComponent = () => {
 
       // Simple validation
       if (email === 'test@example.com' && password === 'password') {
-        setUser({ 
-          id: 'user-123', 
-          email, 
+        setUser({
+          id: 'user-123',
+          email,
           name: 'Test User',
           created: new Date().toISOString(),
-          updated: new Date().toISOString()
+          updated: new Date().toISOString(),
         } as PocketBaseUser);
       } else {
         throw new Error('Invalid credentials');

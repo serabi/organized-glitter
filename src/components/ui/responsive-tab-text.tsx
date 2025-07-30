@@ -46,6 +46,4 @@ const ResponsiveTabText = ({
   );
 };
 
-
-
 export default ResponsiveTabText;

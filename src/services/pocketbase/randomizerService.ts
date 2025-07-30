@@ -143,7 +143,9 @@ export function isRandomizerError(error: unknown): error is RandomizerError {
     typeof (error as { type?: unknown }).type === 'string' &&
     typeof (error as { canRetry?: unknown }).canRetry === 'boolean' &&
     typeof (error as { suggestedAction?: unknown }).suggestedAction === 'string' &&
-    Object.values(RandomizerErrorType).includes((error as { type?: RandomizerErrorType }).type as RandomizerErrorType)
+    Object.values(RandomizerErrorType).includes(
+      (error as { type?: RandomizerErrorType }).type as RandomizerErrorType
+    )
   );
 }
 
@@ -1487,7 +1489,8 @@ export async function validateRandomizerCollection(): Promise<ValidationResult> 
             ];
             const missingFields = requiredFields.filter(
               field =>
-                (errorData as Record<string, { code?: string }>)[field]?.code === 'validation_required'
+                (errorData as Record<string, { code?: string }>)[field]?.code ===
+                'validation_required'
             );
 
             if (missingFields.length === 0) {
@@ -1497,7 +1500,10 @@ export async function validateRandomizerCollection(): Promise<ValidationResult> 
             }
 
             // Check if new optional fields are recognized
-            if (!(errorData as Record<string, unknown>).project_company && !(errorData as Record<string, unknown>).project_artist) {
+            if (
+              !(errorData as Record<string, unknown>).project_company &&
+              !(errorData as Record<string, unknown>).project_artist
+            ) {
               // Fields are likely present if no validation errors for them
               logger.debug(
                 'Optional fields (project_company, project_artist) appear to be configured'

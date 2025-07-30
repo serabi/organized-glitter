@@ -110,8 +110,6 @@ export function useIsTouchDevice() {
 
 // New convenience hooks for enhanced breakpoint detection
 
-
-
 export function useWindowSize() {
   const { width, height } = useMobileDevice();
   return { width, height };
@@ -122,4 +120,3 @@ export { useWindowSize as useWindowDimensions };
 export { useMobileDevice as useViewportInfo };
 
 // Hook for checking specific breakpoints
-

@@ -94,7 +94,6 @@ export interface MultipleSelectorRef {
   reset: () => void;
 }
 
-
 function transToGroupOption(options: Option[], groupBy?: string) {
   if (options.length === 0) {
     return {};
