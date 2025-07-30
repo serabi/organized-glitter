@@ -9,9 +9,10 @@ Currently built with React, TypeScript, and PocketBase.
 
 ## Core Features
 
-- **Responsive Design**: Goal: works seamlessly on desktop, tablet, and mobile devices
+- **Responsive Design**: Works seamlessly on desktop, tablet, and mobile devices with adaptive layouts
+- **Mobile-First Navigation**: Bottom navigation bar for mobile and tablet users
 - **Secure Authentication**: Email/password authentication with PocketBase Auth - everything should be fully secure, with data only available to the person who adds the data.
-- **Modern UI**: dark/light theme support
+- **Modern UI**: Dark/light theme support
 - **Cloud Storage**: Secure image and data storage with PocketBase, backed up to Cloudflare
 - **User-Centric**: Designed specifically for diamond painters by a diamond painter
 
@@ -50,6 +51,12 @@ Currently built with React, TypeScript, and PocketBase.
   - Individual account settings and preferences
   - Data export and account deletion options
   - Ability to sign in with Google or Discord
+
+## Security Features
+- **Data Privacy**: All user data is private and only accessible to the account owner
+- **Authentication Security**: Email/password and OAuth2 authentication with PocketBase Auth
+- **Image Security**: Secure image upload and storage with automatic compression
+
 
 ## Technology Stack
 
@@ -102,6 +109,7 @@ src/
 │   ├── overview/                 # Overview page sections
 │   ├── profile/                  # User profile components
 │   ├── projects/                 # Project-specific components
+│   ├── randomizer/               # Project randomizer wheel components
 │   ├── routing/                  # Application routing
 │   ├── tags/                     # Tag management components
 │   └── ui/                       # shadcn/ui base components
@@ -131,6 +139,7 @@ src/
 │   │   ├── progressNotesService.ts # Progress notes operations
 │   │   └── projectService.ts     # Project data operations
 │   └── auth.ts                   # Authentication service
+├── stores/                       # State management stores
 ├── styles/                       # CSS stylesheets
 ├── test-utils/                   # Testing utilities
 │   ├── factories/                # Data factories for tests
@@ -146,6 +155,7 @@ src/
     ├── csvImport.ts              # CSV import functionality
     ├── imageUtils.ts             # Image processing utilities
     ├── overviewStatsCalculator.ts # Overview statistics calculations
+    ├── secureLogger.ts           # logging utilities
     └── __tests__/                # Utility test files
 
 Root Level Structure:
@@ -161,7 +171,7 @@ Root Level Structure:
 
 ### Prerequisites
 
-- Node.js 18+ and npm
+- Node.js 22.x and npm 10.0.0+
 - Modern browser (Chrome, Firefox, Safari, Edge)
 
 ### Local PocketBase Setup
@@ -179,7 +189,7 @@ For local development, you'll need to set up your own PocketBase instance:
 
 1. **Download PocketBase**
 
-   Visit [PocketBase Downloads](https://pocketbase.io/docs/) and download PocketBase - OG currently runs on v0.28.3.
+   Visit [PocketBase Downloads](https://pocketbase.io/docs/) and download PocketBase - OG currently runs on v0.28.x 
 
 2. **Create a local PocketBase directory**
 
@@ -278,6 +288,22 @@ npm run format
 
 # Check if files are formatted correctly
 npm run format:check
+```
+
+### Performance & Bundle Analysis
+
+```bash
+# Build with bundle analysis
+npm run build:analyze
+
+# Monitor bundle size changes
+npm run bundle:monitor
+
+# Run performance benchmarks
+npm run perf:benchmark
+
+# Build and monitor bundle size
+npm run build:monitor
 ```
 
 ### Test Coverage

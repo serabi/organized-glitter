@@ -15,11 +15,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/organized-glitter.git"
+    "url": "https://github.com/serabi/organized-glitter.git"
   },
   "homepage": "https://organizedglitter.app",
   "bugs": {
-    "url": "https://github.com/your-username/organized-glitter/issues"
+    "url": "https://github.com/serabi/organized-glitter/issues"
   },
   "author": {
     "name": "Organized Glitter Team",
