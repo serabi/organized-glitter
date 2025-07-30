@@ -24,7 +24,7 @@ export function mapFormDataToPocketBase(
   // Helper function to safely parse integers
   const safeParseInt = (value: string | number | undefined): number | null => {
     if (value === undefined || value === null || value === '') return null;
-    const num = typeof value === 'string' ? parseInt(value, 10) : value;
+    const num = typeof value === 'string' ? Number(value) : value;
     return isNaN(num) ? null : num;
   };
 
