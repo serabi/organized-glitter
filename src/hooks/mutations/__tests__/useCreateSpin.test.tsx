@@ -1,17 +1,60 @@
 /**
- * Simplified tests for useCreateSpin hook
- * Tests mutation behavior with minimal setup
+ * Tests for useCreateSpin hook
+ * Tests actual hook behavior with real implementation
  * @author @serabi
  * @created 2025-07-29
  */
 
 import { describe, it, expect, vi, waitFor, act, renderHookWithProviders } from '@/test-utils';
-import { useMutation } from '@tanstack/react-query';
 
-// Create a simple mock for useCreateSpin behavior
-const useMockCreateSpin = (options = {}) => {
-  return useMutation({
-    mutationFn: vi.fn().mockResolvedValue({
+// Mock the dependencies
+const mockCreateSpinEnhanced = vi.fn();
+const mockToast = vi.fn();
+
+// Use doMock to avoid hoisting issues
+vi.doMock('@/services/pocketbase/randomizerService', () => ({
+  createSpinEnhanced: mockCreateSpinEnhanced,
+  detectDeviceType: vi.fn(() => 'desktop'),
+  RandomizerErrorType: {
+    NETWORK_ERROR: 'NETWORK_ERROR',
+    PERMISSION_DENIED: 'PERMISSION_DENIED',
+    VALIDATION_ERROR: 'VALIDATION_ERROR',
+    DATABASE_UNAVAILABLE: 'DATABASE_UNAVAILABLE',
+  },
+}));
+
+vi.doMock('@/hooks/use-toast', () => ({
+  useToast: () => ({ toast: mockToast }),
+}));
+
+vi.doMock('@/hooks/queries/useSpinHistory', () => ({
+  randomizerQueryKeys: {
+    all: ['randomizer'],
+    history: vi.fn((userId: string, options?: object) => ['randomizer', 'history', userId, options]),
+    count: vi.fn((userId: string) => ['randomizer', 'count', userId]),
+  },
+}));
+
+// Import after mocking
+const { useCreateSpin } = await import('../useCreateSpin');
+
+describe('useCreateSpin hook', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should start in idle state', () => {
+    const { result } = renderHookWithProviders(() => useCreateSpin());
+
+    expect(result.current.isPending).toBe(false);
+    expect(result.current.isError).toBe(false);
+    expect(result.current.isSuccess).toBe(false);
+    expect(result.current.data).toBeUndefined();
+    expect(typeof result.current.mutate).toBe('function');
+  });
+
+  it('should handle successful spin creation', async () => {
+    const mockResponse = {
       id: 'spin-123',
       user: 'test-user-id',
       project: 'test-project-id',
@@ -23,35 +66,11 @@ const useMockCreateSpin = (options = {}) => {
       updated: new Date().toISOString(),
       collectionId: 'randomizer_spins',
       collectionName: 'randomizer_spins',
-    }),
-    ...options,
-  });
-};
+    };
 
-describe('useCreateSpin mutation behavior', () => {
-  it('should start in idle state', () => {
-    const { result } = renderHookWithProviders(() => useMockCreateSpin());
+    mockCreateSpinEnhanced.mockResolvedValue(mockResponse);
 
-    expect(result.current.isPending).toBe(false);
-    expect(result.current.isError).toBe(false);
-    expect(result.current.isSuccess).toBe(false);
-    expect(result.current.data).toBeUndefined();
-    expect(typeof result.current.mutate).toBe('function');
-  });
-
-  it('should handle successful spin creation', async () => {
-    const mockMutationFn = vi.fn().mockResolvedValue({
-      id: 'spin-123',
-      user: 'test-user-id',
-      project: 'test-project-id',
-      project_title: 'Test Project',
-      selected_projects: ['project-1', 'project-2'],
-      selected_count: 2,
-    });
-
-    const { result } = renderHookWithProviders(() =>
-      useMockCreateSpin({ mutationFn: mockMutationFn })
-    );
+    const { result } = renderHookWithProviders(() => useCreateSpin());
 
     const spinParams = {
       user: 'test-user-id',
@@ -68,24 +87,21 @@ describe('useCreateSpin mutation behavior', () => {
       expect(result.current.isSuccess).toBe(true);
     });
 
-    expect(mockMutationFn).toHaveBeenCalledWith(spinParams);
-    expect(result.current.data).toEqual({
-      id: 'spin-123',
-      user: 'test-user-id',
-      project: 'test-project-id',
-      project_title: 'Test Project',
-      selected_projects: ['project-1', 'project-2'],
-      selected_count: 2,
-    });
+    expect(mockCreateSpinEnhanced).toHaveBeenCalledWith(expect.objectContaining({
+      user: spinParams.user,
+      project: spinParams.project,
+      project_title: spinParams.project_title,
+      selected_projects: spinParams.selected_projects,
+      metadata: expect.any(Object),
+    }));
+    expect(result.current.data).toEqual(mockResponse);
   });
 
   it('should handle mutation errors', async () => {
-    const mockError = new Error('Spin creation failed');
-    const mockMutationFn = vi.fn().mockRejectedValue(mockError);
+    const mockError = new Error('Permission denied');
+    mockCreateSpinEnhanced.mockRejectedValue(mockError);
 
-    const { result } = renderHookWithProviders(() =>
-      useMockCreateSpin({ mutationFn: mockMutationFn })
-    );
+    const { result } = renderHookWithProviders(() => useCreateSpin());
 
     act(() => {
       result.current.mutate({
@@ -98,7 +114,7 @@ describe('useCreateSpin mutation behavior', () => {
 
     await waitFor(() => {
       expect(result.current.isError).toBe(true);
-    });
+    }, { timeout: 3000 });
 
     expect(result.current.error).toBe(mockError);
     expect(result.current.isSuccess).toBe(false);
@@ -110,28 +126,24 @@ describe('useCreateSpin mutation behavior', () => {
       resolvePromise = resolve;
     });
 
-    const mockMutationFn = vi.fn().mockImplementation(() => slowPromise);
+    mockCreateSpinEnhanced.mockImplementation(() => slowPromise);
 
-    const { result } = renderHookWithProviders(() =>
-      useMockCreateSpin({ mutationFn: mockMutationFn })
-    );
+    const { result } = renderHookWithProviders(() => useCreateSpin());
 
     act(() => {
       result.current.mutate({
         user: 'test-user-id',
         project: 'test-project-id',
-        project_title: 'Test Project',
+        project_title: 'Test Project',  
         selected_projects: ['project-1'],
       });
     });
 
-    // Check loading state in the next tick
     await waitFor(() => {
       expect(result.current.isPending).toBe(true);
     });
     expect(result.current.isSuccess).toBe(false);
 
-    // Resolve the promise
     act(() => {
       resolvePromise!({ success: true });
     });
@@ -143,16 +155,24 @@ describe('useCreateSpin mutation behavior', () => {
     expect(result.current.isSuccess).toBe(true);
   });
 
-  it('should call onSuccess callback', async () => {
-    const mockOnSuccess = vi.fn();
-    const mockMutationFn = vi.fn().mockResolvedValue({ success: true });
+  it('should call toast on success', async () => {
+    const mockResponse = {
+      id: 'spin-123',
+      user: 'test-user-id',
+      project: 'test-project-id',
+      project_title: 'Test Project',
+      selected_projects: ['project-1'],
+      selected_count: 1,
+      spun_at: new Date().toISOString(),
+      created: new Date().toISOString(),
+      updated: new Date().toISOString(),
+      collectionId: 'randomizer_spins',
+      collectionName: 'randomizer_spins',
+    };
 
-    const { result } = renderHookWithProviders(() =>
-      useMockCreateSpin({
-        mutationFn: mockMutationFn,
-        onSuccess: mockOnSuccess,
-      })
-    );
+    mockCreateSpinEnhanced.mockResolvedValue(mockResponse);
+
+    const { result } = renderHookWithProviders(() => useCreateSpin());
 
     const spinParams = {
       user: 'test-user-id',
@@ -169,20 +189,17 @@ describe('useCreateSpin mutation behavior', () => {
       expect(result.current.isSuccess).toBe(true);
     });
 
-    expect(mockOnSuccess).toHaveBeenCalledWith({ success: true }, spinParams, undefined);
+    expect(mockToast).toHaveBeenCalledWith({
+      title: 'Spin recorded!',
+      description: 'Selected: Test Project',
+    });
   });
 
-  it('should call onError callback', async () => {
-    const mockOnError = vi.fn();
-    const mockError = new Error('Test error');
-    const mockMutationFn = vi.fn().mockRejectedValue(mockError);
+  it('should call toast on error', async () => {
+    const mockError = new Error('Permission denied');
+    mockCreateSpinEnhanced.mockRejectedValue(mockError);
 
-    const { result } = renderHookWithProviders(() =>
-      useMockCreateSpin({
-        mutationFn: mockMutationFn,
-        onError: mockOnError,
-      })
-    );
+    const { result } = renderHookWithProviders(() => useCreateSpin());
 
     const spinParams = {
       user: 'test-user-id',
@@ -197,8 +214,12 @@ describe('useCreateSpin mutation behavior', () => {
 
     await waitFor(() => {
       expect(result.current.isError).toBe(true);
-    });
+    }, { timeout: 3000 });
 
-    expect(mockOnError).toHaveBeenCalledWith(mockError, spinParams, undefined);
+    expect(mockToast).toHaveBeenCalledWith({
+      title: 'Action Required',
+      description: 'Please log in again',
+      variant: 'destructive',
+    });
   });
 });
