@@ -58,8 +58,6 @@ export function mapFormDataToPocketBase(
     return result;
   };
 
-
-
   // Log the input form data for debugging
   fieldMappingLogger.debug('🔄 Starting field mapping', {
     userTimezone,
