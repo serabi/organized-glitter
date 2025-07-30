@@ -8,6 +8,7 @@ import type { ProjectUpdateData } from '@/types/file-upload';
 import { toUserDateString } from '@/utils/timezoneUtils';
 import { createLogger } from '@/utils/secureLogger';
 import { pb } from '@/lib/pocketbase';
+import { isValidPocketBaseId } from '@/utils/cacheValidation';
 
 const fieldMappingLogger = createLogger('FieldMapping');
 
@@ -181,12 +182,54 @@ export function snakeToCamelCase(obj: Record<string, unknown>): Record<string, u
 }
 
 /**
+ * Cache configuration constants
+ */
+const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+const MAX_CACHE_SIZE = 20; // Maximum number of cached user entries
+
+/**
  * Cache for user-specific special records to avoid repeated database calls
+ * Now includes timestamp tracking for TTL expiration
  */
 const specialRecordsCache = new Map<
   string,
-  { companies: Map<string, string>; artists: Map<string, string> }
+  {
+    companies: Map<string, string>;
+    artists: Map<string, string>;
+    timestamp: number;
+  }
 >();
+
+/**
+ * Simple cache cleanup function to prevent memory leaks
+ * Removes expired entries and enforces size limits
+ */
+function cleanupSpecialRecordsCache(): void {
+  const now = Date.now();
+  const logger = createLogger('cleanupSpecialRecordsCache');
+
+  // Remove expired entries
+  let expiredCount = 0;
+  for (const [userId, cacheEntry] of specialRecordsCache) {
+    if (now - cacheEntry.timestamp > CACHE_TTL) {
+      specialRecordsCache.delete(userId);
+      expiredCount++;
+    }
+  }
+
+  if (expiredCount > 0) {
+    logger.debug(`Removed ${expiredCount} expired cache entries`);
+  }
+
+  // Simple size limit enforcement - clear all if over limit
+  // This is acceptable for small apps with few users
+  if (specialRecordsCache.size > MAX_CACHE_SIZE) {
+    logger.debug(
+      `Cache size ${specialRecordsCache.size} exceeded limit ${MAX_CACHE_SIZE}, clearing all entries`
+    );
+    specialRecordsCache.clear();
+  }
+}
 
 /**
  * Helper function to get or create special records for a user
@@ -202,12 +245,24 @@ async function ensureSpecialRecords(
 ): Promise<Map<string, string>> {
   const logger = createLogger('ensureSpecialRecords');
 
-  // Check cache first
-  if (!specialRecordsCache.has(userId)) {
-    specialRecordsCache.set(userId, { companies: new Map(), artists: new Map() });
+  // Perform cache cleanup before accessing cache
+  cleanupSpecialRecordsCache();
+
+  // Check cache first - ensure entry is not expired
+  let userCache = specialRecordsCache.get(userId);
+  const now = Date.now();
+
+  if (!userCache || now - userCache.timestamp > CACHE_TTL) {
+    // Create new cache entry with timestamp
+    userCache = {
+      companies: new Map(),
+      artists: new Map(),
+      timestamp: now,
+    };
+    specialRecordsCache.set(userId, userCache);
+    logger.debug(`Created new cache entry for user ${userId}`);
   }
 
-  const userCache = specialRecordsCache.get(userId)!;
   const typeCache = userCache[recordType];
 
   // Check if we already have all the special names cached
@@ -348,9 +403,4 @@ export async function resolveCompanyAndArtistIds(
   }
 
   return { companyId, artistId };
-
-  // Helper function to check if a value looks like a PocketBase ID (15 characters)
-  function isValidPocketBaseId(value: string | undefined): boolean {
-    return typeof value === 'string' && value.length === 15 && /^[a-zA-Z0-9]+$/.test(value);
-  }
 }
