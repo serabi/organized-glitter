@@ -16,6 +16,9 @@ pids
 # Migration logs (may contain sensitive URLs)
 scripts/*migration*.txt
 
+# Migration backups (temporary files from logger migration)
+.migration-backups/
+
 # Database backups (may contain sensitive URLs/tokens)
 backups/*/data.sql
 backups/*/complete_backup.sql
