@@ -12,6 +12,7 @@ interface ProjectCardProps {
   onClick?: () => void; // Make onClick optional
   skipImageLoading?: boolean; // Skip image loading for faster rendering (e.g., in overview)
   isRecentlyEdited?: boolean; // Whether this project was recently edited
+  viewType?: 'grid' | 'list'; // View type for different layouts
 }
 
 const ProjectCardComponent = ({
@@ -19,6 +20,7 @@ const ProjectCardComponent = ({
   onClick,
   skipImageLoading = false,
   isRecentlyEdited = false,
+  viewType = 'grid',
 }: ProjectCardProps) => {
   const { getStatusColor, getStatusLabel } = useProjectStatus();
   const [isImageLoaded, setIsImageLoaded] = useState(false);
@@ -86,35 +88,106 @@ const ProjectCardComponent = ({
     );
   };
 
+  // Render different layouts based on view type
+  if (viewType === 'list') {
+    return (
+      <div
+        ref={ref}
+        onClick={onClick}
+        className={cn(
+          'group flex overflow-hidden rounded-xl border text-diamond-900 shadow-sm transition-all duration-300 ease-out hover:shadow-md hover:shadow-black/10 dark:text-gray-100 dark:hover:shadow-white/5 cursor-pointer',
+          isRecentlyEdited
+            ? 'border-green-500 bg-green-50 ring-2 ring-green-500 ring-opacity-50 dark:border-green-400 dark:bg-green-950'
+            : 'border-border bg-diamond-100 hover:border-primary/20 dark:bg-gray-800 dark:hover:border-primary/30'
+        )}
+      >
+        {/* Square image area for list view */}
+        <div className="relative h-24 w-24 flex-shrink-0 bg-gray-200 dark:bg-gray-700">
+          {renderImageContent()}
+        </div>
+
+        {/* Horizontal content area */}
+        <div className="flex flex-1 items-center p-4">
+          <div className="flex-1 space-y-1">
+            {/* Project title */}
+            <h3 className="line-clamp-1 text-sm font-semibold leading-tight transition-colors duration-200 group-hover:text-primary">
+              {project.title}
+            </h3>
+            
+            {/* Kit specifications */}
+            <div className="flex items-center">
+              {(project.kit_category || project.drillShape) && (
+                <span className="rounded-md bg-muted/50 px-2 py-1 text-xs text-muted-foreground transition-colors duration-200 group-hover:bg-muted/70">
+                  {project.kit_category && (
+                    <span className="font-medium">
+                      {project.kit_category === 'mini' ? 'Mini' : 'Full'}
+                    </span>
+                  )}
+                  {project.kit_category && project.drillShape && <span className="mx-1">•</span>}
+                  {project.drillShape && <span className="capitalize">{project.drillShape}</span>}
+                </span>
+              )}
+            </div>
+          </div>
+          
+          {/* Status badge */}
+          <div className="ml-4 flex-shrink-0">
+            <span className={cn('rounded-lg px-2 py-1 text-xs font-medium shadow-sm transition-all duration-200 group-hover:scale-105', getStatusColor(project.status))}>
+              {project.status === 'purchased' ? 'Purchased' : getStatusLabel(project.status)}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Grid view (default)
   return (
     <div
       ref={ref}
+      onClick={onClick}
       className={cn(
-        'flex flex-col overflow-hidden rounded-lg border text-diamond-900 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-lg dark:text-gray-100',
+        'group flex flex-col overflow-hidden rounded-xl border text-diamond-900 shadow-sm transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-xl hover:shadow-black/10 dark:text-gray-100 dark:hover:shadow-white/5 cursor-pointer',
         isRecentlyEdited
           ? 'border-green-500 bg-green-50 ring-2 ring-green-500 ring-opacity-50 dark:border-green-400 dark:bg-green-950'
-          : 'border-border bg-diamond-100 dark:bg-gray-800'
+          : 'border-border bg-diamond-100 hover:border-primary/20 dark:bg-gray-800 dark:hover:border-primary/30'
       )}
     >
-      <div className="relative h-48 w-full bg-gray-200 dark:bg-gray-700 sm:h-56 md:h-64">
+      {/* Larger image area for better visual balance */}
+      <div className="relative h-48 w-full bg-gray-200 dark:bg-gray-700 sm:h-52">
         {renderImageContent()}
-        <span
-          className={cn(
-            'absolute right-2 top-2 rounded-md px-2 py-1 text-xs font-medium',
-            getStatusColor(project.status)
-          )}
-        >
-          {getStatusLabel(project.status)}
-        </span>
       </div>
 
-      <div className="flex flex-1 flex-col justify-between p-3">
-        <h3 className="truncate text-lg font-semibold">{project.title}</h3>
-        {onClick && ( // Only render button if onClick is provided
-          <Button size="sm" className="mt-3 w-full" onClick={onClick}>
-            View Details
-          </Button>
-        )}
+      {/* Compact content area with essential information */}
+      <div className="p-4">
+        <div className="space-y-2">
+          {/* Project title - consistent height row */}
+          <div className="flex h-10 items-start">
+            <h3 className="line-clamp-2 text-sm font-semibold leading-tight transition-colors duration-200 group-hover:text-primary">
+              {project.title}
+            </h3>
+          </div>
+
+          {/* Kit specifications and status - consistent height row */}
+          <div className="flex h-6 items-center justify-between gap-2">
+            <div className="flex items-center">
+              {(project.kit_category || project.drillShape) && (
+                <span className="rounded-md bg-muted/50 px-2 py-1 text-xs text-muted-foreground transition-colors duration-200 group-hover:bg-muted/70">
+                  {project.kit_category && (
+                    <span className="font-medium">
+                      {project.kit_category === 'mini' ? 'Mini' : 'Full'}
+                    </span>
+                  )}
+                  {project.kit_category && project.drillShape && <span className="mx-1">•</span>}
+                  {project.drillShape && <span className="capitalize">{project.drillShape}</span>}
+                </span>
+              )}
+            </div>
+            <span className={cn('flex-shrink-0 rounded-lg px-2 py-1 text-xs font-medium shadow-sm transition-all duration-200 group-hover:scale-105', getStatusColor(project.status))}>
+              {project.status === 'purchased' ? 'Purchased' : getStatusLabel(project.status)}
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   );

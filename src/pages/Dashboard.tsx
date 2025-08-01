@@ -27,6 +27,7 @@ import React, { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import DashboardOverview from '@/components/dashboard/DashboardOverview';
 import DashboardFilterSection from '@/components/dashboard/DashboardFilterSection';
 import ProjectsSection from '@/components/dashboard/ProjectsSection';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -122,9 +123,12 @@ const DashboardInternal: React.FC = () => {
       <div className="container mx-auto px-4 py-8">
         <DashboardHeader />
 
+        {/* New Overview Section - Shows key metrics prominently */}
+        <DashboardOverview />
+
         {isMobile && <DashboardFilterSection isMobile={isMobile} />}
 
-        <div className={`grid grid-cols-1 ${!isMobile ? 'lg:grid-cols-4' : ''} mt-4 gap-8`}>
+        <div className={`grid grid-cols-1 ${!isMobile ? 'lg:grid-cols-4' : ''} gap-8`}>
           {!isMobile && (
             <div className="lg:col-span-1">
               <DashboardFilterSection isMobile={isMobile} />

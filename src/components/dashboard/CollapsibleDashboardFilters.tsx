@@ -82,7 +82,7 @@ const CollapsibleDashboardFiltersComponent: React.FC<CollapsibleDashboardFilters
   const activeFilterCount = getActiveFilterCount ? getActiveFilterCount() : 0;
 
   return (
-    <div className="mb-4 rounded-lg border border-gray-200 shadow-sm dark:border-gray-700 lg:hidden">
+    <div className="mb-6 lg:hidden">
       <div
         id="filters-header"
         role="button"
@@ -91,17 +91,23 @@ const CollapsibleDashboardFiltersComponent: React.FC<CollapsibleDashboardFilters
         aria-controls="filters-content"
         onClick={toggleOpen}
         onKeyDown={handleKeyDown}
-        className="flex cursor-pointer items-center justify-between rounded-t-lg bg-gray-50 p-3 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
+        className="flex cursor-pointer items-center justify-between rounded-lg border bg-card p-4 shadow-sm transition-all duration-200 hover:shadow-md"
       >
-        <div className="flex items-center">
+        <div className="flex items-center space-x-3">
           {isOpen ? (
-            <ChevronDown size={20} className="mr-2 text-gray-600 dark:text-gray-400" />
+            <ChevronDown size={20} className="text-muted-foreground" />
           ) : (
-            <ChevronRight size={20} className="mr-2 text-gray-600 dark:text-gray-400" />
+            <ChevronRight size={20} className="text-muted-foreground" />
           )}
-          <span className="font-medium text-gray-700 dark:text-gray-200">
-            Filters {activeFilterCount > 0 && `(${activeFilterCount})`}
-          </span>
+          <span className="font-semibold text-foreground">Filters</span>
+          {activeFilterCount > 0 && (
+            <span className="rounded-full bg-primary px-2 py-1 text-xs font-medium text-primary-foreground">
+              {activeFilterCount} Active
+            </span>
+          )}
+        </div>
+        <div className="text-sm text-muted-foreground">
+          {isOpen ? 'Hide Filters' : 'Show Filters'}
         </div>
       </div>
       <div
@@ -113,8 +119,7 @@ const CollapsibleDashboardFiltersComponent: React.FC<CollapsibleDashboardFilters
         }`}
       >
         {isOpen && (
-          <div className="border-t border-gray-200 p-0 dark:border-gray-700">
-            {/* DashboardFilters will consume context internally */}
+          <div className="mt-4 rounded-lg border bg-card p-4 shadow-sm">
             <DashboardFilters />
           </div>
         )}

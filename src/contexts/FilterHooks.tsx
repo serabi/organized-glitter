@@ -11,7 +11,7 @@ import { useMemo } from 'react';
 /**
  * Hook for components that need comprehensive filter functionality
  * Consolidates state, actions, and metadata for optimal performance
- * Used by: DashboardFilters, ProjectsGrid, StatusTabs, AdvancedFilters
+ * Used by: DashboardFilters, ProjectsGrid, DashboardOverview, AdvancedFilters
  */
 export const useFilters = () => {
   const {

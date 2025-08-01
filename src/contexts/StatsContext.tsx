@@ -40,7 +40,7 @@
  * - @/hooks/useNetworkDetection for network condition detection
  *
  * @see {@link FiltersContext} for filter state management
- * @see {@link StatusTabs} for badge implementation
+ * @see {@link DashboardOverview} for badge implementation
  * @see {@link useDashboardStatsStable} for stats query logic
  */
 
@@ -72,7 +72,7 @@ interface NetworkInformation {
   removeEventListener?: (event: string, handler: () => void) => void;
 }
 
-// Status counts interface for StatusTabs component
+// Status counts interface for DashboardOverview component
 export interface CountsForTabsType {
   all: number;
   wishlist: number;
