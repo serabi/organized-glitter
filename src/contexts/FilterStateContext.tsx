@@ -52,6 +52,7 @@ export interface FilterState {
   includeDestashed: boolean;
   includeArchived: boolean;
   includeWishlist: boolean;
+  includeOnHold: boolean;
   searchTerm: string;
   selectedTags: string[];
 
@@ -106,6 +107,7 @@ const getDefaultFilters = (): FilterState => ({
   includeDestashed: false,
   includeArchived: false,
   includeWishlist: false,
+  includeOnHold: true,
   searchTerm: '',
   selectedTags: [],
   sortField: 'last_updated',
@@ -131,6 +133,7 @@ const validateAndSanitizeFilters = (filters: Partial<FilterState>): FilterState 
     includeDestashed: filters.includeDestashed ?? defaults.includeDestashed,
     includeArchived: filters.includeArchived ?? defaults.includeArchived,
     includeWishlist: filters.includeWishlist ?? defaults.includeWishlist,
+    includeOnHold: filters.includeOnHold ?? defaults.includeOnHold,
     searchTerm: filters.searchTerm ?? defaults.searchTerm,
     selectedTags: Array.isArray(filters.selectedTags)
       ? [...filters.selectedTags] // Create a stable copy to prevent reference issues
@@ -156,6 +159,7 @@ export type FilterAction =
   | { type: 'SET_INCLUDE_DESTASHED'; payload: boolean }
   | { type: 'SET_INCLUDE_ARCHIVED'; payload: boolean }
   | { type: 'SET_INCLUDE_WISHLIST'; payload: boolean }
+  | { type: 'SET_INCLUDE_ON_HOLD'; payload: boolean }
   | { type: 'SET_SEARCH_TERM'; payload: string }
   | { type: 'SET_TAGS'; payload: string[] }
   | { type: 'TOGGLE_TAG'; payload: string }
@@ -202,6 +206,9 @@ const filtersReducer = (state: FilterState, action: FilterAction): FilterState =
       break;
     case 'SET_INCLUDE_WISHLIST':
       newState = { ...state, includeWishlist: action.payload, currentPage: 1 };
+      break;
+    case 'SET_INCLUDE_ON_HOLD':
+      newState = { ...state, includeOnHold: action.payload, currentPage: 1 };
       break;
     case 'SET_SEARCH_TERM':
       newState = { ...state, searchTerm: action.payload, currentPage: 1 };
@@ -404,6 +411,7 @@ export const FilterStateProvider: React.FC<FilterStateProviderProps> = React.mem
                 includeDestashed: savedContext.filters?.includeDestashed,
                 includeArchived: savedContext.filters?.includeArchived,
                 includeWishlist: savedContext.filters?.includeWishlist,
+                includeOnHold: savedContext.filters?.includeOnHold,
                 searchTerm: savedContext.filters?.searchTerm,
                 selectedTags: savedContext.filters?.selectedTags,
                 sortField: savedContext.sortField,

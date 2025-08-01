@@ -42,6 +42,7 @@ export interface FilterActionsContextType {
   updateIncludeDestashed: (include: boolean, source?: ChangeSource) => void;
   updateIncludeArchived: (include: boolean, source?: ChangeSource) => void;
   updateIncludeWishlist: (include: boolean, source?: ChangeSource) => void;
+  updateIncludeOnHold: (include: boolean, source?: ChangeSource) => void;
   updateSearchTerm: (term: string, source?: ChangeSource) => void;
   updateTags: (tags: string[], source?: ChangeSource) => void;
   toggleTag: (tagId: string, source?: ChangeSource) => void;
@@ -195,6 +196,13 @@ export const FilterActionsProvider: React.FC<FilterActionsProviderProps> = React
       [dispatchWithSource]
     );
 
+    const updateIncludeOnHold = useCallback(
+      (include: boolean, source?: ChangeSource) => {
+        dispatchWithSource({ type: 'SET_INCLUDE_ON_HOLD', payload: include }, source);
+      },
+      [dispatchWithSource]
+    );
+
     const updateSearchTerm = useCallback(
       (term: string, source?: ChangeSource) => {
         dispatchWithSource({ type: 'SET_SEARCH_TERM', payload: term }, source);
@@ -290,6 +298,7 @@ export const FilterActionsProvider: React.FC<FilterActionsProviderProps> = React
       if (!filters.includeMiniKits) count++;
       if (!filters.includeDestashed) count++;
       if (filters.includeWishlist) count++;
+      if (!filters.includeOnHold) count++;
       if (filters.searchTerm) count++;
       if (filters.selectedTags.length > 0) count++;
       return count;
@@ -351,6 +360,7 @@ export const FilterActionsProvider: React.FC<FilterActionsProviderProps> = React
             includeDestashed: filters.includeDestashed,
             includeArchived: filters.includeArchived,
             includeWishlist: filters.includeWishlist,
+            includeOnHold: filters.includeOnHold,
             searchTerm: filters.searchTerm,
             selectedTags: filters.selectedTags,
           },
@@ -415,6 +425,7 @@ export const FilterActionsProvider: React.FC<FilterActionsProviderProps> = React
         updateIncludeDestashed,
         updateIncludeArchived,
         updateIncludeWishlist,
+        updateIncludeOnHold,
         updateSearchTerm,
         updateTags,
         toggleTag,
@@ -437,6 +448,7 @@ export const FilterActionsProvider: React.FC<FilterActionsProviderProps> = React
         updateIncludeDestashed,
         updateIncludeArchived,
         updateIncludeWishlist,
+        updateIncludeOnHold,
         updateSearchTerm,
         updateTags,
         toggleTag,

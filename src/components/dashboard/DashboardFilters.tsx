@@ -62,6 +62,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
     updateIncludeDestashed,
     updateIncludeArchived,
     updateIncludeWishlist,
+    updateIncludeOnHold,
     updateViewType,
     companiesOptions, // Use computed options for DashboardFilters
     artistsOptions, // Use computed options for DashboardFilters
@@ -110,6 +111,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
   const includeDestashed = filters.includeDestashed;
   const includeArchived = filters.includeArchived;
   const includeWishlist = filters.includeWishlist;
+  const includeOnHold = filters.includeOnHold;
   const viewType = filters.viewType;
   const sortField = filters.sortField;
   const sortDirection = filters.sortDirection;
@@ -258,6 +260,18 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
               />
               <Label htmlFor="include-wishlist-kits" className="text-sm font-normal">
                 Include Wishlisted Kits
+              </Label>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <Checkbox
+                id="include-onhold-kits"
+                checked={includeOnHold}
+                onCheckedChange={checked => updateIncludeOnHold(Boolean(checked))}
+                data-testid="include-onhold-checkbox"
+              />
+              <Label htmlFor="include-onhold-kits" className="text-sm font-normal">
+                Include On Hold Projects
               </Label>
             </div>
           </div>
