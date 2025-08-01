@@ -279,6 +279,11 @@ export class ProjectsService {
       if (filters.includeWishlist === false && currentStatus !== 'wishlist') {
         conditions.push(`status != "wishlist"`);
       }
+
+      // Include on hold filtering
+      if (filters.includeOnHold === false && currentStatus !== 'onhold') {
+        conditions.push(`status != "onhold"`);
+      }
     }
 
     // Search term filtering

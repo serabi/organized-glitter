@@ -30,6 +30,8 @@ export interface ProjectFilters {
   includeArchived?: boolean;
   /** Include wishlist projects */
   includeWishlist?: boolean;
+  /** Include on hold projects */
+  includeOnHold?: boolean;
   /** Search term for title and notes */
   searchTerm?: string;
   /** Selected tag IDs */

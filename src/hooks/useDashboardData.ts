@@ -76,6 +76,7 @@ export const useDashboardData = (
       includeDestashed: filters.includeDestashed,
       includeArchived: filters.includeArchived,
       includeWishlist: filters.includeWishlist,
+      includeOnHold: filters.includeOnHold,
       searchTerm: debouncedSearchTerm,
       selectedTags: filters.selectedTags,
     };
@@ -92,6 +93,7 @@ export const useDashboardData = (
     filters.includeDestashed,
     filters.includeArchived,
     filters.includeWishlist,
+    filters.includeOnHold,
     debouncedSearchTerm,
     filters.selectedTags, // Direct dependency since used in computation
   ]);
