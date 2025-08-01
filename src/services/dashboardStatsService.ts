@@ -19,6 +19,7 @@ type ValidProjectStatus =
   | 'purchased'
   | 'stash'
   | 'progress'
+  | 'onhold'
   | 'completed'
   | 'destashed'
   | 'archived';
@@ -32,6 +33,7 @@ interface ProjectStatusCounts {
   purchased: number;
   stash: number;
   progress: number;
+  onhold: number;
   completed: number;
   destashed: number;
   archived: number;
@@ -60,6 +62,7 @@ async function countProjectsByStatus(userId: string): Promise<ProjectStatusCount
       purchased: 0,
       stash: 0,
       progress: 0,
+      onhold: 0,
       completed: 0,
       destashed: 0,
       archived: 0,

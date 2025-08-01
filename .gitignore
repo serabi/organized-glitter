@@ -103,6 +103,8 @@ $RECYCLE.BIN/
 .kilocode/mcp.json
 .mcp/
 .mcp.json
+.cursor/
+.cursor/*
 
 # Backup and temporary files
 *.backup

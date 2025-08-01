@@ -83,6 +83,20 @@ export interface CountsForTabsType {
   stash: number; // In Stash
 }
 
+// Complete status counts interface for carousel
+// Includes all 9 project statuses for comprehensive display
+export interface AllStatusCountsType {
+  all: number; // Total Active Projects
+  purchased: number; // Purchased - Not Received
+  stash: number; // In Stash
+  progress: number; // In Progress
+  onhold: number; // On Hold
+  wishlist: number; // Wishlist
+  completed: number; // Completed
+  archived: number; // Archived
+  destashed: number; // Destashed
+}
+
 // Loading state for badge content
 export type BadgeLoadingState = 'loading' | 'error';
 
@@ -121,6 +135,13 @@ interface StatsContextType {
    * Returns actual counts or loading state indicator
    */
   getCountsForTabs: () => CountsForTabsType | BadgeLoadingState;
+
+  /**
+   * Get counts for all project statuses with loading state handling
+   * Returns complete status breakdown or loading state indicator
+   * Used by the status carousel component
+   */
+  getAllStatusCounts: () => AllStatusCountsType | BadgeLoadingState;
 
   /**
    * Get badge content with spinner for loading states
@@ -329,6 +350,83 @@ export const StatsProvider: React.FC<StatsProviderProps> = ({ children }) => {
     isNetworkSlow,
   ]);
 
+  // Complete status counts calculation for carousel - includes all 9 statuses
+  const allStatusCounts = useMemo((): AllStatusCountsType | BadgeLoadingState => {
+    logger.debug('StatsContext allStatusCounts calculation:', {
+      isInitialized,
+      isLoadingStats,
+      hasUnfilteredStats: !!unfilteredStats,
+      isStatsError,
+    });
+
+    // Return loading state when filters aren't initialized yet or stats are being fetched
+    if (!isInitialized) {
+      logger.debug('Returning loading state - filters not initialized yet (allStatusCounts)');
+      return 'loading';
+    }
+    if (isLoadingStats) {
+      logger.debug('Returning loading state - stats are loading (allStatusCounts)');
+      return 'loading';
+    }
+
+    // Return error state when stats fetch has failed
+    if (isStatsError) {
+      logger.warn('Stats fetch failed, returning error state for carousel', {
+        error: isStatsError,
+        isNetworkSlow,
+      });
+      return 'error';
+    }
+
+    // Return loading state if no stats data is available after initialization
+    if (!unfilteredStats?.status_breakdown) {
+      logger.debug(
+        'Returning loading state - no unfilteredStats available after initialization (allStatusCounts)'
+      );
+      return 'loading';
+    }
+
+    // Use unfiltered stats for all counts - ensures consistent totals regardless of current filter
+    const statusBreakdown = unfilteredStats.status_breakdown;
+
+    // Calculate active projects count: purchased (not received) + in stash + in progress + on hold
+    const activeProjectsCount =
+      (statusBreakdown.purchased || 0) + // purchased, not received
+      (statusBreakdown.stash || 0) + // in stash
+      (statusBreakdown.progress || 0) + // in progress
+      (statusBreakdown.onhold || 0); // on hold
+
+    // Include all 9 project statuses for comprehensive carousel display
+    const allCounts: AllStatusCountsType = {
+      all: activeProjectsCount, // Total Active Projects
+      purchased: statusBreakdown.purchased || 0, // Purchased - Not Received
+      stash: statusBreakdown.stash || 0, // In Stash
+      progress: statusBreakdown.progress || 0, // In Progress
+      onhold: statusBreakdown.onhold || 0, // On Hold
+      wishlist: statusBreakdown.wishlist || 0, // Wishlist
+      completed: statusBreakdown.completed || 0, // Completed
+      archived: statusBreakdown.archived || 0, // Archived
+      destashed: statusBreakdown.destashed || 0, // Destashed
+    };
+
+    // Log carousel counts when they actually change
+    if (typeof allCounts.all === 'number') {
+      logger.debug('📊 All status counts calculated for carousel', {
+        allCounts,
+        source: 'optimized',
+        totalStatuses: Object.keys(allCounts).length - 1, // -1 for 'all'
+      });
+    }
+
+    return allCounts;
+  }, [
+    isInitialized,
+    isLoadingStats,
+    unfilteredStats, // Direct dependency since used in computation
+    isStatsError,
+    isNetworkSlow,
+  ]);
+
   /**
    * Get counts for status tabs with loading state handling
    *
@@ -340,6 +438,18 @@ export const StatsProvider: React.FC<StatsProviderProps> = ({ children }) => {
   const getCountsForTabs = useCallback((): CountsForTabsType | BadgeLoadingState => {
     return countsForTabs;
   }, [countsForTabs]);
+
+  /**
+   * Get counts for all project statuses with loading state handling
+   *
+   * Returns complete status breakdown when data is available, or loading state
+   * indicators when data is being fetched or has failed. Used by carousel.
+   *
+   * @returns Complete status counts object or loading state
+   */
+  const getAllStatusCounts = useCallback((): AllStatusCountsType | BadgeLoadingState => {
+    return allStatusCounts;
+  }, [allStatusCounts]);
 
   /**
    * Get badge content with spinner for loading states
@@ -407,6 +517,7 @@ export const StatsProvider: React.FC<StatsProviderProps> = ({ children }) => {
       isError: !!errorProjects,
       error: errorProjects,
       getCountsForTabs,
+      getAllStatusCounts,
       getBadgeContent,
       isNetworkSlow,
       timeoutDuration,
@@ -418,6 +529,7 @@ export const StatsProvider: React.FC<StatsProviderProps> = ({ children }) => {
       shouldShowLoading,
       errorProjects,
       getCountsForTabs,
+      getAllStatusCounts,
       getBadgeContent,
       isNetworkSlow,
       timeoutDuration,
