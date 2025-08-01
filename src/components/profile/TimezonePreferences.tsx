@@ -29,7 +29,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Clock } from 'lucide-react';
 import { getTimezonesByRegion, TIMEZONE_REGIONS, detectUserTimezone } from '@/utils/timezoneUtils';
 import { useUserTimezone } from '@/hooks/useUserTimezone';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('TimezonePreferences');
 

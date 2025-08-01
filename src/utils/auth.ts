@@ -1,5 +1,5 @@
 import { pb } from '@/lib/pocketbase';
-import { logger } from './logger';
+import { logger } from '@/utils/logger';
 
 /**
  * Clears all authentication data when switching environments

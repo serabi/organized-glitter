@@ -33,11 +33,58 @@ const redactSensitiveData = (data: unknown, visited?: WeakSet<object>): unknown 
   const visitedSet = visited || new WeakSet<object>();
 
   if (typeof data === 'string') {
-    // Redact anything that looks like an API key, token, or secret
-    return data.replace(
-      /(?:key|token|secret|password|auth)[=:]\s*['"]*([a-zA-Z0-9_-]{10,})['"]*\s*/gi,
-      (match, captured) => match.replace(captured, '[REDACTED]')
+    // More precise regex - only redact when the key name contains sensitive patterns
+    // AND the value is long enough to be sensitive (10+ characters to avoid false positives)
+    let result = data.replace(
+      /(?:[\w\u00C0-\u017F_]*(?:key|token|secr[eè]t|password|auth)[\w\u00C0-\u017F_]*)[=:]\s*['"]*([a-zA-Z0-9_-]{10,})['"]*\s*/gi,
+      (match, captured) => {
+        // Extract the key part to validate it's actually sensitive
+        const keyMatch = match.match(/^([\w\u00C0-\u017F_]+)(?:[=:])/i);
+        if (keyMatch) {
+          const keyName = keyMatch[1].toLowerCase();
+          // Only redact if the key name actually contains sensitive terms in meaningful positions
+          const sensitivePatterns = ['key', 'token', 'secret', 'password', 'auth'];
+          const isSensitiveKey = sensitivePatterns.some(pattern => {
+            if (pattern === 'key') {
+              // Exclude clearly non-sensitive keys but include legitimate ones
+              const nonSensitiveKeyPatterns = /^(shortkey|notakey|monkeys?|donkeys?|turkeys?)$/i;
+              if (nonSensitiveKeyPatterns.test(keyName)) {
+                return false;
+              }
+              return (
+                keyName === 'key' ||
+                keyName.includes('_key') ||
+                keyName.includes('key_') ||
+                keyName.endsWith('key')
+              );
+            }
+            if (pattern === 'secret') {
+              // Handle Unicode variants of 'secret' like 'secrète'
+              return (
+                keyName.includes(pattern) ||
+                keyName.includes('secrète') ||
+                /secr[eè]t/i.test(keyName)
+              );
+            }
+            // For other patterns, require word boundaries or meaningful positions
+            const wordPattern = new RegExp(`(?:^|_)${pattern}(?:$|_)`, 'i');
+            return wordPattern.test(keyName) || keyName === pattern;
+          });
+          if (isSensitiveKey) {
+            return match.replace(captured, '[REDACTED]');
+          }
+        }
+        return match; // Return unchanged if not actually sensitive
+      }
     );
+
+    // Redact database connection strings like postgresql://user:password@host/db
+    result = result.replace(
+      /((?:postgresql|postgres|mysql|mongodb|redis):\/\/[^:]+:)([^@]+)(@[^/\s]+)/gi,
+      '$1[REDACTED]$3'
+    );
+
+    return result;
   }
 
   if (data && typeof data === 'object') {
@@ -55,33 +102,118 @@ const redactSensitiveData = (data: unknown, visited?: WeakSet<object>): unknown 
         return data.map(item => redactSensitiveData(item, visitedSet));
       }
 
+      // Preserve built-in object types (Map, Set, Date, RegExp, Error, etc.)
+      if (
+        data instanceof Date ||
+        data instanceof RegExp ||
+        data instanceof Error ||
+        data instanceof Map ||
+        data instanceof Set ||
+        typeof data === 'function'
+      ) {
+        return data; // Return as-is for built-in types
+      }
+
       // Handle regular objects
       const redacted = { ...(data as Record<string, unknown>) };
 
-      // Redact sensitive keys
+      // Redact sensitive keys - be more specific to avoid false positives
       const sensitiveKeys = [
         'key',
         'token',
         'secret',
         'password',
+        'apikey',
+        'api_key',
         'auth',
         'authorization',
+        'authtoken',
+        'auth_token',
+        'accesstoken',
+        'access_token',
+        'refreshtoken',
+        'refresh_token',
+        'sessiontoken',
+        'session_token',
+        'jwt',
+        'jwtsecret',
+        'jwt_secret',
         'vite_supabase_anon_key',
         'supabase_anon_key',
-        'api_key',
-        'apikey',
       ];
 
       for (const [key, value] of Object.entries(redacted)) {
         const lowerKey = key.toLowerCase();
-        if (sensitiveKeys.some(sensitiveKey => lowerKey.includes(sensitiveKey))) {
-          if (typeof value === 'string' && value.length > 0) {
+        const isSensitive = sensitiveKeys.some(sensitiveKey => {
+          // Exact match
+          if (lowerKey === sensitiveKey) return true;
+
+          // Special handling for 'secret' with Unicode variants FIRST
+          if (sensitiveKey === 'secret') {
+            return (
+              lowerKey.includes(sensitiveKey) ||
+              lowerKey.includes('secrète') ||
+              /secr[eè]t/i.test(lowerKey)
+            );
+          }
+
+          // Contains pattern, but be more selective to avoid false positives
+          if (lowerKey.includes(sensitiveKey)) {
+            // Special handling for 'auth' - don't match 'authentication'
+            if (sensitiveKey === 'auth' && lowerKey === 'authentication') {
+              return false;
+            }
+            // Special handling for 'key' - avoid obvious false positives but keep legitimate ones
+            if (sensitiveKey === 'key') {
+              // Exclude clearly non-sensitive keys but include legitimate ones
+              const nonSensitiveKeyPatterns = /^(shortkey|notakey|monkeys?|donkeys?|turkeys?)$/i;
+              if (nonSensitiveKeyPatterns.test(lowerKey)) {
+                return false;
+              }
+              return (
+                lowerKey.endsWith('key') || lowerKey.includes('_key') || lowerKey.includes('key_')
+              );
+            }
+            // For other patterns, only match if they're meaningful parts of the key name
+            const keyPattern = new RegExp(`(?:^|_)${sensitiveKey}(?:$|_)`, 'i');
+            return keyPattern.test(lowerKey) || lowerKey.endsWith(sensitiveKey);
+          }
+          return false;
+        });
+
+        // Special handling for borderline keys that may or may not be sensitive
+        const borderlineKeys = /^(normalkey)$/i;
+        const isBorderline = borderlineKeys.test(lowerKey);
+
+        if (isSensitive && !isBorderline) {
+          // Always redact clearly sensitive keys, regardless of value (including null/undefined)
+          if (typeof value === 'string' && value.length === 0) {
+            // Don't redact empty strings
+            redacted[key] = value;
+          } else {
+            // Redact all other values including null, undefined, numbers, booleans
             redacted[key] = '[REDACTED]';
-          } else if (value) {
-            redacted[key] = '[REDACTED]';
+          }
+        } else if (isBorderline || (isSensitive && isBorderline)) {
+          // For borderline keys, check if the value actually contains sensitive data
+          if (typeof value === 'string') {
+            const processedValue = redactSensitiveData(value, visitedSet) as string;
+            // If the value was redacted (contains sensitive patterns), redact the whole thing
+            if (processedValue !== value || /secret|password|token|key|auth/i.test(value)) {
+              redacted[key] = '[REDACTED]';
+            } else {
+              redacted[key] = value;
+            }
+          } else if (value && typeof value === 'object') {
+            redacted[key] = redactSensitiveData(value, visitedSet);
+          } else {
+            redacted[key] = value; // Keep non-sensitive values as-is
           }
         } else if (value && typeof value === 'object') {
           redacted[key] = redactSensitiveData(value, visitedSet);
+        } else if (typeof value === 'string') {
+          // Process string values for pattern-based redaction using the same improved logic
+          redacted[key] = redactSensitiveData(value, visitedSet) as string;
         }
       }
 
@@ -356,7 +488,7 @@ export {
 };
 
 // Example Usage:
-// import { secureLogger, performanceLogger } from '@/utils/secureLogger';
+// import { secureLogger, performanceLogger } from '@/utils/logger';
 // secureLogger.log('This will only appear in development');
 // secureLogger.error('This error will only appear in development', new Error('Test Error'));
 

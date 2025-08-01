@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useCreateArtist } from '@/hooks/mutations/useArtistMutations';
 import { useToast } from '@/hooks/use-toast';
-import { secureLogger } from '@/utils/secureLogger';
+import { logger } from '@/utils/logger';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,7 +48,7 @@ const ArtistSelect = React.memo(
     // Memoize artists array to avoid unnecessary re-renders
     const normalizedArtists = useMemo(() => {
       if (!Array.isArray(artists)) {
-        secureLogger.warn('ArtistSelect received invalid artists list:', { artists });
+        logger.warn('ArtistSelect received invalid artists list:', { artists });
         return [];
       }
       // Additional safety check for each artist item

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { pb } from '@/lib/pocketbase';
 import { AuthContext } from './context';
 import { AuthProviderProps, PocketBaseUser } from '../AuthContext.types';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const authLogger = createLogger('AuthProvider');
 

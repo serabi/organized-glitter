@@ -8,7 +8,7 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { CompaniesResponse } from '@/types/pocketbase.types';
 import { queryKeys, CompanyQueryParams } from './queryKeys';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 import { companiesOptions, allCompaniesOptions } from './shared/queryOptionsFactory';
 
 const logger = createLogger('useCompanies');

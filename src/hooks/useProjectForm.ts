@@ -7,7 +7,7 @@ import {
   BaseProjectFormObjectSchema,
 } from '@/schemas/project.schema';
 import { useToast } from '@/hooks/use-toast';
-import { secureLogger } from '@/utils/secureLogger';
+import { logger } from '@/utils/logger';
 // Removed useAuth import - userId validation is handled upstream
 
 // Helper functions for file size limits (can be moved or kept if still used for display)
@@ -154,7 +154,7 @@ export const useProjectForm = ({
           setImagePreview(reader.result as string);
         };
         reader.onerror = () => {
-          secureLogger.error('FileReader error');
+          logger.error('FileReader error');
           setUploadError('Failed to read image file for preview.');
           toast({
             title: 'Image Preview Error',

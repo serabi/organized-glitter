@@ -16,7 +16,7 @@ import React, {
 } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMetadata } from '@/contexts/MetadataContext';
-import { createLogger, performanceLogger } from '@/utils/secureLogger';
+import { createLogger, performanceLogger } from '@/utils/logger';
 import { ProjectFilterStatus } from '@/types/project';
 import { DashboardValidSortField } from '@/features/dashboard/dashboard.constants';
 import { DashboardFilterContext } from '@/hooks/mutations/useSaveNavigationContext';

@@ -1,5 +1,5 @@
 import imageCompression from 'browser-image-compression';
-import { logger } from './logger';
+import { logger } from '@/utils/logger';
 
 // Type definitions for better type safety
 export interface ValidationResult {

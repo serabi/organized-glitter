@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation, useNavigationType } from 'react-router-dom';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 import { useAuth } from '@/hooks/useAuth';
 
 const logger = createLogger('NavigationMonitoring');

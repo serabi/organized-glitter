@@ -21,7 +21,7 @@ import {
 } from '@/services/pocketbase/randomizerService';
 import { randomizerQueryKeys } from '@/hooks/queries/useSpinHistory';
 import { useToast } from '@/hooks/use-toast';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 import type { RandomizerSpinsResponse } from '@/types/pocketbase.types';
 import { Collections } from '@/types/pocketbase.types';
 

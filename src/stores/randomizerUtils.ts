@@ -12,7 +12,7 @@
 
 import type { Project } from '@/types/project';
 import { RandomizerError, RandomizerErrorType, RandomizerPreferences } from './randomizerStore';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('RandomizerUtils');
 

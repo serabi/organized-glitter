@@ -11,7 +11,7 @@ import { Collections, ProjectsResponse } from '@/types/pocketbase.types';
 import { queryKeys } from '../queries/queryKeys';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 import { ClientResponseError } from 'pocketbase';
 import { getCurrentDateString } from '@/utils/dateHelpers';
 import { useUserTimezone } from '@/hooks/useUserTimezone';

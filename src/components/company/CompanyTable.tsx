@@ -23,7 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Trash2, Link2, Loader2, FileText } from 'lucide-react';
 import { pb } from '@/lib/pocketbase';
 import { createFilter } from '@/utils/filterBuilder';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 import EditCompanyDialog from './EditCompanyDialog';
 import { Link } from 'react-router-dom';
 import { CompaniesResponse } from '@/types/pocketbase.types';

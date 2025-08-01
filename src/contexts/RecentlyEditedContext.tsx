@@ -47,7 +47,7 @@
  */
 
 import React, { createContext, useContext, useState, useMemo, useCallback, ReactNode } from 'react';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('RecentlyEditedContext');
 

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { pb } from '@/lib/pocketbase';
 import { ServiceResponse, createSuccessResponse, createErrorResponse } from '@/types/shared';
 import { useToast } from '@/hooks/use-toast';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const metadataLogger = createLogger('UserMetadata');
 

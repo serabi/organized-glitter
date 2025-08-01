@@ -14,7 +14,7 @@ import React, { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Project } from '@/types/project';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 import { useIsMobile, useIsTouchDevice } from '@/hooks/use-mobile';
 import { RippleEffect } from '@/components/ui/ripple-effect';
 

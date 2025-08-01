@@ -17,7 +17,7 @@ import { FilterBuilder } from './FilterBuilder';
 import { ErrorHandler } from './ErrorHandler';
 import { FieldMapper } from './FieldMapper';
 import { PocketBaseSubscriptionManager, getSubscriptionManager } from './SubscriptionManager';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('BaseService');
 

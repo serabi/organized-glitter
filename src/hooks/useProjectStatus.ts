@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { ProjectType, ProjectStatus } from '@/types/project';
 import { pb } from '@/lib/pocketbase';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('useProjectStatus');
 

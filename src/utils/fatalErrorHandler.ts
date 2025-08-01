@@ -3,7 +3,7 @@
  * Provides user-friendly error display when the app fails to load
  */
 
-import { logger } from './logger';
+import { logger } from '@/utils/logger';
 
 interface ErrorDisplayOptions {
   title?: string;

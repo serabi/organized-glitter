@@ -3,7 +3,6 @@ import { ProjectCreateDTO } from '@/types/project';
 import { pb } from '@/lib/pocketbase';
 // import { TAG_COLOR_PALETTE } from '@/utils/tagColors'; // Unused
 import { logger } from '@/utils/logger';
-import { secureLogger } from '@/utils/secureLogger';
 import { queuedPbRequest } from '@/utils/rateLimit';
 
 // Type for tag import results
@@ -29,7 +28,7 @@ export const useImportCreateProject = () => {
     try {
       // Get current user from PocketBase
       if (!pb.authStore.isValid || !pb.authStore.model) {
-        secureLogger.error('No user found when creating project');
+        logger.error('No user found when creating project');
         throw new Error('User not authenticated');
       }
 
@@ -60,11 +59,11 @@ export const useImportCreateProject = () => {
       };
 
       // DEBUG: Log kit_category field specifically
-      secureLogger.debug(`Kit category debug for project "${data.title}":`, {
+      logger.debug(`Kit category debug for project "${data.title}":`, {
         inputKitCategory: data.kit_category,
         finalKitCategory: projectData.kit_category,
       });
-      secureLogger.debug('Full projectData object:', { projectData });
+      logger.debug('Full projectData object:', { projectData });
 
       // Resolve company ID if company name is provided
       if (data.company && data.company !== 'other') {
@@ -92,7 +91,7 @@ export const useImportCreateProject = () => {
             projectData.company = newCompany.id;
           }
         } catch (error) {
-          secureLogger.warn('Failed to resolve/create company:', error);
+          logger.warn('Failed to resolve/create company:', error);
           // Continue without company reference
         }
       }
@@ -123,7 +122,7 @@ export const useImportCreateProject = () => {
             projectData.artist = newArtist.id;
           }
         } catch (error) {
-          secureLogger.warn('Failed to resolve/create artist:', error);
+          logger.warn('Failed to resolve/create artist:', error);
           // Continue without artist reference
         }
       }
@@ -132,7 +131,7 @@ export const useImportCreateProject = () => {
       const newProject = await queuedPbRequest(() => pb.collection('projects').create(projectData));
 
       if (!newProject || !newProject.id) {
-        secureLogger.error('Project creation failed: no valid project data returned', {
+        logger.error('Project creation failed: no valid project data returned', {
           projectData,
           newProject,
         });
@@ -140,7 +139,7 @@ export const useImportCreateProject = () => {
       }
 
       // DEBUG: Log what came back from database
-      secureLogger.debug(`Database insert result for "${data.title}":`, {
+      logger.debug(`Database insert result for "${data.title}":`, {
         returnedKitCategory: newProject.kit_category,
         fullReturnedProject: newProject,
       });
@@ -149,7 +148,7 @@ export const useImportCreateProject = () => {
 
       // Handle tags if provided (now expecting tagIds)
       if (data.tagIds && data.tagIds.length > 0) {
-        secureLogger.debug(
+        logger.debug(
           `Processing ${data.tagIds.length} pre-resolved tags for project "${data.title}":`,
           { tagIds: data.tagIds }
         );
@@ -182,14 +181,14 @@ export const useImportCreateProject = () => {
 
         for (const tagId of data.tagIds) {
           if (!tagId.trim()) {
-            secureLogger.debug('Skipping empty tag ID'); // Should not happen if tagIds are validated
+            logger.debug('Skipping empty tag ID'); // Should not happen if tagIds are validated
             tagResults.failedTags++;
             tagResults.errors.push('Encountered an empty tag ID during linking.');
             continue;
           }
 
           const tagProcessingStart = Date.now();
-          secureLogger.debug(`Attempting to link tag ${tagId} to project ${newProject.id}`);
+          logger.debug(`Attempting to link tag ${tagId} to project ${newProject.id}`);
 
           try {
             await queuedPbRequest(() =>
@@ -198,7 +197,7 @@ export const useImportCreateProject = () => {
                 tag: tagId,
               })
             );
-            secureLogger.debug(`Successfully linked tag ${tagId} to project ${newProject.id}`);
+            logger.debug(`Successfully linked tag ${tagId} to project ${newProject.id}`);
             tagResults.successfulTags++;
           } catch (linkError) {
             logger.error(`Error linking tag ${tagId} to project ${newProject.id}`, linkError, {
@@ -212,12 +211,10 @@ export const useImportCreateProject = () => {
             );
           }
           const tagProcessingTime = Date.now() - tagProcessingStart;
-          secureLogger.debug(
-            `Tag ID "${tagId}" linking processing completed in ${tagProcessingTime}ms`
-          );
+          logger.debug(`Tag ID "${tagId}" linking processing completed in ${tagProcessingTime}ms`);
         }
 
-        secureLogger.debug(`Tag linking summary for project "${data.title}":`, {
+        logger.debug(`Tag linking summary for project "${data.title}":`, {
           totalTags: tagResults.totalTags,
           successfulTags: tagResults.successfulTags,
           failedTags: tagResults.failedTags,
@@ -244,14 +241,14 @@ export const useImportCreateProject = () => {
           tagImportResult: tagResults,
         };
       } else {
-        secureLogger.debug(`No tag IDs provided for project "${data.title}"`);
+        logger.debug(`No tag IDs provided for project "${data.title}"`);
         return {
           project: newProject,
           tagImportResult: undefined,
         };
       }
     } catch (error) {
-      secureLogger.error('Error creating project:', error);
+      logger.error('Error creating project:', error);
       throw error;
     } finally {
       setLoading(false);

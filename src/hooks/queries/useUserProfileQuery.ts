@@ -3,7 +3,7 @@ import { pb } from '@/lib/pocketbase';
 import { Collections, UsersResponse } from '@/types/pocketbase.types';
 import { queryKeys } from './queryKeys';
 import { useToast } from '@/hooks/use-toast';
-import { secureLogger } from '@/utils/secureLogger';
+import { logger } from '@/utils/logger';
 
 /**
  * Fetches user profile data from PocketBase
@@ -76,7 +76,7 @@ export const useUpdateProfileMutation = () => {
       });
     },
     onError: error => {
-      secureLogger.error('Error updating profile:', error);
+      logger.error('Error updating profile:', error);
       toast({
         title: 'Error',
         description: 'Failed to update profile',

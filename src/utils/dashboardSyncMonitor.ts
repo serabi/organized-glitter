@@ -5,7 +5,7 @@
  * status synchronization to help identify and prevent future issues.
  */
 
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('DashboardSyncMonitor');
 

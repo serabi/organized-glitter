@@ -6,7 +6,7 @@
 
 import { toZonedTime, formatInTimeZone, toDate } from 'date-fns-tz';
 import { format } from 'date-fns';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('TimezoneUtils');
 

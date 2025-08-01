@@ -36,7 +36,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useFiltersFull } from '@/contexts/FilterProvider';
 import { useAvailableYears } from '@/hooks/queries/useAvailableYears';
-import { secureLogger } from '@/utils/secureLogger';
+import { logger } from '@/utils/logger';
 import { DashboardValidSortField } from '@/features/dashboard/dashboard.constants'; // Import type from constants
 
 // No longer need to define ValidSortField here, it's imported from context
@@ -294,7 +294,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
                   updateSort(currentSortField, value);
                 } else {
                   // Handle unexpected value, perhaps log an error or default
-                  secureLogger.warn(
+                  logger.warn(
                     `DashboardFilters: Invalid sort direction value received: ${value}. Defaulting to 'desc'.`
                   );
                   updateSort(currentSortField, 'desc');

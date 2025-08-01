@@ -9,7 +9,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 import { useIsMobile, useWindowSize } from '@/hooks/use-mobile';
 
 const logger = createLogger('ViewportOptimization');

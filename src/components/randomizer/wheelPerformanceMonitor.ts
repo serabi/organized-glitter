@@ -9,7 +9,7 @@
  * @since 2025-07-19
  */
 
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('WheelPerformanceMonitor');
 

@@ -1,6 +1,6 @@
 import { ProjectType, ProjectStatus } from '@/types/project';
 import Papa from 'papaparse';
-import { logger } from './logger';
+import { logger } from '@/utils/logger';
 import { safeDateString } from '@/utils/dateHelpers';
 
 export interface ParsedCsvData {

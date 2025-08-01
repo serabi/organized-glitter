@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useOptimizedImage, useProgressiveImage } from '@/hooks/useOptimizedImage';
 import { ImageService, type ImageSizeKey } from '@/services/ImageService';
 import SafeImage from '@/components/projects/SafeImage';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('OptimizedImage');
 

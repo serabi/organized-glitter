@@ -4,7 +4,7 @@ import ProjectsGrid from '@/components/dashboard/ProjectsGrid';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useAuth } from '@/hooks/useAuth';
 import { useFilterStateOnly } from '@/contexts/FilterProvider';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('ProjectsSection');
 

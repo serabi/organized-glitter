@@ -6,7 +6,7 @@
 
 import PocketBase from 'pocketbase';
 import { SubscriptionCleanup, SubscriptionManager } from './types';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('SubscriptionManager');
 

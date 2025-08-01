@@ -9,7 +9,7 @@ import { pb } from '@/lib/pocketbase';
 import { Collections, CompaniesResponse, ArtistsResponse } from '@/types/pocketbase.types';
 import { TagService } from '@/lib/tags';
 import { queryKeys, CompanyQueryParams } from '../queryKeys';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 import {
   getStandardQueryConfig,
   getFrequentQueryConfig,

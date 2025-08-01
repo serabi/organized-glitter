@@ -29,7 +29,7 @@ import {
 import { useProjectUpdateUnified } from '@/hooks/mutations/useProjectUpdateUnified';
 import { useMetadata } from '@/contexts/MetadataContext';
 import { useServiceToast } from '@/utils/toast-adapter';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 import { useUserTimezone } from '@/hooks/useUserTimezone';
 
 const logger = createLogger('useEditProject');

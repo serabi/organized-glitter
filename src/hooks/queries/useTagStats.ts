@@ -3,7 +3,7 @@ import { TagService } from '@/lib/tags';
 import { queryKeys } from './queryKeys';
 import { useAuth } from '@/hooks/useAuth';
 import { ClientResponseError } from 'pocketbase';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('useTagStats');
 

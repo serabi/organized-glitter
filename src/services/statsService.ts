@@ -1,6 +1,6 @@
 import { pb } from '@/lib/pocketbase';
 import { Collections } from '@/types/pocketbase.types';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 import { DashboardStats, StatusBreakdown } from '@/types/dashboard';
 
 const logger = createLogger('statsService');

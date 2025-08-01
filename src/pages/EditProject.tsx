@@ -12,8 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ArrowLeft, Save, Archive, Trash2, X } from 'lucide-react';
 import { ProjectMainTabSimple } from '@/components/projects/tabs/ProjectMainTabSimple';
 import { ProjectStatsTabSimple } from '@/components/projects/tabs/ProjectStatsTabSimple';
-import { logger } from '@/utils/logger';
-import { createLogger } from '@/utils/secureLogger';
+import { logger, createLogger } from '@/utils/logger';
 // Debug component removed for PocketBase migration
 
 const pageLogger = createLogger('EditProject');

@@ -10,7 +10,7 @@ import {
 import { Maximize, Loader2, RefreshCw, Image as ImageIcon } from 'lucide-react';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { ImageErrorBoundary } from '@/components/error/ComponentErrorBoundaries';
-import { secureLogger } from '@/utils/secureLogger';
+import { logger } from '@/utils/logger';
 import { isPlaceholderImage } from '@/utils/imageUtils';
 import { useImageLoader } from '@/hooks/useImageLoader';
 import { VisuallyHidden } from '@/components/ui/visually-hidden';
@@ -109,10 +109,10 @@ const ImageGallery = ({
         className={imageClasses}
         loading="lazy"
         onError={() => {
-          secureLogger.error('Image render error:', { processedImageUrl });
+          logger.error('Image render error:', { processedImageUrl });
           // Instead of hiding, trigger retry logic
           if (!error) {
-            secureLogger.log('Triggering retry from image onError');
+            logger.log('Triggering retry from image onError');
             retry();
           }
         }}

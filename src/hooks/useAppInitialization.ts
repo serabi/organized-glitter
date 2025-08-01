@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { setupErrorHandler } from '@/utils/errorHandler';
 import { setupGlobalAuthClear } from '@/utils/auth';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 type ToastType = 'error' | 'warning' | 'success' | 'info';
 

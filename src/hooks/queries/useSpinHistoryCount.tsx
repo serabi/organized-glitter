@@ -18,7 +18,7 @@ import {
   isRandomizerError,
 } from '@/services/pocketbase/randomizerService';
 import { randomizerQueryKeys } from '@/hooks/queries/useSpinHistory';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('useSpinHistoryCount');
 

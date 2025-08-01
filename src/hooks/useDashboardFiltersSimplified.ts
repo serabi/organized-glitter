@@ -8,7 +8,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { ProjectType } from '@/types/project';
 import { TagService } from '@/lib/tags';
 import { Tag } from '@/types/tag';
-import { secureLogger } from '@/utils/secureLogger';
+import { logger } from '@/utils/logger';
 import { useDashboardViewState } from './useDashboardViewState';
 
 interface DashboardTabCounts {
@@ -72,11 +72,11 @@ export const useDashboardFilters = (projects: ProjectType[]): UseDashboardFilter
         if (response.status === 'success' && response.data) {
           setAllUserTags(response.data);
         } else {
-          secureLogger.error('Failed to fetch user tags:', response.error);
+          logger.error('Failed to fetch user tags:', response.error);
           setAllUserTags([]);
         }
       } catch (error) {
-        secureLogger.error('Error fetching user tags:', error);
+        logger.error('Error fetching user tags:', error);
         setAllUserTags([]);
       }
     };

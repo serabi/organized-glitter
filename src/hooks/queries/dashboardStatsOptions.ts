@@ -1,7 +1,7 @@
 import { queryOptions } from '@tanstack/react-query';
 import { pb } from '@/lib/pocketbase';
 import { Collections, UserDashboardStatsRecord } from '@/types/pocketbase.types';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 import { calculateDashboardStats } from '@/services/statsService';
 import { DashboardStats } from '@/types/dashboard';
 import { queryKeys } from './queryKeys';

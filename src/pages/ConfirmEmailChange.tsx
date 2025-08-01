@@ -9,13 +9,13 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { logger } from '@/utils/logger';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { pb } from '@/lib/pocketbase';
 import { ClientResponseError } from 'pocketbase';
-import { secureLogger } from '../utils/secureLogger';
 import { Lock, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
 
 const ConfirmEmailChange = () => {
@@ -82,7 +82,7 @@ const ConfirmEmailChange = () => {
         throw new Error('Email change confirmation failed');
       }
     } catch (err: unknown) {
-      secureLogger.criticalError('Email change confirmation error', err);
+      logger.criticalError('Email change confirmation error', err);
 
       let errorMessage = 'Failed to confirm email change. Please try again.';
 

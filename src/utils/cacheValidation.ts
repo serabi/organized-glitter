@@ -6,7 +6,7 @@
  */
 
 import { QueryClient } from '@tanstack/react-query';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('CacheValidation');
 

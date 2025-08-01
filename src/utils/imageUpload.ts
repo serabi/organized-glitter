@@ -1,7 +1,7 @@
 import { isAuthenticated, getCurrentUserId } from '@/lib/pocketbase';
 import { isDevelopment } from '@/utils/env';
 import { uploadFile } from '@/utils/storageService';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const imageUploadLogger = createLogger('ImageUpload');
 import {

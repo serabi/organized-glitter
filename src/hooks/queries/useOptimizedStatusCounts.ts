@@ -8,7 +8,7 @@
 import { useMemo, useCallback } from 'react';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { queryKeys } from './queryKeys';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 import { StatusBreakdown } from '@/types/dashboard';
 import { Project } from '@/types/project';
 import { projectsService } from '@/services/pocketbase/projects.service';

@@ -16,6 +16,9 @@ pids
 # Migration logs (may contain sensitive URLs)
 scripts/*migration*.txt
 
+# Migration backups (temporary files from logger migration)
+.migration-backups/
+
 # Database backups (may contain sensitive URLs/tokens)
 backups/*/data.sql
 backups/*/complete_backup.sql
@@ -193,3 +196,6 @@ LOGGER_MIGRATION_PLAN.md
 MIGRATION_CHECKLIST.md
 migration-examples.md
 migration-examples.md
+SECURITY_REQUIREMENTS_SUMMARY.md
+SECURITY_VALIDATION_REPORT.md
+LOGGER_MIGRATION_SUCCESS_REPORT.md

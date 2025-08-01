@@ -10,7 +10,7 @@
 
 import { useMutation } from '@tanstack/react-query';
 import { pb } from '@/lib/pocketbase';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 import { UserDashboardSettingsResponse } from '@/types/pocketbase.types';
 // Dashboard filter context for persistence
 export interface DashboardFilterContext {

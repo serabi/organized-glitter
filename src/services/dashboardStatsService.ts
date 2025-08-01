@@ -7,7 +7,7 @@
 import { pb } from '@/lib/pocketbase';
 import { Collections, UserDashboardStatsRecord } from '@/types/pocketbase.types';
 import { ProjectStatusChangeEvent } from '@/types/user-dashboard-stats';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('DashboardStatsService');
 

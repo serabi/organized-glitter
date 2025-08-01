@@ -42,7 +42,7 @@ import { useAuth } from '@/hooks/useAuth';
 import ProjectPagination from '@/components/ui/ProjectPagination';
 import { useNavigateToProject } from '@/hooks/useNavigateToProject';
 import { useRecentlyEdited } from '@/contexts/RecentlyEditedContext';
-import { secureLogger } from '@/utils/secureLogger';
+import { logger } from '@/utils/logger';
 import { useTabAwareErrorMessage } from '@/hooks/useTabAwareErrorMessage';
 
 // Interface for ProjectsGrid props - now accepts dashboard data to prevent duplicate calls
@@ -83,7 +83,7 @@ const ProjectsGridComponent: React.FC<ProjectsGridProps> = ({ dashboardData }) =
   // Consolidated debug logging for development
   React.useEffect(() => {
     if (!loading) {
-      secureLogger.debug('📊 ProjectsGrid Debug Info:', {
+      logger.debug('📊 ProjectsGrid Debug Info:', {
         // Basic grid state
         gridState: {
           loading,

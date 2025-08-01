@@ -54,7 +54,7 @@ import React, {
   useState,
 } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 import { DashboardStats } from '@/types/dashboard';
 import { queryKeys } from '@/hooks/queries/queryKeys';
 import { safeInvalidateQueries } from '@/utils/queryInvalidationGuard';
@@ -244,12 +244,6 @@ export const StatsProvider: React.FC<StatsProviderProps> = ({ children }) => {
 
   // Determine if we should show loading state
   const shouldShowLoading = !isInitialized || isLoadingProjects;
-
-  // Create stable statusCounts signature to prevent unnecessary recalculations
-  const _statusCountsSignature = useMemo(() => {
-    if (!statusCounts) return null;
-    return `${statusCounts.wishlist}-${statusCounts.purchased}-${statusCounts.stash}-${statusCounts.progress}-${statusCounts.completed}-${statusCounts.destashed}-${statusCounts.archived}`;
-  }, [statusCounts]);
 
   // Simplified counts calculation using statusCounts directly with optimized dependencies
   const countsForTabs = useMemo((): CountsForTabsType | BadgeLoadingState => {

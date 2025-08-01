@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { secureLogger } from '@/utils/secureLogger';
+import { logger } from '@/utils/logger';
 import { Button } from '@/components/ui/button';
 import { ProjectType } from '@/types/project';
 import { cn } from '@/lib/utils';
@@ -79,7 +79,7 @@ const ProjectCardComponent = ({
         )}
         onLoad={() => setIsImageLoaded(true)}
         onError={() => {
-          secureLogger.error('Image render error:', { processedImageUrl });
+          logger.error('Image render error:', { processedImageUrl });
           setIsImageLoaded(true);
         }}
       />

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { pb } from '@/lib/pocketbase';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 // import { toUserDateString, fromUserDateString } from '@/utils/timezoneUtils';
 
 const projectDetailLogger = createLogger('useProjectDetailQuery');

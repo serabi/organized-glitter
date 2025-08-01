@@ -5,7 +5,7 @@ import { useTags } from '@/hooks/queries/useTags';
 import { useAuth } from '@/hooks/useAuth';
 import type { Tag } from '@/types/tag';
 import { ArtistsResponse, CompaniesResponse } from '@/types/pocketbase.types';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('MetadataContext');
 

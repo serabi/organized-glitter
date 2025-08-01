@@ -13,7 +13,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Project } from '@/types/project';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 import {
   useAccessibilityAnnouncements,
   useFocusManagement,

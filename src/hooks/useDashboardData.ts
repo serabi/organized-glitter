@@ -10,7 +10,7 @@ import { useMemo, useEffect } from 'react';
 import { useProjects, ServerFilters } from '@/hooks/queries/useProjects';
 import { FilterState } from '@/contexts/FilterProvider';
 import { useMetadata } from '@/contexts/MetadataContext';
-import { createLogger, dashboardLogger } from '@/utils/secureLogger';
+import { createLogger, dashboardLogger } from '@/utils/logger';
 import { useRenderGuard, useThrottledLogger } from '@/utils/renderGuards';
 
 // Create logger outside component scope to ensure stable reference

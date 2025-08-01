@@ -9,7 +9,7 @@
  */
 
 import { useState, useCallback, useRef } from 'react';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 import { useIsTouchDevice, useIsMobile } from '@/hooks/use-mobile';
 
 const logger = createLogger('EnhancedTouchFeedback');

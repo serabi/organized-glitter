@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Upload, User } from 'lucide-react';
 import { uploadAvatar } from '@/utils/avatarUtils';
-import { secureLogger } from '@/utils/secureLogger';
+import { logger } from '@/utils/logger';
 
 interface AvatarSelectorProps {
   userId: string;
@@ -59,7 +59,7 @@ export function AvatarSelector({
         toast({ description: 'Avatar uploaded successfully' });
       }
     } catch (error) {
-      secureLogger.error('Error uploading avatar:', error);
+      logger.error('Error uploading avatar:', error);
       toast({ variant: 'destructive', description: 'Failed to upload avatar' });
     } finally {
       setIsUploading(false);

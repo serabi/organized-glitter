@@ -17,7 +17,7 @@ import { ProjectImageSection } from '@/components/projects/form-sections/Project
 import { useImageUpload } from '@/hooks/useImageUpload';
 import ArtistSelect from '@/components/projects/form/ArtistSelect';
 import CompanySelect from '@/components/projects/form/CompanySelect';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 // Type-safe status options that match ProjectStatus type
 const STATUS_OPTIONS: Record<ProjectStatus, string> = {

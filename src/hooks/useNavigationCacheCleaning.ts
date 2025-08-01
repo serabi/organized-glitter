@@ -11,7 +11,7 @@ import { useEffect, useCallback, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useQueryClient, type QueryClient, Query } from '@tanstack/react-query';
 import { cleanInvalidCacheEntries } from '@/utils/cacheValidation';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('NavigationCacheCleaning');
 

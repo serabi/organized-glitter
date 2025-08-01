@@ -9,7 +9,7 @@
 
 import React, { createContext, useCallback, useMemo, useRef, ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { createLogger, performanceLogger } from '@/utils/secureLogger';
+import { createLogger, performanceLogger } from '@/utils/logger';
 import { ProjectFilterStatus } from '@/types/project';
 import { DashboardValidSortField } from '@/features/dashboard/dashboard.constants';
 import {

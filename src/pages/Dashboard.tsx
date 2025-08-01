@@ -37,7 +37,7 @@ import { FilterProvider } from '@/contexts/FilterProvider';
 import { UIProvider } from '@/contexts/UIContext';
 import { RecentlyEditedProvider } from '@/contexts/RecentlyEditedContext';
 import { DashboardFilterContext } from '@/hooks/mutations/useSaveNavigationContext';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 import { useToast } from '@/hooks/use-toast';
 
 // RecentlyEdited context moved to DashboardFiltersContext for better architecture
