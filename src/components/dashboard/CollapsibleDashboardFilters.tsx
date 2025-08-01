@@ -114,15 +114,17 @@ const CollapsibleDashboardFiltersComponent: React.FC<CollapsibleDashboardFilters
         id="filters-content"
         role="region"
         aria-labelledby="filters-header"
-        className={`transition-all duration-300 ease-in-out ${
-          isOpen ? 'opacity-100' : 'max-h-0 overflow-hidden opacity-0'
+        className={`overflow-hidden transition-all duration-300 ease-in-out ${
+          isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
         }`}
       >
-        {isOpen && (
-          <div className="mt-4 rounded-lg border bg-card p-4 shadow-sm">
-            <DashboardFilters />
-          </div>
-        )}
+        <div
+          className={`mt-4 rounded-lg border bg-card p-4 shadow-sm transition-all duration-300 ease-in-out ${
+            isOpen ? 'translate-y-0 transform' : '-translate-y-2 transform'
+          }`}
+        >
+          <DashboardFilters />
+        </div>
       </div>
     </div>
   );

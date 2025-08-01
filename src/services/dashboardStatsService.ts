@@ -193,6 +193,7 @@ function isValidStatus(status: string): status is ValidProjectStatus {
     'purchased',
     'stash',
     'progress',
+    'onhold',
     'completed',
     'destashed',
     'archived',

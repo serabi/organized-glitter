@@ -30,6 +30,18 @@ export default tseslint.config(
           destructuredArrayIgnorePattern: '^_',
         },
       ],
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'openai',
+              message:
+                'OpenAI package should only be used in server-side code to prevent API key exposure in client bundle.',
+            },
+          ],
+        },
+      ],
     },
   },
   prettier

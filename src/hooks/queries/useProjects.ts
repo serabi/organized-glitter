@@ -69,6 +69,7 @@ const transformFilters = (userId: string, serverFilters: ServerFilters): Project
     includeDestashed: serverFilters.includeDestashed,
     includeArchived: serverFilters.includeArchived,
     includeWishlist: serverFilters.includeWishlist,
+    includeOnHold: serverFilters.includeOnHold,
     searchTerm: serverFilters.searchTerm,
     selectedTags: serverFilters.selectedTags,
   };
@@ -155,6 +156,7 @@ const fetchProjects = async (
       purchased: 0,
       stash: 0,
       progress: 0,
+      onhold: 0,
       completed: 0,
       archived: 0,
       destashed: 0,
@@ -195,6 +197,7 @@ export const useProjects = (
       includeDestashed: filters.includeDestashed,
       includeArchived: filters.includeArchived,
       includeWishlist: filters.includeWishlist,
+      includeOnHold: filters.includeOnHold,
       searchTerm: filters.searchTerm,
       selectedTags: filters.selectedTags?.sort().join(',') || '',
     });

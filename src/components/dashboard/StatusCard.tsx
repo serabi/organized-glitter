@@ -67,9 +67,17 @@ export const StatusCard: React.FC<StatusCardProps> = memo(
       }
     };
 
-    // Handle keyboard interaction
+    // Handle keyboard interaction - Enter key on keydown
     const handleKeyDown = (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter' || e.key === ' ') {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleClick();
+      }
+    };
+
+    // Handle keyboard interaction - Space key on keyup (ARIA best practice)
+    const handleKeyUp = (e: React.KeyboardEvent) => {
+      if (e.key === ' ') {
         e.preventDefault();
         handleClick();
       }
@@ -78,20 +86,28 @@ export const StatusCard: React.FC<StatusCardProps> = memo(
     // Generate appropriate ARIA label
     const effectiveAriaLabel =
       ariaLabel ||
-      `${title}: ${isLoading ? 'Loading' : isError ? 'Error' : count} projects. Click to filter.`;
+      `${title}: ${isLoading ? 'Loading' : isError ? 'Error' : count} projects${onClick ? '. Click to filter.' : ''}`;
+
+    // Conditional props for interactive behavior
+    const interactiveProps = onClick
+      ? {
+          onClick: handleClick,
+          onKeyDown: handleKeyDown,
+          onKeyUp: handleKeyUp,
+          tabIndex: 0,
+          role: 'button' as const,
+          'aria-selected': isActive,
+        }
+      : {};
 
     return (
       <Card
-        className={`cursor-pointer transition-all duration-200 hover:scale-[1.02] ${
-          isActive ? 'border-primary/30 bg-muted/50' : ''
-        } ${className}`}
-        onClick={handleClick}
-        onKeyDown={handleKeyDown}
-        tabIndex={0}
-        role="button"
+        className={`transition-all duration-200 ${
+          onClick ? 'cursor-pointer hover:scale-[1.02]' : ''
+        } ${isActive ? 'border-primary/30 bg-muted/50' : ''} ${className}`}
         aria-label={effectiveAriaLabel}
-        aria-selected={isActive}
         data-status={status}
+        {...interactiveProps}
       >
         <CardContent className="p-2 md:p-4">
           <div className="space-y-1 md:space-y-2">

@@ -40,7 +40,7 @@ const STATUS_CARDS = [
   {
     status: 'all' as ProjectFilterStatus,
     title: 'Total Projects',
-    description: 'All active projects',
+    description: 'Active projects',
     getCount: (counts: AllStatusCountsType) => counts.all,
   },
   {
@@ -160,8 +160,8 @@ export const StatusCarousel: React.FC<StatusCarouselProps> = memo(({ className =
             );
           })}
         </CarouselContent>
-        <CarouselPrevious className="left-4 h-8 w-8 min-h-8 min-w-8 md:left-4 md:h-10 md:w-10 md:min-h-10 md:min-w-10" />
-        <CarouselNext className="right-4 h-8 w-8 min-h-8 min-w-8 md:right-4 md:h-10 md:w-10 md:min-h-10 md:min-w-10" />
+        <CarouselPrevious className="left-4 h-8 min-h-8 w-8 min-w-8 md:left-4 md:h-10 md:min-h-10 md:w-10 md:min-w-10" />
+        <CarouselNext className="right-4 h-8 min-h-8 w-8 min-w-8 md:right-4 md:h-10 md:min-h-10 md:w-10 md:min-w-10" />
       </Carousel>
     </div>
   );

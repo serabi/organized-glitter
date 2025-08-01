@@ -28,7 +28,7 @@ const SearchProjects = ({
       </label>
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground"
+        className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"

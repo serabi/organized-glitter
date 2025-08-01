@@ -438,7 +438,6 @@ const FilterStateProviderComponent: React.FC<FilterStateProviderProps> = ({ chil
               sortDirection: savedContext.sortDirection,
               currentPage: savedContext.currentPage,
               pageSize: savedContext.pageSize,
-              viewType: 'grid',
             };
             const restoredFilters = validateAndSanitizeFilters(
               rawSavedFilters as Partial<FilterState>,
