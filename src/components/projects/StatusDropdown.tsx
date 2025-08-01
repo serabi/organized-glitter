@@ -25,6 +25,7 @@ const StatusDropdown = ({ currentStatus, onStatusChange }: StatusDropdownProps) 
       purchased: 'text-purple-600 dark:text-purple-400', // #8B5CF6 Purple
       stash: 'text-amber-600 dark:text-amber-400', // #F59E0B Amber
       progress: 'text-emerald-600 dark:text-emerald-400', // #10B981 Green
+      onhold: 'text-orange-600 dark:text-orange-400', // #EA580C Orange
       completed: 'text-indigo-600 dark:text-indigo-400', // #6366F1 Indigo
       destashed: 'text-rose-600 dark:text-rose-400', // #F43F5E Rose
       archived: 'text-gray-600 dark:text-gray-400', // #6B7280 Gray
@@ -43,6 +44,7 @@ const StatusDropdown = ({ currentStatus, onStatusChange }: StatusDropdownProps) 
           <SelectItem value="purchased">Purchased - Not Received</SelectItem>
           <SelectItem value="stash">In Stash</SelectItem>
           <SelectItem value="progress">In Progress</SelectItem>
+          <SelectItem value="onhold">On Hold</SelectItem>
           <SelectItem value="completed">Completed</SelectItem>
           <SelectItem value="archived">Archived</SelectItem>
           <SelectItem value="destashed">Destashed</SelectItem>

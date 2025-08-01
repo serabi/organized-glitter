@@ -7,6 +7,7 @@ export type ProjectStatus =
   | 'purchased'
   | 'stash'
   | 'progress'
+  | 'onhold'
   | 'completed'
   | 'archived'
   | 'destashed';

@@ -104,7 +104,8 @@ const Import = () => {
                     </li>
                     <li>
                       <strong>Status</strong> - Must be one of: wishlist, purchased, stash,
-                      progress, completed, archived, destashed
+                      progress, onhold, completed, archived, destashed. Use "onhold" for projects
+                      that you've started but need to pause temporarily.
                     </li>
                     <li>
                       <strong>Type of Kit</strong> - Must be one of: mini or full
@@ -197,6 +198,24 @@ const Import = () => {
                           <td className="p-2">2022-12-20</td>
                           <td className="p-2">Christmas gift</td>
                           <td className="p-2">Animals; Portrait</td>
+                        </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="p-2">Forest Path</td>
+                          <td className="p-2">Diamond Art Club</td>
+                          <td className="p-2">Emma Davis</td>
+                          <td className="p-2">18</td>
+                          <td className="p-2">24</td>
+                          <td className="p-2">https://example.com/forest-path</td>
+                          <td className="p-2">round</td>
+                          <td className="p-2">65,200</td>
+                          <td className="p-2">full</td>
+                          <td className="p-2">onhold</td>
+                          <td className="p-2">2024-02-10</td>
+                          <td className="p-2">2024-02-15</td>
+                          <td className="p-2">2024-03-01</td>
+                          <td className="p-2">-</td>
+                          <td className="p-2">Paused due to busy schedule</td>
+                          <td className="p-2">Nature; Trees; Peaceful</td>
                         </tr>
                         <tr className="border-b border-border/50">
                           <td className="p-2">Ocean Waves</td>
