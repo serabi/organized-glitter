@@ -77,29 +77,26 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
 
   // Get available years from the appropriate hook
   const { data: availableYears = [] } = useAvailableYears();
-
-  // Get status utilities for dropdown options
-  const { getStatusLabel } = useProjectStatus();
-
-  // Loading state is no longer needed here since we removed duplicate useDashboardData calls
-
   // Transform available years to the expected format for the dropdown
   const yearFinishedOptions = availableYears.map(year => ({
     label: year.toString(),
     value: year.toString(),
   }));
 
-  // Create status options for the dropdown
-  const statusOptions = [
-    { label: 'All Statuses', value: 'all' },
-    { label: 'Wishlist', value: 'wishlist' },
-    { label: 'Purchased', value: 'purchased' },
-    { label: 'In Stash', value: 'stash' },
-    { label: 'In Progress', value: 'progress' },
-    { label: 'Completed', value: 'completed' },
-    { label: 'Archived', value: 'archived' },
-    { label: 'Destashed', value: 'destashed' },
-  ];
+  // Get status utilities from hook
+  const { statusOptions: availableStatuses, getStatusLabel } = useProjectStatus();
+
+  // Create dynamic status options for the dropdown
+  const statusOptions = useMemo(
+    () => [
+      { label: 'All Statuses', value: 'all' },
+      ...availableStatuses.map(status => ({
+        label: getStatusLabel(status),
+        value: status,
+      })),
+    ],
+    [availableStatuses, getStatusLabel]
+  );
 
   // Extract values from filters with defaults
   const searchTerm = filters.searchTerm;
@@ -130,7 +127,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
 
   return (
     <div
-      className="dark:glass-card rounded-lg bg-white p-6 shadow md:sticky md:top-20 md:max-h-[calc(100vh-6rem)] md:overflow-y-auto"
+      className="dark:glass-card rounded-lg bg-white p-6 shadow md:sticky md:top-20"
       data-testid="dashboard-filters"
     >
       <div className="mb-4 flex items-center justify-between">
@@ -156,7 +153,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
           label="Status"
           options={statusOptions}
           value={activeStatus}
-          onChange={(value) => updateStatus(value as ProjectFilterStatus)}
+          onChange={value => updateStatus(value as ProjectFilterStatus)}
           placeholder="All statuses"
           showAllOption={false}
         />

@@ -78,12 +78,12 @@ const InProgressSectionComponent = ({ inProgressProjects, isLoading }: InProgres
 
       {isLoading ? null : inProgressProjects.length > 0 ? (
         <>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            {inProgressProjects.slice(0, 6).map((project: ProjectType) => (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {inProgressProjects.slice(0, 8).map((project: ProjectType) => (
               <ProjectCardLite key={project.id} project={project} onClick={handleProjectClick} />
             ))}
           </div>
-          {inProgressProjects.length > 6 && (
+          {inProgressProjects.length > 8 && (
             <div className="mt-6 text-center">
               <Button
                 variant="outline"

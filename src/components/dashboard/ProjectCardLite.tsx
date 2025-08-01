@@ -1,8 +1,6 @@
 import { memo } from 'react';
-import { Button } from '@/components/ui/button';
 import { ProjectType } from '@/types/project';
 import { cn } from '@/lib/utils';
-import { getStatusColor, getStatusLabel } from '@/utils/projectStatusUtils';
 import { Image as ImageIcon } from 'lucide-react';
 
 interface ProjectCardLiteProps {
@@ -25,14 +23,18 @@ const ProjectCardLite = memo(
     };
 
     return (
-      <div className="flex flex-col overflow-hidden rounded-lg border border-border bg-diamond-100 text-diamond-900 shadow-md transition-transform hover:-translate-y-1 hover:shadow-lg dark:bg-gray-800 dark:text-gray-100">
-        <div className="relative h-48 w-full bg-gray-200 dark:bg-gray-700 sm:h-56 md:h-64">
+      <div
+        className="group aspect-square cursor-pointer overflow-hidden rounded-xl border border-border bg-diamond-100 text-diamond-900 shadow-sm transition-all duration-300 ease-out hover:-translate-y-2 hover:border-primary/20 hover:shadow-xl hover:shadow-black/10 dark:bg-gray-800 dark:text-gray-100 dark:hover:border-primary/30 dark:hover:shadow-white/5"
+        onClick={handleClick}
+      >
+        {/* Image area - takes most of the square */}
+        <div className="relative h-3/4 w-full bg-gray-200 dark:bg-gray-700">
           {showImage && project.imageUrl ? (
             <img
               src={project.imageUrl}
               alt={project.title}
               loading="lazy"
-              className="h-full w-full object-cover"
+              className="h-full w-full object-cover transition-opacity duration-300 ease-in-out"
               onError={e => {
                 // Simple fallback on error
                 e.currentTarget.style.display = 'none';
@@ -46,25 +48,16 @@ const ProjectCardLite = memo(
               showImage && project.imageUrl ? 'hidden' : ''
             )}
           >
-            <ImageIcon className="h-12 w-12 text-gray-400" />
+            <ImageIcon className="h-8 w-8 text-gray-400" />
           </div>
-          <span
-            className={cn(
-              'absolute right-2 top-2 rounded-md px-2 py-1 text-xs font-medium',
-              getStatusColor(project.status)
-            )}
-          >
-            {getStatusLabel(project.status)}
-          </span>
         </div>
 
-        <div className="flex flex-1 flex-col justify-between p-3">
-          <h3 className="truncate text-lg font-semibold">{project.title}</h3>
-          {onClick && (
-            <Button size="sm" className="mt-3 w-full" onClick={handleClick}>
-              View Details
-            </Button>
-          )}
+        {/* Compact content area - bottom quarter */}
+        <div className="flex h-1/4 flex-col justify-center p-2">
+          {/* Project title only - compact and centered */}
+          <h3 className="line-clamp-2 text-center text-sm font-semibold leading-tight transition-colors duration-200 group-hover:text-primary">
+            {project.title}
+          </h3>
         </div>
       </div>
     );
@@ -73,7 +66,6 @@ const ProjectCardLite = memo(
     // Custom comparison for better memo performance
     return (
       prevProps.project.id === nextProps.project.id &&
-      prevProps.project.status === nextProps.project.status &&
       prevProps.project.title === nextProps.project.title &&
       prevProps.project.imageUrl === nextProps.project.imageUrl &&
       prevProps.onClick === nextProps.onClick &&

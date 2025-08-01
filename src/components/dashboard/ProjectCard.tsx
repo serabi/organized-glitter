@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { logger } from '@/utils/logger';
-import { Button } from '@/components/ui/button';
 import { ProjectType } from '@/types/project';
 import { cn } from '@/lib/utils';
 import { useProjectStatus } from '@/hooks/useProjectStatus';
@@ -95,7 +94,7 @@ const ProjectCardComponent = ({
         ref={ref}
         onClick={onClick}
         className={cn(
-          'group flex overflow-hidden rounded-xl border text-diamond-900 shadow-sm transition-all duration-300 ease-out hover:shadow-md hover:shadow-black/10 dark:text-gray-100 dark:hover:shadow-white/5 cursor-pointer',
+          'group flex cursor-pointer overflow-hidden rounded-xl border text-diamond-900 shadow-sm transition-all duration-300 ease-out hover:shadow-md hover:shadow-black/10 dark:text-gray-100 dark:hover:shadow-white/5',
           isRecentlyEdited
             ? 'border-green-500 bg-green-50 ring-2 ring-green-500 ring-opacity-50 dark:border-green-400 dark:bg-green-950'
             : 'border-border bg-diamond-100 hover:border-primary/20 dark:bg-gray-800 dark:hover:border-primary/30'
@@ -113,7 +112,7 @@ const ProjectCardComponent = ({
             <h3 className="line-clamp-1 text-sm font-semibold leading-tight transition-colors duration-200 group-hover:text-primary">
               {project.title}
             </h3>
-            
+
             {/* Kit specifications */}
             <div className="flex items-center">
               {(project.kit_category || project.drillShape) && (
@@ -129,10 +128,15 @@ const ProjectCardComponent = ({
               )}
             </div>
           </div>
-          
+
           {/* Status badge */}
           <div className="ml-4 flex-shrink-0">
-            <span className={cn('rounded-lg px-2 py-1 text-xs font-medium shadow-sm transition-all duration-200 group-hover:scale-105', getStatusColor(project.status))}>
+            <span
+              className={cn(
+                'rounded-lg px-2 py-1 text-xs font-medium shadow-sm transition-all duration-200 group-hover:scale-105',
+                getStatusColor(project.status)
+              )}
+            >
               {project.status === 'purchased' ? 'Purchased' : getStatusLabel(project.status)}
             </span>
           </div>
@@ -147,7 +151,7 @@ const ProjectCardComponent = ({
       ref={ref}
       onClick={onClick}
       className={cn(
-        'group flex flex-col overflow-hidden rounded-xl border text-diamond-900 shadow-sm transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-xl hover:shadow-black/10 dark:text-gray-100 dark:hover:shadow-white/5 cursor-pointer',
+        'group flex cursor-pointer flex-col overflow-hidden rounded-xl border text-diamond-900 shadow-sm transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-xl hover:shadow-black/10 dark:text-gray-100 dark:hover:shadow-white/5',
         isRecentlyEdited
           ? 'border-green-500 bg-green-50 ring-2 ring-green-500 ring-opacity-50 dark:border-green-400 dark:bg-green-950'
           : 'border-border bg-diamond-100 hover:border-primary/20 dark:bg-gray-800 dark:hover:border-primary/30'
@@ -183,7 +187,12 @@ const ProjectCardComponent = ({
                 </span>
               )}
             </div>
-            <span className={cn('flex-shrink-0 rounded-lg px-2 py-1 text-xs font-medium shadow-sm transition-all duration-200 group-hover:scale-105', getStatusColor(project.status))}>
+            <span
+              className={cn(
+                'flex-shrink-0 rounded-lg px-2 py-1 text-xs font-medium shadow-sm transition-all duration-200 group-hover:scale-105',
+                getStatusColor(project.status)
+              )}
+            >
               {project.status === 'purchased' ? 'Purchased' : getStatusLabel(project.status)}
             </span>
           </div>
