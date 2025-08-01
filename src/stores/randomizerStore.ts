@@ -15,7 +15,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { Project } from '@/types/project';
 import type { RandomizerSpinsResponse } from '@/types/pocketbase.types';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('RandomizerStore');
 

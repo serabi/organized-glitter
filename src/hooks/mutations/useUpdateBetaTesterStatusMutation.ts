@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { pb } from '@/lib/pocketbase';
 import { Collections } from '@/types/pocketbase.types';
 import { queryKeys } from '@/hooks/queries/queryKeys';
-import { secureLogger } from '@/utils/secureLogger';
+import { logger } from '@/utils/logger';
 
 /**
  * Mutation hook for updating beta tester status
@@ -40,7 +40,7 @@ export const useUpdateBetaTesterStatusMutation = () => {
       if (context?.previousStatus !== undefined) {
         queryClient.setQueryData(queryKeys.user.betaTesterStatus(userId), context.previousStatus);
       }
-      secureLogger.error('Error updating beta tester status:', error);
+      logger.error('Error updating beta tester status:', error);
     },
     onSettled: (_, __, { userId }) => {
       // Always refetch after error or success

@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { pb } from '@/lib/pocketbase';
 import { Collections } from '@/types/pocketbase.types';
 import { ClientResponseError } from 'pocketbase';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 import { FilterBuilder } from '@/utils/filterBuilder';
 import { requireAuthenticatedUser } from '@/utils/authGuards';
 

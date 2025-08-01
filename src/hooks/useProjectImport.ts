@@ -5,7 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ProjectCreateDTO } from '@/types/project';
 import { pb } from '@/lib/pocketbase';
 import { PROJECT_IMAGE_CONSTANTS } from '@/components/projects/ProgressNoteForm/constants';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 import { TAG_COLOR_PALETTE } from '@/utils/tagColors'; // For default tag color
 
 const logger = createLogger('ProjectImport');

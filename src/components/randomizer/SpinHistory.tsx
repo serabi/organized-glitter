@@ -17,7 +17,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { ExternalLink, History, Trash2, ChevronDown } from 'lucide-react';
 import { useSpinHistory } from '@/hooks/queries/useSpinHistory';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('SpinHistory');
 

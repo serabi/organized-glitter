@@ -8,7 +8,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { pb } from '@/lib/pocketbase';
 import { Collections, UsersResponse } from '@/types/pocketbase.types';
 import { queryKeys } from '@/hooks/queries/queryKeys';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 import { isValidTimezone } from '@/utils/timezoneUtils';
 
 const logger = createLogger('useUpdateTimezoneMutation');

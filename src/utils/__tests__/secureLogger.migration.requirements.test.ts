@@ -22,14 +22,14 @@ describe('LogTape Migration Requirements - Critical Security Validation', () => 
      * The new LogTape system MUST implement these exact 10 sensitive key patterns:
      * - key, token, secret, password, auth, authorization
      * - vite_supabase_anon_key, supabase_anon_key, api_key, apikey
-     * 
+     *
      * Pattern matching MUST be case-insensitive and support partial matching
      * (e.g., "user_api_key" should match because it contains "api_key")
      */
-    
+
     const REQUIRED_SENSITIVE_PATTERNS = [
       'key',
-      'token', 
+      'token',
       'secret',
       'password',
       'auth',
@@ -37,18 +37,18 @@ describe('LogTape Migration Requirements - Critical Security Validation', () => 
       'vite_supabase_anon_key',
       'supabase_anon_key',
       'api_key',
-      'apikey'
+      'apikey',
     ];
 
     it('must preserve all 10 critical sensitive key patterns', () => {
       REQUIRED_SENSITIVE_PATTERNS.forEach(pattern => {
         const testData: TestData = {
           [pattern]: 'sensitive-value-12345',
-          safeProp: 'safe-value'
+          safeProp: 'safe-value',
         };
 
         const result = redactSensitiveData(testData) as RedactedResult;
-        
+
         expect(result[pattern]).toBe('[REDACTED]');
         expect(result.safeProp).toBe('safe-value');
       });
@@ -58,11 +58,11 @@ describe('LogTape Migration Requirements - Critical Security Validation', () => 
       const testData: TestData = {
         API_KEY: 'uppercase-key',
         Token: 'titlecase-token',
-        secret: 'lowercase-secret'
+        secret: 'lowercase-secret',
       };
 
       const result = redactSensitiveData(testData) as RedactedResult;
-      
+
       expect(result.API_KEY).toBe('[REDACTED]');
       expect(result.Token).toBe('[REDACTED]');
       expect(result.secret).toBe('[REDACTED]');
@@ -72,11 +72,11 @@ describe('LogTape Migration Requirements - Critical Security Validation', () => 
       const testData: TestData = {
         user_api_key: 'partial-match-1',
         authentication_token: 'partial-match-2',
-        database_password: 'partial-match-3'
+        database_password: 'partial-match-3',
       };
 
       const result = redactSensitiveData(testData) as RedactedResult;
-      
+
       expect(result.user_api_key).toBe('[REDACTED]');
       expect(result.authentication_token).toBe('[REDACTED]');
       expect(result.database_password).toBe('[REDACTED]');
@@ -87,19 +87,20 @@ describe('LogTape Migration Requirements - Critical Security Validation', () => 
     /**
      * The new LogTape system MUST implement this exact regex pattern:
      * /(?:key|token|secret|password|auth)[=:]\s*['"]*([a-zA-Z0-9_-]{10,})['"]*\s*\/gi
-     * 
+     *
      * This pattern matches environment variable style assignments and configuration strings
      * Minimum length requirement: 10 characters for the value part
      */
 
-    const REQUIRED_REGEX_PATTERN = /(?:key|token|secret|password|auth)[=:]\s*['"]*([a-zA-Z0-9_-]{10,})['"]*\s*/gi;
+    const REQUIRED_REGEX_PATTERN =
+      /(?:key|token|secret|password|auth)[=:]\s*['"]*([a-zA-Z0-9_-]{10,})['"]*\s*/gi;
 
     it('must preserve exact regex pattern for string matching', () => {
       const testStrings = [
         'API_KEY=abcdefghijk123456789',
         'auth_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"',
         'password=mysecretpassword123',
-        'secret: \'shared-secret-key-456789\''
+        "secret: 'shared-secret-key-456789'",
       ];
 
       testStrings.forEach(testString => {
@@ -116,12 +117,12 @@ describe('LogTape Migration Requirements - Critical Security Validation', () => 
     });
 
     it('must handle quoted and unquoted values', () => {
-      const quotedValue = 'token="quoted-long-value-12345"';  
+      const quotedValue = 'token="quoted-long-value-12345"';
       const unquotedValue = 'secret=unquoted-long-value-67890';
-      
+
       const quotedResult = redactSensitiveData(quotedValue) as string;
       const unquotedResult = redactSensitiveData(unquotedValue) as string;
-      
+
       expect(quotedResult).toBe('token="[REDACTED]"');
       expect(unquotedResult).toBe('secret=[REDACTED]');
     });
@@ -131,7 +132,7 @@ describe('LogTape Migration Requirements - Critical Security Validation', () => 
     /**
      * The new LogTape system MUST implement WeakSet-based circular reference protection
      * to prevent infinite loops and stack overflow errors.
-     * 
+     *
      * This is critical for production stability when logging complex object graphs.
      */
 
@@ -150,7 +151,7 @@ describe('LogTape Migration Requirements - Critical Security Validation', () => 
       const a: TestData = { name: 'A', token: 'tokenA123' };
       const b: TestData = { name: 'B', token: 'tokenB456' };
       const c: TestData = { name: 'C', token: 'tokenC789' };
-      
+
       a.next = b;
       b.next = c;
       c.next = a; // Creates cycle
@@ -167,7 +168,7 @@ describe('LogTape Migration Requirements - Critical Security Validation', () => 
      * The new LogTape system MUST maintain the critical behavior that:
      * - Regular logging is disabled in production (DEV: false)
      * - criticalError method STILL logs in production but with redaction
-     * 
+     *
      * This is essential for production debugging while maintaining security.
      */
 
@@ -176,7 +177,7 @@ describe('LogTape Migration Requirements - Critical Security Validation', () => 
       const criticalErrorData: TestData = {
         errorType: 'DatabaseConnectionFailure',
         connectionString: 'postgres://user:password123@host:5432/db',
-        apiKey: 'critical-error-key-12345'
+        apiKey: 'critical-error-key-12345',
       };
 
       // In production, this should:
@@ -185,7 +186,7 @@ describe('LogTape Migration Requirements - Critical Security Validation', () => 
       // 3. Preserve non-sensitive debugging information
 
       const result = redactSensitiveData(criticalErrorData) as RedactedResult;
-      
+
       expect(result.errorType).toBe('DatabaseConnectionFailure');
       expect(result.connectionString).toBe('postgres://user:[REDACTED]@host:5432/db');
       expect(result.apiKey).toBe('[REDACTED]');
@@ -213,7 +214,7 @@ describe('LogTape Migration Requirements - Critical Security Validation', () => 
         errorValue: new Error('test error'),
         functionValue: () => 'test',
         symbolValue: Symbol('test'),
-        secret: 'should-be-redacted-123456'
+        secret: 'should-be-redacted-123456',
       };
 
       expect(() => {
@@ -230,7 +231,7 @@ describe('LogTape Migration Requirements - Critical Security Validation', () => 
         largeObj[`prop${i}`] = {
           id: i,
           data: `data-${i}`,
-          secret: `secret-${i}-123456789` // Will be redacted
+          secret: `secret-${i}-123456789`, // Will be redacted
         };
       }
 
@@ -256,7 +257,7 @@ describe('LogTape Migration Requirements - Critical Security Validation', () => 
       const testData: TestData = {
         secret: 'secret-value-123456',
         password: 'password-value-789012',
-        apiKey: 'api-key-value-345678'
+        apiKey: 'api-key-value-345678',
       };
 
       const result = redactSensitiveData(testData) as RedactedResult;
@@ -285,7 +286,7 @@ describe('LogTape Migration Requirements - Critical Security Validation', () => 
         VITE_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
         SUPABASE_ANON_KEY: 'another-supabase-key-123456789',
         VITE_API_ENDPOINT: 'https://api.example.com', // Should NOT be redacted
-        PORT: 3000 // Should NOT be redacted
+        PORT: 3000, // Should NOT be redacted
       };
 
       const result = redactSensitiveData(envData) as RedactedResult;
@@ -317,43 +318,43 @@ describe('LogTape Migration Requirements - Critical Security Validation', () => 
     it('should document all required features for LogTape implementation', () => {
       /**
        * MIGRATION CHECKLIST - ALL ITEMS MUST BE IMPLEMENTED:
-       * 
+       *
        * ✅ 1. Sensitive Key Patterns (10 patterns)
        *    - key, token, secret, password, auth, authorization
        *    - vite_supabase_anon_key, supabase_anon_key, api_key, apikey
        *    - Case-insensitive matching
        *    - Partial key matching (substring detection)
-       * 
+       *
        * ✅ 2. String Regex Pattern
-       *    - /(?:key|token|secret|password|auth)[=:]\s*['"]*([a-zA-Z0-9_-]{6,})['"]*\s*/gi
+       *    - Pattern: sensitive key detection regex
        *    - Minimum 6-character value length
        *    - Support for quoted and unquoted values
-       * 
+       *
        * ✅ 3. Circular Reference Protection
        *    - WeakSet-based cycle detection
        *    - '[Circular Reference]' replacement token
        *    - Stack overflow prevention
-       * 
+       *
        * ✅ 4. Production Environment Handling
        *    - Regular logs disabled when DEV: false
        *    - criticalError logs even in production
        *    - All logged data must be redacted
-       * 
+       *
        * ✅ 5. Type Safety
        *    - Handle all JavaScript types safely
        *    - null, undefined, primitives, objects, arrays
        *    - Built-in objects (Date, RegExp, Error, etc.)
        *    - Functions, symbols, Maps, Sets
-       * 
+       *
        * ✅ 6. Exact '[REDACTED]' Token
        *    - Must use exactly '[REDACTED]' (case-sensitive)
        *    - No alternative redaction tokens
-       * 
+       *
        * ✅ 7. Performance Requirements
        *    - Handle large objects (1000+ properties)
        *    - Complete processing within 1 second
        *    - No memory leaks with repeated processing
-       * 
+       *
        * ✅ 8. Environment Variable Support
        *    - VITE_SUPABASE_ANON_KEY detection
        *    - .env file format string processing

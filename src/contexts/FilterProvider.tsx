@@ -7,7 +7,7 @@
 import React, { ReactNode } from 'react';
 import { FilterStateProvider } from '@/contexts/FilterStateContext';
 import { FilterActionsProvider } from '@/contexts/FilterActionsContext';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('FilterProvider');
 

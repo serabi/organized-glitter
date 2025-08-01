@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { logger } from '@/utils/logger';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,7 +17,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { pb } from '@/lib/pocketbase';
 import { ClientResponseError } from 'pocketbase';
-import { secureLogger } from '../utils/secureLogger';
 import { Lock, ArrowLeft, CheckCircle, Shield, Eye, EyeOff } from 'lucide-react';
 
 const ChangePassword = () => {
@@ -145,7 +145,7 @@ const ChangePassword = () => {
         navigate('/login');
       }, 3000);
     } catch (err: unknown) {
-      secureLogger.criticalError('Password change error', err);
+      logger.criticalError('Password change error', err);
 
       let errorMessage = 'Failed to change password. Please try again.';
 

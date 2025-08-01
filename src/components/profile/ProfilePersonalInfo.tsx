@@ -7,7 +7,7 @@ import AvatarDisplay from './AvatarDisplay';
 import { AvatarManager } from './AvatarManager';
 import { createAvatarConfig, getUserInitials } from '@/utils/avatarUtils';
 import { AvatarConfig } from '@/types/avatar';
-import { secureLogger } from '@/utils/secureLogger';
+import { logger } from '@/utils/logger';
 
 interface ProfilePersonalInfoProps {
   userId: string | undefined;
@@ -43,7 +43,7 @@ const ProfilePersonalInfo: React.FC<ProfilePersonalInfoProps> = ({
       email: email,
       username: username,
     });
-    secureLogger.debug('[ProfilePersonalInfo] Created avatar config:', config);
+    logger.debug('[ProfilePersonalInfo] Created avatar config:', config);
     return config;
   }, [avatarUrl, email, username]);
 

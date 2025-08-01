@@ -21,13 +21,13 @@ import { StrictMode, lazy, Suspense } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { InitializationCheck } from './components/InitializationCheck';
 import { queryClient } from './lib/queryClient';
-import { secureLogger } from './utils/secureLogger';
 import { initializeUser } from './utils/userInitialization';
 import {
   handleFatalError,
   dispatchAppLoadedEvent,
   setupGlobalErrorHandlers,
 } from './utils/fatalErrorHandler';
+import { logger } from './utils/logger';
 import { initializePerformanceMonitoring } from './utils/performanceMonitoring';
 import { enableDiagnosticConsoleAccess } from './utils/overviewDiagnostics';
 import { initializeChunkLoadingRetry } from './utils/chunkLoadingRetry';
@@ -65,7 +65,7 @@ const getRootElement = (): HTMLElement => {
 // Render the React application
 const renderApp = async (): Promise<void> => {
   try {
-    secureLogger.info('🚀 Starting Organized Glitter application...');
+    logger.info('🚀 Starting Organized Glitter application...');
 
     const rootElement = getRootElement();
     const root = createRoot(rootElement);
@@ -97,12 +97,12 @@ const renderApp = async (): Promise<void> => {
       </StrictMode>
     );
 
-    secureLogger.info('✅ React app rendered successfully');
+    logger.info('✅ React app rendered successfully');
 
     // Dispatch app loaded after a short delay to ensure DOM is updated
     requestAnimationFrame(() => {
       setTimeout(() => {
-        secureLogger.info('📱 Dispatching app-loaded event from main.tsx');
+        logger.info('📱 Dispatching app-loaded event from main.tsx');
         dispatchAppLoadedEvent();
       }, 150);
     });

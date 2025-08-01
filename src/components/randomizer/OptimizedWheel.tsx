@@ -14,7 +14,7 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo, memo } from 'react';
 import { Button } from '@/components/ui/button';
 import type { Project } from '@/types/shared';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 import { useSimplePerformanceTracking } from '@/hooks/usePerformanceMonitoring';
 import { useWheelPerformanceMonitoring, WheelPerformanceMetrics } from './wheelPerformanceMonitor';
 import {

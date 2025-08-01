@@ -5,7 +5,7 @@
  */
 
 import { pb } from '@/lib/pocketbase';
-import { createLogger, batchApiLogger } from '@/utils/secureLogger';
+import { createLogger, batchApiLogger } from '@/utils/logger';
 import {
   BaseService,
   ErrorHandler,

@@ -1,5 +1,5 @@
 import PocketBase from 'pocketbase';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 import type { TypedPocketBase } from '@/types/pocketbase.types';
 
 const pbLogger = createLogger('PocketBase');

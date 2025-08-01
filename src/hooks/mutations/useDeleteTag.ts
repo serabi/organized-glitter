@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { isServiceResponseError } from '@/types/shared';
 import { requireAuthenticatedUser } from '@/utils/authGuards';
-import { secureLogger } from '@/utils/secureLogger';
+import { logger } from '@/utils/logger';
 
 interface DeleteTagData {
   id: string;
@@ -66,7 +66,7 @@ export function useDeleteTag() {
       });
     },
     onError: (error: unknown) => {
-      secureLogger.error('Error deleting tag:', error);
+      logger.error('Error deleting tag:', error);
 
       // Handle specific error cases
       const errorMessage = error instanceof Error ? error.message : String(error);

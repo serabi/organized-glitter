@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import FallbackImage from './FallbackImage';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('SafeImage');
 

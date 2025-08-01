@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { loginWithPassword, loginWithOAuth2 } from '@/services/auth';
 import { pb } from '@/lib/pocketbase';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const loginLogger = createLogger('Login');
 

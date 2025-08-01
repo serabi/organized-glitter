@@ -14,7 +14,7 @@ import { useImageUpload } from '@/hooks/useImageUpload';
 import { useToast } from '@/hooks/use-toast';
 import { pb } from '@/lib/pocketbase'; // Added import for pb
 import { AVATAR_CONSTANTS } from '@/components/projects/ProgressNoteForm/constants';
-import { secureLogger } from '@/utils/secureLogger';
+import { logger } from '@/utils/logger';
 
 interface AvatarUploadDialogProps {
   isOpen: boolean;
@@ -42,7 +42,7 @@ export function AvatarUploadDialog({
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       const fileSizeMB = Math.round((selectedFile.size / (1024 * 1024)) * 100) / 100; // Round to 2 decimal places
-      secureLogger.debug(
+      logger.debug(
         `Avatar file selected: ${selectedFile.name} (${fileSizeMB}MB, type: ${selectedFile.type})`
       );
 
@@ -117,7 +117,7 @@ export function AvatarUploadDialog({
         });
       }
     } catch (error) {
-      secureLogger.error('Error uploading avatar:', error);
+      logger.error('Error uploading avatar:', error);
       // Error handling is already done in the useImageUpload hook
     }
   };

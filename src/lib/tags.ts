@@ -23,7 +23,7 @@ import { TAG_COLOR_PALETTE } from '@/utils/tagColors';
 import { Collections, ProjectTagsResponse, TagsResponse } from '@/types/pocketbase.types';
 import { withAuthentication } from '@/lib/tagAuth';
 import { createFilter } from '@/utils/filterBuilder';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 import { generateSlug } from '@/utils/slugify';
 
 const logger = createLogger('TagService');

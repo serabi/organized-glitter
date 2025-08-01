@@ -6,7 +6,7 @@
  */
 
 import type { ProjectUpdateData } from '@/types/file-upload';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('FormDataBuilder');
 

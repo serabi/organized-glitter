@@ -10,7 +10,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { pb } from '@/lib/pocketbase';
 import { useAuth } from '@/hooks/useAuth';
 import { queryKeys } from '@/hooks/queries/queryKeys';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 import { RecordModel } from 'pocketbase';
 import { Collections } from '@/types/pocketbase.types';
 import { safeInvalidateQueries } from '@/utils/queryInvalidationGuard';

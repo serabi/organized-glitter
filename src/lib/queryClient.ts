@@ -1,5 +1,5 @@
 import { QueryClient } from '@tanstack/react-query';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 // Define proper error interface
 interface ErrorWithStatus {

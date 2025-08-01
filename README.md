@@ -53,10 +53,10 @@ Currently built with React, TypeScript, and PocketBase.
   - Ability to sign in with Google or Discord
 
 ## Security Features
+
 - **Data Privacy**: All user data is private and only accessible to the account owner
 - **Authentication Security**: Email/password and OAuth2 authentication with PocketBase Auth
 - **Image Security**: Secure image upload and storage with automatic compression
-
 
 ## Technology Stack
 
@@ -87,6 +87,7 @@ Currently built with React, TypeScript, and PocketBase.
 - **Type Safety**: Strict TypeScript configuration
 - **Build Optimization**: Terser for minification
 - **Bundle Analysis**: Built-in bundle analyzer scripts
+- **Logging**: Unified LogTape-based logging system with security features and performance monitoring
 
 ### Deployment & Monitoring
 
@@ -155,7 +156,7 @@ src/
     ├── csvImport.ts              # CSV import functionality
     ├── imageUtils.ts             # Image processing utilities
     ├── overviewStatsCalculator.ts # Overview statistics calculations
-    ├── secureLogger.ts           # logging utilities
+    ├── logger.ts                 # Unified logging system 
     └── __tests__/                # Utility test files
 
 Root Level Structure:
@@ -189,7 +190,7 @@ For local development, you'll need to set up your own PocketBase instance:
 
 1. **Download PocketBase**
 
-   Visit [PocketBase Downloads](https://pocketbase.io/docs/) and download PocketBase - OG currently runs on v0.28.x 
+   Visit [PocketBase Downloads](https://pocketbase.io/docs/) and download PocketBase - OG currently runs on v0.28.x
 
 2. **Create a local PocketBase directory**
 

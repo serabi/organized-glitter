@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import MainLayout from '@/components/layout/MainLayout';
 import { AlertTriangle } from 'lucide-react';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const deleteAccountLogger = createLogger('DeleteAccount');
 

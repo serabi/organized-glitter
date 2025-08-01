@@ -1,5 +1,5 @@
 import { pb } from '@/lib/pocketbase';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 import type { PocketBaseUser } from '@/contexts/AuthContext.types';
 import { ClientResponseError } from 'pocketbase';
 import { ErrorHandler, FieldMapper } from '@/services/pocketbase/base';

@@ -7,7 +7,7 @@
 
 import { useMemo, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 import { DashboardValidSortField } from '@/features/dashboard/dashboard.constants';
 import { SortDirectionType } from '@/contexts/FilterProvider';
 import { StatusBreakdown } from '@/types/dashboard';

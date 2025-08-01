@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useArtists } from '@/hooks/queries/useArtists';
 import ArtistPageHeader from '@/components/artist/ArtistPageHeader';
 import ArtistTable from '@/components/artist/ArtistTable';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('ArtistList');
 /**

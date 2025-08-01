@@ -8,7 +8,7 @@
 import { pb } from '@/lib/pocketbase';
 import { Collections } from '@/types/pocketbase.types';
 import { createFilter } from '@/utils/filterBuilder';
-import { logger } from './logger';
+import { logger } from '@/utils/logger';
 
 export interface DiagnosticResult {
   totalProjects: number;

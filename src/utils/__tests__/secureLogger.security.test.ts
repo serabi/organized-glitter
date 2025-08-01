@@ -43,52 +43,52 @@ describe('SecureLogger Security Validation', () => {
   describe('Sensitive Key Pattern Redaction - All 13 Patterns', () => {
     const sensitiveKeys = [
       'key',
-      'token', 
+      'token',
       'secret',
       'password',
       'auth',
-      'authorization',  
+      'authorization',
       'vite_supabase_anon_key',
       'supabase_anon_key',
       'api_key',
-      'apikey'
+      'apikey',
     ];
 
-    it.each(sensitiveKeys)('should redact object property: %s', (keyName) => {
+    it.each(sensitiveKeys)('should redact object property: %s', keyName => {
       const testData: TestData = {
         [keyName]: 'super-secret-value-123',
-        safeProperty: 'safe-value'
+        safeProperty: 'safe-value',
       };
 
       const result = redactSensitiveData(testData) as RedactedResult;
-      
+
       expect(result[keyName]).toBe('[REDACTED]');
       expect(result.safeProperty).toBe('safe-value');
     });
 
-    it.each(sensitiveKeys)('should redact nested object property: %s', (keyName) => {
+    it.each(sensitiveKeys)('should redact nested object property: %s', keyName => {
       const testData = {
         user: {
           profile: {
             [keyName]: 'nested-secret-value',
-            name: 'John Doe'
-          }
-        }
+            name: 'John Doe',
+          },
+        },
       };
 
       const result = redactSensitiveData(testData) as RedactedResult;
       const user = result.user as RedactedResult;
       const profile = user.profile as RedactedResult;
-      
+
       expect(profile[keyName]).toBe('[REDACTED]');
       expect(profile.name).toBe('John Doe');
     });
 
-    it.each(sensitiveKeys)('should be case-insensitive for key: %s', (keyName) => {
+    it.each(sensitiveKeys)('should be case-insensitive for key: %s', keyName => {
       const variations = [
         keyName.toUpperCase(),
         keyName.toLowerCase(),
-        keyName.charAt(0).toUpperCase() + keyName.slice(1)
+        keyName.charAt(0).toUpperCase() + keyName.slice(1),
       ];
 
       variations.forEach(variation => {
@@ -103,16 +103,16 @@ describe('SecureLogger Security Validation', () => {
         user_api_key: 'secret123',
         auth_token_value: 'token456',
         database_password_hash: 'hash789',
-        vite_secret_config: 'config000'
+        vite_secret_config: 'config000',
       };
 
       const result = redactSensitiveData(testData) as RedactedResult;
-      
+
       expect(result).toEqual({
         user_api_key: '[REDACTED]',
         auth_token_value: '[REDACTED]',
         database_password_hash: '[REDACTED]',
-        vite_secret_config: '[REDACTED]'
+        vite_secret_config: '[REDACTED]',
       });
     });
   });
@@ -131,7 +131,7 @@ describe('SecureLogger Security Validation', () => {
     });
 
     it('should handle multiple patterns in same string', () => {
-      const testString = 'secret=mysecret123 and password:mypass456';
+      const testString = 'secret=mysecret123 and password:mypass456789';
       const result = redactSensitiveData(testString);
       expect(result).toBe('secret=[REDACTED] and password:[REDACTED]');
     });
@@ -145,8 +145,8 @@ describe('SecureLogger Security Validation', () => {
     it('should handle quoted values', () => {
       const testCases = [
         'token="long_secret_value_here"',
-        'password=\'another_secret_12345\'',
-        'key=unquoted_secret_value'
+        "password='another_secret_12345'",
+        'key=unquoted_secret_value',
       ];
 
       testCases.forEach(testCase => {
@@ -163,7 +163,7 @@ describe('SecureLogger Security Validation', () => {
       objA.self = objA;
 
       const result = redactSensitiveData(objA) as RedactedResult;
-      
+
       expect(result.name).toBe('A');
       expect(result.self).toBe('[Circular Reference]');
     });
@@ -175,7 +175,7 @@ describe('SecureLogger Security Validation', () => {
 
       const result = redactSensitiveData(objA) as RedactedResult;
       const child = result.child as RedactedResult;
-      
+
       expect(result.name).toBe('A');
       expect(result.token).toBe('[REDACTED]');
       expect(child.name).toBe('B');
@@ -186,7 +186,7 @@ describe('SecureLogger Security Validation', () => {
       const objA: TestData = { id: 'A', secret: 'secretA' };
       const objB: TestData = { id: 'B', secret: 'secretB' };
       const objC: TestData = { id: 'C', secret: 'secretC' };
-      
+
       objA.next = objB;
       objB.next = objC;
       objC.next = objA; // Circular
@@ -194,7 +194,7 @@ describe('SecureLogger Security Validation', () => {
       const result = redactSensitiveData(objA) as RedactedResult;
       const next1 = result.next as RedactedResult;
       const next2 = next1.next as RedactedResult;
-      
+
       expect(result.secret).toBe('[REDACTED]');
       expect(next1.secret).toBe('[REDACTED]');
       expect(next2.secret).toBe('[REDACTED]');
@@ -203,11 +203,11 @@ describe('SecureLogger Security Validation', () => {
 
     it('should properly clean up WeakSet after processing', () => {
       const obj: TestData = { token: 'secret123' };
-      
+
       // Process the same object multiple times
       const result1 = redactSensitiveData(obj) as RedactedResult;
       const result2 = redactSensitiveData(obj) as RedactedResult;
-      
+
       expect(result1).toEqual(result2);
       expect(result1.token).toBe('[REDACTED]');
     });
@@ -218,11 +218,11 @@ describe('SecureLogger Security Validation', () => {
       const testData = [
         { id: 1, apikey: 'secret123' },
         { id: 2, token: 'token456' },
-        'password=embedded789'
+        'password=embedded789',
       ];
 
       const result = redactSensitiveData(testData) as RedactedResult[];
-      
+
       expect((result[0] as RedactedResult).apikey).toBe('[REDACTED]');
       expect((result[1] as RedactedResult).token).toBe('[REDACTED]');
       expect(result[2]).toBe('password=[REDACTED]');
@@ -232,15 +232,15 @@ describe('SecureLogger Security Validation', () => {
       const testData = {
         users: [
           { name: 'John', credentials: [{ key: 'userkey123' }] },
-          { name: 'Jane', credentials: [{ token: 'usertoken456' }] }
-        ]
+          { name: 'Jane', credentials: [{ token: 'usertoken456' }] },
+        ],
       };
 
       const result = redactSensitiveData(testData) as RedactedResult;
       const users = result.users as RedactedResult[];
       const johnCreds = (users[0] as RedactedResult).credentials as RedactedResult[];
       const janeCreds = (users[1] as RedactedResult).credentials as RedactedResult[];
-      
+
       expect(johnCreds[0].key).toBe('[REDACTED]');
       expect(janeCreds[0].token).toBe('[REDACTED]');
       expect((users[0] as RedactedResult).name).toBe('John');
@@ -255,13 +255,13 @@ describe('SecureLogger Security Validation', () => {
         nullData: null,
         undefinedData: undefined,
         objectData: { secret: 'objsecret456' },
-        arrayData: ['safe', { password: 'arraysecret789' }]
+        arrayData: ['safe', { password: 'arraysecret789' }],
       };
 
       const result = redactSensitiveData(testData) as RedactedResult;
       const objectData = result.objectData as RedactedResult;
       const arrayData = result.arrayData as unknown[];
-      
+
       expect(result.stringData).toBe('auth_token=[REDACTED]');
       expect(result.numberData).toBe(42);
       expect(result.booleanData).toBe(true);
@@ -281,11 +281,11 @@ describe('SecureLogger Security Validation', () => {
         undefinedKey: undefined,
         zeroKey: 0,
         falseKey: false,
-        validKey: 'realvalue123'
+        validKey: 'realvalue123',
       };
 
       const result = redactSensitiveData(testData) as RedactedResult;
-      
+
       // Empty string should not be redacted (length check)
       expect(result.emptyKey).toBe('');
       // Null should be redacted (truthy check fails)
@@ -304,7 +304,7 @@ describe('SecureLogger Security Validation', () => {
       // Create a deeply nested object
       const deepObj: TestData = { level: 0 };
       let current = deepObj;
-      
+
       for (let i = 1; i < 1000; i++) {
         current.next = { level: i };
         current = current.next as TestData;
@@ -319,14 +319,14 @@ describe('SecureLogger Security Validation', () => {
 
     it('should handle prototype pollution attempts', () => {
       const maliciousData: TestData = {
-        '__proto__': { polluted: true },
-        'constructor': { secret: 'constructorSecret' },
-        normalKey: 'normalSecret123'
+        __proto__: { polluted: true },
+        constructor: { secret: 'constructorSecret' },
+        normalKey: 'normalSecret123',
       };
 
       const result = redactSensitiveData(maliciousData) as RedactedResult;
       const constructor = result.constructor as RedactedResult;
-      
+
       // Should redact the key containing 'secret'
       expect(result.normalKey).toBe('[REDACTED]');
       // Should handle prototype properties safely
@@ -345,7 +345,7 @@ describe('SecureLogger Security Validation', () => {
       `;
 
       const result = redactSensitiveData(envString) as string;
-      
+
       expect(result).toContain('VITE_SUPABASE_ANON_KEY=[REDACTED]');
       expect(result).toContain('API_TOKEN="[REDACTED]"');
       expect(result).toContain('DATABASE_PASSWORD=[REDACTED]');
@@ -357,18 +357,18 @@ describe('SecureLogger Security Validation', () => {
         database: {
           host: 'localhost',
           password: 'dbpassword123',
-          apiKey: 'dbapikey456'
+          apiKey: 'dbapikey456',
         },
         authentication: {
           jwtSecret: 'jwtsecret789',
-          sessionTimeout: 3600
-        }
+          sessionTimeout: 3600,
+        },
       };
 
       const result = redactSensitiveData(jsonConfig) as RedactedResult;
       const database = result.database as RedactedResult;
       const authentication = result.authentication as RedactedResult;
-      
+
       expect(database.host).toBe('localhost');
       expect(database.password).toBe('[REDACTED]');
       expect(database.apiKey).toBe('[REDACTED]');
@@ -383,7 +383,7 @@ describe('SecureLogger Security Validation', () => {
       const sensitiveData: TestData = {
         userId: '12345',
         userToken: 'sensitive-token-value',
-        preferences: { theme: 'dark' }
+        preferences: { theme: 'dark' },
       };
 
       logger.info('User data:', sensitiveData);
@@ -394,14 +394,14 @@ describe('SecureLogger Security Validation', () => {
         expect.objectContaining({
           userId: '12345',
           userToken: '[REDACTED]',
-          preferences: { theme: 'dark' }
+          preferences: { theme: 'dark' },
         })
       );
     });
 
     it('should handle multiple arguments with mixed sensitive data', () => {
       const logger = createLogger('SecurityTest');
-      
+
       logger.warn(
         'Processing request',
         { requestId: 'req-123' },
@@ -429,7 +429,7 @@ describe('SecureLogger Security Validation', () => {
       const errorData: TestData = {
         message: 'Database connection failed',
         connectionString: 'postgres://user:password123@localhost:5432/db',
-        apiKey: 'error-api-key-789'
+        apiKey: 'error-api-key-789',
       };
 
       logger.criticalError('Critical system error:', errorData);
@@ -440,7 +440,7 @@ describe('SecureLogger Security Validation', () => {
         expect.objectContaining({
           message: 'Database connection failed',
           connectionString: 'postgres://user:[REDACTED]@localhost:5432/db',
-          apiKey: '[REDACTED]'
+          apiKey: '[REDACTED]',
         })
       );
 

@@ -16,7 +16,7 @@ import { useProjects } from '@/hooks/queries/useProjects';
 import { useCreateSpin } from '@/hooks/mutations/useCreateSpin';
 import { useSpinHistoryCount } from '@/hooks/queries/useSpinHistoryCount';
 import { useAuth } from '@/hooks/useAuth';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('useRandomizer');
 

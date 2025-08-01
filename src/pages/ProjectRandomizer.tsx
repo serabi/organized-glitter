@@ -32,7 +32,7 @@ import { useRandomizer } from '@/hooks/useRandomizer';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Shuffle, ExternalLink, Lightbulb, Home, Share2 } from 'lucide-react';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('ProjectRandomizer');
 

@@ -38,7 +38,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useProjectDetailReactQuery } from '@/hooks/useProjectDetailReactQuery';
 import { useNavigateToProjectEdit, NavigationContext } from '@/hooks/useNavigateToProject';
 import { ProjectType } from '@/types/project';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 import LoadingState from '@/components/projects/LoadingState';
 import ProjectNotFound from '@/components/projects/ProjectNotFound';

@@ -8,7 +8,7 @@ import { memo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, LayoutDashboard, Shuffle, Settings } from 'lucide-react';
 import { useMobileDevice } from '@/hooks/use-mobile';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 import type { LucideIcon } from 'lucide-react';
 
 interface NavigationItem {

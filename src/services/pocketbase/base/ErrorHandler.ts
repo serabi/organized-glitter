@@ -6,7 +6,7 @@
 
 import { ClientResponseError } from 'pocketbase';
 import { PocketBaseError, ValidationError } from './types';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('ErrorHandler');
 

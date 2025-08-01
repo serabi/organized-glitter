@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 import { Project, Tag } from '@/types/shared';
-import { logger } from './logger';
+import { logger } from '@/utils/logger';
 
 /**
  * Converts an array of projects to CSV format

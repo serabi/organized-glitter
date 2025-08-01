@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { pb } from '@/lib/pocketbase';
 import { Collections } from '@/types/pocketbase.types';
 import { queryKeys } from '@/hooks/queries/queryKeys';
-import { secureLogger } from '@/utils/secureLogger';
+import { logger } from '@/utils/logger';
 
 interface UpdateProfileData {
   avatar: File | string | null;
@@ -35,7 +35,7 @@ export const useUpdateProfileMutation = () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.user.profile(userId) });
     },
     onError: error => {
-      secureLogger.error('Error updating profile:', error);
+      logger.error('Error updating profile:', error);
     },
   });
 };

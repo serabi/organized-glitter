@@ -9,7 +9,7 @@ import { Collections, ProjectsResponse } from '@/types/pocketbase.types';
 import { queryKeys } from '../queries/queryKeys';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 import { useUserTimezone } from '@/hooks/useUserTimezone';
 import { ClientResponseError } from 'pocketbase';
 import type { ProjectUpdatePayload, ProjectFormWithFile } from '@/types/file-upload';

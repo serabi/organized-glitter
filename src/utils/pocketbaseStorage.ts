@@ -1,5 +1,5 @@
 import { pb, getFileUrl } from '@/lib/pocketbase';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 import { PocketBaseRecord } from '@/types/pocketbase-common';
 
 const logger = createLogger('PocketBaseStorage');

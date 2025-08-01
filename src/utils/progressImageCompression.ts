@@ -1,5 +1,5 @@
 import imageCompression from 'browser-image-compression';
-import { secureLogger } from '@/utils/secureLogger';
+import { logger } from '@/utils/logger';
 
 /**
  * Compression statistics for user feedback
@@ -110,7 +110,7 @@ export async function getCompressionPreview(
       compressedDimensions,
     };
   } catch (error) {
-    secureLogger.warn('Could not get image dimensions for compression stats:', error);
+    logger.warn('Could not get image dimensions for compression stats:', error);
     return {
       originalSizeMB,
       compressedSizeMB,
@@ -257,7 +257,7 @@ export async function compressProgressImage(
 
     return finalFile;
   } catch (error) {
-    secureLogger.error('[progressImageCompression] Compression failed:', error);
+    logger.error('[progressImageCompression] Compression failed:', error);
 
     // If compression fails but original file is acceptable size, return original
     if (file.size <= FILE_SIZE_LIMITS.TARGET_SIZE) {

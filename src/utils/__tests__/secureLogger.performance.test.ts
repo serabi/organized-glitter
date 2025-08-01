@@ -30,23 +30,23 @@ describe('SecureLogger Performance & Edge Cases', () => {
       // Create a large object graph with potential circular references
       const createLargeGraph = (_depth: number, breadth: number): TestData => {
         const nodes: TestData[] = [];
-        
+
         // Create nodes
         for (let i = 0; i < breadth; i++) {
           nodes.push({
             id: `node-${i}`,
             data: `data-${i}`,
             secret: `secret-value-${i}-12345`, // Will be redacted
-            children: []
+            children: [],
           });
         }
-        
+
         // Create connections (potential cycles)
         nodes.forEach((node, i) => {
           const nextIndex = (i + 1) % nodes.length;
           (node.children as TestData[]).push(nodes[nextIndex]);
         });
-        
+
         return nodes[0]; // Return root
       };
 
@@ -54,7 +54,7 @@ describe('SecureLogger Performance & Edge Cases', () => {
       const largeGraph = createLargeGraph(100, 1000);
       const result = redactSensitiveData(largeGraph);
       const endTime = performance.now();
-      
+
       expect(endTime - startTime).toBeLessThan(1000); // Should complete within 1 second
       expect(result).toBeDefined();
     });
@@ -66,23 +66,23 @@ describe('SecureLogger Performance & Edge Cases', () => {
           level2: {
             token: 'token456',
             level3: {
-              apiKey: 'apikey789'
-            }
-          }
-        }
+              apiKey: 'apikey789',
+            },
+          },
+        },
       };
 
       // Process the same object multiple times to check for memory leaks
       const iterations = 10000;
       const startTime = performance.now();
-      
+
       for (let i = 0; i < iterations; i++) {
         redactSensitiveData(testObject);
       }
-      
+
       const endTime = performance.now();
       const avgTime = (endTime - startTime) / iterations;
-      
+
       expect(avgTime).toBeLessThan(1); // Average should be less than 1ms per operation
     });
 
@@ -92,22 +92,24 @@ describe('SecureLogger Performance & Edge Cases', () => {
         secret: `secret-${id}-123456789`,
         nested: {
           token: `token-${id}-987654321`,
-          data: `safe-data-${id}`
-        }
+          data: `safe-data-${id}`,
+        },
       });
 
       // Process multiple objects concurrently
-      const promises = Array.from({ length: 100 }, (_, i) => 
+      const promises = Array.from({ length: 100 }, (_, i) =>
         Promise.resolve(redactSensitiveData(createTestData(i)))
       );
 
       const results = await Promise.all(promises);
-      
+
       results.forEach((result, i) => {
         expect(result).toHaveProperty('id', i);
         expect(result).toHaveProperty('secret', '[REDACTED]');
-        expect((result as any).nested.token).toBe('[REDACTED]');
-        expect((result as any).nested.data).toBe(`safe-data-${i}`);
+        expect((result as Record<string, unknown>).nested).toEqual({
+          token: '[REDACTED]',
+          data: `safe-data-${i}`,
+        });
       });
     });
   });
@@ -117,7 +119,7 @@ describe('SecureLogger Performance & Edge Cases', () => {
       const testMap = new Map([
         ['normalKey', 'normalValue'],
         ['secretKey', 'secretValue123'],
-        ['apiKey', 'apiValue456']
+        ['apiKey', 'apiValue456'],
       ]);
 
       const testSet = new Set(['normalValue', 'secretValue123', 'apiValue456']);
@@ -126,11 +128,11 @@ describe('SecureLogger Performance & Edge Cases', () => {
         mapData: testMap,
         setData: testSet,
         normalKey: 'normalValue',
-        secretKey: 'secretValue789'
+        secretKey: 'secretValue789',
       };
 
       const result = redactSensitiveData(dataWithCollections) as RedactedResult;
-      
+
       // Collections should be preserved as-is (redaction only applies to plain objects)
       expect(result.mapData).toBeInstanceOf(Map);
       expect(result.setData).toBeInstanceOf(Set);
@@ -146,11 +148,11 @@ describe('SecureLogger Performance & Edge Cases', () => {
         dateValue: testDate,
         regexValue: testRegex,
         errorValue: testError,
-        secretValue: 'builtin-secret-456'
+        secretValue: 'builtin-secret-456',
       };
 
       const result = redactSensitiveData(dataWithBuiltins) as RedactedResult;
-      
+
       expect(result.dateValue).toBeInstanceOf(Date);
       expect(result.regexValue).toBeInstanceOf(RegExp);
       expect(result.errorValue).toBeInstanceOf(Error);
@@ -158,7 +160,9 @@ describe('SecureLogger Performance & Edge Cases', () => {
     });
 
     it('should handle functions and symbols', () => {
-      const testFunction = function() { return 'test'; };
+      const testFunction = function () {
+        return 'test';
+      };
       const testSymbol = Symbol('test-symbol');
       const testSymbolKey = Symbol('secret-key');
 
@@ -166,11 +170,11 @@ describe('SecureLogger Performance & Edge Cases', () => {
         functionValue: testFunction,
         symbolValue: testSymbol,
         [testSymbolKey]: 'symbol-secret-123',
-        normalSecret: 'normal-secret-456'
+        normalSecret: 'normal-secret-456',
       };
 
       const result = redactSensitiveData(dataWithFunctions) as RedactedResult;
-      
+
       expect(result.functionValue).toBe(testFunction);
       expect(result.symbolValue).toBe(testSymbol);
       expect(result.normalSecret).toBe('[REDACTED]');
@@ -192,18 +196,18 @@ describe('SecureLogger Performance & Edge Cases', () => {
                   created: new Date(),
                   metadata: {
                     device: 'chrome',
-                    apiKey: 'device-api-key-xyz789'
-                  }
-                }
-              ]
-            }
+                    apiKey: 'device-api-key-xyz789',
+                  },
+                },
+              ],
+            },
           },
           preferences: {
             theme: 'dark',
             notifications: true,
-            secretConfig: 'config-secret-def456'
-          }
-        }
+            secretConfig: 'config-secret-def456',
+          },
+        },
       };
 
       const result = redactSensitiveData(complexStructure) as RedactedResult;
@@ -214,7 +218,7 @@ describe('SecureLogger Performance & Edge Cases', () => {
       const session = sessions[0] as RedactedResult;
       const metadata = session.metadata as RedactedResult;
       const preferences = user.preferences as RedactedResult;
-      
+
       expect(user.id).toBe(12345);
       expect(profile.name).toBe('John Doe');
       expect(credentials.password).toBe('[REDACTED]');
@@ -235,7 +239,7 @@ describe('SecureLogger Performance & Edge Cases', () => {
         'secret=', // Empty secret
         'password:', // Empty password with colon
         'api_key="quoted but short"', // Quoted but short value
-        'token=valid_long_token_here_123456' // Valid pattern
+        'token=valid_long_token_here_123456', // Valid pattern
       ];
 
       malformedStrings.forEach(testString => {
@@ -254,13 +258,13 @@ describe('SecureLogger Performance & Edge Cases', () => {
     it('should handle Unicode and special characters', () => {
       const unicodeTest: TestData = {
         normalKey: 'normal-value',
-        'résumé_token': 'unicode-secret-123456789',
-        '密码': 'chinese-password-abc123456', // Chinese for "password"
-        'clé_secrète': 'french-secret-def789012' // French for "secret key"
+        résumé_token: 'unicode-secret-123456789',
+        密码: 'chinese-password-abc123456', // Chinese for "password"
+        clé_secrète: 'french-secret-def789012', // French for "secret key"
       };
 
       const result = redactSensitiveData(unicodeTest) as RedactedResult;
-      
+
       expect(result.normalKey).toBe('normal-value');
       expect(result['résumé_token']).toBe('[REDACTED]');
       // Non-Latin characters might not match English-based patterns
@@ -271,17 +275,17 @@ describe('SecureLogger Performance & Edge Cases', () => {
     it('should handle extremely long values', () => {
       const longSecret = 'x'.repeat(10000); // 10KB string
       const longKey = 'a'.repeat(1000); // 1KB key name
-      
+
       const testData: TestData = {
         [longKey]: longSecret,
         shortKey: 'short',
-        secret: longSecret
+        secret: longSecret,
       };
 
       const startTime = performance.now();
       const result = redactSensitiveData(testData) as RedactedResult;
       const endTime = performance.now();
-      
+
       expect(endTime - startTime).toBeLessThan(100); // Should complete quickly
       expect(result[longKey]).toBe(longSecret); // Long key name shouldn't match patterns
       expect(result.secret).toBe('[REDACTED]');
@@ -292,15 +296,15 @@ describe('SecureLogger Performance & Edge Cases', () => {
   describe('Performance Logger Validation', () => {
     it('should track performance without affecting main functionality', () => {
       const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-      
+
       const timerId = performanceLogger.start('test-operation');
-      
+
       // Simulate some work
       const testData = { secret: 'test-secret-123456' };
       const result = redactSensitiveData(testData);
-      
+
       performanceLogger.end(timerId, { operation: 'redaction' });
-      
+
       expect(result).toHaveProperty('secret', '[REDACTED]');
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('test-operation'),
@@ -310,34 +314,34 @@ describe('SecureLogger Performance & Edge Cases', () => {
         expect.anything(),
         expect.anything()
       );
-      
+
       consoleSpy.mockRestore();
     });
 
     it('should handle batch API logging correctly', () => {
       const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-      
+
       const batchId = batchApiLogger.startBatchOperation(
         'test-batch',
         5,
         'Testing batch redaction'
       );
-      
+
       // Process multiple items with sensitive data
       const items = Array.from({ length: 5 }, (_, i) => ({
         id: i,
-        apiKey: `api-key-${i}-123456789`
+        apiKey: `api-key-${i}-123456789`,
       }));
-      
+
       const results = items.map(item => redactSensitiveData(item));
-      
+
       batchApiLogger.endBatchOperation(batchId, results.length);
-      
+
       results.forEach((result, i) => {
         expect(result).toHaveProperty('id', i);
         expect(result).toHaveProperty('apiKey', '[REDACTED]');
       });
-      
+
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('Testing batch redaction'),
         expect.stringContaining('background-color: #2196f3'),
@@ -346,7 +350,7 @@ describe('SecureLogger Performance & Edge Cases', () => {
         expect.anything(),
         expect.anything()
       );
-      
+
       consoleSpy.mockRestore();
     });
   });
@@ -356,18 +360,20 @@ describe('SecureLogger Performance & Edge Cases', () => {
       const sensitiveData = {
         secret: 'memory-test-secret-123456',
         nested: {
-          token: 'memory-test-token-789012'
-        }
+          token: 'memory-test-token-789012',
+        },
       };
 
       // Create a weak reference to track garbage collection
       const weakRef = new WeakRef(sensitiveData);
-      
+
       const result = redactSensitiveData(sensitiveData);
-      
+
       expect(result).toHaveProperty('secret', '[REDACTED]');
-      expect((result as any).nested.token).toBe('[REDACTED]');
-      
+      expect((result as Record<string, unknown>).nested).toEqual(
+        expect.objectContaining({ token: '[REDACTED]' })
+      );
+
       // Original object should still be alive
       expect(weakRef.deref()).toBeDefined();
     });
@@ -377,8 +383,8 @@ describe('SecureLogger Performance & Edge Cases', () => {
       nullProtoObj.secret = 'null-proto-secret-123456';
       nullProtoObj.normalProp = 'normal-value';
 
-      const result = redactSensitiveData(nullProtoObj) as any;
-      
+      const result = redactSensitiveData(nullProtoObj) as Record<string, unknown>;
+
       expect(result.secret).toBe('[REDACTED]');
       expect(result.normalProp).toBe('normal-value');
     });
@@ -386,17 +392,17 @@ describe('SecureLogger Performance & Edge Cases', () => {
     it('should handle frozen and sealed objects', () => {
       const frozenObj = Object.freeze({
         secret: 'frozen-secret-123456',
-        normal: 'normal-value'
+        normal: 'normal-value',
       });
 
       const sealedObj = Object.seal({
         token: 'sealed-token-789012',
-        normal: 'normal-value'
+        normal: 'normal-value',
       });
 
-      const frozenResult = redactSensitiveData(frozenObj) as any;
-      const sealedResult = redactSensitiveData(sealedObj) as any;
-      
+      const frozenResult = redactSensitiveData(frozenObj) as Record<string, unknown>;
+      const sealedResult = redactSensitiveData(sealedObj) as Record<string, unknown>;
+
       expect(frozenResult.secret).toBe('[REDACTED]');
       expect(frozenResult.normal).toBe('normal-value');
       expect(sealedResult.token).toBe('[REDACTED]');

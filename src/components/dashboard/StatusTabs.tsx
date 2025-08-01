@@ -49,7 +49,7 @@ import { useWindowDimensions } from '@/hooks/use-mobile';
 import { ProjectFilterStatus } from '@/types/project';
 import { useStats, CountsForTabsType } from '@/contexts/StatsContext';
 import { useStatusFilter } from '@/contexts/FilterProvider';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 // Tab configuration for dynamic rendering
 interface TabConfig {

@@ -1,5 +1,5 @@
 import { handleRateLimitError as checkRateLimit, RateLimitInfo } from './rateLimit';
-import { logger } from './logger';
+import { logger } from '@/utils/logger';
 
 type NotificationHandler = (
   message: string,

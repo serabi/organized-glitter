@@ -6,7 +6,7 @@
  */
 
 import { pb } from '@/lib/pocketbase';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 import { ErrorHandler } from './base/ErrorHandler';
 import { compressProjectImage, validateProjectImageFile } from '@/utils/projectImageCompression';
 import { compressProgressImage, validateProgressImageFile } from '@/utils/progressImageCompression';

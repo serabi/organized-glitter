@@ -5,7 +5,7 @@ import { queryKeys } from '../queries/queryKeys';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigateToProject } from '@/hooks/useNavigateToProject';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 import { ClientResponseError } from 'pocketbase';
 import { TagService } from '@/lib/tags';
 import { resolveCompanyAndArtistIds } from '@/utils/field-mapping';

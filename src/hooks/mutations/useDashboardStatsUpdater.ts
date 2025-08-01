@@ -9,7 +9,7 @@ import { useCallback } from 'react';
 import { updateDashboardStats } from '@/services/dashboardStatsService';
 import { ProjectStatusChangeEvent } from '@/types/user-dashboard-stats';
 import { queryKeys } from '@/hooks/queries/queryKeys';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('useDashboardStatsUpdater');
 

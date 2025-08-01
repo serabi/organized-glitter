@@ -6,7 +6,7 @@ import { ProjectStatus } from '@/types/project';
 import { queryKeys } from '@/hooks/queries/queryKeys';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 import { dashboardSyncMonitor } from '@/utils/dashboardSyncMonitor';
 import { statusOptions } from '@/hooks/useProjectStatus';
 import { useUserTimezone } from '@/hooks/useUserTimezone';

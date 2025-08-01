@@ -7,8 +7,8 @@
 // Authentication service
 export * as authService from '@/services/auth';
 
-// Analytics and tracking service
-export * as analytics from '@/services/analytics';
+// Analytics and tracking service (placeholder - to be implemented)
+// export * as analytics from '@/services/analytics';
 
 // Image optimization and URL generation service
 export { ImageService } from '@/services/ImageService';

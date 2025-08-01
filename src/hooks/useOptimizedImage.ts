@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ImageService, type ImageSizeKey } from '@/services/ImageService';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('useOptimizedImage');
 

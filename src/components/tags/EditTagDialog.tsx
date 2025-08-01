@@ -15,7 +15,7 @@ import FormField from '@/components/projects/form/FormField';
 import type { Tag } from '@/types/tag';
 import { TAG_COLOR_PALETTE } from '@/utils/tagColors';
 import { useUpdateTag } from '@/hooks/mutations/useUpdateTag';
-import { secureLogger } from '@/utils/secureLogger';
+import { logger } from '@/utils/logger';
 
 interface EditTagDialogProps {
   tag: Tag;
@@ -83,7 +83,7 @@ const EditTagDialog = ({ tag }: EditTagDialogProps) => {
         onError: (error: unknown) => {
           // Component-level error handling for immediate user feedback
           // This works alongside the global error handling in useUpdateTag hook
-          secureLogger.error('EditTagDialog: Failed to update tag:', { error });
+          logger.error('EditTagDialog: Failed to update tag:', { error });
 
           // Keep dialog open so user can retry
           // Global error toast is already shown by useUpdateTag hook, but we ensure

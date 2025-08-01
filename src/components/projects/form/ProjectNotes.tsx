@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { secureLogger } from '@/utils/secureLogger';
+import { logger } from '@/utils/logger';
 import { Textarea } from '@/components/ui/textarea';
 import FormField from './FormField';
 import { Button } from '@/components/ui/button';
@@ -51,7 +51,7 @@ const ProjectNotes = ({ notes, onChange, onSave, readOnly = false }: ProjectNote
       await onSave(editableNotes);
       setIsEditing(false);
     } catch (error) {
-      secureLogger.error('Failed to save notes:', error);
+      logger.error('Failed to save notes:', error);
     } finally {
       setIsSaving(false);
     }

@@ -6,7 +6,7 @@
 
 import { ClientResponseError } from 'pocketbase';
 import { useAuth } from '@/hooks/useAuth';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('QueryUtils');
 

@@ -3,7 +3,7 @@ import { pb } from '@/lib/pocketbase';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfileQuery } from '@/hooks/queries/useUserProfileQuery';
 import { useUpdateProfileMutation } from '@/hooks/mutations/useUpdateProfileMutation';
-import { secureLogger } from '@/utils/secureLogger';
+import { logger } from '@/utils/logger';
 
 interface UseProfileReactQueryResult {
   user: { id: string; email?: string; username?: string; avatar?: string } | null;
@@ -60,7 +60,7 @@ export const useProfileReactQuery = (): UseProfileReactQueryResult => {
         : null;
       setAvatarUrl(avatarUrl);
 
-      secureLogger.debug('[useProfileReactQuery] Updated avatar URL:', avatarUrl);
+      logger.debug('[useProfileReactQuery] Updated avatar URL:', avatarUrl);
     }
   }, [profileData]);
 
@@ -75,7 +75,7 @@ export const useProfileReactQuery = (): UseProfileReactQueryResult => {
       await updateProfileMutation.mutateAsync({ userId, updates });
       return { error: null };
     } catch (error) {
-      secureLogger.error('Error updating profile:', error);
+      logger.error('Error updating profile:', error);
       return { error: error instanceof Error ? error : new Error('Unknown error') };
     }
   };

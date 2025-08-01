@@ -2,7 +2,7 @@
  * User initialization utilities for application startup
  */
 
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const userInitLogger = createLogger('UserInit');
 

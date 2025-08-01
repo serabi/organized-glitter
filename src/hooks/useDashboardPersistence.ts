@@ -17,7 +17,7 @@
 
 import { useCallback, useMemo } from 'react';
 import { ViewType } from '@/types/project';
-import { secureLogger } from '@/utils/secureLogger';
+import { logger } from '@/utils/logger';
 
 interface DashboardFilterState {
   selectedCompany: string;
@@ -36,7 +36,7 @@ export const useDashboardPersistence = () => {
     try {
       return storedFilters ? JSON.parse(storedFilters) : {};
     } catch (error) {
-      secureLogger.error('Failed to parse dashboardFilters from localStorage', error);
+      logger.error('Failed to parse dashboardFilters from localStorage', error);
       return {};
     }
   }, []);
@@ -64,7 +64,7 @@ export const useDashboardPersistence = () => {
         })
       );
     } catch (error) {
-      secureLogger.error('Failed to persist dashboardFilters to localStorage', error);
+      logger.error('Failed to persist dashboardFilters to localStorage', error);
     }
   }, []);
 

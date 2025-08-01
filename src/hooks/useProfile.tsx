@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { pb } from '@/lib/pocketbase';
 import { useAuth } from '@/hooks/useAuth';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 
 const profileLogger = createLogger('useProfile');
 

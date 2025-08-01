@@ -6,7 +6,7 @@
 import type { ProjectFormValues } from '@/types/shared';
 import type { ProjectUpdateData } from '@/types/file-upload';
 import { toUserDateString } from '@/utils/timezoneUtils';
-import { createLogger } from '@/utils/secureLogger';
+import { createLogger } from '@/utils/logger';
 import { pb } from '@/lib/pocketbase';
 import { isValidPocketBaseId } from '@/utils/cacheValidation';
 
