@@ -41,13 +41,13 @@ const CollapsibleDashboardFiltersComponent: React.FC<CollapsibleDashboardFilters
     if (typeof window !== 'undefined') {
       try {
         const storedState = localStorage.getItem(LOCAL_STORAGE_KEY);
-        return storedState ? JSON.parse(storedState) === true : true; // Default to open
+        return storedState ? JSON.parse(storedState) === true : false; // Default to closed on mobile devices (both phones & tablets)
       } catch {
         // Handle invalid JSON gracefully
-        return true; // Default to open
+        return false; // Default to closed on mobile
       }
     }
-    return true; // Default to open on server
+    return false; // Default to closed on server
   });
 
   useEffect(() => {
@@ -114,8 +114,8 @@ const CollapsibleDashboardFiltersComponent: React.FC<CollapsibleDashboardFilters
         id="filters-content"
         role="region"
         aria-labelledby="filters-header"
-        className={`overflow-hidden transition-all duration-300 ease-in-out ${
-          isOpen ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
+        className={`transition-all duration-300 ease-in-out ${
+          isOpen ? 'opacity-100' : 'max-h-0 overflow-hidden opacity-0'
         }`}
       >
         {isOpen && (

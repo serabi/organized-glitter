@@ -20,6 +20,7 @@ import { createLogger, performanceLogger } from '@/utils/logger';
 import { ProjectFilterStatus } from '@/types/project';
 import { DashboardValidSortField } from '@/features/dashboard/dashboard.constants';
 import { DashboardFilterContext } from '@/hooks/mutations/useSaveNavigationContext';
+import { useMobileDevice } from '@/hooks/use-mobile';
 
 const logger = createLogger('FilterStateContext');
 
@@ -97,7 +98,7 @@ const FilterStateContext = createContext<FilterStateContextType | null>(null);
 /**
  * Default filter state factory
  */
-const getDefaultFilters = (): FilterState => ({
+const getDefaultFilters = (isMobilePhone = false): FilterState => ({
   activeStatus: 'all',
   selectedCompany: 'all',
   selectedArtist: 'all',
@@ -114,14 +115,17 @@ const getDefaultFilters = (): FilterState => ({
   sortDirection: 'desc',
   currentPage: 1,
   pageSize: 25,
-  viewType: 'grid',
+  viewType: isMobilePhone ? 'list' : 'grid', // List on mobile phones, grid on tablets/desktop
 });
 
 /**
  * Validate and sanitize filter state
  */
-const validateAndSanitizeFilters = (filters: Partial<FilterState>): FilterState => {
-  const defaults = getDefaultFilters();
+const validateAndSanitizeFilters = (
+  filters: Partial<FilterState>,
+  isMobilePhone = false
+): FilterState => {
+  const defaults = getDefaultFilters(isMobilePhone);
 
   return {
     activeStatus: filters.activeStatus || defaults.activeStatus,
@@ -142,6 +146,7 @@ const validateAndSanitizeFilters = (filters: Partial<FilterState>): FilterState 
     sortDirection: filters.sortDirection || defaults.sortDirection,
     currentPage: filters.currentPage || defaults.currentPage,
     pageSize: filters.pageSize || defaults.pageSize,
+    // Use saved viewType if it exists, otherwise use device-aware default
     viewType: filters.viewType || defaults.viewType,
   };
 };
@@ -169,6 +174,7 @@ export type FilterAction =
   | { type: 'SET_PAGE_SIZE'; payload: number }
   | { type: 'SET_VIEW_TYPE'; payload: ViewType }
   | { type: 'RESET_FILTERS' }
+  | { type: 'RESET_FILTERS_WITH_DEVICE'; payload: boolean }
   | { type: 'SET_INITIAL_STATE'; payload: FilterState }
   | { type: 'BATCH_UPDATE_FILTERS'; payload: Partial<FilterState> };
 
@@ -254,7 +260,10 @@ const filtersReducer = (state: FilterState, action: FilterAction): FilterState =
       newState = { ...state, viewType: action.payload };
       break;
     case 'RESET_FILTERS':
-      newState = getDefaultFilters();
+      newState = getDefaultFilters(); // Legacy support - defaults to grid
+      break;
+    case 'RESET_FILTERS_WITH_DEVICE':
+      newState = getDefaultFilters(action.payload); // Device-aware reset
       break;
     case 'SET_INITIAL_STATE':
       newState = action.payload;
@@ -286,9 +295,13 @@ const FilterStateProviderComponent: React.FC<FilterStateProviderProps> = ({ chil
   const userMetadata = useMetadata();
   const location = useLocation();
   const navigate = useNavigate();
+  const { isMobile, isTablet } = useMobileDevice();
+
+  // Determine if this is a mobile phone (not tablet)
+  const isMobilePhone = isMobile && !isTablet;
 
   // Filter state management
-  const [filters, dispatch] = useReducer(filtersReducer, getDefaultFilters());
+  const [filters, dispatch] = useReducer(filtersReducer, getDefaultFilters(isMobilePhone));
   const [isInitialized, setIsInitialized] = useState(false);
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
 
@@ -334,7 +347,7 @@ const FilterStateProviderComponent: React.FC<FilterStateProviderProps> = ({ chil
       const perfId = performanceLogger.start('initializeFilters');
       logger.info('🚀 Initializing filter state with batched updates...');
 
-      let initialFilters = getDefaultFilters();
+      let initialFilters = getDefaultFilters(isMobilePhone);
       let sourceOfTruth = 'defaults';
 
       // OPTIMIZATION: Initialize with defaults immediately, load saved state in background
@@ -428,7 +441,8 @@ const FilterStateProviderComponent: React.FC<FilterStateProviderProps> = ({ chil
               viewType: 'grid',
             };
             const restoredFilters = validateAndSanitizeFilters(
-              rawSavedFilters as Partial<FilterState>
+              rawSavedFilters as Partial<FilterState>,
+              isMobilePhone
             );
 
             // Only apply restored filters if they're different from current state
@@ -462,6 +476,7 @@ const FilterStateProviderComponent: React.FC<FilterStateProviderProps> = ({ chil
     location.pathname,
     navigate,
     userMetadata.tags,
+    isMobilePhone, // For device-aware view defaults
   ]);
 
   // Compute transformed options for backward compatibility

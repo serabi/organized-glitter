@@ -97,7 +97,11 @@ export function ThankYouMessage() {
                         <strong>Fixed dashboard stats counts</strong> - Corrected a bug where
                         project counts in the dashboard overview cards were showing incorrect
                         totals. The "Total Projects" count now properly includes only active
-                        projects (purchased, in stash, in progress, and on hold)
+                        projects (purchased, in stash, in progress, and on hold).
+                      </li>
+                      <li>
+                        <strong>Fixed CSV import</strong> - Fixed a bug where tags were duplicated
+                        when imported via CSV.
                       </li>
                       <li>
                         <strong>Redesigned project cards</strong> - Both Dashboard and{' '}
