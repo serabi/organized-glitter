@@ -40,11 +40,16 @@ export function ThankYouMessage() {
       {/* Updates Section - Collapsible */}
       <div className="mt-6 border-t border-pink-200/50 pt-6 dark:border-pink-700/30">
         <Collapsible open={isUpdatesOpen} onOpenChange={setIsUpdatesOpen}>
-          <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 rounded-md p-2 transition-colors hover:bg-white/40 dark:hover:bg-gray-800/20">
+          <CollapsibleTrigger
+            className="flex w-full items-center justify-between gap-2 rounded-md p-2 transition-colors hover:bg-white/40 dark:hover:bg-gray-800/20"
+            aria-expanded={isUpdatesOpen}
+            aria-controls="updates-content"
+            aria-label={`${isUpdatesOpen ? 'Collapse' : 'Expand'} updates section`}
+          >
             <div className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-pink-600 dark:text-pink-400" />
+              <Calendar className="h-5 w-5 text-pink-600 dark:text-pink-400" aria-hidden="true" />
               <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Updates</h4>
-              <span className="text-sm italic text-gray-500 dark:text-gray-400">
+              <span className="text-sm italic text-gray-500 dark:text-gray-400" aria-hidden="true">
                 (expand to read latest updates)
               </span>
             </div>
@@ -52,10 +57,16 @@ export function ThankYouMessage() {
               className={`h-4 w-4 text-gray-600 transition-transform dark:text-gray-400 ${
                 isUpdatesOpen ? 'rotate-180' : ''
               }`}
+              aria-hidden="true"
             />
           </CollapsibleTrigger>
 
-          <CollapsibleContent className="mt-4">
+          <CollapsibleContent
+            className="mt-4"
+            id="updates-content"
+            role="region"
+            aria-label="Recent updates and changes"
+          >
             <div className="space-y-4">
               {/* Latest Update */}
               <div className="rounded-lg border border-pink-100 bg-white/80 p-5 shadow-sm dark:border-pink-800/50 dark:bg-gray-800/50">
@@ -67,8 +78,8 @@ export function ThankYouMessage() {
                     <p>Dashboard and project management improvements:</p>
                     <ul className="ml-4 list-disc space-y-1">
                       <li>
-                        <strong>New "On Hold" project status</strong> - You can now mark projects as "On Hold" 
-                        for better organization of temporarily paused projects
+                        <strong>New "On Hold" project status</strong> - You can now mark projects as
+                        "On Hold" for better organization of temporarily paused projects
                       </li>
                       <li>
                         <strong>Enhanced project filtering</strong> - The{' '}
@@ -79,8 +90,14 @@ export function ThankYouMessage() {
                           Dashboard
                           <ExternalLink className="h-3 w-3" />
                         </Link>{' '}
-                        now includes a dedicated filter for "On Hold" projects, making it easier to 
+                        now includes a dedicated filter for "On Hold" projects, making it easier to
                         manage and track paused work
+                      </li>
+                      <li>
+                        <strong>Fixed dashboard stats counts</strong> - Corrected a bug where
+                        project counts in the dashboard overview cards were showing incorrect
+                        totals. The "Total Projects" count now properly includes only active
+                        projects (purchased, in stash, in progress, and on hold)
                       </li>
                       <li>
                         <strong>Redesigned project cards</strong> - Both Dashboard and{' '}
@@ -91,12 +108,13 @@ export function ThankYouMessage() {
                           Overview
                           <ExternalLink className="h-3 w-3" />
                         </Link>{' '}
-                        project cards have been updated with a more compact, grid-friendly layout 
+                        project cards have been updated with a more compact, grid-friendly layout
                         that lets you see more projects at a glance
                       </li>
                     </ul>
                     <p>
-                      These updates focus on improving project organization and visual clarity. Please{' '}
+                      These updates focus on improving project organization and visual clarity.
+                      Please{' '}
                       <button
                         onClick={() =>
                           showUserReportDialog({
@@ -186,7 +204,6 @@ export function ThankYouMessage() {
                   </div>
                 </div>
               </div>
-
             </div>
           </CollapsibleContent>
         </Collapsible>

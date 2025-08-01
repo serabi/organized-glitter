@@ -6,6 +6,7 @@ export interface StatusBreakdown {
   completed: number;
   archived: number;
   destashed: number;
+  onhold: number;
 }
 
 export interface DashboardStats {

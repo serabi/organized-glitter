@@ -27,6 +27,7 @@ async function fetchOptimizedStats(userId: string): Promise<DashboardStats> {
       completed: statsRecord.completed || 0,
       archived: statsRecord.archived || 0,
       destashed: statsRecord.destashed || 0,
+      onhold: statsRecord.onhold || 0,
     },
     available_years: [], // Not available in optimized stats
   };

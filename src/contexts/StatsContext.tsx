@@ -60,6 +60,7 @@ import { queryKeys } from '@/hooks/queries/queryKeys';
 import { safeInvalidateQueries } from '@/utils/queryInvalidationGuard';
 import { useAuth } from '@/hooks/useAuth';
 import { useDashboardData } from '@/hooks/useDashboardData';
+import { useDashboardStatsStable } from '@/hooks/queries/useDashboardStatsStable';
 import { useFilterStateOnly } from '@/contexts/FilterProvider';
 
 const logger = createLogger('StatsContext');
@@ -73,19 +74,17 @@ interface NetworkInformation {
 }
 
 // Status counts interface for DashboardOverview component
+// Only tracks the 5 metrics actually displayed on dashboard
 export interface CountsForTabsType {
-  all: number;
-  wishlist: number;
-  purchased: number;
-  stash: number;
-  progress: number;
-  completed: number;
-  destashed: number;
-  archived: number;
+  all: number; // Total Active Projects
+  purchased: number; // Purchased - Not Received
+  progress: number; // In Progress
+  onhold: number; // On Hold
+  stash: number; // In Stash
 }
 
 // Loading state for badge content
-export type BadgeLoadingState = 'idle' | 'loading' | 'error';
+export type BadgeLoadingState = 'loading' | 'error';
 
 // Spinner component for badge loading states
 const SpinnerIcon: React.FC<{ className?: string }> = ({ className = 'h-3 w-3 animate-spin' }) => (
@@ -235,61 +234,85 @@ export const StatsProvider: React.FC<StatsProviderProps> = ({ children }) => {
 
   // Use dashboard data directly - single source of truth from useProjects
   const { filters, debouncedSearchTerm, isInitialized } = useFilterStateOnly();
-  const { statusCounts, totalItems, isLoadingProjects, errorProjects } = useDashboardData(
+  const { isLoadingProjects, errorProjects } = useDashboardData(
     user?.id || 'guest',
     filters,
     debouncedSearchTerm,
     isInitialized
   );
 
+  // Separate unfiltered stats query for badge counts - prevents re-counting on tab changes
+  const {
+    stats: unfilteredStats,
+    isLoading: isLoadingStats,
+    isError: isStatsError,
+  } = useDashboardStatsStable();
+
   // Determine if we should show loading state
   const shouldShowLoading = !isInitialized || isLoadingProjects;
 
-  // Simplified counts calculation using statusCounts directly with optimized dependencies
+  // Simplified counts calculation using unfiltered stats for badges
   const countsForTabs = useMemo((): CountsForTabsType | BadgeLoadingState => {
     logger.debug('StatsContext countsForTabs calculation:', {
       isInitialized,
-      isLoadingProjects,
-      hasStatusCounts: !!statusCounts,
-      isError: !!errorProjects,
+      isLoadingStats,
+      hasUnfilteredStats: !!unfilteredStats,
+      isStatsError,
     });
 
-    // Return loading state when filters aren't initialized yet or data is being fetched
+    // Return loading state when filters aren't initialized yet or stats are being fetched
     if (!isInitialized) {
       logger.debug('Returning loading state - filters not initialized yet');
       return 'loading';
     }
 
-    if (isLoadingProjects) {
-      logger.debug('Returning loading state - projects are loading');
+    if (isLoadingStats) {
+      logger.debug('Returning loading state - stats are loading');
       return 'loading';
     }
 
-    // Return error state when fetch has failed
-    if (errorProjects) {
+    // Return error state when stats fetch has failed
+    if (isStatsError) {
       logger.warn('Stats fetch failed, returning error state for badges', {
-        error: errorProjects,
+        error: isStatsError,
         isNetworkSlow,
       });
       return 'error';
     }
 
-    // Return loading state if no data is available after initialization
-    if (!statusCounts) {
-      logger.debug('Returning loading state - no statusCounts available after initialization');
+    // Return loading state if no stats data is available after initialization
+    if (!unfilteredStats?.status_breakdown) {
+      logger.debug('Returning loading state - no unfilteredStats available after initialization');
       return 'loading';
     }
 
-    // Use totalItems from main query as authoritative "All" count (single source of truth)
+    // Use unfiltered stats for badge counts - ensures consistent totals regardless of current filter
+    const statusBreakdown = unfilteredStats.status_breakdown;
+
+    // Calculate active projects count: purchased (not received) + in stash + in progress + on hold
+    const activeProjectsCount =
+      (statusBreakdown.purchased || 0) + // purchased, not received
+      (statusBreakdown.stash || 0) + // in stash
+      (statusBreakdown.progress || 0) + // in progress
+      (statusBreakdown.onhold || 0); // on hold
+
+    // Debug logging to check counts
+    logger.debug('📊 Active projects count calculation:', {
+      purchased: statusBreakdown.purchased || 0,
+      stash: statusBreakdown.stash || 0,
+      progress: statusBreakdown.progress || 0,
+      onhold: statusBreakdown.onhold || 0,
+      calculatedTotal: activeProjectsCount,
+      fullStatusBreakdown: statusBreakdown,
+    });
+
+    // Only track the 5 metrics actually displayed on dashboard
     const counts: CountsForTabsType = {
-      all: totalItems || 0,
-      wishlist: statusCounts.wishlist || 0,
-      purchased: statusCounts.purchased || 0,
-      stash: statusCounts.stash || 0,
-      progress: statusCounts.progress || 0,
-      completed: statusCounts.completed || 0,
-      destashed: statusCounts.destashed || 0,
-      archived: statusCounts.archived || 0,
+      all: activeProjectsCount, // Total Active Projects
+      purchased: statusBreakdown.purchased || 0, // Purchased - Not Received
+      progress: statusBreakdown.progress || 0, // In Progress
+      onhold: statusBreakdown.onhold || 0, // On Hold
+      stash: statusBreakdown.stash || 0, // In Stash
     };
 
     // Only log when counts actually change (not on every render)
@@ -300,10 +323,9 @@ export const StatsProvider: React.FC<StatsProviderProps> = ({ children }) => {
     return counts;
   }, [
     isInitialized,
-    isLoadingProjects,
-    statusCounts, // Direct dependency since used in computation
-    totalItems,
-    errorProjects,
+    isLoadingStats,
+    unfilteredStats, // Direct dependency since used in computation
+    isStatsError,
     isNetworkSlow,
   ]);
 
@@ -377,25 +399,10 @@ export const StatsProvider: React.FC<StatsProviderProps> = ({ children }) => {
     }
   }, [queryClient, user?.id]);
 
-  // Create simplified DashboardStats from statusCounts
-  const simplifiedStats: DashboardStats | null = useMemo(() => {
-    if (!statusCounts) return null;
-
-    return {
-      completed_count: statusCounts.completed,
-      started_count: statusCounts.progress,
-      in_progress_count: statusCounts.progress,
-      total_diamonds: 0, // Not needed for current functionality
-      estimated_drills: 0, // Not needed for current functionality
-      status_breakdown: statusCounts,
-      available_years: [], // Not needed for current functionality
-    };
-  }, [statusCounts]);
-
   // Memoized context value to prevent unnecessary re-renders
   const contextValue: StatsContextType = useMemo(
     () => ({
-      stats: simplifiedStats,
+      stats: unfilteredStats,
       isLoading: shouldShowLoading,
       isError: !!errorProjects,
       error: errorProjects,
@@ -407,7 +414,7 @@ export const StatsProvider: React.FC<StatsProviderProps> = ({ children }) => {
       source: 'optimized',
     }),
     [
-      simplifiedStats,
+      unfilteredStats,
       shouldShowLoading,
       errorProjects,
       getCountsForTabs,

@@ -230,6 +230,7 @@ export type UserDashboardStatsRecord = {
 	destashed?: number
 	id: string
 	last_updated?: IsoDateString
+	onhold?: number
 	progress?: number
 	purchased?: number
 	stash?: number

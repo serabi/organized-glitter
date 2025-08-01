@@ -21,14 +21,6 @@ export async function calculateDashboardStats(
       pb
         .collection(Collections.Projects)
         .getList(1, 1, {
-          filter: pb.filter('user = {:userId} && status = "wishlist"', { userId }),
-          skipTotal: false,
-        })
-        .then(result => ({ status: 'wishlist', count: result.totalItems })),
-
-      pb
-        .collection(Collections.Projects)
-        .getList(1, 1, {
           filter: pb.filter('user = {:userId} && status = "purchased"', { userId }),
           skipTotal: false,
         })
@@ -53,26 +45,10 @@ export async function calculateDashboardStats(
       pb
         .collection(Collections.Projects)
         .getList(1, 1, {
-          filter: pb.filter('user = {:userId} && status = "completed"', { userId }),
+          filter: pb.filter('user = {:userId} && status = "onhold"', { userId }),
           skipTotal: false,
         })
-        .then(result => ({ status: 'completed', count: result.totalItems })),
-
-      pb
-        .collection(Collections.Projects)
-        .getList(1, 1, {
-          filter: pb.filter('user = {:userId} && status = "archived"', { userId }),
-          skipTotal: false,
-        })
-        .then(result => ({ status: 'archived', count: result.totalItems })),
-
-      pb
-        .collection(Collections.Projects)
-        .getList(1, 1, {
-          filter: pb.filter('user = {:userId} && status = "destashed"', { userId }),
-          skipTotal: false,
-        })
-        .then(result => ({ status: 'destashed', count: result.totalItems })),
+        .then(result => ({ status: 'onhold', count: result.totalItems })),
     ];
 
     const yearSpecificPromises = [
@@ -132,6 +108,7 @@ export async function calculateDashboardStats(
       completed: 0,
       archived: 0,
       destashed: 0,
+      onhold: 0,
     };
 
     for (const { status, count } of statusCounts) {

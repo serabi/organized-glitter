@@ -23,7 +23,6 @@
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { useStats } from '@/contexts/StatsContext';
 import { useStatusFilter } from '@/contexts/FilterProvider';
 import { ProjectFilterStatus } from '@/types/project';
@@ -34,13 +33,6 @@ const logger = createLogger('DashboardOverview');
 interface MetricCardProps {
   title: string;
   count: number | 'loading' | 'error';
-  variant:
-    | 'default'
-    | 'secondary'
-    | 'outline'
-    | 'status-progress'
-    | 'status-completed'
-    | 'status-stash';
   description?: string;
   onClick?: () => void;
   className?: string;
@@ -49,7 +41,6 @@ interface MetricCardProps {
 const MetricCard: React.FC<MetricCardProps> = ({
   title,
   count,
-  variant,
   description,
   onClick,
   className = '',
@@ -62,29 +53,22 @@ const MetricCard: React.FC<MetricCardProps> = ({
       className={`cursor-pointer transition-all duration-200 hover:shadow-md ${onClick ? 'hover:scale-[1.02]' : ''} ${className} `}
       onClick={onClick}
     >
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <div className="flex items-center space-x-2">
-              {isLoading ? (
-                <div className="flex items-center space-x-2">
-                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                  <span className="text-lg font-bold text-muted-foreground">--</span>
-                </div>
-              ) : isError ? (
-                <span className="text-lg font-bold text-destructive">!</span>
-              ) : (
-                <span className="text-lg font-bold">{count}</span>
-              )}
-            </div>
-            {description && <p className="text-xs text-muted-foreground">{description}</p>}
+      <CardContent className="p-4">
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-muted-foreground">{title}</p>
+          <div className="flex items-center space-x-2">
+            {isLoading ? (
+              <div className="flex items-center space-x-2">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                <span className="text-base font-bold text-muted-foreground">--</span>
+              </div>
+            ) : isError ? (
+              <span className="text-base font-bold text-destructive">!</span>
+            ) : (
+              <span className="text-base font-bold">{count}</span>
+            )}
           </div>
-          <div className="flex-shrink-0">
-            <Badge variant={variant} className="text-xs">
-              {title}
-            </Badge>
-          </div>
+          {description && <p className="text-xs text-muted-foreground">{description}</p>}
         </div>
       </CardContent>
     </Card>
@@ -109,29 +93,31 @@ const DashboardOverview: React.FC = () => {
   const metricCards = [
     {
       title: 'Total Projects',
-      count: counts.all,
-      variant: 'default' as const,
-      description: 'All projects in your collection',
+      count: typeof counts === 'object' ? counts.all : counts,
+      description: 'All active projects',
       filterStatus: 'all' as ProjectFilterStatus,
     },
     {
+      title: 'Purchased - Not Received',
+      count: typeof counts === 'object' ? counts.purchased : counts,
+      description: 'Bought but not arrived',
+      filterStatus: 'purchased' as ProjectFilterStatus,
+    },
+    {
       title: 'In Progress',
-      count: counts.progress,
-      variant: 'status-progress' as const,
+      count: typeof counts === 'object' ? counts.progress : counts,
       description: 'Currently working on',
       filterStatus: 'progress' as ProjectFilterStatus,
     },
     {
-      title: 'Completed',
-      count: counts.completed,
-      variant: 'status-completed' as const,
-      description: 'Finished projects',
-      filterStatus: 'completed' as ProjectFilterStatus,
+      title: 'On Hold',
+      count: typeof counts === 'object' ? counts.onhold : counts,
+      description: 'Temporarily paused',
+      filterStatus: 'onhold' as ProjectFilterStatus,
     },
     {
       title: 'In Stash',
-      count: counts.stash,
-      variant: 'status-stash' as const,
+      count: typeof counts === 'object' ? counts.stash : counts,
       description: 'Ready to start',
       filterStatus: 'stash' as ProjectFilterStatus,
     },
@@ -139,7 +125,7 @@ const DashboardOverview: React.FC = () => {
 
   return (
     <div className="mb-8">
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 lg:gap-4">
         {metricCards.map(card => {
           const isActive = activeStatus === card.filterStatus;
           return (
@@ -147,7 +133,6 @@ const DashboardOverview: React.FC = () => {
               key={card.title}
               title={card.title}
               count={card.count}
-              variant={card.variant}
               description={card.description}
               onClick={() => handleStatusFilter(card.filterStatus)}
               className={isActive ? 'bg-primary/5 ring-2 ring-primary' : ''}

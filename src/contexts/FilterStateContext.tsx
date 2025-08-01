@@ -282,259 +282,270 @@ interface FilterStateProviderProps {
  * FilterStateProvider component that provides filter state management
  * Memoized to prevent unnecessary re-renders when user prop doesn't change
  */
-export const FilterStateProvider: React.FC<FilterStateProviderProps> = React.memo(
-  ({ children, user }) => {
-    const userMetadata = useMetadata();
-    const location = useLocation();
-    const navigate = useNavigate();
+const FilterStateProviderComponent: React.FC<FilterStateProviderProps> = ({ children, user }) => {
+  const userMetadata = useMetadata();
+  const location = useLocation();
+  const navigate = useNavigate();
 
-    // Filter state management
-    const [filters, dispatch] = useReducer(filtersReducer, getDefaultFilters());
-    const [isInitialized, setIsInitialized] = useState(false);
-    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  // Filter state management
+  const [filters, dispatch] = useReducer(filtersReducer, getDefaultFilters());
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
 
-    // State tracking for performance and debugging
-    const initializationStateRef = useRef<'pending' | 'initializing' | 'complete'>('pending');
-    const searchInputRef = useRef<HTMLInputElement>(null);
+  // State tracking for performance and debugging
+  const initializationStateRef = useRef<'pending' | 'initializing' | 'complete'>('pending');
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
-    // Ref to track current filters state for async operations (prevents stale closures)
-    const filtersRef = useRef(filters);
+  // Ref to track current filters state for async operations (prevents stale closures)
+  const filtersRef = useRef(filters);
 
-    // Debounced search term
-    useEffect(() => {
-      const timer = setTimeout(() => {
-        setDebouncedSearchTerm(filters.searchTerm);
-      }, 300);
+  // Debounced search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(filters.searchTerm);
+    }, 300);
 
-      return () => clearTimeout(timer);
-    }, [filters.searchTerm]);
+    return () => clearTimeout(timer);
+  }, [filters.searchTerm]);
 
-    // Keep filtersRef synchronized with current filters state
-    useEffect(() => {
-      filtersRef.current = filters;
-    }, [filters]);
+  // Keep filtersRef synchronized with current filters state
+  useEffect(() => {
+    filtersRef.current = filters;
+  }, [filters]);
 
-    const isSearchPending = filters.searchTerm !== debouncedSearchTerm;
+  const isSearchPending = filters.searchTerm !== debouncedSearchTerm;
 
-    const isMetadataLoading = Boolean(
-      userMetadata?.isLoading?.companies ||
-        userMetadata?.isLoading?.artists ||
-        userMetadata?.isLoading?.tags
-    );
+  const isMetadataLoading = Boolean(
+    userMetadata?.isLoading?.companies ||
+      userMetadata?.isLoading?.artists ||
+      userMetadata?.isLoading?.tags
+  );
 
-    /**
-     * Initialize filters from database and URL parameters with batched updates
-     */
-    useEffect(() => {
-      if (!user?.id || initializationStateRef.current !== 'pending' || isMetadataLoading) {
-        return;
-      }
+  /**
+   * Initialize filters from database and URL parameters with batched updates
+   */
+  useEffect(() => {
+    if (!user?.id || initializationStateRef.current !== 'pending' || isMetadataLoading) {
+      return;
+    }
 
-      const initializeFilters = () => {
-        initializationStateRef.current = 'initializing';
-        const perfId = performanceLogger.start('initializeFilters');
-        logger.info('🚀 Initializing filter state with batched updates...');
+    const initializeFilters = () => {
+      initializationStateRef.current = 'initializing';
+      const perfId = performanceLogger.start('initializeFilters');
+      logger.info('🚀 Initializing filter state with batched updates...');
 
-        let initialFilters = getDefaultFilters();
-        let sourceOfTruth = 'defaults';
+      let initialFilters = getDefaultFilters();
+      let sourceOfTruth = 'defaults';
 
-        // OPTIMIZATION: Initialize with defaults immediately, load saved state in background
-        React.startTransition(() => {
-          // Process URL parameters first (synchronous)
-          const urlParams = new URLSearchParams(location.search);
-          if (urlParams.toString().length > 0) {
-            logger.info('🔥 Processing URL parameters...');
-            sourceOfTruth = 'url_params';
-            const urlFilters: Partial<FilterState> = {};
+      // OPTIMIZATION: Initialize with defaults immediately, load saved state in background
+      React.startTransition(() => {
+        // Process URL parameters first (synchronous)
+        const urlParams = new URLSearchParams(location.search);
+        if (urlParams.toString().length > 0) {
+          logger.info('🔥 Processing URL parameters...');
+          sourceOfTruth = 'url_params';
+          const urlFilters: Partial<FilterState> = {};
 
-            const status = urlParams.get('status');
-            if (status) urlFilters.activeStatus = status as ProjectFilterStatus;
+          const status = urlParams.get('status');
+          if (status) urlFilters.activeStatus = status as ProjectFilterStatus;
 
-            const company = urlParams.get('company');
-            if (company) urlFilters.selectedCompany = company;
+          const company = urlParams.get('company');
+          if (company) urlFilters.selectedCompany = company;
 
-            const artist = urlParams.get('artist');
-            if (artist) urlFilters.selectedArtist = artist;
+          const artist = urlParams.get('artist');
+          if (artist) urlFilters.selectedArtist = artist;
 
-            const tag = urlParams.get('tag');
-            if (tag) {
-              const matchingTag = userMetadata.tags.find(t => t.name === tag);
-              if (matchingTag) urlFilters.selectedTags = [matchingTag.id];
-            }
-
-            const year = urlParams.get('year');
-            if (year) urlFilters.selectedYearFinished = year;
-
-            const drillShape = urlParams.get('drillShape');
-            if (drillShape) urlFilters.selectedDrillShape = drillShape;
-
-            initialFilters = { ...initialFilters, ...urlFilters };
-            logger.info('✅ URL parameters applied');
-            navigate(location.pathname, { replace: true });
+          const tag = urlParams.get('tag');
+          if (tag) {
+            const matchingTag = userMetadata.tags.find(t => t.name === tag);
+            if (matchingTag) urlFilters.selectedTags = [matchingTag.id];
           }
 
-          // Set initial state immediately with defaults/URL params
-          dispatch({ type: 'SET_INITIAL_STATE', payload: initialFilters });
-          setIsInitialized(true);
-          initializationStateRef.current = 'complete';
+          const year = urlParams.get('year');
+          if (year) urlFilters.selectedYearFinished = year;
 
-          logger.info('🏁 Filter state initialization complete', { sourceOfTruth });
-          logger.info('✅ Batched filter state initialization updates applied');
-          performanceLogger.end(perfId);
-        });
+          const drillShape = urlParams.get('drillShape');
+          if (drillShape) urlFilters.selectedDrillShape = drillShape;
 
-        // Load saved settings in background after initial render
-        loadSavedFiltersAsync();
-      };
-
-      const loadSavedFiltersAsync = async () => {
-        try {
-          const { pb } = await import('@/lib/pocketbase');
-          const record = await pb
-            .collection('user_dashboard_settings')
-            .getFirstListItem(`user="${user.id}"`);
-
-          if (record.navigation_context) {
-            const savedContext = record.navigation_context as DashboardFilterContext;
-            const savedTimestamp = savedContext.preservationContext?.timestamp ?? 0;
-            const timeSinceLastVisit = Date.now() - savedTimestamp;
-            const twentyFourHours = 24 * 60 * 60 * 1000;
-
-            if (timeSinceLastVisit <= twentyFourHours) {
-              const rawSavedFilters = {
-                activeStatus: savedContext.filters?.status,
-                selectedCompany: savedContext.filters?.company,
-                selectedArtist: savedContext.filters?.artist,
-                selectedDrillShape: savedContext.filters?.drillShape,
-                selectedYearFinished: savedContext.filters?.yearFinished,
-                includeMiniKits: savedContext.filters?.includeMiniKits,
-                includeDestashed: savedContext.filters?.includeDestashed,
-                includeArchived: savedContext.filters?.includeArchived,
-                includeWishlist: savedContext.filters?.includeWishlist,
-                includeOnHold: savedContext.filters?.includeOnHold,
-                searchTerm: savedContext.filters?.searchTerm,
-                selectedTags: savedContext.filters?.selectedTags,
-                sortField: savedContext.sortField,
-                sortDirection: savedContext.sortDirection,
-                currentPage: savedContext.currentPage,
-                pageSize: savedContext.pageSize,
-                viewType: 'grid',
-              };
-              const restoredFilters = validateAndSanitizeFilters(
-                rawSavedFilters as Partial<FilterState>
-              );
-
-              // Only apply restored filters if they're different from current state
-              const currentFiltersString = JSON.stringify(filtersRef.current);
-              const restoredFiltersString = JSON.stringify(restoredFilters);
-
-              if (currentFiltersString !== restoredFiltersString) {
-                React.startTransition(() => {
-                  dispatch({ type: 'SET_INITIAL_STATE', payload: restoredFilters });
-                });
-
-                logger.info('✅ Restored filters from database (background) - filters updated');
-              } else {
-                logger.debug('Background filter restoration skipped - no changes detected');
-              }
-            }
-          }
-        } catch (error) {
-          if (error?.status !== 404) {
-            logger.warn('Background filter restoration failed:', error);
-          }
-          // Don't log 404s - this is normal for first-time users
+          initialFilters = { ...initialFilters, ...urlFilters };
+          logger.info('✅ URL parameters applied');
+          navigate(location.pathname, { replace: true });
         }
-      };
 
-      initializeFilters();
-    }, [
-      user?.id,
-      isMetadataLoading, // Single dependency instead of individual loading states
-      location.search,
-      location.pathname,
-      navigate,
-      userMetadata.tags,
-    ]);
+        // Set initial state immediately with defaults/URL params
+        dispatch({ type: 'SET_INITIAL_STATE', payload: initialFilters });
+        setIsInitialized(true);
+        initializationStateRef.current = 'complete';
 
-    // Compute transformed options for backward compatibility
-    const companiesOptions = useMemo(
-      () =>
-        (userMetadata?.companies || []).map(company => ({
-          label: company.name,
-          value: company.name, // Use name as value for DashboardFilters compatibility
-        })),
-      [userMetadata?.companies]
-    );
+        logger.info('🏁 Filter state initialization complete', { sourceOfTruth });
+        logger.info('✅ Batched filter state initialization updates applied');
+        performanceLogger.end(perfId);
+      });
 
-    const artistsOptions = useMemo(
-      () =>
-        (userMetadata?.artists || []).map(artist => ({
-          label: artist.name,
-          value: artist.name, // Use name as value for DashboardFilters compatibility
-        })),
-      [userMetadata?.artists]
-    );
+      // Load saved settings in background after initial render
+      loadSavedFiltersAsync();
+    };
 
-    const drillShapesOptions = useMemo(
-      () =>
-        ['round', 'square'].map(shape => ({
-          label: shape === 'round' ? 'Round' : 'Square',
-          value: shape,
-        })),
-      []
-    );
+    const loadSavedFiltersAsync = async () => {
+      try {
+        // Don't restore from database if URL parameters were provided
+        // URL parameters should take precedence over saved state
+        const urlParams = new URLSearchParams(location.search);
+        if (urlParams.toString().length > 0) {
+          logger.info('🔗 Skipping database restoration - URL parameters take precedence');
+          return;
+        }
 
-    // Memoize arrays to prevent unnecessary re-renders
-    const stableCompanies = useMemo(() => userMetadata?.companies || [], [userMetadata?.companies]);
-    const stableArtists = useMemo(() => userMetadata?.artists || [], [userMetadata?.artists]);
-    const stableTags = useMemo(() => userMetadata?.tags || [], [userMetadata?.tags]);
-    const stableDrillShapes = useMemo(() => ['round', 'square'], []);
+        const { pb } = await import('@/lib/pocketbase');
+        const record = await pb
+          .collection('user_dashboard_settings')
+          .getFirstListItem(`user="${user.id}"`);
 
-    // Stable context value - memoized to prevent unnecessary re-renders
-    const contextValue: FilterStateContextType = useMemo(
-      () => ({
-        filters,
-        debouncedSearchTerm,
-        isInitialized,
-        isSearchPending,
-        isMetadataLoading,
-        dispatch,
+        if (record.navigation_context) {
+          const savedContext = record.navigation_context as DashboardFilterContext;
+          const savedTimestamp = savedContext.preservationContext?.timestamp ?? 0;
+          const timeSinceLastVisit = Date.now() - savedTimestamp;
+          const twentyFourHours = 24 * 60 * 60 * 1000;
 
-        // Raw metadata (ID-based for queries like AdvancedFilters)
-        companies: stableCompanies,
-        artists: stableArtists,
-        tags: stableTags,
-        drillShapes: stableDrillShapes,
-        searchInputRef,
+          if (timeSinceLastVisit <= twentyFourHours) {
+            const rawSavedFilters = {
+              activeStatus: savedContext.filters?.status,
+              selectedCompany: savedContext.filters?.company,
+              selectedArtist: savedContext.filters?.artist,
+              selectedDrillShape: savedContext.filters?.drillShape,
+              selectedYearFinished: savedContext.filters?.yearFinished,
+              includeMiniKits: savedContext.filters?.includeMiniKits,
+              includeDestashed: savedContext.filters?.includeDestashed,
+              includeArchived: savedContext.filters?.includeArchived,
+              includeWishlist: savedContext.filters?.includeWishlist,
+              includeOnHold: savedContext.filters?.includeOnHold,
+              searchTerm: savedContext.filters?.searchTerm,
+              selectedTags: savedContext.filters?.selectedTags,
+              sortField: savedContext.sortField,
+              sortDirection: savedContext.sortDirection,
+              currentPage: savedContext.currentPage,
+              pageSize: savedContext.pageSize,
+              viewType: 'grid',
+            };
+            const restoredFilters = validateAndSanitizeFilters(
+              rawSavedFilters as Partial<FilterState>
+            );
 
-        // Computed options for backward compatibility (DashboardFilters)
-        companiesOptions,
-        artistsOptions,
-        drillShapesOptions,
-      }),
-      [
-        filters,
-        debouncedSearchTerm,
-        isInitialized,
-        isSearchPending,
-        isMetadataLoading,
-        dispatch,
-        stableCompanies,
-        stableArtists,
-        stableTags,
-        stableDrillShapes,
-        searchInputRef,
-        companiesOptions,
-        artistsOptions,
-        drillShapesOptions,
-      ]
-    );
+            // Only apply restored filters if they're different from current state
+            const currentFiltersString = JSON.stringify(filtersRef.current);
+            const restoredFiltersString = JSON.stringify(restoredFilters);
 
-    return (
-      <FilterStateContext.Provider value={contextValue}>{children}</FilterStateContext.Provider>
-    );
-  },
+            if (currentFiltersString !== restoredFiltersString) {
+              React.startTransition(() => {
+                dispatch({ type: 'SET_INITIAL_STATE', payload: restoredFilters });
+              });
+
+              logger.info('✅ Restored filters from database (background) - filters updated');
+            } else {
+              logger.debug('Background filter restoration skipped - no changes detected');
+            }
+          }
+        }
+      } catch (error) {
+        if (error?.status !== 404) {
+          logger.warn('Background filter restoration failed:', error);
+        }
+        // Don't log 404s - this is normal for first-time users
+      }
+    };
+
+    initializeFilters();
+  }, [
+    user?.id,
+    isMetadataLoading, // Single dependency instead of individual loading states
+    location.search,
+    location.pathname,
+    navigate,
+    userMetadata.tags,
+  ]);
+
+  // Compute transformed options for backward compatibility
+  const companiesOptions = useMemo(
+    () =>
+      (userMetadata?.companies || []).map(company => ({
+        label: company.name,
+        value: company.name, // Use name as value for DashboardFilters compatibility
+      })),
+    [userMetadata?.companies]
+  );
+
+  const artistsOptions = useMemo(
+    () =>
+      (userMetadata?.artists || []).map(artist => ({
+        label: artist.name,
+        value: artist.name, // Use name as value for DashboardFilters compatibility
+      })),
+    [userMetadata?.artists]
+  );
+
+  const drillShapesOptions = useMemo(
+    () =>
+      ['round', 'square'].map(shape => ({
+        label: shape === 'round' ? 'Round' : 'Square',
+        value: shape,
+      })),
+    []
+  );
+
+  // Memoize arrays to prevent unnecessary re-renders
+  const stableCompanies = useMemo(() => userMetadata?.companies || [], [userMetadata?.companies]);
+  const stableArtists = useMemo(() => userMetadata?.artists || [], [userMetadata?.artists]);
+  const stableTags = useMemo(() => userMetadata?.tags || [], [userMetadata?.tags]);
+  const stableDrillShapes = useMemo(() => ['round', 'square'], []);
+
+  // Stable context value - memoized to prevent unnecessary re-renders
+  const contextValue: FilterStateContextType = useMemo(
+    () => ({
+      filters,
+      debouncedSearchTerm,
+      isInitialized,
+      isSearchPending,
+      isMetadataLoading,
+      dispatch,
+
+      // Raw metadata (ID-based for queries like AdvancedFilters)
+      companies: stableCompanies,
+      artists: stableArtists,
+      tags: stableTags,
+      drillShapes: stableDrillShapes,
+      searchInputRef,
+
+      // Computed options for backward compatibility (DashboardFilters)
+      companiesOptions,
+      artistsOptions,
+      drillShapesOptions,
+    }),
+    [
+      filters,
+      debouncedSearchTerm,
+      isInitialized,
+      isSearchPending,
+      isMetadataLoading,
+      dispatch,
+      stableCompanies,
+      stableArtists,
+      stableTags,
+      stableDrillShapes,
+      searchInputRef,
+      companiesOptions,
+      artistsOptions,
+      drillShapesOptions,
+    ]
+  );
+
+  return <FilterStateContext.Provider value={contextValue}>{children}</FilterStateContext.Provider>;
+};
+
+/**
+ * Memoized FilterStateProvider with custom comparison
+ */
+export const FilterStateProvider = React.memo(
+  FilterStateProviderComponent,
   (prevProps, nextProps) => {
     // Custom comparison function - only re-render if user.id changes
     return prevProps.user?.id === nextProps.user?.id;
