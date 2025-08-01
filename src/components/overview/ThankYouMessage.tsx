@@ -61,6 +61,65 @@ export function ThankYouMessage() {
               <div className="rounded-lg border border-pink-100 bg-white/80 p-5 shadow-sm dark:border-pink-800/50 dark:bg-gray-800/50">
                 <div className="space-y-4">
                   <div className="inline-flex items-center rounded-full bg-pink-100 px-3 py-1 text-sm font-medium text-pink-800 dark:bg-pink-900/30 dark:text-pink-300">
+                    2025-08-01
+                  </div>
+                  <div className="space-y-3 text-gray-700 dark:text-gray-300">
+                    <p>Dashboard and project management improvements:</p>
+                    <ul className="ml-4 list-disc space-y-1">
+                      <li>
+                        <strong>New "On Hold" project status</strong> - You can now mark projects as "On Hold" 
+                        for better organization of temporarily paused projects
+                      </li>
+                      <li>
+                        <strong>Enhanced project filtering</strong> - The{' '}
+                        <Link
+                          to="/dashboard"
+                          className="inline-flex items-center gap-1 font-medium text-pink-600 underline decoration-pink-300 transition-colors hover:text-pink-700 hover:decoration-pink-500 dark:text-pink-400 dark:hover:text-pink-300"
+                        >
+                          Dashboard
+                          <ExternalLink className="h-3 w-3" />
+                        </Link>{' '}
+                        now includes a dedicated filter for "On Hold" projects, making it easier to 
+                        manage and track paused work
+                      </li>
+                      <li>
+                        <strong>Redesigned project cards</strong> - Both Dashboard and{' '}
+                        <Link
+                          to="/overview"
+                          className="inline-flex items-center gap-1 font-medium text-pink-600 underline decoration-pink-300 transition-colors hover:text-pink-700 hover:decoration-pink-500 dark:text-pink-400 dark:hover:text-pink-300"
+                        >
+                          Overview
+                          <ExternalLink className="h-3 w-3" />
+                        </Link>{' '}
+                        project cards have been updated with a more compact, grid-friendly layout 
+                        that lets you see more projects at a glance
+                      </li>
+                    </ul>
+                    <p>
+                      These updates focus on improving project organization and visual clarity. Please{' '}
+                      <button
+                        onClick={() =>
+                          showUserReportDialog({
+                            title: 'Share Your Feedback',
+                            subtitle:
+                              "How are the new 'On Hold' status and redesigned project cards working for you?",
+                            currentPage: 'Overview - Updates Section',
+                          })
+                        }
+                        className="font-medium text-pink-600 underline decoration-pink-300 transition-colors hover:text-pink-700 hover:decoration-pink-500 dark:text-pink-400 dark:hover:text-pink-300"
+                      >
+                        let us know
+                      </button>{' '}
+                      how these improvements work for your workflow!
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Previous Update */}
+              <div className="rounded-lg border border-pink-100 bg-white/80 p-5 shadow-sm dark:border-pink-800/50 dark:bg-gray-800/50">
+                <div className="space-y-4">
+                  <div className="inline-flex items-center rounded-full bg-pink-100 px-3 py-1 text-sm font-medium text-pink-800 dark:bg-pink-900/30 dark:text-pink-300">
                     2025-07-29
                   </div>
                   <div className="space-y-3 text-gray-700 dark:text-gray-300">
@@ -128,63 +187,6 @@ export function ThankYouMessage() {
                 </div>
               </div>
 
-              {/* Previous Update */}
-              <div className="rounded-lg border border-pink-100 bg-white/80 p-5 shadow-sm dark:border-pink-800/50 dark:bg-gray-800/50">
-                <div className="space-y-4">
-                  <div className="inline-flex items-center rounded-full bg-pink-100 px-3 py-1 text-sm font-medium text-pink-800 dark:bg-pink-900/30 dark:text-pink-300">
-                    2025-07-21
-                  </div>
-                  <div className="space-y-3 text-gray-700 dark:text-gray-300">
-                    <p>Major update to help make the code base cleaner. Visible changes:</p>
-                    <ul className="ml-4 list-disc space-y-1">
-                      <li>Removed the Advanced Edit page for now</li>
-                      <li>
-                        Updated the{' '}
-                        <Link
-                          to="/dashboard"
-                          className="inline-flex items-center gap-1 font-medium text-pink-600 underline decoration-pink-300 transition-colors hover:text-pink-700 hover:decoration-pink-500 dark:text-pink-400 dark:hover:text-pink-300"
-                        >
-                          Dashboard page
-                          <ExternalLink className="h-3 w-3" />
-                        </Link>{' '}
-                        to be better formatted for various sized screens
-                      </li>
-                      <li>
-                        Updated the{' '}
-                        <Link
-                          to="/randomizer"
-                          className="inline-flex items-center gap-1 font-medium text-pink-600 underline decoration-pink-300 transition-colors hover:text-pink-700 hover:decoration-pink-500 dark:text-pink-400 dark:hover:text-pink-300"
-                        >
-                          Randomizer page
-                          <ExternalLink className="h-3 w-3" />
-                        </Link>{' '}
-                        to work better
-                      </li>
-                      <li>
-                        Updated a bug with the time zone settings - the dates should now work
-                        correctly!
-                      </li>
-                    </ul>
-                    <p>
-                      As always, please reach out if you have any{' '}
-                      <button
-                        onClick={() =>
-                          showUserReportDialog({
-                            title: 'Share Your Feedback',
-                            subtitle:
-                              "We'd love to hear your thoughts about these updates and Organized Glitter!",
-                            currentPage: 'Overview - Updates Section',
-                          })
-                        }
-                        className="font-medium text-pink-600 underline decoration-pink-300 transition-colors hover:text-pink-700 hover:decoration-pink-500 dark:text-pink-400 dark:hover:text-pink-300"
-                      >
-                        feedback
-                      </button>{' '}
-                      or discover any bugs.
-                    </p>
-                  </div>
-                </div>
-              </div>
             </div>
           </CollapsibleContent>
         </Collapsible>
