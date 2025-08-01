@@ -59,10 +59,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
     clearAllTags,
     updateYearFinished,
     updateIncludeMiniKits,
-    updateIncludeDestashed,
-    updateIncludeArchived,
     updateIncludeWishlist,
-    updateIncludeOnHold,
     updateViewType,
     companiesOptions, // Use computed options for DashboardFilters
     artistsOptions, // Use computed options for DashboardFilters
@@ -108,10 +105,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
   const selectedTags = filters.selectedTags;
   const selectedYearFinished = filters.selectedYearFinished;
   const includeMiniKits = filters.includeMiniKits;
-  const includeDestashed = filters.includeDestashed;
-  const includeArchived = filters.includeArchived;
   const includeWishlist = filters.includeWishlist;
-  const includeOnHold = filters.includeOnHold;
   const viewType = filters.viewType;
   const sortField = filters.sortField;
   const sortDirection = filters.sortDirection;
@@ -229,30 +223,6 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
 
             <div className="flex items-center space-x-3">
               <Checkbox
-                id="include-destashed-kits"
-                checked={includeDestashed}
-                onCheckedChange={checked => updateIncludeDestashed(Boolean(checked))}
-                data-testid="include-destashed-checkbox"
-              />
-              <Label htmlFor="include-destashed-kits" className="text-sm font-normal">
-                Include Destashed Kits
-              </Label>
-            </div>
-
-            <div className="flex items-center space-x-3">
-              <Checkbox
-                id="include-archived-kits"
-                checked={includeArchived}
-                onCheckedChange={checked => updateIncludeArchived(Boolean(checked))}
-                data-testid="include-archived-checkbox"
-              />
-              <Label htmlFor="include-archived-kits" className="text-sm font-normal">
-                Include Archived Kits
-              </Label>
-            </div>
-
-            <div className="flex items-center space-x-3">
-              <Checkbox
                 id="include-wishlist-kits"
                 checked={includeWishlist}
                 onCheckedChange={checked => updateIncludeWishlist(Boolean(checked))}
@@ -260,18 +230,6 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
               />
               <Label htmlFor="include-wishlist-kits" className="text-sm font-normal">
                 Include Wishlisted Kits
-              </Label>
-            </div>
-
-            <div className="flex items-center space-x-3">
-              <Checkbox
-                id="include-onhold-kits"
-                checked={includeOnHold}
-                onCheckedChange={checked => updateIncludeOnHold(Boolean(checked))}
-                data-testid="include-onhold-checkbox"
-              />
-              <Label htmlFor="include-onhold-kits" className="text-sm font-normal">
-                Include On Hold Projects
               </Label>
             </div>
           </div>
