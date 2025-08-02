@@ -114,12 +114,12 @@ const CollapsibleDashboardFiltersComponent: React.FC<CollapsibleDashboardFilters
         id="filters-content"
         role="region"
         aria-labelledby="filters-header"
-        className={`overflow-hidden transition-all duration-300 ease-in-out ${
-          isOpen ? 'max-h-[80vh] opacity-100' : 'max-h-0 opacity-0'
+        className={`overflow-visible transition-all duration-300 ease-in-out ${
+          isOpen ? 'max-h-[90vh] opacity-100' : 'max-h-0 overflow-hidden opacity-0'
         }`}
       >
         <div
-          className={`mt-4 overflow-y-auto rounded-lg border bg-card p-4 shadow-sm transition-all duration-300 ease-in-out ${
+          className={`mt-4 overflow-y-auto overflow-x-visible rounded-lg border bg-card p-4 shadow-sm transition-all duration-300 ease-in-out ${
             isOpen ? 'translate-y-0 transform' : '-translate-y-2 transform'
           }`}
         >
@@ -130,6 +130,5 @@ const CollapsibleDashboardFiltersComponent: React.FC<CollapsibleDashboardFilters
   );
 };
 
-// No need to re-export ValidSortField, can be imported from context directly
 // export type { DashboardValidSortField };
 export default React.memo(CollapsibleDashboardFiltersComponent);
