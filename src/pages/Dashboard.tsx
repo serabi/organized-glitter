@@ -33,7 +33,7 @@ import ProjectsSection from '@/components/dashboard/ProjectsSection';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/hooks/useAuth';
 import { useRecentlyEdited } from '@/contexts/RecentlyEditedContext';
-import { StatsProvider } from '@/contexts/StatsContext';
+import { StatsProviderOptimized } from '@/contexts/StatsContextOptimized';
 import { FilterProvider } from '@/contexts/FilterProvider';
 import { UIProvider } from '@/contexts/UIContext';
 import { RecentlyEditedProvider } from '@/contexts/RecentlyEditedContext';
@@ -152,13 +152,13 @@ const Dashboard: React.FC = () => {
 
   return (
     <FilterProvider user={user}>
-      <StatsProvider>
+      <StatsProviderOptimized>
         <UIProvider>
           <RecentlyEditedProvider>
             <DashboardInternal />
           </RecentlyEditedProvider>
         </UIProvider>
-      </StatsProvider>
+      </StatsProviderOptimized>
     </FilterProvider>
   );
 };

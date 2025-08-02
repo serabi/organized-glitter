@@ -27,15 +27,13 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel';
-import { useStats, type AllStatusCountsType } from '@/contexts/StatsContext';
+import { useStatsOptimized, type AllStatusCountsType } from '@/contexts/StatsContextOptimized';
 import { useStatusFilter } from '@/contexts/FilterProvider';
 import { type ProjectFilterStatus } from '@/types/project-status';
 import StatusCard from './StatusCard';
 import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('StatusCarousel');
-
-// Status card configuration following the agreed order
 const STATUS_CARDS = [
   {
     status: 'all' as ProjectFilterStatus,
@@ -103,7 +101,7 @@ export interface StatusCarouselProps {
  */
 export const StatusCarousel: React.FC<StatusCarouselProps> = memo(({ className = '' }) => {
   // Data from contexts
-  const { getAllStatusCounts } = useStats();
+  const { getAllStatusCounts } = useStatsOptimized();
   const { activeStatus, updateStatus } = useStatusFilter();
 
   const counts = getAllStatusCounts();

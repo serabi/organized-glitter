@@ -1,15 +1,12 @@
 /**
- * Dashboard Overview Component - Key Metrics Display
+ * Dashboard Overview
  *
- * Displays prominent metric cards showing key project statistics at the top of the dashboard.
- * Replaces the tab-based filtering approach with a cleaner overview design while maintaining
- * the same functionality and data sources.
- *
+ * Displays prominent metric cards showing key project statistics at the top of the dashboard. *
  * Key Features:
  * - Responsive grid layout (2x2 on mobile, horizontal on desktop)
  * - Color-coded status indicators matching existing design system
  * - Loading states with spinner integration from StatsContext
- * - Clickable cards for filtering (when enabled)
+ * - Clickable cards for filtering
  * - Glassmorphism design consistent with existing components
  *
  * Data Flow:

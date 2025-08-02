@@ -15,6 +15,12 @@ import { createLogger } from '@/utils/logger';
 import { ClientResponseError } from 'pocketbase';
 import { getCurrentDateString } from '@/utils/dateHelpers';
 import { useUserTimezone } from '@/hooks/useUserTimezone';
+import {
+  updateProjectStatusOptimistic,
+  rollbackProjectsOptimistic,
+  invalidateProjectsCache,
+  OptimisticProjectsContext,
+} from '@/utils/optimisticUpdatesOptimized';
 
 const logger = createLogger('useUpdateProjectStatus');
 
@@ -24,10 +30,7 @@ interface UpdateProjectStatusData {
   currentStatus?: string;
 }
 
-interface MutationContext {
-  previousProjects?: unknown;
-  previousStatusCounts?: unknown;
-  oldStatus?: string;
+interface MutationContext extends OptimisticProjectsContext {
   oldDateCompleted?: string;
 }
 
@@ -74,78 +77,34 @@ export const useUpdateProjectStatus = () => {
         throw new Error('User not authenticated');
       }
 
-      // Cancel any outgoing refetches to prevent race conditions
-      await queryClient.cancelQueries({ queryKey: queryKeys.projects.lists() });
-      await queryClient.cancelQueries({ queryKey: queryKeys.projects.detail(projectId) });
-
-      // Snapshot the previous values for rollback
-      const previousProjects = queryClient.getQueryData(queryKeys.projects.lists());
-      const previousStatusCounts = queryClient.getQueryData([
-        ...queryKeys.projects.lists(),
-        'status-counts',
-      ]);
-
-      // Find the project and its current status and date_completed
-      let oldStatus: string | undefined;
-      let oldDateCompleted: string | undefined;
-      if (previousProjects && typeof previousProjects === 'object' && 'items' in previousProjects) {
-        const typedData = previousProjects as { items?: ProjectsResponse[] };
-        const project = typedData.items?.find(p => p.id === projectId);
-        oldStatus = project?.status;
-        oldDateCompleted = project?.date_completed;
-      }
-
-      // Optimistically update the project in all project lists
-      queryClient.setQueriesData({ queryKey: queryKeys.projects.lists() }, (oldData: unknown) => {
-        if (!oldData || typeof oldData !== 'object' || !('items' in oldData)) {
-          return oldData;
-        }
-
-        const typedData = oldData as {
-          items?: ProjectsResponse[];
-          statusCounts?: Record<string, number>;
-        };
-        if (!typedData.items || !Array.isArray(typedData.items)) {
-          return oldData;
-        }
-
-        // Update the specific project in the list
-        const updatedItems = typedData.items.map((project: ProjectsResponse) => {
-          if (project.id === projectId) {
-            const updatedProject = { ...project, status: newStatus };
-            // Add date_completed if status is completed, clear it otherwise
-            if (newStatus === 'completed') {
-              updatedProject.date_completed = getCurrentDateString(userTimezone);
-            } else {
-              // Remove date_completed when status is not completed
-              delete updatedProject.date_completed;
-            }
-            return updatedProject;
-          }
-          return project;
-        });
-
-        // Update status counts optimistically
-        const updatedStatusCounts = typedData.statusCounts ? { ...typedData.statusCounts } : {};
-
-        if (oldStatus && oldStatus !== newStatus) {
-          // Decrease old status count
-          if (updatedStatusCounts[oldStatus]) {
-            updatedStatusCounts[oldStatus] = Math.max(0, updatedStatusCounts[oldStatus] - 1);
-          }
-          // Increase new status count
-          updatedStatusCounts[newStatus] = (updatedStatusCounts[newStatus] || 0) + 1;
-        }
-
-        return {
-          ...typedData,
-          items: updatedItems,
-          statusCounts: updatedStatusCounts,
-        };
+      logger.debug('🔄 [OPTIMIZED] Applying optimistic update', {
+        projectId,
+        newStatus,
       });
 
-      // Update the project detail if it exists in cache
+      // Cancel any outgoing refetches to prevent race conditions
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.projects.forStats(user.id),
+      });
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.projects.detail(projectId),
+      });
+
+      // Get old date_completed for rollback
       const previousProject = queryClient.getQueryData(queryKeys.projects.detail(projectId));
+      const oldDateCompleted = previousProject
+        ? ((previousProject as Record<string, unknown>).date_completed as string)
+        : undefined;
+
+      // Optimistically update projects cache (stats will recalculate automatically)
+      const previousProjects = updateProjectStatusOptimistic(
+        queryClient,
+        user.id,
+        projectId,
+        newStatus
+      );
+
+      // Update project detail if it exists in cache
       if (previousProject) {
         const updatedProject = {
           ...(previousProject as Record<string, unknown>),
@@ -163,13 +122,14 @@ export const useUpdateProjectStatus = () => {
         queryClient.setQueryData(queryKeys.projects.detail(projectId), updatedProject);
       }
 
-      logger.debug('Optimistic updates applied:', { projectId, oldStatus, newStatus });
+      logger.debug('✅ [OPTIMIZED] Optimistic updates applied', {
+        projectId,
+        newStatus,
+        performance: 'Stats will recalculate automatically',
+      });
 
-      // Return context for rollback
       return {
         previousProjects,
-        previousStatusCounts,
-        oldStatus,
         oldDateCompleted,
       };
     },
@@ -196,97 +156,53 @@ export const useUpdateProjectStatus = () => {
     },
 
     onError: (error, variables, context) => {
-      const { projectId, newStatus } = variables;
+      const { projectId } = variables;
 
-      logger.error('Project status update failed, performing rollback:', error);
+      if (!user?.id || !context?.previousProjects) return;
 
-      try {
-        // Rollback project lists
-        if (context?.previousProjects && user?.id) {
-          queryClient.setQueryData(queryKeys.projects.lists(), context.previousProjects);
-          logger.debug('Rolled back project lists cache');
-        }
-
-        // Rollback status counts
-        if (context?.previousStatusCounts && user?.id) {
-          queryClient.setQueryData(
-            [...queryKeys.projects.lists(), 'status-counts'],
-            context.previousStatusCounts
-          );
-          logger.debug('Rolled back status counts cache');
-        }
-
-        // Rollback project detail
-        const previousProject = queryClient.getQueryData(queryKeys.projects.detail(projectId));
-        if (previousProject && context?.oldStatus) {
-          const rolledBackProject = {
-            ...(previousProject as Record<string, unknown>),
-            status: context.oldStatus,
-          } as Record<string, unknown>;
-
-          // Restore the original date_completed state
-          if (context.oldDateCompleted) {
-            rolledBackProject.date_completed = context.oldDateCompleted;
-          } else {
-            // If there was no date_completed originally, remove it
-            delete rolledBackProject.date_completed;
-          }
-
-          queryClient.setQueryData(queryKeys.projects.detail(projectId), rolledBackProject);
-          logger.debug('Rolled back project detail cache');
-        }
-      } catch (rollbackError) {
-        logger.error('Rollback failed, falling back to cache invalidation:', rollbackError);
-
-        // If rollback fails, invalidate caches to ensure consistency
-        if (user?.id) {
-          queryClient.invalidateQueries({ queryKey: queryKeys.projects.lists() });
-          queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(projectId) });
-        }
-      }
-
-      // Determine error type and show appropriate message
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      const lowerErrorMessage = errorMessage.toLowerCase();
-
-      const isRateLimit =
-        lowerErrorMessage.includes('429') ||
-        lowerErrorMessage.includes('rate limit') ||
-        lowerErrorMessage.includes('too many requests');
-
-      let title = 'Error Updating Status';
-      let description = errorMessage || 'Failed to update project status. Please try again.';
-
-      if (isRateLimit) {
-        title = 'Too Many Requests';
-        description = 'Server is busy. Please wait a moment and try again.';
-      }
-
-      toast({
-        title,
-        description,
-        variant: 'destructive',
+      logger.error('❌ [OPTIMIZED] Mutation failed, rolling back', {
+        error: error.message,
+        projectId,
       });
 
-      logger.error('Project status update failed:', { projectId, newStatus, error: errorMessage });
+      // Rollback optimistic updates (much simpler than before)
+      rollbackProjectsOptimistic(queryClient, user.id, context.previousProjects);
+
+      // Rollback project detail
+      const currentProject = queryClient.getQueryData(queryKeys.projects.detail(projectId));
+      if (currentProject) {
+        const rolledBackProject = {
+          ...(currentProject as Record<string, unknown>),
+        } as Record<string, unknown>;
+
+        // Restore the original date_completed state
+        if (context.oldDateCompleted) {
+          rolledBackProject.date_completed = context.oldDateCompleted;
+        } else {
+          delete rolledBackProject.date_completed;
+        }
+
+        queryClient.setQueryData(queryKeys.projects.detail(projectId), rolledBackProject);
+      }
+
+      // Show error toast
+      if (error instanceof ClientResponseError) {
+        toast({
+          title: 'Failed to update project status',
+          description: error.message || 'Please try again.',
+          variant: 'destructive',
+        });
+      }
     },
 
-    onSettled: (_, __, variables) => {
-      // Ensure fresh data after a short delay to allow server sync
-      setTimeout(() => {
-        if (user?.id) {
-          queryClient.invalidateQueries({ queryKey: queryKeys.projects.lists() });
-          queryClient.invalidateQueries({
-            queryKey: queryKeys.projects.detail(variables.projectId),
-          });
+    onSettled: () => {
+      if (!user?.id) return;
 
-          // Invalidate dashboard stats for current year
-          const currentYear = new Date().getFullYear();
-          queryClient.invalidateQueries({
-            queryKey: [...queryKeys.stats.overview(user.id), 'dashboard', currentYear],
-          });
-        }
-      }, 1000);
+      logger.debug('🔄 [OPTIMIZED] Ensuring eventual consistency');
+
+      // Invalidate projects cache to sync with server state
+      // Stats will be recalculated automatically from fresh data
+      invalidateProjectsCache(queryClient, user.id);
     },
 
     retry: (failureCount, error) => {

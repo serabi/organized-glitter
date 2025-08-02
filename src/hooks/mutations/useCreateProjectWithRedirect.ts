@@ -9,6 +9,7 @@ import { createLogger } from '@/utils/logger';
 import { ClientResponseError } from 'pocketbase';
 import { TagService } from '@/lib/tags';
 import { resolveCompanyAndArtistIds } from '@/utils/field-mapping';
+// Note: Dashboard stats now automatically calculated from projects data
 
 const logger = createLogger('useCreateProjectWithRedirect');
 
@@ -201,6 +202,12 @@ export const useCreateProjectWithRedirect = () => {
     onSuccess: async data => {
       logger.info('✅ Project created successfully, initiating navigation');
 
+      // Update dashboard stats table for new project (async, non-blocking)
+      if (user?.id) {
+        // Note: With optimized architecture, stats are automatically recalculated
+        // when projects data changes, so no manual stats updates needed
+      }
+
       // Ensure React state updates are flushed before navigation
       await new Promise(resolve => setTimeout(resolve, 0));
 
@@ -244,9 +251,8 @@ export const useCreateProjectWithRedirect = () => {
 
         // Invalidate dashboard stats cache when project is created
         if (user?.id) {
-          const currentYear = new Date().getFullYear();
           queryClient.invalidateQueries({
-            queryKey: [...queryKeys.stats.overview(user.id), 'dashboard', currentYear],
+            queryKey: queryKeys.stats.overview(user.id),
           });
           logger.info('Dashboard stats cache invalidated after project creation');
         }
