@@ -5,8 +5,7 @@
  */
 
 import { createContext } from 'react';
-import { FilterStateContextType } from '@/contexts/filterState';
-import { FilterActionsContextType } from '@/contexts/filterActions';
+import { FilterContextType } from '@/contexts/FilterContext';
 
-export const FilterStateContext = createContext<FilterStateContextType | null>(null);
-export const FilterActionsContext = createContext<FilterActionsContextType | null>(null);
+export const FilterStateContext = createContext<FilterContextType | null>(null);
+export const FilterActionsContext = createContext<FilterContextType | null>(null);

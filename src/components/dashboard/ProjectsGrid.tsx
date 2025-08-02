@@ -35,7 +35,7 @@ import { Button } from '@/components/ui/button';
 import ProjectCard from '@/components/dashboard/ProjectCard';
 import { ProjectType } from '@/types/project'; // Still needed for ProjectCard and internal logic
 import { Separator } from '@/components/ui/separator';
-import { useFilters } from '@/contexts/filterIndex';
+import { useFilters, useFilterHelpers } from '@/contexts/FilterContext';
 // import { useDashboardData } from '@/hooks/useDashboardData'; // Now passed as prop
 import { useDynamicSeparatorProps } from '@/hooks/useDynamicSeparatorProps';
 import { useAuth } from '@/hooks/useAuth';
@@ -61,8 +61,9 @@ const ProjectsGridComponent: React.FC<ProjectsGridProps> = ({ dashboardData }) =
   const navigateToProject = useNavigateToProject();
   const { user } = useAuth();
   const { recentlyEditedProjectId } = useRecentlyEdited();
-  const { filters, debouncedSearchTerm, resetAllFilters, updatePage, updatePageSize } =
-    useFilters();
+  const { filters } = useFilters();
+  const { resetFilters, updatePage, updatePageSize } = useFilterHelpers();
+  const debouncedSearchTerm = filters.searchTerm; // Direct access since new context handles debouncing internally
 
   // Get dynamic error message based on active tab
   const tabAwareErrorMessage = useTabAwareErrorMessage();
@@ -193,7 +194,7 @@ const ProjectsGridComponent: React.FC<ProjectsGridProps> = ({ dashboardData }) =
     return (
       <div className="py-8 text-center">
         <p className="text-muted-foreground">{tabAwareErrorMessage}</p>
-        <Button variant="outline" onClick={() => resetAllFilters('user')} className="mt-2">
+        <Button variant="outline" onClick={() => resetFilters()} className="mt-2">
           Clear Filters
         </Button>
       </div>

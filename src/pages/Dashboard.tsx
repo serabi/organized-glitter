@@ -34,7 +34,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/hooks/useAuth';
 import { useRecentlyEdited } from '@/contexts/useRecentlyEdited';
 import { StatsProviderOptimized } from '@/contexts/useStatsOptimized';
-import { FilterProvider } from '@/contexts/filterIndex';
+import { FilterProvider } from '@/contexts/FilterContext';
 import { UIProvider } from '@/contexts/useUI';
 import { RecentlyEditedProvider } from '@/contexts/useRecentlyEdited';
 import { DashboardFilterContext } from '@/hooks/mutations/useSaveNavigationContext';

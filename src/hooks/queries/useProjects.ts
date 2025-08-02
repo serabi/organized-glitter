@@ -9,7 +9,6 @@ import { useMemo, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createLogger } from '@/utils/logger';
 import { DashboardValidSortField } from '@/features/dashboard/dashboard.constants';
-import { SortDirectionType } from '@/contexts/filterIndex';
 import { StatusBreakdown } from '@/types/dashboard';
 import { queryKeys, ProjectQueryParams } from './queryKeys';
 import { useRenderGuard, useThrottledLogger } from '@/utils/renderGuards';
@@ -39,7 +38,7 @@ export interface UseProjectsParams {
   userId: string | undefined;
   filters: ServerFilters;
   sortField: DashboardValidSortField;
-  sortDirection: SortDirectionType;
+  sortDirection: 'asc' | 'desc';
   currentPage: number;
   pageSize: number;
   enabled?: boolean;

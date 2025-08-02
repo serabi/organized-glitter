@@ -89,13 +89,12 @@ const App: React.FC = () => {
     >
       <AppProviders>
         <AppRoutes />
+        {/* Show PWA install prompt when applicable */}
+        <PWAInstallPrompt />
       </AppProviders>
 
       {/* Show offline page when user is offline */}
       {!isOnline && <OfflinePage onRetry={handleRetry} />}
-
-      {/* Show PWA install prompt when applicable */}
-      <PWAInstallPrompt />
     </div>
   );
 };

@@ -36,7 +36,7 @@ import {
 } from '@/components/ui/pagination';
 import { useStatsOptimized } from '@/contexts/useStatsOptimized';
 import { type AllStatusCountsType } from '@/contexts/contexts-stats';
-import { useStatusFilter } from '@/contexts/FilterHooks';
+import { useFilters, useFilterHelpers } from '@/contexts/FilterContext';
 import { type ProjectFilterStatus } from '@/types/project-status';
 import StatusCard from './StatusCard';
 import { createLogger } from '@/utils/logger';
@@ -122,8 +122,11 @@ export const StatusCarousel: React.FC<StatusCarouselProps> = memo(({ className =
 
   // Data from contexts
   const { getAllStatusCounts } = useStatsOptimized();
-  const { activeStatus, updateStatus } = useStatusFilter();
+  const { filters } = useFilters();
+  const { updateStatus } = useFilterHelpers();
   const isTouchDevice = useIsTouchDevice();
+
+  const activeStatus = filters.activeStatus;
 
   const counts = getAllStatusCounts();
 

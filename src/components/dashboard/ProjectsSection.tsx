@@ -2,14 +2,16 @@ import React from 'react';
 import ProjectsGrid from '@/components/dashboard/ProjectsGrid';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useAuth } from '@/hooks/useAuth';
-import { useFilterStateOnly } from '@/contexts/filterIndex';
+import { useFilters } from '@/contexts/FilterContext';
 import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('ProjectsSection');
 
 const ProjectsSectionComponent = () => {
   const { user } = useAuth();
-  const { filters, debouncedSearchTerm, isInitialized } = useFilterStateOnly();
+  const { filters } = useFilters();
+  const debouncedSearchTerm = filters.searchTerm; // Direct access since new context handles debouncing internally
+  const isInitialized = true; // New context is always initialized
 
   // Single shared dashboard data call to prevent duplicate useProjects calls
   // Only fetch data once filter initialization is complete

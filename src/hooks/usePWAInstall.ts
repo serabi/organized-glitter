@@ -121,6 +121,15 @@ export const usePWAInstall = (): PWAInstallHook => {
     };
   }, [checkDismissalStatus, checkInstallStatus]);
 
+  // Dismiss the install prompt
+  const dismissPrompt = useCallback(() => {
+    const now = Date.now().toString();
+    localStorage.setItem(DISMISSAL_KEY, now);
+    setIsPromptDismissed(true);
+    setCanShowPrompt(false);
+    logger.debug('Install prompt dismissed');
+  }, []);
+
   // Prompt user to install PWA
   const promptInstall = useCallback(async (): Promise<void> => {
     if (!promptEvent) {
@@ -145,15 +154,6 @@ export const usePWAInstall = (): PWAInstallHook => {
       logger.error('Error showing install prompt', error);
     }
   }, [promptEvent, dismissPrompt]);
-
-  // Dismiss the install prompt
-  const dismissPrompt = useCallback(() => {
-    const now = Date.now().toString();
-    localStorage.setItem(DISMISSAL_KEY, now);
-    setIsPromptDismissed(true);
-    setCanShowPrompt(false);
-    logger.debug('Install prompt dismissed');
-  }, []);
 
   // Reset dismissal (for testing or user preference reset)
   const resetDismissal = useCallback(() => {

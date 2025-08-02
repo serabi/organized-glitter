@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { usePagination } from '@/contexts/FilterHooks';
+import { useFilters, useFilterHelpers } from '@/contexts/FilterContext';
 
 interface ProjectPaginationProps {
   currentPage: number;
@@ -194,13 +194,14 @@ export const ProjectPaginationWithContext: React.FC<{
   className?: string;
   disabled?: boolean;
 }> = ({ totalPages, totalItems, className, disabled }) => {
-  const { currentPage, pageSize, updatePage, updatePageSize } = usePagination();
+  const { filters } = useFilters();
+  const { updatePage, updatePageSize } = useFilterHelpers();
 
   return (
     <ProjectPagination
-      currentPage={currentPage}
+      currentPage={filters.currentPage}
       totalPages={totalPages}
-      pageSize={pageSize}
+      pageSize={filters.pageSize}
       totalItems={totalItems}
       onPageChange={updatePage}
       onPageSizeChange={updatePageSize}
