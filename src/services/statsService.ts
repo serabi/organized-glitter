@@ -53,6 +53,14 @@ export async function calculateDashboardStats(
       pb
         .collection(Collections.Projects)
         .getList(1, 1, {
+          filter: pb.filter('user = {:userId} && status = "onhold"', { userId }),
+          skipTotal: false,
+        })
+        .then(result => ({ status: 'onhold', count: result.totalItems })),
+
+      pb
+        .collection(Collections.Projects)
+        .getList(1, 1, {
           filter: pb.filter('user = {:userId} && status = "completed"', { userId }),
           skipTotal: false,
         })
@@ -132,6 +140,7 @@ export async function calculateDashboardStats(
       completed: 0,
       archived: 0,
       destashed: 0,
+      onhold: 0,
     };
 
     for (const { status, count } of statusCounts) {

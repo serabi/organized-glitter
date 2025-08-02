@@ -60,7 +60,7 @@ Core project management with comprehensive metadata.
 - `company` (relation to companies, optional)
 - `artist` (relation to artists, optional)
 - `status` (select, required)
-  - Values: `wishlist`, `purchased`, `stash`, `progress`, `completed`, `archived`, `destashed`
+  - Values: `wishlist`, `purchased`, `stash`, `progress`, `onhold`, `completed`, `archived`, `destashed`
 - `kit_category` (select, required)
   - Values: `full`, `mini`
 - `drill_shape` (select, optional)

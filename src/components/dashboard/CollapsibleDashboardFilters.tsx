@@ -1,13 +1,13 @@
 /**
  * @fileoverview Collapsible Dashboard Filters Component for Mobile View
  *
- * This component provides a mobile-optimized collapsible interface for dashboard filters.
+ * This component provides a simple collapsible interface for dashboard filters on mobile devices.
  * It wraps the main DashboardFilters component and provides toggle functionality with
  * persistent state management through localStorage.
  *
  * Key Features:
  * - Mobile-only visibility (renders nothing on desktop)
- * - Collapsible interface with smooth transitions
+ * - Simple collapsible interface with smooth transitions
  * - Persistent collapse state in localStorage
  * - Active filter count display in header
  * - Keyboard accessibility support
@@ -18,7 +18,7 @@
  *
  * @author serabi
  * @since 2025-07-03
- * @version 1.0.0 - Mobile-optimized collapsible filters
+ * @version 1.1.0 - Simplified mobile filters with standard CSS overflow
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -41,13 +41,13 @@ const CollapsibleDashboardFiltersComponent: React.FC<CollapsibleDashboardFilters
     if (typeof window !== 'undefined') {
       try {
         const storedState = localStorage.getItem(LOCAL_STORAGE_KEY);
-        return storedState ? JSON.parse(storedState) === true : true; // Default to open
+        return storedState ? JSON.parse(storedState) === true : false; // Default to closed on mobile devices (both phones & tablets)
       } catch {
         // Handle invalid JSON gracefully
-        return true; // Default to open
+        return false; // Default to closed on mobile
       }
     }
-    return true; // Default to open on server
+    return false; // Default to closed on server
   });
 
   useEffect(() => {
@@ -82,7 +82,7 @@ const CollapsibleDashboardFiltersComponent: React.FC<CollapsibleDashboardFilters
   const activeFilterCount = getActiveFilterCount ? getActiveFilterCount() : 0;
 
   return (
-    <div className="mb-4 rounded-lg border border-gray-200 shadow-sm dark:border-gray-700 lg:hidden">
+    <div className="mb-6 lg:hidden">
       <div
         id="filters-header"
         role="button"
@@ -91,38 +91,44 @@ const CollapsibleDashboardFiltersComponent: React.FC<CollapsibleDashboardFilters
         aria-controls="filters-content"
         onClick={toggleOpen}
         onKeyDown={handleKeyDown}
-        className="flex cursor-pointer items-center justify-between rounded-t-lg bg-gray-50 p-3 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
+        className="flex cursor-pointer items-center justify-between rounded-lg border bg-card p-4 shadow-sm transition-all duration-200 hover:shadow-md"
       >
-        <div className="flex items-center">
+        <div className="flex items-center space-x-3">
           {isOpen ? (
-            <ChevronDown size={20} className="mr-2 text-gray-600 dark:text-gray-400" />
+            <ChevronDown size={20} className="text-muted-foreground" />
           ) : (
-            <ChevronRight size={20} className="mr-2 text-gray-600 dark:text-gray-400" />
+            <ChevronRight size={20} className="text-muted-foreground" />
           )}
-          <span className="font-medium text-gray-700 dark:text-gray-200">
-            Filters {activeFilterCount > 0 && `(${activeFilterCount})`}
-          </span>
+          <span className="font-semibold text-foreground">Filters</span>
+          {activeFilterCount > 0 && (
+            <span className="rounded-full bg-primary px-2 py-1 text-xs font-medium text-primary-foreground">
+              {activeFilterCount} Active
+            </span>
+          )}
+        </div>
+        <div className="text-sm text-muted-foreground">
+          {isOpen ? 'Hide Filters' : 'Show Filters'}
         </div>
       </div>
       <div
         id="filters-content"
         role="region"
         aria-labelledby="filters-header"
-        className={`overflow-hidden transition-all duration-300 ease-in-out ${
-          isOpen ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
+        className={`overflow-y-auto transition-all duration-300 ease-in-out ${
+          isOpen ? 'max-h-screen opacity-100' : 'max-h-0 overflow-hidden opacity-0'
         }`}
       >
-        {isOpen && (
-          <div className="border-t border-gray-200 p-0 dark:border-gray-700">
-            {/* DashboardFilters will consume context internally */}
-            <DashboardFilters />
-          </div>
-        )}
+        <div
+          className={`mt-4 rounded-lg border bg-card p-3 shadow-sm transition-all duration-300 ease-in-out md:p-4 ${
+            isOpen ? 'translate-y-0 transform' : '-translate-y-2 transform'
+          }`}
+        >
+          <DashboardFilters />
+        </div>
       </div>
     </div>
   );
 };
 
-// No need to re-export ValidSortField, can be imported from context directly
 // export type { DashboardValidSortField };
 export default React.memo(CollapsibleDashboardFiltersComponent);

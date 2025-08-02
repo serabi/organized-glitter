@@ -15,7 +15,7 @@ export const useDashboardViewState = () => {
   // View and filter state
   // Note: activeStatus and searchTerm are intentionally non-persistent (reset on page refresh)
   // This provides better UX where users start with clean status/search state each session
-  const [activeStatus, setActiveStatus] = useState<ProjectFilterStatus>('all');
+  const [activeStatus, setActiveStatus] = useState<ProjectFilterStatus>('active');
   const [viewType, setViewType] = useState<ViewType>(getInitialViewType());
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCompany, setSelectedCompany] = useState(initialFilters.selectedCompany || 'all');

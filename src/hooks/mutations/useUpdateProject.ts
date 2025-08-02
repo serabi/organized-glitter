@@ -8,6 +8,11 @@ import { createLogger } from '@/utils/logger';
 import { ClientResponseError } from 'pocketbase';
 import { getCurrentDateString } from '@/utils/dateHelpers';
 import { useUserTimezone } from '@/hooks/useUserTimezone';
+import {
+  updateProjectStatusOptimistic,
+  rollbackProjectsOptimistic,
+  OptimisticProjectsContext,
+} from '@/utils/optimisticUpdatesOptimized';
 
 const logger = createLogger('useUpdateProject');
 
@@ -47,8 +52,11 @@ interface UpdateProjectData {
   [key: string]: unknown;
 }
 
-interface MutationContext {
+interface MutationContext extends OptimisticProjectsContext {
   previousProject?: unknown;
+  previousStats?: unknown;
+  oldStatus?: string;
+  newStatus?: string;
 }
 
 export const useUpdateProject = () => {
@@ -102,6 +110,12 @@ export const useUpdateProject = () => {
       // Snapshot the previous values for rollback
       const previousProject = queryClient.getQueryData(queryKeys.projects.detail(variables.id));
 
+      // Get old status for optimistic stats updates
+      let oldStatus: string | undefined;
+      if (previousProject && typeof previousProject === 'object' && 'status' in previousProject) {
+        oldStatus = (previousProject as { status: string }).status;
+      }
+
       // Optimistically update the project detail if it exists in cache
       if (previousProject) {
         queryClient.setQueryData(queryKeys.projects.detail(variables.id), {
@@ -110,9 +124,32 @@ export const useUpdateProject = () => {
         });
       }
 
+      // Update optimistic stats cache if status is changing and user is authenticated
+      let previousStats: unknown;
+      let previousProjects: unknown;
+      if (variables.status && user?.id && oldStatus && oldStatus !== variables.status) {
+        logger.debug('Status change detected, updating optimistic stats cache', {
+          projectId: variables.id,
+          oldStatus,
+          newStatus: variables.status,
+        });
+
+        previousProjects = updateProjectStatusOptimistic(
+          queryClient,
+          user.id,
+          variables.id,
+          variables.status
+        );
+        previousStats = previousProjects;
+      }
+
       // Return context for rollback
       return {
         previousProject,
+        previousStats,
+        previousProjects,
+        oldStatus,
+        newStatus: variables.status,
       };
     },
 
@@ -168,10 +205,9 @@ export const useUpdateProject = () => {
             queryKey: queryKeys.projects.lists(),
           });
 
-          // Invalidate dashboard stats for current year
-          const currentYear = new Date().getFullYear();
+          // Invalidate dashboard stats using the same key as StatsContext
           queryClient.invalidateQueries({
-            queryKey: [...queryKeys.stats.overview(user.id), 'dashboard', currentYear],
+            queryKey: queryKeys.stats.overview(user.id),
           });
         } else {
           logger.info('Non-status update - preserving status count cache for performance');
@@ -210,6 +246,16 @@ export const useUpdateProject = () => {
           );
           logger.debug('Rolled back project detail cache');
         }
+
+        // Rollback optimistic stats cache if status was changing
+        if (context?.previousProjects && user?.id && context.oldStatus && context.newStatus) {
+          logger.debug('Rolling back optimistic stats cache', {
+            oldStatus: context.oldStatus,
+            newStatus: context.newStatus,
+          });
+
+          rollbackProjectsOptimistic(queryClient, user.id, context.previousProjects);
+        }
       } catch (rollbackError) {
         logger.error('Rollback failed, falling back to cache invalidation:', rollbackError);
 
@@ -217,6 +263,13 @@ export const useUpdateProject = () => {
         queryClient.invalidateQueries({
           queryKey: queryKeys.projects.detail(variables.id),
         });
+
+        // Also invalidate stats cache if user is authenticated
+        if (user?.id) {
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.stats.overview(user.id),
+          });
+        }
       }
 
       logger.error('Project update failed:', error);

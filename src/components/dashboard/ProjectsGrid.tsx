@@ -164,15 +164,23 @@ const ProjectsGridComponent: React.FC<ProjectsGridProps> = ({ dashboardData }) =
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="animate-pulse overflow-hidden rounded-lg bg-white shadow-md">
-            <div className="h-48 bg-gray-200" />
-            <div className="space-y-3 p-4">
-              <div className="h-5 w-3/4 rounded bg-gray-200" />
-              <div className="h-4 w-1/2 rounded bg-gray-200" />
-              <div className="h-4 w-2/3 rounded bg-gray-200" />
-              <div className="mt-4 h-8 w-full rounded bg-gray-200" />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div
+            key={i}
+            className="animate-pulse overflow-hidden rounded-xl border border-border bg-white shadow-sm dark:bg-gray-800"
+          >
+            {/* Larger image skeleton to match new layout */}
+            <div className="h-48 bg-gray-200 dark:bg-gray-700 sm:h-52" />
+            <div className="space-y-2 p-4">
+              {/* Title skeleton - consistent height */}
+              <div className="flex h-10 items-start">
+                <div className="h-4 w-3/4 rounded-md bg-gray-200 dark:bg-gray-700" />
+              </div>
+              {/* Kit spec skeleton - consistent height */}
+              <div className="flex h-6 items-center">
+                <div className="h-6 w-20 rounded-md bg-gray-200 dark:bg-gray-700" />
+              </div>
             </div>
           </div>
         ))}
@@ -240,6 +248,7 @@ const ProjectsGridComponent: React.FC<ProjectsGridProps> = ({ dashboardData }) =
           project={project}
           onClick={() => handleProjectClick(project)}
           isRecentlyEdited={project.id === recentlyEditedProjectId}
+          viewType={viewType}
         />
       );
     });
@@ -251,7 +260,7 @@ const ProjectsGridComponent: React.FC<ProjectsGridProps> = ({ dashboardData }) =
       <div
         className={
           viewType === 'grid'
-            ? 'grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+            ? 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
             : 'space-y-4'
         }
       >

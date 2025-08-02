@@ -180,8 +180,17 @@ export const useProjectImport = () => {
         allUniqueTagNamesCount: allUniqueTagNames.length,
       });
 
-      // Validate all tag names first
-      const tagValidationResult = validateTagNames(allUniqueTagNames);
+      // Get existing tags first to include them in validation
+      const existingUserTags = await pb.collection('tags').getFullList({
+        filter: pb.filter('user = {:userId}', { userId: user.id }),
+        fields: 'id,name',
+      });
+
+      // Combine CSV tag names with existing tag names for validation
+      const allTagNamesForValidation = [...allUniqueTagNames, ...existingUserTags.map(t => t.name)];
+
+      // Validate all tag names (CSV + existing)
+      const tagValidationResult = validateTagNames(allTagNamesForValidation);
       const allValidationIssues: ValidationIssue[] = [...tagValidationResult.issues];
 
       // Use validated tag names
@@ -193,15 +202,20 @@ export const useProjectImport = () => {
       const currentTagWarnings: string[] = []; // Use a local var for warnings during this phase
 
       try {
-        const existingUserTags = await pb.collection('tags').getFullList({
-          filter: pb.filter('user = {:userId}', { userId: user.id }),
-          fields: 'id,name',
-        });
+        // Build tag name map using normalized names
         existingUserTags.forEach(tag => {
+          // Map by exact name
           tagNameMap[tag.name] = tag.id;
+
+          // Also map by normalized name to prevent duplicate creation
+          const normalizedTagName = validatedTagNamesMap.get(tag.name) || tag.name;
+          if (normalizedTagName !== tag.name) {
+            tagNameMap[normalizedTagName] = tag.id;
+          }
         });
-        logger.debug('Fetched existing user tags and built initial map.', {
+        logger.debug('Built tag name map from existing tags.', {
           count: existingUserTags.length,
+          mappedNames: Object.keys(tagNameMap),
         });
 
         const newTagNamesToCreate: string[] = [];

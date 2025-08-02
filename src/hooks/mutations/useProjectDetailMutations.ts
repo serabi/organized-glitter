@@ -114,20 +114,27 @@ export const useUpdateProjectStatusMutation = () => {
 
       // Snapshot the previous values for rollback
       const previousProjectDetail = queryClient.getQueryData(queryKeys.projects.detail(projectId));
-      const previousDashboardStats = user?.id
-        ? queryClient.getQueryData([
-            ...queryKeys.stats.overview(user.id),
-            'dashboard',
-            new Date().getFullYear(),
-          ])
-        : undefined;
+
+      // Get old status for optimistic stats updates
+      let oldStatus: string | undefined;
+      if (
+        previousProjectDetail &&
+        typeof previousProjectDetail === 'object' &&
+        'status' in previousProjectDetail
+      ) {
+        oldStatus = (previousProjectDetail as { status: string }).status;
+      }
+
+      const previousStats = null;
 
       // Return context object for rollback
       return {
         previousProjectDetail,
-        previousDashboardStats,
+        previousStats,
         projectId,
         status,
+        oldStatus,
+        newStatus: status,
         endTiming,
       };
     },
@@ -168,13 +175,9 @@ export const useUpdateProjectStatusMutation = () => {
             context.previousProjectDetail
           );
         }
-        if (context.previousDashboardStats && user?.id) {
-          const currentYear = new Date().getFullYear();
-          queryClient.setQueryData(
-            [...queryKeys.stats.overview(user.id), 'dashboard', currentYear],
-            context.previousDashboardStats
-          );
-        }
+
+        // Note: With optimized architecture, stats are automatically recalculated
+        // when projects data changes, so no manual rollback needed
 
         // End timing
         if (context.endTiming) {
@@ -205,9 +208,6 @@ export const useUpdateProjectStatusMutation = () => {
         });
 
         try {
-          // Modern TanStack Query v5 best practice: Simple targeted invalidation
-          const currentYear = new Date().getFullYear();
-
           await Promise.all([
             // Invalidate project detail with immediate active refetch
             queryClient.invalidateQueries({
@@ -222,7 +222,7 @@ export const useUpdateProjectStatusMutation = () => {
             }),
             // Invalidate dashboard stats with immediate active refetch for instant tab updates
             queryClient.invalidateQueries({
-              queryKey: [...queryKeys.stats.overview(user.id), 'dashboard', currentYear],
+              queryKey: queryKeys.stats.overview(user.id),
               exact: true,
               refetchType: 'active',
             }),
@@ -641,13 +641,20 @@ export const useDeleteProjectMutation = () => {
     mutationFn: async ({ projectId, title }: { projectId: string; title?: string }) => {
       logger.debug('Deleting project:', { projectId, title });
 
+      // Get project status before deletion for stats update
+      const project = await pb.collection(Collections.Projects).getOne(projectId, {
+        fields: 'status',
+      });
+
       // Delete related records first
       await deleteProjectRelatedRecords(projectId);
 
       // Delete the project itself
-      return await pb.collection(Collections.Projects).delete(projectId);
+      await pb.collection(Collections.Projects).delete(projectId);
+
+      return { deletedProject: project, projectId, title };
     },
-    onSuccess: async (_, { projectId, title }) => {
+    onSuccess: async (result, { projectId, title }) => {
       // Show immediate user feedback
       toast({
         title: 'Project Deleted',
@@ -658,6 +665,9 @@ export const useDeleteProjectMutation = () => {
       });
 
       logger.info('Project deleted successfully:', { projectId, title });
+
+      // Note: With optimized architecture, stats are automatically recalculated
+      // when projects data changes, so no manual stats updates needed
 
       // Optimistic cache updates - immediate UI feedback
       if (user?.id) {

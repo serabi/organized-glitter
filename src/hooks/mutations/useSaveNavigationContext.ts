@@ -24,6 +24,7 @@ export interface DashboardFilterContext {
     includeDestashed: boolean;
     includeArchived: boolean;
     includeWishlist: boolean;
+    includeOnHold: boolean;
     searchTerm: string;
     selectedTags: string[];
   };

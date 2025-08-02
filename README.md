@@ -156,7 +156,7 @@ src/
     ├── csvImport.ts              # CSV import functionality
     ├── imageUtils.ts             # Image processing utilities
     ├── overviewStatsCalculator.ts # Overview statistics calculations
-    ├── logger.ts                 # Unified logging system 
+    ├── logger.ts                 # Unified logging system
     └── __tests__/                # Utility test files
 
 Root Level Structure:

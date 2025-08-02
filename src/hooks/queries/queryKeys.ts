@@ -142,6 +142,9 @@ export const queryKeys = {
     details: () => [...queryKeys.projects.all, 'detail'] as const,
     /** Specific project detail by ID */
     detail: (id: string) => [...queryKeys.projects.details(), id] as const,
+    /** Optimized projects query for stats calculation (minimal fields: id, status, user) */
+    forStats: (userId: string) =>
+      [...queryKeys.projects.all, 'for-stats', createUserKeyHash(userId)] as const,
     /** Available years for project filtering - DEPRECATED: now included in dashboard stats */
     availableYears: (userId: string) =>
       [...queryKeys.projects.all, 'available-years', createUserKeyHash(userId)] as const,

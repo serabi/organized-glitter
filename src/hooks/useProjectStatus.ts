@@ -24,6 +24,7 @@ export const statusOptions = [
   'purchased',
   'stash',
   'progress',
+  'onhold',
   'completed',
   'archived',
   'destashed',
@@ -128,6 +129,8 @@ export const useProjectStatus = (project?: ProjectType | null): StatusUtils => {
             return 'In Stash';
           case 'progress':
             return 'In Progress';
+          case 'onhold':
+            return 'On Hold';
           case 'completed':
             return 'Completed';
           case 'archived':
@@ -152,6 +155,8 @@ export const useProjectStatus = (project?: ProjectType | null): StatusUtils => {
             return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300';
           case 'progress':
             return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+          case 'onhold':
+            return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
           case 'completed':
             return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300';
           case 'archived':

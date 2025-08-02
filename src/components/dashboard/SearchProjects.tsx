@@ -28,7 +28,7 @@ const SearchProjects = ({
       </label>
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+        className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -47,13 +47,13 @@ const SearchProjects = ({
         placeholder="Search projects..."
         value={searchTerm}
         onChange={e => onSearchChange(e.target.value)}
-        className="w-full pl-10 pr-10"
+        className="h-12 w-full border-2 bg-background pl-12 pr-12 text-base transition-colors duration-200 focus:border-primary"
         aria-describedby="search-help"
         ref={inputRef}
       />
       {isPending && (
-        <div className="absolute right-3 top-1/2 -translate-y-1/2">
-          <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+        <div className="absolute right-4 top-1/2 -translate-y-1/2">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
       )}
       <div id="search-help" className="sr-only">
