@@ -18,7 +18,7 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { Home } from 'lucide-react';
-import { useMetadata } from '@/contexts/useMetadata';
+import { useMetadata } from '@/contexts/MetadataContext/';
 
 /**
  * CompanyList Component

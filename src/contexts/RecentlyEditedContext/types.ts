@@ -1,16 +1,17 @@
 /**
- * RecentlyEdited context definition - separated for circular import avoidance
+ * Recently Edited Context Types
  * @author @serabi
  * @created 2025-08-02
  */
 
-import { createContext } from 'react';
-
 /**
- * @interface RecentlyEditedContextType
- * Context interface for managing recently edited projects state
+ * Core recently edited context type definition
+ *
+ * Simple context for tracking the most recently edited project in the dashboard.
+ * Provides lightweight state management for tracking which project was most
+ * recently edited, allowing the UI to highlight or provide special handling.
  */
-interface RecentlyEditedContextType {
+export interface RecentlyEditedContextType {
   /** ID of the most recently edited project, or null if none */
   recentlyEditedProjectId: string | null;
 
@@ -36,7 +37,3 @@ interface RecentlyEditedContextType {
    */
   isRecentlyEdited: (projectId: string) => boolean;
 }
-
-export const RecentlyEditedContext = createContext<RecentlyEditedContextType | null>(null);
-
-export type { RecentlyEditedContextType };

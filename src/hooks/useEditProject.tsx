@@ -27,7 +27,7 @@ import {
   useDeleteProjectMutation,
 } from '@/hooks/mutations/useProjectDetailMutations';
 import { useProjectUpdateUnified } from '@/hooks/mutations/useProjectUpdateUnified';
-import { useMetadata } from '@/contexts/useMetadata';
+import { useMetadata } from '@/contexts/MetadataContext/';
 import { useServiceToast } from '@/utils/toast-adapter';
 import { createLogger } from '@/utils/logger';
 import { useUserTimezone } from '@/hooks/useUserTimezone';

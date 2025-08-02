@@ -32,11 +32,10 @@ import DashboardFilterSection from '@/components/dashboard/DashboardFilterSectio
 import ProjectsSection from '@/components/dashboard/ProjectsSection';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/hooks/useAuth';
-import { useRecentlyEdited } from '@/contexts/useRecentlyEdited';
-import { StatsProviderOptimized } from '@/contexts/useStatsOptimized';
+import { useRecentlyEdited, RecentlyEditedProvider } from '@/contexts/RecentlyEditedContext/';
+import { StatsProvider } from '@/contexts/StatsContext/';
 import { FilterProvider } from '@/contexts/FilterContext';
-import { UIProvider } from '@/contexts/useUI';
-import { RecentlyEditedProvider } from '@/contexts/useRecentlyEdited';
+import { UIProvider } from '@/contexts/UIContext/';
 import { DashboardFilterContext } from '@/hooks/mutations/useSaveNavigationContext';
 import { createLogger } from '@/utils/logger';
 import { useToast } from '@/hooks/use-toast';
@@ -152,13 +151,13 @@ const Dashboard: React.FC = () => {
 
   return (
     <FilterProvider user={user}>
-      <StatsProviderOptimized>
+      <StatsProvider>
         <UIProvider>
           <RecentlyEditedProvider>
             <DashboardInternal />
           </RecentlyEditedProvider>
         </UIProvider>
-      </StatsProviderOptimized>
+      </StatsProvider>
     </FilterProvider>
   );
 };

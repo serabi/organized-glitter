@@ -1,5 +1,7 @@
 /**
- * @fileoverview Recently Edited Project Context Provider
+ * Recently Edited Provider Component
+ * @author @serabi
+ * @created 2025-08-02
  *
  * Simple context for tracking the most recently edited project in the dashboard.
  * Extracted from the monolithic DashboardFiltersContext to improve performance
@@ -16,51 +18,22 @@
  * - Simple API for setting and clearing recently edited state
  * - Comprehensive TypeScript support
  *
- * Usage:
- * ```typescript
- * const { recentlyEditedProjectId, setRecentlyEditedProjectId } = useRecentlyEdited();
- *
- * // Set recently edited project
- * setRecentlyEditedProjectId(projectId);
- *
- * // Clear recently edited state
- * setRecentlyEditedProjectId(null);
- * ```
- *
- * @author serabi
- * @since 2025-07-08
- * @version 1.0.0
- *
  * Performance Considerations:
  * - Uses React.useState for minimal state management
  * - Implements useMemo for context value optimization
  * - Minimal re-renders through focused context scope
  * - No complex state transitions or side effects
- *
- * Dependencies:
- * - React for context and state management
- * - @/utils/secureLogger for debugging
- *
- * @see {@link StatsContext} for statistics state management
- * @see {@link FiltersContext} for filter state management
- * @see {@link UIContext} for UI state management
  */
 
 import React, { useState, useMemo, useCallback, ReactNode } from 'react';
-import {
-  RecentlyEditedContext,
-  type RecentlyEditedContextType,
-} from '@/contexts/contexts-recentlyEdited';
+import { RecentlyEditedContext } from './context';
+import type { RecentlyEditedContextType } from './types';
 import { createLogger } from '@/utils/logger';
 
-const logger = createLogger('RecentlyEditedContext');
-
-// Interface and context moved to contexts-recentlyEdited.ts for Fast Refresh optimization
+const logger = createLogger('RecentlyEditedProvider');
 
 /**
  * Props interface for RecentlyEditedProvider component
- *
- * @interface RecentlyEditedProviderProps
  */
 interface RecentlyEditedProviderProps {
   children: ReactNode;
@@ -149,15 +122,3 @@ export const RecentlyEditedProvider: React.FC<RecentlyEditedProviderProps> = ({ 
     <RecentlyEditedContext.Provider value={contextValue}>{children}</RecentlyEditedContext.Provider>
   );
 };
-
-/**
- * Hook to use the RecentlyEditedContext
- *
- * Provides access to recently edited project state and management functions.
- * Must be used within a RecentlyEditedProvider component.
- *
- * @returns RecentlyEditedContextType with recently edited state and functions
- * @throws Error if used outside of RecentlyEditedProvider
- */
-// Hook moved to useRecentlyEdited.ts for React Fast Refresh optimization
-// Import with: import { useRecentlyEdited } from '@/contexts/useRecentlyEdited';
