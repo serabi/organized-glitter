@@ -4,8 +4,8 @@
  * @created 2025-07-09
  */
 
-import { useFilterState } from '@/contexts/FilterStateContext';
-import { useFilterActions } from '@/hooks/useFilterActions';
+import { useFilterState } from '@/contexts/useFilterState';
+import { useFilterActions } from '@/contexts/useFilterActions';
 import { useMemo } from 'react';
 
 /**

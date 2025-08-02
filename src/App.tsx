@@ -22,6 +22,7 @@ import { AppRoutes } from '@/components/routing/AppRoutes.tsx';
 import { useAppInitialization } from '@/hooks/useAppInitialization.ts';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus.ts';
 import { OfflinePage } from '@/components/OfflinePage.tsx';
+import { PWAInstallPrompt } from '@/components/PWAInstallPrompt.tsx';
 
 /**
  * Main App component
@@ -92,6 +93,9 @@ const App: React.FC = () => {
 
       {/* Show offline page when user is offline */}
       {!isOnline && <OfflinePage onRetry={handleRetry} />}
+
+      {/* Show PWA install prompt when applicable */}
+      <PWAInstallPrompt />
     </div>
   );
 };

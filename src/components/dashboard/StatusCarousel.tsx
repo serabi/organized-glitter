@@ -35,7 +35,7 @@ import {
   PaginationLink,
 } from '@/components/ui/pagination';
 import { useStatsOptimized, type AllStatusCountsType } from '@/contexts/StatsContextOptimized';
-import { useStatusFilter } from '@/contexts/FilterProvider';
+import { useStatusFilter } from '@/contexts/FilterHooks';
 import { type ProjectFilterStatus } from '@/types/project-status';
 import StatusCard from './StatusCard';
 import { createLogger } from '@/utils/logger';

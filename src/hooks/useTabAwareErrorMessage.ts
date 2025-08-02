@@ -19,7 +19,7 @@
  */
 
 import { useMemo } from 'react';
-import { useStatusFilter } from '@/contexts/FilterProvider';
+import { useStatusFilter } from '@/contexts/FilterHooks';
 import { getTabDisplayName } from '@/utils/tabDisplayNames';
 
 /**

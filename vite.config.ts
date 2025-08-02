@@ -27,7 +27,7 @@ export default defineConfig(({ mode }) => {
           background_color: '#faf7fe',
           display: 'standalone',
           scope: '/',
-          start_url: '/',
+          start_url: '/login',
           icons: [
             {
               src: 'favicon-16x16.png',
