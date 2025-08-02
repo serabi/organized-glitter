@@ -45,19 +45,37 @@ export const useUpdateProjectStatus = () => {
       const { projectId, newStatus } = data;
       logger.debug('Updating project status:', { projectId, newStatus });
 
+      // Get current project data to check existing date_started
+      const currentProject = await pb.collection(Collections.Projects).getOne(projectId);
+
       // Prepare update data
-      const updateData: { status: string; date_completed?: string | null } = {
+      const updateData: {
+        status: string;
+        date_completed?: string | null;
+        date_started?: string;
+      } = {
         status: newStatus,
       };
 
-      // Auto-set date_completed when status changes to 'completed'
+      // Auto-set date_started when status changes to 'in-progress' (only if not already set)
+      if (newStatus === 'in-progress' && !currentProject.date_started) {
+        updateData.date_started = getCurrentDateString(userTimezone);
+        logger.debug('Auto-setting date_started for in-progress project:', updateData.date_started);
+      }
+
+      // Auto-set date_completed when status changes to 'completed' (only if not already set)
       // Clear date_completed when status changes away from 'completed'
+      // Note: date_started should be preserved for all active statuses
       if (newStatus === 'completed') {
-        updateData.date_completed = getCurrentDateString(userTimezone);
-        logger.debug(
-          'Auto-setting date_completed for completed project:',
-          updateData.date_completed
-        );
+        if (!currentProject.date_completed) {
+          updateData.date_completed = getCurrentDateString(userTimezone);
+          logger.debug(
+            'Auto-setting date_completed for completed project:',
+            updateData.date_completed
+          );
+        } else {
+          logger.debug('Preserving existing date_completed:', currentProject.date_completed);
+        }
       } else {
         updateData.date_completed = null;
         logger.debug('Clearing date_completed for non-completed project');
@@ -111,11 +129,22 @@ export const useUpdateProjectStatus = () => {
           status: newStatus,
         } as Record<string, unknown>;
 
+        // Auto-set date_started for in-progress projects (only if not already set)
+        if (newStatus === 'in-progress' && !updatedProject.date_started) {
+          updatedProject.date_started = getCurrentDateString(userTimezone);
+        }
+
         // Handle date_completed field based on status
+        // Note: date_started should be preserved for all active statuses
         if (newStatus === 'completed') {
-          updatedProject.date_completed = getCurrentDateString(userTimezone);
+          // Only auto-set date_completed if not already set
+          if (!updatedProject.date_completed) {
+            updatedProject.date_completed = getCurrentDateString(userTimezone);
+          }
+          // If date_completed already exists, preserve it
         } else {
           // Remove date_completed when status is not completed
+          // Keep date_started intact for active statuses like "in-progress", "on-hold"
           delete updatedProject.date_completed;
         }
 
