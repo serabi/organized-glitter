@@ -54,6 +54,9 @@ interface UpdateProjectData {
 
 interface MutationContext extends OptimisticProjectsContext {
   previousProject?: unknown;
+  previousStats?: unknown;
+  oldStatus?: string;
+  newStatus?: string;
 }
 
 export const useUpdateProject = () => {
@@ -123,6 +126,7 @@ export const useUpdateProject = () => {
 
       // Update optimistic stats cache if status is changing and user is authenticated
       let previousStats: unknown;
+      let previousProjects: unknown;
       if (variables.status && user?.id && oldStatus && oldStatus !== variables.status) {
         logger.debug('Status change detected, updating optimistic stats cache', {
           projectId: variables.id,
@@ -133,15 +137,17 @@ export const useUpdateProject = () => {
         previousProjects = updateProjectStatusOptimistic(
           queryClient,
           user.id,
-          projectId,
+          variables.id,
           variables.status
         );
+        previousStats = previousProjects;
       }
 
       // Return context for rollback
       return {
         previousProject,
         previousStats,
+        previousProjects,
         oldStatus,
         newStatus: variables.status,
       };
