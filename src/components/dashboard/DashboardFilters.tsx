@@ -36,8 +36,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useFiltersFull } from '@/contexts/FilterProvider';
 import { useAvailableYears } from '@/hooks/queries/useAvailableYears';
+import { useProjectStatus } from '@/hooks/useProjectStatus';
 import { logger } from '@/utils/logger';
 import { DashboardValidSortField } from '@/features/dashboard/dashboard.constants'; // Import type from constants
+import { ProjectFilterStatus } from '@/types/project';
 
 // No longer need to define ValidSortField here, it's imported from context
 // export type ValidSortField = DashboardFiltersContextValue['sortField'];
@@ -57,15 +59,16 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
     clearAllTags,
     updateYearFinished,
     updateIncludeMiniKits,
+    updateIncludeWishlist,
     updateIncludeDestashed,
     updateIncludeArchived,
-    updateIncludeWishlist,
     updateViewType,
     companiesOptions, // Use computed options for DashboardFilters
     artistsOptions, // Use computed options for DashboardFilters
     drillShapesOptions,
     tags: allTags, // Raw tags for tag filtering (already has id, name)
     updateSort,
+    updateStatus,
     resetAllFilters,
     getActiveFilterCount,
     searchInputRef,
@@ -74,26 +77,39 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
 
   // Get available years from the appropriate hook
   const { data: availableYears = [] } = useAvailableYears();
-
-  // Loading state is no longer needed here since we removed duplicate useDashboardData calls
-
   // Transform available years to the expected format for the dropdown
   const yearFinishedOptions = availableYears.map(year => ({
     label: year.toString(),
     value: year.toString(),
   }));
 
+  // Get status utilities from hook
+  const { statusOptions: availableStatuses, getStatusLabel } = useProjectStatus();
+
+  // Create dynamic status options for the dropdown
+  const statusOptions = useMemo(
+    () => [
+      { label: 'All Statuses', value: 'all' },
+      ...availableStatuses.map(status => ({
+        label: getStatusLabel(status),
+        value: status,
+      })),
+    ],
+    [availableStatuses, getStatusLabel]
+  );
+
   // Extract values from filters with defaults
   const searchTerm = filters.searchTerm;
+  const activeStatus = filters.activeStatus;
   const selectedCompany = filters.selectedCompany;
   const selectedArtist = filters.selectedArtist;
   const selectedDrillShape = filters.selectedDrillShape;
   const selectedTags = filters.selectedTags;
   const selectedYearFinished = filters.selectedYearFinished;
   const includeMiniKits = filters.includeMiniKits;
+  const includeWishlist = filters.includeWishlist;
   const includeDestashed = filters.includeDestashed;
   const includeArchived = filters.includeArchived;
-  const includeWishlist = filters.includeWishlist;
   const viewType = filters.viewType;
   const sortField = filters.sortField;
   const sortDirection = filters.sortDirection;
@@ -111,7 +127,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
 
   return (
     <div
-      className="dark:glass-card sticky top-20 rounded-lg bg-white p-6 shadow"
+      className="dark:glass-card rounded-lg bg-white p-4 shadow md:sticky md:top-20 md:p-6"
       data-testid="dashboard-filters"
     >
       <div className="mb-4 flex items-center justify-between">
@@ -121,14 +137,27 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
         )}
       </div>
 
-      <SearchProjects
-        searchTerm={searchTerm}
-        onSearchChange={updateSearchTerm}
-        inputRef={searchInputRef}
-        isPending={isSearchPending}
-      />
+      {/* Search Section */}
+      <div className="mb-6">
+        <label className="mb-2 block text-sm font-medium text-muted-foreground">Search</label>
+        <SearchProjects
+          searchTerm={searchTerm}
+          onSearchChange={updateSearchTerm}
+          inputRef={searchInputRef}
+          isPending={isSearchPending}
+        />
+      </div>
 
-      <div className="mt-6 space-y-4">
+      <div className="space-y-4 md:space-y-5">
+        <FilterDropdown
+          label="Status"
+          options={statusOptions}
+          value={activeStatus}
+          onChange={value => updateStatus(value as ProjectFilterStatus)}
+          placeholder="All statuses"
+          showAllOption={false}
+        />
+
         <FilterDropdown
           label="Company"
           options={companiesOptions}
@@ -179,77 +208,69 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
           placeholder="All years"
         />
 
-        <div className="mt-6 rounded-md border border-gray-200 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
-          <h3 className="mb-2 text-sm font-medium">When displaying kits:</h3>
-          <div className="space-y-2">
-            <div className="flex items-center space-x-3 sm:space-x-2">
+        <div className="rounded-lg border bg-muted/30 p-3 md:p-4">
+          <h3 className="mb-3 text-sm font-semibold leading-relaxed md:mb-4">
+            Kit Display Options for All Projects View
+          </h3>
+          <div className="space-y-3 md:space-y-4">
+            <div className="flex items-center space-x-3">
               <Checkbox
                 id="include-mini-kits"
                 checked={includeMiniKits}
                 onCheckedChange={checked => updateIncludeMiniKits(Boolean(checked))}
                 data-testid="include-mini-kits-checkbox"
               />
-              <Label htmlFor="include-mini-kits" className="text-sm font-medium">
-                Include Mini Kits?
+              <Label htmlFor="include-mini-kits" className="text-sm font-normal">
+                Include Mini Kits
               </Label>
             </div>
 
-            <div className="flex items-center space-x-3 sm:space-x-2">
-              <Checkbox
-                id="include-destashed-kits"
-                checked={includeDestashed}
-                onCheckedChange={checked => updateIncludeDestashed(Boolean(checked))}
-                data-testid="include-destashed-checkbox"
-              />
-              <Label htmlFor="include-destashed-kits" className="text-sm font-medium">
-                Include Destashed Kits?
-              </Label>
-            </div>
-
-            <div className="flex items-center space-x-3 sm:space-x-2">
-              <Checkbox
-                id="include-archived-kits"
-                checked={includeArchived}
-                onCheckedChange={checked => updateIncludeArchived(Boolean(checked))}
-                data-testid="include-archived-checkbox"
-              />
-              <Label htmlFor="include-archived-kits" className="text-sm font-medium">
-                Include Archived Kits?
-              </Label>
-            </div>
-
-            <div className="flex items-center space-x-3 sm:space-x-2">
+            <div className="flex items-center space-x-3">
               <Checkbox
                 id="include-wishlist-kits"
                 checked={includeWishlist}
                 onCheckedChange={checked => updateIncludeWishlist(Boolean(checked))}
                 data-testid="include-wishlist-checkbox"
               />
-              <Label htmlFor="include-wishlist-kits" className="text-sm font-medium">
-                Include Wishlisted Kits?
+              <Label htmlFor="include-wishlist-kits" className="text-sm font-normal">
+                Include Wishlisted Kits
+              </Label>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <Checkbox
+                id="include-destashed-kits"
+                checked={includeDestashed}
+                onCheckedChange={checked => updateIncludeDestashed(Boolean(checked))}
+                data-testid="include-destashed-checkbox"
+              />
+              <Label htmlFor="include-destashed-kits" className="text-sm font-normal">
+                Include Destashed Kits
+              </Label>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <Checkbox
+                id="include-archived-kits"
+                checked={includeArchived}
+                onCheckedChange={checked => updateIncludeArchived(Boolean(checked))}
+                data-testid="include-archived-checkbox"
+              />
+              <Label htmlFor="include-archived-kits" className="text-sm font-normal">
+                Include Archived Kits
               </Label>
             </div>
           </div>
         </div>
 
-        <Button
-          variant="outline"
-          onClick={() => resetAllFilters('user')}
-          className="mt-4 w-full"
-          data-testid="reset-filters-button"
-        >
-          Reset Filters
-        </Button>
-
-        <div className="mt-6">
-          <h3 className="mb-2 text-sm font-medium">View</h3>
+        {/* View Controls */}
+        <div className="space-y-2 md:space-y-3">
+          <h3 className="text-sm font-semibold">View & Sort</h3>
           <ViewToggle activeView={viewType} onViewChange={updateViewType} />
-        </div>
 
-        <div className="mt-6">
-          <div className="space-y-2">
+          <div className="space-y-2 md:space-y-3">
             <FilterDropdown
-              label="Sort by:"
+              label="Sort by"
               options={[
                 { label: 'Default', value: 'last_updated' },
                 { label: 'Alphabetical by Kit Name', value: 'kit_name' },
@@ -267,9 +288,8 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
               showAllOption={false}
             />
             <FilterDropdown
-              label="Order:"
+              label="Order"
               options={useMemo(() => {
-                // Use currentSortField for logic
                 if (currentSortField === 'kit_name') {
                   return [
                     { label: 'Z-A', value: 'desc' },
@@ -289,11 +309,9 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
               }, [currentSortField])}
               value={sortDirection}
               onChange={value => {
-                // Ensure value is a valid SortDirectionType before calling updateSort
                 if (value === 'asc' || value === 'desc') {
                   updateSort(currentSortField, value);
                 } else {
-                  // Handle unexpected value, perhaps log an error or default
                   logger.warn(
                     `DashboardFilters: Invalid sort direction value received: ${value}. Defaulting to 'desc'.`
                   );
@@ -305,6 +323,16 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
             />
           </div>
         </div>
+
+        {/* Reset Button */}
+        <Button
+          variant="outline"
+          onClick={() => resetAllFilters('user')}
+          className="w-full"
+          data-testid="reset-filters-button"
+        >
+          Reset All Filters
+        </Button>
       </div>
     </div>
   );

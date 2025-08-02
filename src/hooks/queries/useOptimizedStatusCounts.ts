@@ -126,6 +126,7 @@ const deriveStatusCountsFromCache = (projects: Project[]): StatusBreakdown => {
     purchased: 0,
     stash: 0,
     progress: 0,
+    onhold: 0,
     completed: 0,
     archived: 0,
     destashed: 0,

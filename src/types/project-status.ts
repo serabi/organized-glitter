@@ -7,7 +7,8 @@ export type ProjectStatus =
   | 'purchased'
   | 'stash'
   | 'progress'
+  | 'onhold'
   | 'completed'
   | 'archived'
   | 'destashed';
-export type ProjectFilterStatus = ProjectStatus | 'all';
+export type ProjectFilterStatus = ProjectStatus | 'active' | 'everything';

@@ -25,6 +25,7 @@ const STATUS_OPTIONS: Record<ProjectStatus, string> = {
   purchased: 'Purchased',
   stash: 'In Stash',
   progress: 'In Progress',
+  onhold: 'On Hold',
   completed: 'Completed',
   archived: 'Archived',
   destashed: 'Destashed',

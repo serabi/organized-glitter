@@ -93,7 +93,10 @@ const FilterDropdown = React.memo(
           <SelectTrigger className="w-full bg-background dark:text-foreground">
             <SelectValue placeholder={placeholder} />
           </SelectTrigger>
-          <SelectContent className="bg-popover dark:bg-gray-800 dark:text-gray-100">
+          <SelectContent
+            className="bg-popover dark:bg-gray-800 dark:text-gray-100"
+            position="popper"
+          >
             {showAllOption && <SelectItem value="all">All {getPluralLabel(label)}</SelectItem>}
             {isOptionTypeArray(safeOptions)
               ? // Standard {label, value} format

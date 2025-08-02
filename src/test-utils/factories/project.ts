@@ -35,7 +35,14 @@ export const createMockProject = (overrides: Partial<ProjectType> = {}): Project
  * Create multiple mock projects with different statuses
  */
 export const createMockProjects = (count: number = 3): ProjectType[] => {
-  const statuses: ProjectStatus[] = ['wishlist', 'purchased', 'stash', 'progress', 'completed'];
+  const statuses: ProjectStatus[] = [
+    'wishlist',
+    'purchased',
+    'stash',
+    'progress',
+    'onhold',
+    'completed',
+  ];
 
   return Array.from({ length: count }, (_, index) =>
     createMockProject({
@@ -73,6 +80,12 @@ export const createProjectWithStatus = (
       dateCompleted: undefined,
     },
     progress: {
+      datePurchased: '2024-01-15',
+      dateReceived: '2024-01-20',
+      dateStarted: '2024-02-01',
+      dateCompleted: undefined,
+    },
+    onhold: {
       datePurchased: '2024-01-15',
       dateReceived: '2024-01-20',
       dateStarted: '2024-02-01',

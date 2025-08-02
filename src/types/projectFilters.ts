@@ -30,6 +30,8 @@ export interface ProjectFilters {
   includeArchived?: boolean;
   /** Include wishlist projects */
   includeWishlist?: boolean;
+  /** Include on hold projects */
+  includeOnHold?: boolean;
   /** Search term for title and notes */
   searchTerm?: string;
   /** Selected tag IDs */
@@ -39,9 +41,9 @@ export interface ProjectFilters {
 }
 
 /**
- * Project filter status type - includes 'all' for no status filtering
+ * Project filter status type - includes 'active' and 'everything' for aggregate filtering
  */
-export type ProjectFilterStatus = ProjectStatus | 'all';
+export type ProjectFilterStatus = ProjectStatus | 'active' | 'everything';
 
 /**
  * Project sort configuration
@@ -111,6 +113,7 @@ export interface StatusBreakdown {
   purchased: number;
   stash: number;
   progress: number;
+  onhold: number;
   completed: number;
   archived: number;
   destashed: number;

@@ -75,6 +75,24 @@ const sampleRow3 = [
   'Classic artwork, enjoyed the process.',
   'classic; Van Gogh',
 ];
+const sampleRow4 = [
+  'Mountain Sunset',
+  'Diamond Dotz',
+  'Nature Artist',
+  '35',
+  '45',
+  'https://example.com/mountain-sunset',
+  'square',
+  '48000',
+  'full',
+  'onhold',
+  '2024-01-20',
+  '2024-01-25',
+  '2024-02-10',
+  '',
+  'Paused temporarily due to moving house.',
+  'landscape; mountains; sunset',
+];
 
 /**
  * Generates the CSV template string with headers and sample data.
@@ -83,7 +101,7 @@ const sampleRow3 = [
 export const generateCSVTemplate = (): string => {
   // Ensure headers are used as the first row.
   // Subsequent rows are sample data, matching the header order.
-  const rows = [headers, sampleRow1, sampleRow2, sampleRow3];
+  const rows = [headers, sampleRow1, sampleRow2, sampleRow3, sampleRow4];
 
   // Converts each row array into a CSV formatted string.
   // Cells are wrapped in double quotes, and internal double quotes are escaped.

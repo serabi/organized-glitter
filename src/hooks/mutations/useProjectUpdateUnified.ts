@@ -19,6 +19,11 @@ import {
   validateFormDataForUpdate,
   logFormData,
 } from '@/utils/formdata-builder';
+import {
+  updateProjectStatusOptimistic,
+  rollbackProjectsOptimistic,
+} from '@/utils/optimisticUpdatesOptimized';
+import type { ProjectForStats } from '@/hooks/queries/useProjectsForStats';
 
 const logger = createLogger('useProjectUpdateUnified');
 
@@ -171,6 +176,25 @@ export const useProjectUpdateUnified = () => {
       // Snapshot the previous value for rollback
       const previousProject = queryClient.getQueryData(queryKeys.projects.detail(projectId));
 
+      // Get old status for optimistic stats updates
+      let oldStatus: string | undefined;
+      if (previousProject && typeof previousProject === 'object' && 'status' in previousProject) {
+        oldStatus = (previousProject as { status: string }).status;
+      }
+
+      // Determine new status from the update data
+      let newStatus: string | undefined;
+      if (
+        'data' in variables &&
+        variables.data &&
+        typeof variables.data === 'object' &&
+        'status' in variables.data
+      ) {
+        newStatus = (variables.data as { status: string }).status;
+      } else if ('status' in variables) {
+        newStatus = (variables as { status: string }).status;
+      }
+
       // Optimistically update the project detail if it exists in cache
       if (previousProject) {
         const updateData = 'data' in variables ? variables.data : variables;
@@ -180,7 +204,33 @@ export const useProjectUpdateUnified = () => {
         });
       }
 
-      return { previousProject, projectId };
+      // Update optimistic stats cache if status is changing and user is authenticated
+      let previousProjects: ProjectForStats[] | undefined;
+      if (newStatus && user?.id && oldStatus && oldStatus !== newStatus) {
+        logger.debug(
+          'Status change detected in unified mutation, updating optimistic stats cache',
+          {
+            projectId,
+            oldStatus,
+            newStatus,
+          }
+        );
+
+        previousProjects = updateProjectStatusOptimistic(
+          queryClient,
+          user.id,
+          projectId,
+          newStatus
+        );
+      }
+
+      return {
+        previousProject,
+        projectId,
+        previousProjects,
+        oldStatus,
+        newStatus,
+      };
     },
 
     onSuccess: async (data, _variables, context) => {
@@ -204,13 +254,11 @@ export const useProjectUpdateUnified = () => {
 
       // Invalidate dashboard stats cache when project is updated
       if (user?.id) {
-        const currentYear = new Date().getFullYear();
         queryClient.invalidateQueries({
-          queryKey: [...queryKeys.stats.overview(user.id), 'dashboard', currentYear],
+          queryKey: queryKeys.stats.overview(user.id),
         });
         logger.debug('📊 Dashboard stats cache invalidated after project update', {
           userId: user.id,
-          currentYear,
         });
       }
 
@@ -241,6 +289,16 @@ export const useProjectUpdateUnified = () => {
           context.previousProject
         );
         logger.debug('🔄 Rolled back optimistic update', { projectId: context.projectId });
+      }
+
+      // Rollback optimistic stats cache if status was changing
+      if (context?.previousProjects && user?.id && context.oldStatus && context.newStatus) {
+        logger.debug('Rolling back optimistic stats cache in unified mutation', {
+          oldStatus: context.oldStatus,
+          newStatus: context.newStatus,
+        });
+
+        rollbackProjectsOptimistic(queryClient, user.id, context.previousProjects);
       }
 
       logger.error('❌ Project update failed:', error);

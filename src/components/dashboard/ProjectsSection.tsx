@@ -1,5 +1,4 @@
 import React from 'react';
-import StatusTabs from '@/components/dashboard/StatusTabs';
 import ProjectsGrid from '@/components/dashboard/ProjectsGrid';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useAuth } from '@/hooks/useAuth';
@@ -38,9 +37,6 @@ const ProjectsSectionComponent = () => {
 
   return (
     <div className="space-y-6 lg:col-span-3">
-      <StatusTabs />
-      {/* activeStatus and onStatusChange are now sourced from context within StatusTabs */}
-
       {dashboardData.errorProjects && (
         <div className="rounded-md border border-red-500 p-4 text-red-500">
           <p>Error loading projects: {dashboardData.errorProjects.message}</p>

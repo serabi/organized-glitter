@@ -50,8 +50,8 @@ export const useTabAwareErrorMessage = (): string => {
   // Memoize error message generation for performance
   // Only recalculates when activeStatus changes
   const errorMessage = useMemo(() => {
-    // Special case for "All" tab - use generic message
-    if (activeStatus === 'all') {
+    // Special case for "Everything" tab - use generic message
+    if (activeStatus === 'everything') {
       return 'No projects match your current filters.';
     }
 

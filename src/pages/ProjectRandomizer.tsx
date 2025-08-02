@@ -149,7 +149,7 @@ const ProjectRandomizer: React.FC = () => {
             <BreadcrumbList>
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
-                  <Link to="/" className="flex items-center gap-1">
+                  <Link to="/dashboard" className="flex items-center gap-1">
                     <Home className="h-4 w-4" />
                     Dashboard
                   </Link>
@@ -185,7 +185,7 @@ const ProjectRandomizer: React.FC = () => {
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link to="/" className="flex items-center gap-1">
+                <Link to="/dashboard" className="flex items-center gap-1">
                   <Home className="h-4 w-4" />
                   Dashboard
                 </Link>

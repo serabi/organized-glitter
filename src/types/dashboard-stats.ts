@@ -13,6 +13,7 @@ export const StatusBreakdownSchema = z.object({
   purchased: z.number().min(0),
   stash: z.number().min(0),
   progress: z.number().min(0),
+  onhold: z.number().min(0),
   completed: z.number().min(0),
   archived: z.number().min(0),
   destashed: z.number().min(0),

@@ -6,6 +6,7 @@ const ProjectStatusEnum = z.enum([
   'purchased',
   'stash',
   'progress',
+  'onhold',
   'completed',
   'archived',
   'destashed',

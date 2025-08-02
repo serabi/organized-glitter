@@ -14,6 +14,7 @@ export interface StatusBreakdown {
   purchased: number;
   stash: number;
   progress: number;
+  onhold: number;
   completed: number;
   archived: number;
   destashed: number;

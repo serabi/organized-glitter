@@ -227,8 +227,20 @@ export class ProjectsService {
 
     // Use excludeStatus for status counting, otherwise use filters.status for main queries
     const statusToFilter = excludeStatus || filters.status;
-    if (statusToFilter && statusToFilter !== 'all') {
-      conditions.push(`status = "${statusToFilter}"`);
+    if (statusToFilter) {
+      if (statusToFilter === 'active') {
+        // Active projects: purchased, stash, progress, onhold
+        conditions.push(
+          `(status = "purchased" || status = "stash" || status = "progress" || status = "onhold")`
+        );
+      } else if (statusToFilter === 'everything') {
+        // Everything: all projects except destashed/archived (unless those flags are enabled)
+        // This will be further refined by the include/exclude flags below
+        // For now, don't add any status constraint - let include flags handle it
+      } else {
+        // Individual status filter
+        conditions.push(`status = "${statusToFilter}"`);
+      }
     }
 
     // Company filter (uses ID directly)
@@ -265,19 +277,35 @@ export class ProjectsService {
     if (!skipCheckboxFilters) {
       const currentStatus = filters.status || excludeStatus;
 
-      // Include destashed filtering
-      if (filters.includeDestashed === false && currentStatus !== 'destashed') {
-        conditions.push(`status != "destashed"`);
-      }
+      // For 'everything' status, exclude destashed/archived by default unless flags are enabled
+      if (currentStatus === 'everything') {
+        if (filters.includeDestashed !== true) {
+          conditions.push(`status != "destashed"`);
+        }
+        if (filters.includeArchived !== true) {
+          conditions.push(`status != "archived"`);
+        }
+      } else {
+        // For other statuses, use the existing include/exclude logic
+        // Include destashed filtering
+        if (filters.includeDestashed === false && currentStatus !== 'destashed') {
+          conditions.push(`status != "destashed"`);
+        }
 
-      // Include archived filtering
-      if (filters.includeArchived === false && currentStatus !== 'archived') {
-        conditions.push(`status != "archived"`);
+        // Include archived filtering
+        if (filters.includeArchived === false && currentStatus !== 'archived') {
+          conditions.push(`status != "archived"`);
+        }
       }
 
       // Include wishlist filtering
       if (filters.includeWishlist === false && currentStatus !== 'wishlist') {
         conditions.push(`status != "wishlist"`);
+      }
+
+      // Include on hold filtering
+      if (filters.includeOnHold === false && currentStatus !== 'onhold') {
+        conditions.push(`status != "onhold"`);
       }
     }
 
@@ -539,7 +567,7 @@ export class ProjectsService {
         fields: 'status', // Only fetch status field for minimal data transfer (~10KB vs ~2MB)
         sort: '', // No sorting needed for counting
         skipTotal: true, // Skip expensive total count calculation
-        requestKey: `status-count-single-${Date.now()}-${Math.random().toString(36).substring(2)}`,
+        requestKey: `status-count-single-${baseFilters.userId || 'unknown'}`,
         $cancelKey: 'status-counting-single', // Allow request cancellation
       });
 
@@ -553,6 +581,7 @@ export class ProjectsService {
         purchased: 0,
         stash: 0,
         progress: 0,
+        onhold: 0,
         completed: 0,
         archived: 0,
         destashed: 0,
@@ -674,7 +703,7 @@ export class ProjectsService {
       const result = await pb.collection('projects').getFullList({
         filter: baseFilter,
         fields: 'status', // Minimal field selection
-        requestKey: `status-count-optimized-${Date.now()}-${Math.random().toString(36).substring(2)}`,
+        requestKey: `status-count-optimized-${baseFilters.userId || 'unknown'}`,
         skipTotal: true, // Skip expensive total calculation
         $cancelKey: 'status-counting-optimized', // Request cancellation support
         sort: '', // No sorting needed for counting
@@ -690,6 +719,7 @@ export class ProjectsService {
         purchased: 0,
         stash: 0,
         progress: 0,
+        onhold: 0,
         completed: 0,
         archived: 0,
         destashed: 0,
@@ -792,6 +822,7 @@ export class ProjectsService {
         'purchased',
         'stash',
         'progress',
+        'onhold',
         'completed',
         'archived',
         'destashed',
@@ -842,6 +873,7 @@ export class ProjectsService {
           purchased: 0,
           stash: 0,
           progress: 0,
+          onhold: 0,
           completed: 0,
           archived: 0,
           destashed: 0,
@@ -851,7 +883,7 @@ export class ProjectsService {
 
         // Process results
         for (const { status, count } of statusCountResults) {
-          if (status !== 'all') {
+          if (status !== 'active' && status !== 'everything') {
             counts[status as keyof StatusBreakdown] = count;
             total += count;
           }
