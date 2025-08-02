@@ -15,11 +15,10 @@ export function ThankYouMessage() {
     <section className="rounded-lg border border-pink-200 bg-gradient-to-r from-pink-50 to-purple-50 p-6 dark:border-pink-800 dark:from-pink-950/20 dark:to-purple-950/20">
       <div className="text-center">
         <h3 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
-          Thank You for Testing! ✨
+          Thank you for using Organized Glitter! ✨
         </h3>
         <p className="mb-6 text-gray-700 dark:text-gray-300">
-          Thank you so much for testing out Organized Glitter! This web app is in active
-          development. As always, please don't hesitate to{' '}
+          This web app is in active development. As always, please don't hesitate to{' '}
           <button
             onClick={() =>
               showUserReportDialog({
@@ -33,7 +32,7 @@ export function ThankYouMessage() {
           >
             share feedback
           </button>{' '}
-          about these changes!
+          about the site and its features. Your feedback helps me continue to improve this app! 
         </p>
       </div>
 
@@ -48,9 +47,9 @@ export function ThankYouMessage() {
           >
             <div className="flex items-center gap-2">
               <Calendar className="h-5 w-5 text-pink-600 dark:text-pink-400" aria-hidden="true" />
-              <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Updates</h4>
+              <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Latest Updates</h4>
               <span className="text-sm italic text-gray-500 dark:text-gray-400" aria-hidden="true">
-                (expand to read latest updates)
+                (expand to read)
               </span>
             </div>
             <ChevronDown
@@ -77,6 +76,9 @@ export function ThankYouMessage() {
                   <div className="space-y-3 text-gray-700 dark:text-gray-300">
                     <p>Dashboard and project management improvements:</p>
                     <ul className="ml-4 list-disc space-y-1">
+                      <li>
+                        <strong> New dashboard navigation</strong> - The dashboard now features a new carousel navigation system that allows you to easily switch between different views while also providing "at a glance" statistics.
+                      </li>
                       <li>
                         <strong>New "On Hold" project status</strong> - You can now mark projects as
                         "On Hold" for better organization of temporarily paused projects
