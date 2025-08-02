@@ -1,13 +1,13 @@
 /**
  * @fileoverview Collapsible Dashboard Filters Component for Mobile View
  *
- * This component provides a mobile-optimized collapsible interface for dashboard filters.
+ * This component provides a simple collapsible interface for dashboard filters on mobile devices.
  * It wraps the main DashboardFilters component and provides toggle functionality with
  * persistent state management through localStorage.
  *
  * Key Features:
  * - Mobile-only visibility (renders nothing on desktop)
- * - Collapsible interface with smooth transitions
+ * - Simple collapsible interface with smooth transitions
  * - Persistent collapse state in localStorage
  * - Active filter count display in header
  * - Keyboard accessibility support
@@ -18,7 +18,7 @@
  *
  * @author serabi
  * @since 2025-07-03
- * @version 1.0.0 - Mobile-optimized collapsible filters
+ * @version 1.1.0 - Simplified mobile filters with standard CSS overflow
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
