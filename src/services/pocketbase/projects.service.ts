@@ -227,7 +227,7 @@ export class ProjectsService {
 
     // Use excludeStatus for status counting, otherwise use filters.status for main queries
     const statusToFilter = excludeStatus || filters.status;
-    if (statusToFilter && statusToFilter !== 'all') {
+    if (statusToFilter && statusToFilter !== 'active' && statusToFilter !== 'everything') {
       conditions.push(`status = "${statusToFilter}"`);
     }
 
@@ -544,7 +544,7 @@ export class ProjectsService {
         fields: 'status', // Only fetch status field for minimal data transfer (~10KB vs ~2MB)
         sort: '', // No sorting needed for counting
         skipTotal: true, // Skip expensive total count calculation
-        requestKey: `status-count-single-${Date.now()}-${Math.random().toString(36).substring(2)}`,
+        requestKey: `status-count-single-${userId}`,
         $cancelKey: 'status-counting-single', // Allow request cancellation
       });
 
@@ -680,7 +680,7 @@ export class ProjectsService {
       const result = await pb.collection('projects').getFullList({
         filter: baseFilter,
         fields: 'status', // Minimal field selection
-        requestKey: `status-count-optimized-${Date.now()}-${Math.random().toString(36).substring(2)}`,
+        requestKey: `status-count-optimized-${userId}`,
         skipTotal: true, // Skip expensive total calculation
         $cancelKey: 'status-counting-optimized', // Request cancellation support
         sort: '', // No sorting needed for counting
@@ -860,7 +860,7 @@ export class ProjectsService {
 
         // Process results
         for (const { status, count } of statusCountResults) {
-          if (status !== 'all') {
+          if (status !== 'active' && status !== 'everything') {
             counts[status as keyof StatusBreakdown] = count;
             total += count;
           }

@@ -23,6 +23,7 @@ import {
   updateProjectStatusOptimistic,
   rollbackProjectsOptimistic,
 } from '@/utils/optimisticUpdatesOptimized';
+import type { ProjectForStats } from '@/hooks/queries/useProjectsForStats';
 
 const logger = createLogger('useProjectUpdateUnified');
 
@@ -204,7 +205,7 @@ export const useProjectUpdateUnified = () => {
       }
 
       // Update optimistic stats cache if status is changing and user is authenticated
-      let previousStats: unknown;
+      let previousProjects: ProjectForStats[] | undefined;
       if (newStatus && user?.id && oldStatus && oldStatus !== newStatus) {
         logger.debug(
           'Status change detected in unified mutation, updating optimistic stats cache',
@@ -226,7 +227,7 @@ export const useProjectUpdateUnified = () => {
       return {
         previousProject,
         projectId,
-        previousStats,
+        previousProjects,
         oldStatus,
         newStatus,
       };
@@ -291,7 +292,7 @@ export const useProjectUpdateUnified = () => {
       }
 
       // Rollback optimistic stats cache if status was changing
-      if (context?.previousStats && user?.id && context.oldStatus && context.newStatus) {
+      if (context?.previousProjects && user?.id && context.oldStatus && context.newStatus) {
         logger.debug('Rolling back optimistic stats cache in unified mutation', {
           oldStatus: context.oldStatus,
           newStatus: context.newStatus,

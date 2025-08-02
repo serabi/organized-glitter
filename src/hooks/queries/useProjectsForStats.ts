@@ -55,7 +55,7 @@ const fetchProjectsForStats = async (userId: string): Promise<ProjectForStats[]>
       fields: 'id,status,user', // Only fetch required fields (95% bandwidth reduction)
       sort: '', // No sorting needed for stats calculation
       skipTotal: true, // Skip expensive total count calculation
-      requestKey: `projects-stats-${userId}-${Date.now()}`, // Unique key for caching
+      requestKey: `projects-stats-${userId}`, // Consistent key for proper caching
       $cancelKey: 'projects-stats', // Allow request cancellation
     });
 
@@ -110,7 +110,12 @@ export const useProjectsForStats = ({ userId, enabled = true }: ProjectsForStats
 
   const query = useQuery({
     queryKey,
-    queryFn: () => fetchProjectsForStats(userId!),
+    queryFn: () => {
+      if (!userId) {
+        throw new Error('User ID is required for fetching projects');
+      }
+      return fetchProjectsForStats(userId);
+    },
     enabled: !!userId && enabled,
     staleTime: 2 * 60 * 1000, // 2 minutes - balance between freshness and performance
     gcTime: 5 * 60 * 1000, // 5 minutes - keep in cache longer for better UX

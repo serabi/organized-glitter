@@ -36,10 +36,16 @@ import { createLogger } from '@/utils/logger';
 const logger = createLogger('StatusCarousel');
 const STATUS_CARDS = [
   {
-    status: 'all' as ProjectFilterStatus,
-    title: 'Total Projects',
-    description: 'Active projects',
-    getCount: (counts: AllStatusCountsType) => counts.all,
+    status: 'everything' as ProjectFilterStatus,
+    title: 'All Projects',
+    description: 'Your complete collection',
+    getCount: (counts: AllStatusCountsType) => counts.everything,
+  },
+  {
+    status: 'active' as ProjectFilterStatus,
+    title: 'Collection Total',
+    description: 'Purchased, In Stash, In Progress, On Hold',
+    getCount: (counts: AllStatusCountsType) => counts.active,
   },
   {
     status: 'purchased' as ProjectFilterStatus,

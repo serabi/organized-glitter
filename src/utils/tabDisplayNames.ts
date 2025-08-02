@@ -28,11 +28,13 @@ export interface TabDisplayConfig {
  * Extracted from dashboard components for consistency
  */
 export const TAB_DISPLAY_NAMES: Record<ProjectFilterStatus, string> = {
-  all: 'All',
+  everything: 'All Projects',
+  active: 'Collection Total',
   wishlist: 'Wishlist',
   purchased: 'Purchased',
   stash: 'In Stash',
   progress: 'In Progress',
+  onhold: 'On Hold',
   completed: 'Completed',
   destashed: 'Destashed',
   archived: 'Archived',

@@ -99,7 +99,7 @@ const FilterStateContext = createContext<FilterStateContextType | null>(null);
  * Default filter state factory
  */
 const getDefaultFilters = (isMobilePhone = false): FilterState => ({
-  activeStatus: 'all',
+  activeStatus: 'active',
   selectedCompany: 'all',
   selectedArtist: 'all',
   selectedDrillShape: 'all',

@@ -292,7 +292,7 @@ const FilterActionsProviderComponent: React.FC<FilterActionsProviderProps> = ({
   // Computed values
   const getActiveFilterCount = useCallback(() => {
     let count = 0;
-    if (filters.activeStatus !== 'all') count++;
+    if (filters.activeStatus !== 'everything') count++;
     if (filters.selectedCompany !== 'all') count++;
     if (filters.selectedArtist !== 'all') count++;
     if (filters.selectedDrillShape !== 'all') count++;

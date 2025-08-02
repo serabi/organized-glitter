@@ -41,11 +41,10 @@ interface NetworkInformation {
   removeEventListener?: (event: string, handler: () => void) => void;
 }
 
-
-
 // Complete status counts interface for carousel
 export interface AllStatusCountsType {
-  all: number; // Total Active Projects
+  active: number; // Total Active Projects
+  everything: number; // All Projects (complete collection)
   purchased: number; // Purchased - Not Received
   stash: number; // In Stash
   progress: number; // In Progress
@@ -97,8 +96,6 @@ interface StatsContextOptimizedType {
 
   /** Error object if stats fetch failed */
   error: Error | null | unknown;
-
-
 
   /** Get counts for all project statuses with loading state handling */
   getAllStatusCounts: () => AllStatusCountsType | BadgeLoadingState;
@@ -346,9 +343,21 @@ export const StatsProviderOptimized: React.FC<StatsProviderOptimizedProps> = ({ 
       (statusBreakdown.progress || 0) +
       (statusBreakdown.onhold || 0);
 
+    // Calculate everything count (complete collection including all statuses)
+    const everythingCount =
+      (statusBreakdown.purchased || 0) +
+      (statusBreakdown.stash || 0) +
+      (statusBreakdown.progress || 0) +
+      (statusBreakdown.onhold || 0) +
+      (statusBreakdown.wishlist || 0) +
+      (statusBreakdown.completed || 0) +
+      (statusBreakdown.archived || 0) +
+      (statusBreakdown.destashed || 0);
+
     // Include all status types for comprehensive carousel display
     const allCounts: AllStatusCountsType = {
-      all: activeProjectsCount,
+      active: activeProjectsCount,
+      everything: everythingCount,
       purchased: statusBreakdown.purchased || 0,
       stash: statusBreakdown.stash || 0,
       progress: statusBreakdown.progress || 0,
@@ -376,8 +385,6 @@ export const StatsProviderOptimized: React.FC<StatsProviderOptimizedProps> = ({ 
     statsResult.performanceMetrics,
     statsResult.totalProjects,
   ]);
-
-
 
   // Get counts for all project statuses with loading state handling
   const getAllStatusCounts = useCallback((): AllStatusCountsType | BadgeLoadingState => {
@@ -510,4 +517,3 @@ export const useStats = (): Omit<StatsContextOptimizedType, 'performanceMetrics'
       : null,
   };
 };
-

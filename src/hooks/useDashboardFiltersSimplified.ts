@@ -111,7 +111,7 @@ export const useDashboardFilters = (projects: ProjectType[]): UseDashboardFilter
     let tempFilteredProjects = [...projects];
 
     // Apply status filter
-    if (viewState.activeStatus !== 'all') {
+    if (viewState.activeStatus !== 'everything') {
       tempFilteredProjects = tempFilteredProjects.filter(
         project => project.status === viewState.activeStatus
       );

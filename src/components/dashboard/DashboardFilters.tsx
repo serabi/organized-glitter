@@ -60,6 +60,8 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
     updateYearFinished,
     updateIncludeMiniKits,
     updateIncludeWishlist,
+    updateIncludeDestashed,
+    updateIncludeArchived,
     updateViewType,
     companiesOptions, // Use computed options for DashboardFilters
     artistsOptions, // Use computed options for DashboardFilters
@@ -106,6 +108,8 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
   const selectedYearFinished = filters.selectedYearFinished;
   const includeMiniKits = filters.includeMiniKits;
   const includeWishlist = filters.includeWishlist;
+  const includeDestashed = filters.includeDestashed;
+  const includeArchived = filters.includeArchived;
   const viewType = filters.viewType;
   const sortField = filters.sortField;
   const sortDirection = filters.sortDirection;
@@ -206,7 +210,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
 
         <div className="rounded-lg border bg-muted/30 p-4">
           <h3 className="mb-4 text-sm font-semibold leading-relaxed">
-            Kit Display Options for Total Projects View
+            Kit Display Options for All Projects View
           </h3>
           <div className="space-y-4">
             <div className="flex items-center space-x-3">
@@ -230,6 +234,30 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
               />
               <Label htmlFor="include-wishlist-kits" className="text-sm font-normal">
                 Include Wishlisted Kits
+              </Label>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <Checkbox
+                id="include-destashed-kits"
+                checked={includeDestashed}
+                onCheckedChange={checked => updateIncludeDestashed(Boolean(checked))}
+                data-testid="include-destashed-checkbox"
+              />
+              <Label htmlFor="include-destashed-kits" className="text-sm font-normal">
+                Include Destashed Kits
+              </Label>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <Checkbox
+                id="include-archived-kits"
+                checked={includeArchived}
+                onCheckedChange={checked => updateIncludeArchived(Boolean(checked))}
+                data-testid="include-archived-checkbox"
+              />
+              <Label htmlFor="include-archived-kits" className="text-sm font-normal">
+                Include Archived Kits
               </Label>
             </div>
           </div>

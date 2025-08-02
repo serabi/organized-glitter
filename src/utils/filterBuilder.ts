@@ -314,7 +314,7 @@ export class FilterBuilder {
    * Add status filter for projects
    */
   status(status: string | undefined): FilterBuilder {
-    if (status && status !== 'all') {
+    if (status && status !== 'active' && status !== 'everything') {
       this.filters.push(pb.filter('status = {:status}', { status }));
     }
     return this;

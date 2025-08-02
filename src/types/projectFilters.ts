@@ -41,9 +41,9 @@ export interface ProjectFilters {
 }
 
 /**
- * Project filter status type - includes 'all' for no status filtering
+ * Project filter status type - includes 'active' and 'everything' for aggregate filtering
  */
-export type ProjectFilterStatus = ProjectStatus | 'all';
+export type ProjectFilterStatus = ProjectStatus | 'active' | 'everything';
 
 /**
  * Project sort configuration
