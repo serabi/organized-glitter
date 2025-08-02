@@ -32,6 +32,7 @@ import { useStatusFilter } from '@/contexts/FilterProvider';
 import { type ProjectFilterStatus } from '@/types/project-status';
 import StatusCard from './StatusCard';
 import { createLogger } from '@/utils/logger';
+import { useIsTouchDevice } from '@/hooks/use-mobile';
 
 const logger = createLogger('StatusCarousel');
 const STATUS_CARDS = [
@@ -109,6 +110,7 @@ export const StatusCarousel: React.FC<StatusCarouselProps> = memo(({ className =
   // Data from contexts
   const { getAllStatusCounts } = useStatsOptimized();
   const { activeStatus, updateStatus } = useStatusFilter();
+  const isTouchDevice = useIsTouchDevice();
 
   const counts = getAllStatusCounts();
 
@@ -164,8 +166,12 @@ export const StatusCarousel: React.FC<StatusCarouselProps> = memo(({ className =
             );
           })}
         </CarouselContent>
-        <CarouselPrevious className="left-4 h-8 min-h-8 w-8 min-w-8 md:left-4 md:h-10 md:min-h-10 md:w-10 md:min-w-10" />
-        <CarouselNext className="right-4 h-8 min-h-8 w-8 min-w-8 md:right-4 md:h-10 md:min-h-10 md:w-10 md:min-w-10" />
+        {!isTouchDevice && (
+          <>
+            <CarouselPrevious className="left-4 h-8 min-h-8 w-8 min-w-8 md:left-4 md:h-10 md:min-h-10 md:w-10 md:min-w-10" />
+            <CarouselNext className="right-4 h-8 min-h-8 w-8 min-w-8 md:right-4 md:h-10 md:min-h-10 md:w-10 md:min-w-10" />
+          </>
+        )}
       </Carousel>
     </div>
   );

@@ -1,34 +1,35 @@
 /**
- * @fileoverview PocketBase Filter Builder Utility - SECURITY CRITICAL
+ * PocketBase Filter Builder Utility
  *
  * Centralized, type-safe utility for building secure PocketBase filter expressions.
  * Uses pb.filter() for secure parameter injection to prevent SQL injection attacks.
  *
- * 🔒 SECURITY FEATURES:
- * - Field name whitelist validation to prevent SQL injection through field interpolation
+ * @security
+ * This utility implements comprehensive security measures for safe PocketBase filtering:
+ * 
+ * PROTECTIVE FEATURES:
+ * - Field name whitelist validation prevents SQL injection through field interpolation
  * - Secure parameter injection using pb.filter() for all user-provided values
- * - Comprehensive logging of security violations for monitoring
+ * - Comprehensive logging of security violations for monitoring and audit trails
  * - Development-time error throwing for immediate debugging of security issues
- * - Automatic rejection of operations with invalid field names
+ * - Automatic rejection of operations with invalid/unauthorized field names
+ * 
+ * CRITICAL REQUIREMENTS:
+ * - NEVER modify COLLECTION_FIELDS without thorough security review
+ * - NEVER bypass field validation in any methods or code paths
+ * - NEVER interpolate user input directly into filter strings
+ * - ALWAYS use pb.filter() for parameterized queries to prevent injection
+ * - ALWAYS validate field names against whitelist before filter construction
  *
  * Key Features:
  * - Type-safe filter building with TypeScript
- * - Secure parameter injection using pb.filter()
  * - Common filter patterns for user isolation, date ranges, search terms
  * - Chainable API for complex filter combinations
  * - Reduces code duplication by 60-80% across the codebase
  * - Field name validation against comprehensive whitelist
  *
- * ⚠️  SECURITY WARNINGS:
- * - NEVER modify COLLECTION_FIELDS without security review
- * - NEVER bypass field validation in any methods
- * - NEVER interpolate user input directly into filter strings
- * - ALWAYS use pb.filter() for parameterized queries
- * - ALWAYS validate field names before using them in filters
- *
  * @author @serabi
- * @version 2.0.0 - Security Hardened
- * @since 2024-06-29
+ * @created 2024-06-29
  * @security-review Required for any modifications to field validation
  */
 
@@ -36,6 +37,14 @@ import { pb } from '@/lib/pocketbase';
 import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('FilterBuilder');
+
+/**
+ * Environment detection helper function
+ * @returns {boolean} True if running in development environment
+ */
+function isDev(): boolean {
+  return import.meta.env.DEV;
+}
 
 /**
  * Comprehensive field whitelist for all PocketBase collections
@@ -244,7 +253,7 @@ function validateFieldName(field: string, context?: string): boolean {
     });
 
     // In development, throw error for immediate debugging
-    if (import.meta.env.DEV) {
+    if (isDev()) {
       throw new Error(`${errorMsg}. Context: ${context || 'unknown'}`);
     }
 
@@ -314,8 +323,53 @@ export class FilterBuilder {
    * Add status filter for projects
    */
   status(status: string | undefined): FilterBuilder {
-    if (status && status !== 'active' && status !== 'everything') {
-      this.filters.push(pb.filter('status = {:status}', { status }));
+    if (status) {
+      // Define recognized status values (matches ProjectFilterStatus type)
+      const VALID_STATUSES = new Set([
+        'active',
+        'everything',
+        'wishlist',
+        'purchased',
+        'stash',
+        'progress',
+        'onhold',
+        'completed',
+        'destashed',
+        'archived',
+      ]);
+
+      // Validate status value before proceeding
+      if (!VALID_STATUSES.has(status)) {
+        const errorMsg = `Invalid status value: "${status}". Valid values are: ${Array.from(VALID_STATUSES).join(', ')}`;
+        logger.error(errorMsg, {
+          invalidStatus: status,
+          validStatuses: Array.from(VALID_STATUSES),
+          context: 'status filter validation',
+        });
+
+        // In development, throw error for immediate debugging
+        if (isDev()) {
+          throw new Error(errorMsg);
+        }
+
+        // In production, skip the invalid filter and continue
+        return this;
+      }
+
+      if (status === 'active') {
+        // Active projects: purchased, stash, progress, onhold
+        this.filters.push(
+          pb.filter(
+            '(status = "purchased" || status = "stash" || status = "progress" || status = "onhold")'
+          )
+        );
+      } else if (status === 'everything') {
+        // Everything: all projects (will be refined by include flags)
+        // Don't add any status constraint here - let include flags handle exclusions
+      } else {
+        // Individual status filter
+        this.filters.push(pb.filter('status = {:status}', { status }));
+      }
     }
     return this;
   }

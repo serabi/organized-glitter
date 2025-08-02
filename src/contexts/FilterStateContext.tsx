@@ -360,7 +360,11 @@ const FilterStateProviderComponent: React.FC<FilterStateProviderProps> = ({ chil
           const urlFilters: Partial<FilterState> = {};
 
           const status = urlParams.get('status');
-          if (status) urlFilters.activeStatus = status as ProjectFilterStatus;
+          if (status) {
+            // Backward compatibility: map old 'all' status to 'active'
+            const mappedStatus = status === 'all' ? 'active' : status;
+            urlFilters.activeStatus = mappedStatus as ProjectFilterStatus;
+          }
 
           const company = urlParams.get('company');
           if (company) urlFilters.selectedCompany = company;

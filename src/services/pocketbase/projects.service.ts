@@ -227,8 +227,20 @@ export class ProjectsService {
 
     // Use excludeStatus for status counting, otherwise use filters.status for main queries
     const statusToFilter = excludeStatus || filters.status;
-    if (statusToFilter && statusToFilter !== 'active' && statusToFilter !== 'everything') {
-      conditions.push(`status = "${statusToFilter}"`);
+    if (statusToFilter) {
+      if (statusToFilter === 'active') {
+        // Active projects: purchased, stash, progress, onhold
+        conditions.push(
+          `(status = "purchased" || status = "stash" || status = "progress" || status = "onhold")`
+        );
+      } else if (statusToFilter === 'everything') {
+        // Everything: all projects except destashed/archived (unless those flags are enabled)
+        // This will be further refined by the include/exclude flags below
+        // For now, don't add any status constraint - let include flags handle it
+      } else {
+        // Individual status filter
+        conditions.push(`status = "${statusToFilter}"`);
+      }
     }
 
     // Company filter (uses ID directly)
@@ -265,14 +277,25 @@ export class ProjectsService {
     if (!skipCheckboxFilters) {
       const currentStatus = filters.status || excludeStatus;
 
-      // Include destashed filtering
-      if (filters.includeDestashed === false && currentStatus !== 'destashed') {
-        conditions.push(`status != "destashed"`);
-      }
+      // For 'everything' status, exclude destashed/archived by default unless flags are enabled
+      if (currentStatus === 'everything') {
+        if (filters.includeDestashed !== true) {
+          conditions.push(`status != "destashed"`);
+        }
+        if (filters.includeArchived !== true) {
+          conditions.push(`status != "archived"`);
+        }
+      } else {
+        // For other statuses, use the existing include/exclude logic
+        // Include destashed filtering
+        if (filters.includeDestashed === false && currentStatus !== 'destashed') {
+          conditions.push(`status != "destashed"`);
+        }
 
-      // Include archived filtering
-      if (filters.includeArchived === false && currentStatus !== 'archived') {
-        conditions.push(`status != "archived"`);
+        // Include archived filtering
+        if (filters.includeArchived === false && currentStatus !== 'archived') {
+          conditions.push(`status != "archived"`);
+        }
       }
 
       // Include wishlist filtering
