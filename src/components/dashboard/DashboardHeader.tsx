@@ -6,7 +6,7 @@ const DashboardHeader = () => {
   return (
     <div className="mb-8 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
       <div>
-        <h1 className="text-3xl font-bold">My Diamond Paintings</h1>
+        <h1 className="text-3xl font-bold">Dashboard</h1>
         <p className="mt-2 text-muted-foreground">Manage and track your collection</p>
       </div>
       <div className="flex flex-row gap-2">

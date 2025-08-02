@@ -127,7 +127,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
 
   return (
     <div
-      className="dark:glass-card rounded-lg bg-white p-6 shadow md:sticky md:top-20"
+      className="dark:glass-card rounded-lg bg-white p-4 shadow md:sticky md:top-20 md:p-6"
       data-testid="dashboard-filters"
     >
       <div className="mb-4 flex items-center justify-between">
@@ -148,7 +148,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
         />
       </div>
 
-      <div className="space-y-5">
+      <div className="space-y-4 md:space-y-5">
         <FilterDropdown
           label="Status"
           options={statusOptions}
@@ -208,11 +208,11 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
           placeholder="All years"
         />
 
-        <div className="rounded-lg border bg-muted/30 p-4">
-          <h3 className="mb-4 text-sm font-semibold leading-relaxed">
+        <div className="rounded-lg border bg-muted/30 p-3 md:p-4">
+          <h3 className="mb-3 text-sm font-semibold leading-relaxed md:mb-4">
             Kit Display Options for All Projects View
           </h3>
-          <div className="space-y-4">
+          <div className="space-y-3 md:space-y-4">
             <div className="flex items-center space-x-3">
               <Checkbox
                 id="include-mini-kits"
@@ -264,11 +264,11 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
         </div>
 
         {/* View Controls */}
-        <div className="space-y-3">
+        <div className="space-y-2 md:space-y-3">
           <h3 className="text-sm font-semibold">View & Sort</h3>
           <ViewToggle activeView={viewType} onViewChange={updateViewType} />
 
-          <div className="space-y-3">
+          <div className="space-y-2 md:space-y-3">
             <FilterDropdown
               label="Sort by"
               options={[
