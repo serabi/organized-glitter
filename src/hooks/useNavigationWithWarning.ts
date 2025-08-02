@@ -18,6 +18,8 @@ interface NavigationState {
  * Hook to handle navigation with unsaved changes warning
  * Prevents navigation if there are unsaved changes and shows confirmation
  * Now supports both window.confirm and ConfirmationDialog patterns
+ * @author @serabi
+ * @created 2025-08-02
  */
 export const useNavigationWithWarning = ({
   isDirty,
@@ -26,7 +28,7 @@ export const useNavigationWithWarning = ({
 }: UseNavigationWithWarningProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const isMounted = useRef(true);
+  const abortController = useRef(new AbortController());
   const [navigationState, setNavigationState] = useState<NavigationState>({
     isNavigating: false,
     error: null,
@@ -37,15 +39,16 @@ export const useNavigationWithWarning = ({
 
   // Reset navigation state
   const resetNavigationState = useCallback(() => {
-    if (isMounted.current) {
+    if (!abortController.current.signal.aborted) {
       setNavigationState({ isNavigating: false, error: null });
       isNavigating.current = false;
     }
   }, []);
 
   useEffect(() => {
+    const controller = abortController.current;
     return () => {
-      isMounted.current = false;
+      controller.abort();
     };
   }, []);
 
@@ -64,7 +67,7 @@ export const useNavigationWithWarning = ({
         isNavigating.current = true;
         navigate(to, options);
       } catch (error) {
-        if (isMounted.current) {
+        if (!abortController.current.signal.aborted) {
           setNavigationState({
             isNavigating: false,
             error: error instanceof Error ? error.message : 'Navigation failed',
@@ -94,7 +97,7 @@ export const useNavigationWithWarning = ({
             performNavigation(to, options);
           }
         } catch (error) {
-          if (isMounted.current) {
+          if (!abortController.current.signal.aborted) {
             setNavigationState({
               isNavigating: false,
               error: error instanceof Error ? error.message : 'Confirmation failed',
@@ -166,7 +169,7 @@ export const useNavigationWithWarning = ({
     navigationState,
     removeBeforeUnloadListener,
     clearNavigationError: () => {
-      if (isMounted.current) {
+      if (!abortController.current.signal.aborted) {
         setNavigationState(prev => ({ ...prev, error: null }));
       }
     },

@@ -1,3 +1,9 @@
+/**
+ * Authentication provider component that manages user authentication state
+ * @author @serabi
+ * @created 2025-01-01
+ */
+
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { pb } from '@/lib/pocketbase';
 import { AuthContext } from './context';
@@ -6,14 +12,13 @@ import { createLogger } from '@/utils/logger';
 
 const authLogger = createLogger('AuthProvider');
 
-export const AuthProvider: React.FC<AuthProviderProps> = React.memo(({ children }) => {
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   authLogger.debug('AuthProvider component rendering/re-rendering...');
   const [user, setUser] = useState<PocketBaseUser | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [initialCheckComplete, setInitialCheckComplete] = useState(false);
   const isSigningOut = useRef(false);
-  const isMounted = useRef(true);
   const isInitializedRef = useRef(false);
 
   useEffect(() => {
@@ -25,10 +30,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = React.memo(({ children 
 
     authLogger.debug(`AuthProvider useEffect running. Setting up fresh auth listeners.`);
     isInitializedRef.current = true;
-
-    // Always set up fresh listeners on every mount
-    isMounted.current = true;
     setIsLoading(true);
+
+    // Create AbortController for proper cleanup
+    const abortController = new AbortController();
 
     // Add timeout protection to prevent infinite loading
     // Extended timeout for production environments with slower networks
@@ -38,7 +43,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = React.memo(({ children 
       authLogger.error(
         'Auth timeout - this may indicate network issues or slow PocketBase response'
       );
-      if (isMounted.current) {
+      if (!abortController.signal.aborted) {
         setIsLoading(false);
         setInitialCheckComplete(true);
       }
@@ -57,7 +62,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = React.memo(({ children 
           userId: currentUser?.id,
         });
 
-        if (isMounted.current) {
+        if (!abortController.signal.aborted) {
           if (isValid && currentUser) {
             authLogger.debug('Setting initial user state:', currentUser.id);
             authLogger.debug('Initial auth check: User IS valid and present.', {
@@ -91,9 +96,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = React.memo(({ children 
             hasRecord: !!record,
             userId: record?.id,
           });
-          // Skip processing if we're in the middle of signing out
-          if (isSigningOut.current) {
-            authLogger.debug('Skipping auth change during signout');
+          // Skip processing if we're in the middle of signing out or component is unmounted
+          if (isSigningOut.current || abortController.signal.aborted) {
+            authLogger.debug('Skipping auth change during signout or after unmount');
             return;
           }
 
@@ -103,27 +108,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = React.memo(({ children 
             userId: record?.id,
           });
 
-          if (isMounted.current) {
-            if (token && record) {
-              const userData = record as unknown as PocketBaseUser;
-              setUser(userData);
-              setIsAuthenticated(true);
-              setIsLoading(false);
-              setInitialCheckComplete(true);
-            } else {
-              authLogger.debug('Clearing user state');
-              setUser(null);
-              setIsAuthenticated(false);
-              setIsLoading(false);
-              setInitialCheckComplete(true);
-            }
+          if (token && record) {
+            const userData = record as unknown as PocketBaseUser;
+            setUser(userData);
+            setIsAuthenticated(true);
+            setIsLoading(false);
+            setInitialCheckComplete(true);
+          } else {
+            authLogger.debug('Clearing user state');
+            setUser(null);
+            setIsAuthenticated(false);
+            setIsLoading(false);
+            setInitialCheckComplete(true);
           }
         });
 
         return removeListener;
       } catch (error) {
         authLogger.error('Error during auth initialization:', error);
-        if (isMounted.current) {
+        if (!abortController.signal.aborted) {
           setIsLoading(false);
           setInitialCheckComplete(true);
         }
@@ -139,7 +142,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = React.memo(({ children 
     return () => {
       authLogger.debug('Cleaning up auth listeners - removing PocketBase onChange listener');
       clearTimeout(authTimeout);
-      isMounted.current = false;
+      abortController.abort();
       isInitializedRef.current = false; // Reset initialization flag
       removeListener();
     };
@@ -202,4 +205,4 @@ export const AuthProvider: React.FC<AuthProviderProps> = React.memo(({ children 
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-});
+};
