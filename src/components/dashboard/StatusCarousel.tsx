@@ -34,7 +34,8 @@ import {
   PaginationItem,
   PaginationLink,
 } from '@/components/ui/pagination';
-import { useStatsOptimized, type AllStatusCountsType } from '@/contexts/StatsContextOptimized';
+import { useStatsOptimized } from '@/contexts/useStatsOptimized';
+import { type AllStatusCountsType } from '@/contexts/contexts-stats';
 import { useStatusFilter } from '@/contexts/FilterHooks';
 import { type ProjectFilterStatus } from '@/types/project-status';
 import StatusCard from './StatusCard';

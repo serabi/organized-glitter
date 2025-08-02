@@ -5,11 +5,8 @@
  * @updated 2025-08-02
  */
 
-// Re-export types and utilities
-export * from '@/contexts/filterState';
-
-// Re-export provider component
+// Re-export provider component only
 export { FilterStateProvider } from '@/contexts/FilterStateProvider';
 
-// Re-export hook
-export { useFilterState } from '@/contexts/useFilterState';
+// For hooks and types, import from filterIndex.ts
+// Example: import { useFilterState, FilterState } from '@/contexts/filterIndex';

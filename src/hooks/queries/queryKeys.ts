@@ -17,7 +17,7 @@
 
 import { ServerFilters } from './useProjects';
 import { DashboardValidSortField } from '@/features/dashboard/dashboard.constants';
-import { SortDirectionType } from '@/contexts/FilterProvider';
+import { SortDirectionType } from '@/contexts/filterIndex';
 
 /**
  * Creates a secure hash of user ID for query keys

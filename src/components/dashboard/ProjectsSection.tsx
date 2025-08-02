@@ -2,7 +2,7 @@ import React from 'react';
 import ProjectsGrid from '@/components/dashboard/ProjectsGrid';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useAuth } from '@/hooks/useAuth';
-import { useFilterStateOnly } from '@/contexts/FilterProvider';
+import { useFilterStateOnly } from '@/contexts/filterIndex';
 import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('ProjectsSection');

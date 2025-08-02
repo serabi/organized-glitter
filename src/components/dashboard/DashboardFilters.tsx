@@ -34,7 +34,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { useFiltersFull } from '@/contexts/FilterProvider';
+import { useFiltersFull } from '@/contexts/filterIndex';
 import { useAvailableYears } from '@/hooks/queries/useAvailableYears';
 import { useProjectStatus } from '@/hooks/useProjectStatus';
 import { logger } from '@/utils/logger';

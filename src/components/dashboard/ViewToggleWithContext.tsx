@@ -7,8 +7,8 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Grid, List } from 'lucide-react';
-import { useFilterStateOnly, useFilterActionsOnly } from '@/contexts/FilterProvider';
-import type { ViewType } from '@/contexts/FilterStateContext';
+import { useFilterStateOnly, useFilterActionsOnly } from '@/contexts/filterIndex';
+import type { ViewType } from '@/contexts/contexts-ui';
 
 interface ViewToggleProps {
   activeView: ViewType;

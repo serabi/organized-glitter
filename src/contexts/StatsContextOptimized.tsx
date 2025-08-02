@@ -11,15 +11,7 @@
  * @created 2025-08-01
  */
 
-import React, {
-  createContext,
-  useContext,
-  useMemo,
-  useCallback,
-  ReactNode,
-  useEffect,
-  useState,
-} from 'react';
+import React, { useMemo, useCallback, ReactNode, useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { createLogger } from '@/utils/logger';
 import { queryKeys } from '@/hooks/queries/queryKeys';
@@ -29,7 +21,14 @@ import {
   useDashboardStatsOptimized,
   useStatsPerformanceMonitor,
 } from '@/hooks/useDashboardStatsOptimized';
-import { StatusBreakdown } from '@/types/dashboard';
+// StatusBreakdown import moved to contexts-stats.ts with the interface
+import {
+  StatsContextOptimized,
+  type StatsContextOptimizedType,
+  type AllStatusCountsType,
+  type BadgeLoadingState,
+  type CountsForTabsType,
+} from '@/contexts/contexts-stats';
 
 const logger = createLogger('StatsContextOptimized');
 
@@ -41,31 +40,7 @@ interface NetworkInformation {
   removeEventListener?: (event: string, handler: () => void) => void;
 }
 
-// Complete status counts interface for carousel
-export interface AllStatusCountsType {
-  active: number; // Total Active Projects
-  everything: number; // All Projects (complete collection)
-  purchased: number; // Purchased - Not Received
-  stash: number; // In Stash
-  progress: number; // In Progress
-  onhold: number; // On Hold
-  wishlist: number; // Wishlist
-  completed: number; // Completed
-  archived: number; // Archived
-  destashed: number; // Destashed
-}
-
-// Loading state for badge content
-export type BadgeLoadingState = 'loading' | 'error';
-
-// Interface for tab counts (subset of all status counts for dashboard tabs)
-export interface CountsForTabsType {
-  all: number;
-  purchased: number;
-  progress: number;
-  onhold: number;
-  stash: number;
-}
+// Types moved to contexts-stats.ts for Fast Refresh optimization
 
 // Spinner component for badge loading states
 const SpinnerIcon: React.FC<{ className?: string }> = ({ className = 'h-3 w-3 animate-spin' }) => (
@@ -75,58 +50,7 @@ const SpinnerIcon: React.FC<{ className?: string }> = ({ className = 'h-3 w-3 an
   </svg>
 );
 
-/**
- * Optimized context interface for dashboard statistics management
- *
- * Simplified from the original StatsContext to focus on core functionality
- * with the new direct calculation approach.
- */
-interface StatsContextOptimizedType {
-  /** Current status breakdown from optimized calculation */
-  statusCounts: StatusBreakdown;
-
-  /** Total project count */
-  totalProjects: number;
-
-  /** True when stats are being fetched from the API */
-  isLoading: boolean;
-
-  /** True when stats fetch has failed */
-  isError: boolean;
-
-  /** Error object if stats fetch failed */
-  error: Error | null | unknown;
-
-  /** Get counts for all project statuses with loading state handling */
-  getAllStatusCounts: () => AllStatusCountsType | BadgeLoadingState;
-
-  /** Get counts for dashboard tabs (subset of all status counts) */
-  getCountsForTabs: () => CountsForTabsType | BadgeLoadingState;
-
-  /** Get badge content with spinner for loading states */
-  getBadgeContent: (count: number) => ReactNode;
-
-  /** True if network conditions are detected as slow (mobile) */
-  isNetworkSlow: boolean;
-
-  /** Current timeout duration based on network conditions */
-  timeoutDuration: number;
-
-  /** Manually retry failed stats request */
-  retry: () => void;
-
-  /** Source of stats data (always 'optimized' for this implementation) */
-  source: 'optimized';
-
-  /** Performance metrics from optimized calculation */
-  performanceMetrics?: {
-    calculationTime: number;
-    projectCount: number;
-    cacheHit: boolean;
-  };
-}
-
-const StatsContextOptimized = createContext<StatsContextOptimizedType | null>(null);
+// Interface and context moved to contexts-stats.ts for Fast Refresh optimization
 
 /**
  * Network detection hook for mobile optimization
@@ -492,28 +416,12 @@ export const StatsProviderOptimized: React.FC<StatsProviderOptimizedProps> = ({ 
  * @returns StatsContextOptimizedType with optimized stats data and loading states
  * @throws Error if used outside of StatsProviderOptimized
  */
-export const useStatsOptimized = (): StatsContextOptimizedType => {
-  const context = useContext(StatsContextOptimized);
-  if (!context) {
-    throw new Error('useStatsOptimized must be used within a StatsProviderOptimized');
-  }
-  return context;
-};
+// Hook moved to useStatsOptimized.ts for React Fast Refresh optimization
+// Import with: import { useStatsOptimized } from '@/contexts/useStatsOptimized';
 
 /**
  * Backward compatibility hook that provides the same interface as the original useStats
  * This allows existing components to work with the optimized context without changes
  */
-export const useStats = (): Omit<StatsContextOptimizedType, 'performanceMetrics'> & {
-  stats: { status_breakdown: StatusBreakdown } | null;
-} => {
-  const optimizedContext = useStatsOptimized();
-
-  // Transform to match original interface
-  return {
-    ...optimizedContext,
-    stats: optimizedContext.statusCounts
-      ? { status_breakdown: optimizedContext.statusCounts }
-      : null,
-  };
-};
+// Hook moved to useStats.ts for React Fast Refresh optimization
+// Import with: import { useStats } from '@/contexts/useStats';

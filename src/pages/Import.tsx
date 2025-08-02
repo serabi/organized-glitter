@@ -4,7 +4,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Button } from '@/components/ui/button';
 import { FileInput, UploadCloud, Check, AlertCircle, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useMetadata } from '@/contexts/MetadataContext';
+import { useMetadata } from '@/contexts/useMetadata';
 import { useProjectImport } from '@/hooks/useProjectImport';
 import { downloadCSVTemplate } from '@/utils/csvTemplateGenerator';
 import { Progress } from '@/components/ui/progress';

@@ -6,7 +6,7 @@
 
 import { ProjectStatus, Project } from './project';
 import { DashboardValidSortField } from '@/features/dashboard/dashboard.constants';
-import { SortDirectionType } from '@/contexts/FilterProvider';
+import { SortDirectionType } from '@/contexts/filterIndex';
 
 /**
  * Main project filter interface - replaces manual filter string building
@@ -227,4 +227,4 @@ export interface ProjectCreateData extends Omit<ProjectUpdateData, 'status'> {
 export type { Project } from './project';
 export type { ProjectStatus } from './project';
 export type { DashboardValidSortField } from '@/features/dashboard/dashboard.constants';
-export type { SortDirectionType } from '@/contexts/FilterProvider';
+export type { SortDirectionType } from '@/contexts/filterIndex';

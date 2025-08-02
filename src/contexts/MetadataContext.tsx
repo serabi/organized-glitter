@@ -1,45 +1,15 @@
-import React, { createContext, useContext, useMemo, useEffect, useCallback } from 'react';
+import React, { useMemo, useEffect, useCallback } from 'react';
 import { useAllCompanies } from '@/hooks/queries/useCompanies';
 import { useArtists } from '@/hooks/queries/useArtists';
 import { useTags } from '@/hooks/queries/useTags';
 import { useAuth } from '@/hooks/useAuth';
-import type { Tag } from '@/types/tag';
-import { ArtistsResponse, CompaniesResponse } from '@/types/pocketbase.types';
+import { MetadataContext, type MetadataContextType } from '@/contexts/contexts-metadata';
 import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('MetadataContext');
 
-interface MetadataContextType {
-  companies: CompaniesResponse[];
-  artists: ArtistsResponse[];
-  tags: Tag[];
-  companyNames: string[];
-  artistNames: string[];
-  isLoading: {
-    companies: boolean;
-    artists: boolean;
-    tags: boolean;
-  };
-  error: {
-    companies: Error | null;
-    artists: Error | null;
-    tags: Error | null;
-  };
-  refresh: () => Promise<void>;
-  refreshCompanies: () => Promise<void>;
-  refreshArtists: () => Promise<void>;
-  refreshTags: () => Promise<void>;
-}
-
-const MetadataContext = createContext<MetadataContextType | undefined>(undefined);
-
-export function useMetadata() {
-  const context = useContext(MetadataContext);
-  if (!context) {
-    throw new Error('useMetadata must be used within a MetadataProvider');
-  }
-  return context;
-}
+// Hook moved to useMetadata.ts for React Fast Refresh optimization
+// Import with: import { useMetadata } from '@/contexts/useMetadata';
 
 interface MetadataProviderProps {
   children: React.ReactNode;

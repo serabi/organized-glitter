@@ -46,48 +46,16 @@
  * @see {@link UIContext} for UI state management
  */
 
-import React, { createContext, useContext, useState, useMemo, useCallback, ReactNode } from 'react';
+import React, { useState, useMemo, useCallback, ReactNode } from 'react';
+import {
+  RecentlyEditedContext,
+  type RecentlyEditedContextType,
+} from '@/contexts/contexts-recentlyEdited';
 import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('RecentlyEditedContext');
 
-/**
- * Context interface for recently edited project management
- *
- * Provides simple state management for tracking the most recently
- * edited project in the dashboard interface.
- *
- * @interface RecentlyEditedContextType
- * @since 2025-07-08
- */
-interface RecentlyEditedContextType {
-  /** ID of the most recently edited project, or null if none */
-  recentlyEditedProjectId: string | null;
-
-  /**
-   * Set the recently edited project ID
-   *
-   * @param id - Project ID to set as recently edited, or null to clear
-   */
-  setRecentlyEditedProjectId: (id: string | null) => void;
-
-  /**
-   * Clear the recently edited project state
-   *
-   * Convenience method equivalent to setRecentlyEditedProjectId(null)
-   */
-  clearRecentlyEdited: () => void;
-
-  /**
-   * Check if a specific project is the recently edited one
-   *
-   * @param projectId - Project ID to check
-   * @returns True if the project is recently edited
-   */
-  isRecentlyEdited: (projectId: string) => boolean;
-}
-
-const RecentlyEditedContext = createContext<RecentlyEditedContextType | null>(null);
+// Interface and context moved to contexts-recentlyEdited.ts for Fast Refresh optimization
 
 /**
  * Props interface for RecentlyEditedProvider component
@@ -191,10 +159,5 @@ export const RecentlyEditedProvider: React.FC<RecentlyEditedProviderProps> = ({ 
  * @returns RecentlyEditedContextType with recently edited state and functions
  * @throws Error if used outside of RecentlyEditedProvider
  */
-export const useRecentlyEdited = (): RecentlyEditedContextType => {
-  const context = useContext(RecentlyEditedContext);
-  if (!context) {
-    throw new Error('useRecentlyEdited must be used within a RecentlyEditedProvider');
-  }
-  return context;
-};
+// Hook moved to useRecentlyEdited.ts for React Fast Refresh optimization
+// Import with: import { useRecentlyEdited } from '@/contexts/useRecentlyEdited';

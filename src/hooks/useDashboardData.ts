@@ -8,8 +8,8 @@
 
 import { useMemo, useEffect } from 'react';
 import { useProjects, ServerFilters } from '@/hooks/queries/useProjects';
-import { FilterState } from '@/contexts/FilterProvider';
-import { useMetadata } from '@/contexts/MetadataContext';
+import { FilterState } from '@/contexts/filterIndex';
+import { useMetadata } from '@/contexts/useMetadata';
 import { createLogger, dashboardLogger } from '@/utils/logger';
 import { useRenderGuard, useThrottledLogger } from '@/utils/renderGuards';
 

@@ -26,7 +26,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import DashboardFilters from './DashboardFilters'; // DashboardFilters will also use context
 // import { DashboardFiltersProps } from './DashboardFilters'; // No longer need to import props
-import { useFilterActionsOnly } from '@/contexts/FilterProvider';
+import { useFilterActionsOnly } from '@/contexts/filterIndex';
 
 type CollapsibleDashboardFiltersProps = Record<string, never>;
 

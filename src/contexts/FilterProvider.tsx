@@ -33,20 +33,5 @@ export const FilterProvider: React.FC<FilterProviderProps> = ({ children, user }
   );
 };
 
-// Re-export essential hooks and types for backward compatibility
-export * from '@/contexts/filterState';
-export * from '@/contexts/filterActions';
-export { useFilterState } from '@/contexts/useFilterState';
-export { useFilterActions } from '@/contexts/useFilterActions';
-
-// Re-export FilterHooks for compatibility
-export {
-  useFilters,
-  useFilterStateOnly,
-  usePagination,
-  useSorting,
-  useFilterActionsOnly,
-  useStatusFilter,
-  useFiltersFull,
-  useFilterActionsAndMeta,
-} from '@/contexts/FilterHooks';
+// For all filter hooks and types, import from filterIndex.ts
+// Example: import { useFilters, FilterState } from '@/contexts/filterIndex';

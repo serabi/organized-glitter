@@ -6,7 +6,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster } from '@/components/ui/toaster';
 
 import { AuthProvider } from '@/contexts/AuthContext/AuthProvider';
-import { MetadataProvider } from '@/contexts/MetadataContext';
+import { MetadataProvider } from '@/contexts/useMetadata';
 import FeedbackDialogProvider from '@/components/FeedbackDialogProvider';
 
 import { queryClient } from '@/lib/queryClient';

@@ -4,16 +4,9 @@
  * @created 2025-08-02
  */
 
-import React, {
-  useReducer,
-  useState,
-  useEffect,
-  useRef,
-  useMemo,
-  ReactNode,
-} from 'react';
+import React, { useReducer, useState, useEffect, useRef, useMemo, ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useMetadata } from '@/contexts/MetadataContext';
+import { useMetadata } from '@/contexts/useMetadata';
 import { createLogger, performanceLogger } from '@/utils/logger';
 import { DashboardFilterContext } from '@/hooks/mutations/useSaveNavigationContext';
 import { useMobileDevice } from '@/hooks/use-mobile';

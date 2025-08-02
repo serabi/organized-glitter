@@ -7,10 +7,10 @@
 
 import React, { ReactElement } from 'react';
 import { render, RenderOptions, RenderResult, renderHook } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter } from 'react-router-dom';
+import { QueryClient } from '@tanstack/react-query';
 import { vi } from 'vitest';
 import type { ProjectType, ProjectStatus } from '@/types/project';
+import TestWrapper from '@/test-utils/TestWrapper';
 
 // Re-export commonly used testing functions
 export {
@@ -57,20 +57,7 @@ export const createTestQueryClient = (): QueryClient => {
   });
 };
 
-/**
- * Simple test wrapper that provides essential contexts
- */
-const TestWrapper: React.FC<{
-  children: React.ReactNode;
-  queryClient: QueryClient;
-  initialRoute?: string;
-}> = ({ children, queryClient, initialRoute = '/' }) => {
-  return (
-    <MemoryRouter initialEntries={[initialRoute]}>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    </MemoryRouter>
-  );
-};
+// TestWrapper component moved to TestWrapper.tsx for React Fast Refresh optimization
 
 /**
  * Render a component with all necessary providers

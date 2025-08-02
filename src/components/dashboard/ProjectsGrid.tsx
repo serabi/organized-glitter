@@ -35,13 +35,13 @@ import { Button } from '@/components/ui/button';
 import ProjectCard from '@/components/dashboard/ProjectCard';
 import { ProjectType } from '@/types/project'; // Still needed for ProjectCard and internal logic
 import { Separator } from '@/components/ui/separator';
-import { useFilters } from '@/contexts/FilterProvider';
+import { useFilters } from '@/contexts/filterIndex';
 // import { useDashboardData } from '@/hooks/useDashboardData'; // Now passed as prop
 import { useDynamicSeparatorProps } from '@/hooks/useDynamicSeparatorProps';
 import { useAuth } from '@/hooks/useAuth';
 import ProjectPagination from '@/components/ui/ProjectPagination';
 import { useNavigateToProject } from '@/hooks/useNavigateToProject';
-import { useRecentlyEdited } from '@/contexts/RecentlyEditedContext';
+import { useRecentlyEdited } from '@/contexts/useRecentlyEdited';
 import { logger } from '@/utils/logger';
 import { useTabAwareErrorMessage } from '@/hooks/useTabAwareErrorMessage';
 
