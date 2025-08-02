@@ -154,6 +154,7 @@ export enum ProjectsStatusOptions {
 	"completed" = "completed",
 	"archived" = "archived",
 	"destashed" = "destashed",
+	"onhold" = "onhold",
 }
 
 export enum ProjectsKitCategoryOptions {
