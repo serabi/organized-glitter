@@ -103,6 +103,8 @@ $RECYCLE.BIN/
 .kilocode/mcp.json
 .mcp/
 .mcp.json
+.cursor/
+.cursor/*
 
 # Backup and temporary files
 *.backup
@@ -199,3 +201,9 @@ migration-examples.md
 SECURITY_REQUIREMENTS_SUMMARY.md
 SECURITY_VALIDATION_REPORT.md
 LOGGER_MIGRATION_SUCCESS_REPORT.md
+ARCHITECTURE_REWRITE_STATUS.md
+
+# Git Changelog Script
+changelog_script.js
+.env.openai
+CHANGELOG-*.md
