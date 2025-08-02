@@ -19,14 +19,21 @@
  * @created 2025-08-01
  */
 
-import React, { memo } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
+  type CarouselApi,
 } from '@/components/ui/carousel';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+} from '@/components/ui/pagination';
 import { useStatsOptimized, type AllStatusCountsType } from '@/contexts/StatsContextOptimized';
 import { useStatusFilter } from '@/contexts/FilterProvider';
 import { type ProjectFilterStatus } from '@/types/project-status';
@@ -107,12 +114,31 @@ export interface StatusCarouselProps {
  * Professional status carousel using ShadCN UI components
  */
 export const StatusCarousel: React.FC<StatusCarouselProps> = memo(({ className = '' }) => {
+  // Carousel API state tracking
+  const [api, setApi] = useState<CarouselApi>();
+  const [current, setCurrent] = useState(0);
+  const [count, setCount] = useState(0);
+
   // Data from contexts
   const { getAllStatusCounts } = useStatsOptimized();
   const { activeStatus, updateStatus } = useStatusFilter();
   const isTouchDevice = useIsTouchDevice();
 
   const counts = getAllStatusCounts();
+
+  // Track carousel API state changes
+  useEffect(() => {
+    if (!api) {
+      return;
+    }
+
+    setCount(api.scrollSnapList().length);
+    setCurrent(api.selectedScrollSnap() + 1);
+
+    api.on('select', () => {
+      setCurrent(api.selectedScrollSnap() + 1);
+    });
+  }, [api]);
 
   // Handle status filtering
   const handleStatusFilter = (status: ProjectFilterStatus) => {
@@ -123,13 +149,14 @@ export const StatusCarousel: React.FC<StatusCarouselProps> = memo(({ className =
   return (
     <div className={`w-full ${className}`}>
       <Carousel
+        setApi={setApi}
         opts={{
           align: 'start',
           loop: false,
         }}
         className="w-full"
       >
-        <CarouselContent className="ml-12 md:ml-12">
+        <CarouselContent className="-ml-4">
           {STATUS_CARDS.map(cardConfig => {
             const isActive = activeStatus === cardConfig.status;
 
@@ -146,7 +173,7 @@ export const StatusCarousel: React.FC<StatusCarouselProps> = memo(({ className =
             return (
               <CarouselItem
                 key={cardConfig.status}
-                className="basis-full pl-1 md:basis-1/2 md:pl-4 lg:basis-1/3 xl:basis-1/4"
+                className="basis-full pl-4 md:basis-1/2 lg:basis-1/3 xl:basis-1/4"
               >
                 <div className="px-1 md:px-0">
                   <StatusCard
@@ -168,11 +195,31 @@ export const StatusCarousel: React.FC<StatusCarouselProps> = memo(({ className =
         </CarouselContent>
         {!isTouchDevice && (
           <>
-            <CarouselPrevious className="left-4 h-8 min-h-8 w-8 min-w-8 md:left-4 md:h-10 md:min-h-10 md:w-10 md:min-w-10" />
-            <CarouselNext className="right-4 h-8 min-h-8 w-8 min-w-8 md:right-4 md:h-10 md:min-h-10 md:w-10 md:min-w-10" />
+            <CarouselPrevious className="h-8 min-h-8 w-8 min-w-8 md:h-10 md:min-h-10 md:w-10 md:min-w-10" />
+            <CarouselNext className="h-8 min-h-8 w-8 min-w-8 md:h-10 md:min-h-10 md:w-10 md:min-w-10" />
           </>
         )}
       </Carousel>
+
+      {/* Mobile pagination indicators - only show on touch devices */}
+      {isTouchDevice && count > 1 && (
+        <Pagination className="mt-4 md:hidden">
+          <PaginationContent>
+            {Array.from({ length: count }).map((_, index) => (
+              <PaginationItem key={index}>
+                <PaginationLink
+                  onClick={() => api?.scrollTo(index)}
+                  isActive={index + 1 === current}
+                  size="sm"
+                  aria-label={`Go to slide ${index + 1}`}
+                >
+                  •
+                </PaginationLink>
+              </PaginationItem>
+            ))}
+          </PaginationContent>
+        </Pagination>
+      )}
     </div>
   );
 });

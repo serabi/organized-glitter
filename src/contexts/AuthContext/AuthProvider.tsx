@@ -14,9 +14,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = React.memo(({ children 
   const [initialCheckComplete, setInitialCheckComplete] = useState(false);
   const isSigningOut = useRef(false);
   const isMounted = useRef(true);
+  const isInitializedRef = useRef(false);
 
   useEffect(() => {
+    // Prevent double initialization
+    if (isInitializedRef.current) {
+      authLogger.debug('AuthProvider already initialized, skipping setup');
+      return;
+    }
+
     authLogger.debug(`AuthProvider useEffect running. Setting up fresh auth listeners.`);
+    isInitializedRef.current = true;
 
     // Always set up fresh listeners on every mount
     isMounted.current = true;
@@ -132,6 +140,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = React.memo(({ children 
       authLogger.debug('Cleaning up auth listeners - removing PocketBase onChange listener');
       clearTimeout(authTimeout);
       isMounted.current = false;
+      isInitializedRef.current = false; // Reset initialization flag
       removeListener();
     };
   }, []);

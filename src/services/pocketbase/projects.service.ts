@@ -567,7 +567,7 @@ export class ProjectsService {
         fields: 'status', // Only fetch status field for minimal data transfer (~10KB vs ~2MB)
         sort: '', // No sorting needed for counting
         skipTotal: true, // Skip expensive total count calculation
-        requestKey: `status-count-single-${userId}`,
+        requestKey: `status-count-single-${baseFilters.userId || 'unknown'}`,
         $cancelKey: 'status-counting-single', // Allow request cancellation
       });
 
@@ -703,7 +703,7 @@ export class ProjectsService {
       const result = await pb.collection('projects').getFullList({
         filter: baseFilter,
         fields: 'status', // Minimal field selection
-        requestKey: `status-count-optimized-${userId}`,
+        requestKey: `status-count-optimized-${baseFilters.userId || 'unknown'}`,
         skipTotal: true, // Skip expensive total calculation
         $cancelKey: 'status-counting-optimized', // Request cancellation support
         sort: '', // No sorting needed for counting

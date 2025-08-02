@@ -64,9 +64,9 @@ export const useDashboardData = (
     [filters.selectedTags]
   );
 
-  // Properly memoize server filters with deep equality check
-  const serverFilters: ServerFilters = useMemo(() => {
-    const filterObj = {
+  // Properly memoize server filters with stable object reference
+  const serverFilters: ServerFilters = useMemo(
+    () => ({
       status: filters.activeStatus,
       company: filters.selectedCompany,
       artist: filters.selectedArtist,
@@ -79,24 +79,22 @@ export const useDashboardData = (
       includeOnHold: filters.includeOnHold,
       searchTerm: debouncedSearchTerm,
       selectedTags: filters.selectedTags,
-    };
-
-    // Only return new object if values actually changed
-    return filterObj;
-  }, [
-    filters.activeStatus,
-    filters.selectedCompany,
-    filters.selectedArtist,
-    filters.selectedDrillShape,
-    filters.selectedYearFinished,
-    filters.includeMiniKits,
-    filters.includeDestashed,
-    filters.includeArchived,
-    filters.includeWishlist,
-    filters.includeOnHold,
-    debouncedSearchTerm,
-    filters.selectedTags, // Direct dependency since used in computation
-  ]);
+    }),
+    [
+      filters.activeStatus,
+      filters.selectedCompany,
+      filters.selectedArtist,
+      filters.selectedDrillShape,
+      filters.selectedYearFinished,
+      filters.includeMiniKits,
+      filters.includeDestashed,
+      filters.includeArchived,
+      filters.includeWishlist,
+      filters.includeOnHold,
+      debouncedSearchTerm,
+      filters.selectedTags, // Direct dependency since used in computation
+    ]
+  );
 
   // Use render guard to track excessive re-renders (lowered threshold after optimizations)
   const { renderCount, isExcessive } = useRenderGuard('useDashboardData', 5);

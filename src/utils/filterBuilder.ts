@@ -6,14 +6,14 @@
  *
  * @security
  * This utility implements comprehensive security measures for safe PocketBase filtering:
- * 
+ *
  * PROTECTIVE FEATURES:
  * - Field name whitelist validation prevents SQL injection through field interpolation
  * - Secure parameter injection using pb.filter() for all user-provided values
  * - Comprehensive logging of security violations for monitoring and audit trails
  * - Development-time error throwing for immediate debugging of security issues
  * - Automatic rejection of operations with invalid/unauthorized field names
- * 
+ *
  * CRITICAL REQUIREMENTS:
  * - NEVER modify COLLECTION_FIELDS without thorough security review
  * - NEVER bypass field validation in any methods or code paths
