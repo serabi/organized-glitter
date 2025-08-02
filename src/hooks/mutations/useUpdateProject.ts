@@ -248,7 +248,7 @@ export const useUpdateProject = () => {
         }
 
         // Rollback optimistic stats cache if status was changing
-        if (context?.previousStats && user?.id && context.oldStatus && context.newStatus) {
+        if (context?.previousProjects && user?.id && context.oldStatus && context.newStatus) {
           logger.debug('Rolling back optimistic stats cache', {
             oldStatus: context.oldStatus,
             newStatus: context.newStatus,
