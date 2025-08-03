@@ -43,9 +43,26 @@ export function mapFormDataToPocketBase(
       return null;
     }
 
-    // Always convert through timezone utilities to ensure consistency
-    // This prevents round-trip timezone conversion bugs where database dates
-    // are incorrectly assumed to be user input
+    fieldMappingLogger.debug('📅 Date formatting input', {
+      inputValue: value,
+      inputType: typeof value,
+      userTimezone,
+      isYYYYMMDD: typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value),
+    });
+
+    // For YYYY-MM-DD strings from HTML date inputs, treat as date-only values
+    // This prevents the double timezone conversion bug in toUserDateString()
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      fieldMappingLogger.debug('📅 Project date: using date-only format (no timezone conversion)', {
+        inputValue: value,
+        outputValue: value,
+        userTimezone,
+        reason: 'YYYY-MM-DD strings represent calendar dates, not moments in time',
+      });
+      return value; // Return as-is for date-only values
+    }
+
+    // For other date formats, use the timezone conversion utilities
     const result = toUserDateString(value, userTimezone);
 
     fieldMappingLogger.debug('📅 Date formatting during save', {

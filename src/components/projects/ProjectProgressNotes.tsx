@@ -7,6 +7,7 @@ import {
   useDeleteProgressNoteMutation,
   useDeleteProgressNoteImageMutation,
 } from '@/hooks/queries/useProgressNotes';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
 import { ProjectType } from '@/types/project';
 import ProgressNotesList from './timeline/ProgressNotesList';
 import ProgressNoteForm from './ProgressNoteForm';
@@ -27,13 +28,17 @@ const ProjectProgressNotes: React.FC<ProjectProgressNotesProps> = ({ project }) 
   const updateProgressNoteMutation = useUpdateProgressNoteMutation(project?.id || '');
   const deleteProgressNoteMutation = useDeleteProgressNoteMutation(project?.id || '');
   const deleteProgressNoteImageMutation = useDeleteProgressNoteImageMutation(project?.id || '');
+  const userTimezone = useUserTimezone();
 
   // Handler for adding a new progress note
   const handleAddNote = async (noteData: { date: string; content: string; imageFile?: File }) => {
     if (!project?.id) return;
 
     try {
-      await addProgressNoteMutation.mutateAsync(noteData);
+      await addProgressNoteMutation.mutateAsync({
+        ...noteData,
+        userTimezone,
+      });
       // Switch to notes tab to show the new note
       setActiveTab('notes');
     } catch (error) {

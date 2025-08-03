@@ -322,7 +322,53 @@ export const useAddProgressNoteMutation = () => {
       formData.append('content', noteData.content);
 
       // Convert date through timezone utilities to ensure consistency
-      const convertedDate = toUserDateString(noteData.date, userTimezone);
+      // Handle YYYY-MM-DD strings specially to prevent double timezone conversion
+      const formatProgressNoteDate = (
+        value: string | undefined,
+        userTimezone?: string
+      ): string | null => {
+        if (!value || value === '') {
+          logger.debug('📅 Progress note date formatting: null/empty value', {
+            value,
+            userTimezone,
+          });
+          return null;
+        }
+
+        logger.debug('📅 Progress note date formatting input', {
+          inputValue: value,
+          inputType: typeof value,
+          userTimezone,
+          isYYYYMMDD: /^\d{4}-\d{2}-\d{2}$/.test(value),
+        });
+
+        // For YYYY-MM-DD strings from HTML date inputs, treat as date-only values
+        // This prevents the double timezone conversion bug in toUserDateString()
+        if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+          logger.debug('📅 Progress note date: using date-only format (no timezone conversion)', {
+            inputValue: value,
+            outputValue: value,
+            userTimezone,
+            reason: 'YYYY-MM-DD strings represent calendar dates, not moments in time',
+          });
+          return value; // Return as-is for date-only values
+        }
+
+        // For other date formats, use the timezone conversion utilities
+        const result = toUserDateString(value, userTimezone);
+
+        logger.debug('📅 Progress note date formatting during save', {
+          inputValue: value,
+          inputType: typeof value,
+          userTimezone,
+          outputValue: result,
+          isChanged: String(value) !== result,
+        });
+
+        return result;
+      };
+
+      const convertedDate = formatProgressNoteDate(noteData.date, userTimezone);
       formData.append('date', convertedDate || '');
 
       if (noteData.imageFile) {
@@ -658,7 +704,7 @@ export const useDeleteProjectMutation = () => {
 
       return { deletedProject: project, projectId, title };
     },
-    onSuccess: async (result, { projectId, title }) => {
+    onSuccess: async (_, { projectId, title }) => {
       // Show immediate user feedback
       toast({
         title: 'Project Deleted',
