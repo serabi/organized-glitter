@@ -42,6 +42,31 @@ const DISMISSAL_KEY = 'pwa-install-dismissed';
 const DISMISSAL_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
 const INTERACTION_DELAY = 3000; // 3 seconds after page load
 
+// Safe localStorage wrapper to handle SecurityError exceptions
+const safeLocalStorage = {
+  getItem: (key: string) => {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  setItem: (key: string, value: string) => {
+    try {
+      localStorage.setItem(key, value);
+    } catch {
+      // Ignore errors - dismissal just won't persist
+    }
+  },
+  removeItem: (key: string) => {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      // Ignore errors - no functional impact
+    }
+  },
+};
+
 /**
  * Custom hook for managing PWA installation state and user interactions
  * @returns PWA installation state and actions
@@ -55,14 +80,14 @@ export const usePWAInstall = (): PWAInstallHook => {
 
   // Check if prompt was previously dismissed
   const checkDismissalStatus = useCallback(() => {
-    const dismissedTimestamp = localStorage.getItem(DISMISSAL_KEY);
+    const dismissedTimestamp = safeLocalStorage.getItem(DISMISSAL_KEY);
     if (dismissedTimestamp) {
       const dismissedTime = parseInt(dismissedTimestamp, 10);
       const now = Date.now();
       const isStillDismissed = now - dismissedTime < DISMISSAL_DURATION;
 
       if (!isStillDismissed) {
-        localStorage.removeItem(DISMISSAL_KEY);
+        safeLocalStorage.removeItem(DISMISSAL_KEY);
         setIsPromptDismissed(false);
       } else {
         setIsPromptDismissed(true);
@@ -124,7 +149,7 @@ export const usePWAInstall = (): PWAInstallHook => {
   // Dismiss the install prompt
   const dismissPrompt = useCallback(() => {
     const now = Date.now().toString();
-    localStorage.setItem(DISMISSAL_KEY, now);
+    safeLocalStorage.setItem(DISMISSAL_KEY, now);
     setIsPromptDismissed(true);
     setCanShowPrompt(false);
     logger.debug('Install prompt dismissed');
@@ -157,7 +182,7 @@ export const usePWAInstall = (): PWAInstallHook => {
 
   // Reset dismissal (for testing or user preference reset)
   const resetDismissal = useCallback(() => {
-    localStorage.removeItem(DISMISSAL_KEY);
+    safeLocalStorage.removeItem(DISMISSAL_KEY);
     setIsPromptDismissed(false);
     logger.debug('Install prompt dismissal reset');
   }, []);

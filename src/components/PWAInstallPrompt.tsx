@@ -33,26 +33,24 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ className = 
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
-  // Show prompt with animation delay - only for authenticated users
+  // Show prompt with immediate animation - only for authenticated users
   useEffect(() => {
     if (canShowPrompt && isAuthenticated && initialCheckComplete) {
       setIsVisible(true);
-      setTimeout(() => setIsAnimating(true), 100);
+      setIsAnimating(true);
       logger.debug('PWA install prompt displayed for authenticated user');
     } else if (!isAuthenticated && isVisible) {
       // Hide prompt if user logs out
       setIsAnimating(false);
-      setTimeout(() => setIsVisible(false), 300);
+      setIsVisible(false);
     }
   }, [canShowPrompt, isAuthenticated, initialCheckComplete, isVisible]);
 
-  // Handle dismiss with animation
+  // Handle dismiss with immediate state changes (CSS handles animation)
   const handleDismiss = () => {
     setIsAnimating(false);
-    setTimeout(() => {
-      setIsVisible(false);
-      dismissPrompt();
-    }, 300);
+    setIsVisible(false);
+    dismissPrompt();
   };
 
   // Handle install button click

@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => {
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
         },
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'safari-pinned-tab.svg'],
+        includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
         manifest: {
           name: 'Organized Glitter',
           short_name: 'Organized Glitter',
