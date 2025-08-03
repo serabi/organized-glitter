@@ -27,7 +27,9 @@ export const FilterProvider: React.FC<FilterProviderProps> = ({ children, user }
   const { isMobile, isTablet } = useMobileDevice();
   const isMobilePhone = isMobile && !isTablet;
   const metadata = useMetadata();
-  const saveFiltersMutation = useSaveNavigationContext(user?.id);
+  // Always call the hook to avoid conditional hook calls (rules of hooks)
+  // Pass a fallback userId to satisfy the type requirement, but guard the mutation call
+  const saveFiltersMutation = useSaveNavigationContext(user?.id || 'no-user');
 
   // Simple state - no complex reducers or refs
   const [filters, setFiltersState] = useState<FilterState>(() => getDefaultFilters(isMobilePhone));

@@ -119,14 +119,14 @@ const saveNavigationContext = async ({
  *
  * @example
  * ```tsx
- * const saveNavigation = useSaveNavigationContext();
+ * const saveNavigation = useSaveNavigationContext(userId);
  *
  * // Auto-save when filters change
  * useEffect(() => {
- *   if (userId && hasFiltersChanged) {
+ *   if (hasFiltersChanged) {
  *     saveNavigation.mutate({ userId, navigationContext: currentContext });
  *   }
- * }, [userId, currentContext]);
+ * }, [currentContext]);
  *
  * // Handle errors gracefully
  * if (saveNavigation.error) {
@@ -134,7 +134,7 @@ const saveNavigationContext = async ({
  * }
  * ```
  */
-export const useSaveNavigationContext = (userId?: string) => {
+export const useSaveNavigationContext = (userId: string) => {
   return useMutation({
     mutationFn: saveNavigationContext,
     // Add mutation key to prevent duplicate concurrent saves for the same user

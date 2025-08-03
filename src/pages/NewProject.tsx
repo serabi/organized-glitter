@@ -165,33 +165,7 @@ const NewProject = () => {
       // No manual navigation needed - the hook handles redirect before cache invalidation
     } catch (error) {
       logger.error('Failed to create project', error);
-
-      // Provide more specific error messages based on error type
-      let errorMessage = 'Failed to create project. Please try again.';
-      let errorTitle = 'Error';
-
-      if (error instanceof Error) {
-        if (error.message.includes('network') || error.message.includes('fetch')) {
-          errorMessage = 'Network error occurred. Please check your connection and try again.';
-          errorTitle = 'Network Error';
-        } else if (error.message.includes('validation') || error.message.includes('required')) {
-          errorMessage = 'Please check that all required fields are filled correctly.';
-          errorTitle = 'Validation Error';
-        } else if (error.message.includes('authentication') || error.message.includes('auth')) {
-          errorMessage = 'Authentication error. Please log out and log back in.';
-          errorTitle = 'Authentication Error';
-        } else if (error.message.includes('413') || error.message.includes('too large')) {
-          errorMessage = 'File size is too large. Please use a smaller image.';
-          errorTitle = 'File Size Error';
-        }
-      }
-
-      setError(errorMessage);
-      toast({
-        title: errorTitle,
-        description: errorMessage,
-        variant: 'destructive',
-      });
+      // Mutation hook's onError handles user feedback
 
       // Log additional context for debugging
       logger.error('Project creation error context:', {
