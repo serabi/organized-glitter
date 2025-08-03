@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { logger } from '@/utils/logger';
 import { ProgressNote } from '@/types/project';
 import { format, parseISO } from 'date-fns';
+import { createLogger } from '@/utils/logger';
 import ImageGallery from './ImageGallery';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+
+const displayLogger = createLogger('ProgressNoteItem');
 
 interface ProgressNoteItemProps {
   note: ProgressNote;
@@ -41,11 +44,64 @@ const ProgressNoteItem = React.memo(
     const [isHoveringImage, setIsHoveringImage] = useState(false);
 
     // Format the date to be more readable
-    // Memoize formatted dates to prevent unnecessary recalculations
-    const formattedDate = React.useMemo(
-      () => (note.date ? format(parseISO(note.date), 'MMMM d, yyyy') : ''),
-      [note.date]
-    );
+    // Use timezone-safe parsing to prevent date shifts (e.g., "2025-08-03" stays August 3rd)
+    const formattedDate = React.useMemo(() => {
+      if (!note.date) return '';
+
+      displayLogger.debug('🗓️ Progress note date display formatting', {
+        noteId: note.id,
+        originalDate: note.date,
+        dateType: typeof note.date,
+        dateLength: note.date.length,
+      });
+
+      // For YYYY-MM-DD strings from HTML date inputs, parse as date-only to prevent timezone conversion
+      if (/^\d{4}-\d{2}-\d{2}$/.test(note.date)) {
+        const [year, month, day] = note.date.split('-').map(Number);
+        const date = new Date(year, month - 1, day); // Create date in local timezone
+        const result = format(date, 'MMMM d, yyyy');
+
+        displayLogger.debug('📅 Date display: YYYY-MM-DD format (no timezone conversion)', {
+          input: note.date,
+          output: result,
+          method: 'direct date construction',
+        });
+
+        return result;
+      }
+
+      // For database datetime format "YYYY-MM-DD HH:MM:SS.sssZ", extract date part and treat as date-only
+      const datetimeMatch = note.date.match(/^(\d{4}-\d{2}-\d{2})\s+00:00:00\.\d{3}Z?$/);
+      if (datetimeMatch) {
+        const dateOnly = datetimeMatch[1]; // Extract "2025-07-09" from "2025-07-09 00:00:00.000Z"
+        const [year, month, day] = dateOnly.split('-').map(Number);
+        const date = new Date(year, month - 1, day); // Create date in local timezone
+        const result = format(date, 'MMMM d, yyyy');
+
+        displayLogger.debug(
+          '📅 Date display: Database datetime format detected (treating as date-only)',
+          {
+            input: note.date,
+            extractedDate: dateOnly,
+            output: result,
+            method: 'datetime extraction + direct date construction',
+          }
+        );
+
+        return result;
+      }
+
+      // For other formats, use parseISO (fallback)
+      const result = format(parseISO(note.date), 'MMMM d, yyyy');
+
+      displayLogger.debug('📅 Date display: Using parseISO fallback', {
+        input: note.date,
+        output: result,
+        method: 'parseISO + timezone conversion',
+      });
+
+      return result;
+    }, [note.date, note.id]);
 
     // Handle both imageUrl and image_url fields
     const imageUrl = note.imageUrl;

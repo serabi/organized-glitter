@@ -1,3 +1,9 @@
+/**
+ * Hook for managing user profile data and avatar updates
+ * @author @serabi
+ * @created 2025-08-02
+ */
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { pb } from '@/lib/pocketbase';
@@ -153,16 +159,17 @@ export const useProfile = (): UseProfileResult => {
       return;
     }
 
+    const abortController = new AbortController();
+
     const fetchProfile = async () => {
-      let isMounted = true;
       profileLogger.debug('fetchProfile async function started. User ID:', user?.id);
 
       try {
         fetchingRef.current = true;
         setProfileLoading(true);
 
-        if (!isMounted) {
-          profileLogger.debug('fetchProfile: Component unmounted before fetching user data.');
+        if (abortController.signal.aborted) {
+          profileLogger.debug('fetchProfile: Operation aborted before fetching user data.');
           return;
         }
 
@@ -178,35 +185,33 @@ export const useProfile = (): UseProfileResult => {
           const userData = await userDataPromise;
           profileLogger.debug('fetchProfile: User data from PocketBase:', userData);
 
-          if (userData) {
+          if (userData && !abortController.signal.aborted) {
             // Cache the data
             profileData.set(user.id, userData);
 
-            if (isMounted) {
-              setName(userData.username || userData.email || '');
-              setEmail(userData.email || '');
-              setAvatarUrl(userData.avatar ? pb.files.getURL(userData, userData.avatar) : null);
-              profileLogger.debug(
-                'fetchProfile: State updated - Name:',
-                userData.username || userData.email || '',
-                'Email:',
-                userData.email || ''
-              );
-            }
+            setName(userData.username || userData.email || '');
+            setEmail(userData.email || '');
+            setAvatarUrl(userData.avatar ? pb.files.getURL(userData, userData.avatar) : null);
+            profileLogger.debug(
+              'fetchProfile: State updated - Name:',
+              userData.username || userData.email || '',
+              'Email:',
+              userData.email || ''
+            );
           }
         } catch (error) {
           profileLogger.error('fetchProfile: Error fetching user data:', error);
           profileCache.delete(user.id); // Remove failed request from cache
-          if (error && typeof error === 'object' && 'status' in error && error.status === 0) {
-            profileLogger.debug('fetchProfile: User data request cancelled');
+          if (abortController.signal.aborted) {
+            profileLogger.debug('fetchProfile: User data request was aborted');
             return;
           }
           throw error;
         }
       } catch (error) {
         profileLogger.error('Error fetching profile data:', error);
-        // Don't show toast for auto-cancellation
-        if (!(error && typeof error === 'object' && 'status' in error && error.status === 0)) {
+        // Don't show toast for aborted operations
+        if (!abortController.signal.aborted) {
           toast({
             title: 'Warning',
             description: 'Some profile data could not be loaded',
@@ -215,21 +220,18 @@ export const useProfile = (): UseProfileResult => {
         }
       } finally {
         fetchingRef.current = false;
-        if (isMounted) {
+        if (!abortController.signal.aborted) {
           setProfileLoading(false);
         }
         // Clean up the cache entry when done (successful or failed)
         profileCache.delete(user.id);
       }
-
-      return () => {
-        isMounted = false;
-      };
     };
 
     fetchProfile();
 
     return () => {
+      abortController.abort();
       fetchingRef.current = false;
     };
   }, [user, toast]);

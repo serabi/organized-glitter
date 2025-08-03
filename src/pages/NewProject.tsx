@@ -104,6 +104,12 @@ const NewProject = () => {
     setError(null);
 
     try {
+      logger.debug('Starting project creation process', {
+        title: data.title,
+        hasImage: !!data.imageFile,
+        userId: user.id,
+      });
+
       // Create metadata entities first if needed
       const metadataErrors: string[] = [];
 
@@ -148,17 +154,42 @@ const NewProject = () => {
         tagIds: data.tags?.map(tag => tag.id) || [],
       };
 
+      logger.debug('Calling project creation mutation', {
+        hasImage: !!projectData.image,
+        imageFileName: projectData.image?.name,
+      });
+
       await createProjectMutation.mutateAsync(projectData);
 
       // Success toast and navigation are handled by the mutation hook
       // No manual navigation needed - the hook handles redirect before cache invalidation
     } catch (error) {
       logger.error('Failed to create project', error);
-      setError('Failed to create project. Please try again.');
-      toast({
-        title: 'Error',
-        description: 'Failed to create project. Please try again.',
-        variant: 'destructive',
+      // Mutation hook's onError handles user feedback
+
+      // Log additional context for debugging
+      logger.error('Project creation error context:', {
+        formData: {
+          title: data.title,
+          hasImage: !!data.imageFile,
+          imageSize: data.imageFile?.size,
+          company: data.company,
+          artist: data.artist,
+          status: data.status,
+        },
+        userContext: {
+          userId: user?.id,
+          isAuthenticated: !!user,
+        },
+        timestamp: new Date().toISOString(),
+        error:
+          error instanceof Error
+            ? {
+                name: error.name,
+                message: error.message,
+                stack: error.stack,
+              }
+            : error,
       });
     } finally {
       setSubmitting(false);

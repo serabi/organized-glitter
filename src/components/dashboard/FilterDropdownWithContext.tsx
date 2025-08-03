@@ -12,7 +12,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useFilterActionsAndMeta, useFilterStateOnly } from '@/contexts/FilterHooks';
+import { useFilters, useFilterHelpers } from '@/contexts/FilterContext';
+import { useAllCompanies } from '@/hooks/queries/useCompanies';
+import { useArtists } from '@/hooks/queries/useArtists';
+import { useTags } from '@/hooks/queries/useTags';
+import { ProjectsDrillShapeOptions } from '@/types/pocketbase.types';
+import { useAuth } from '@/hooks/useAuth';
 
 interface OptionType {
   label: string;
@@ -80,55 +85,86 @@ FilterDropdown.displayName = 'FilterDropdown';
 
 // Context-aware specialized components
 export const CompanyFilter = React.memo(() => {
-  const { companiesOptions, updateCompany } = useFilterActionsAndMeta();
-  const { filters } = useFilterStateOnly();
+  const { filters } = useFilters();
+  const { updateCompany } = useFilterHelpers();
+  const { user } = useAuth();
+  const userId = user?.id;
+
+  const { data: companiesData } = useAllCompanies(userId);
+  const companiesOptions =
+    companiesData?.map(company => ({
+      label: company.name,
+      value: company.name,
+    })) || [];
 
   return (
     <FilterDropdown
       label="Company"
       options={companiesOptions}
-      value={filters.selectedCompany}
-      onChange={value => updateCompany(value === 'all' ? null : value)}
+      value={filters.selectedCompany || 'all'}
+      onChange={value => updateCompany(value === 'all' ? '' : value)}
       placeholder="Select company..."
     />
   );
 });
 
 export const ArtistFilter = React.memo(() => {
-  const { artistsOptions, updateArtist } = useFilterActionsAndMeta();
-  const { filters } = useFilterStateOnly();
+  const { filters } = useFilters();
+  const { updateArtist } = useFilterHelpers();
+  const { user } = useAuth();
+  const userId = user?.id;
+
+  const { data: artistsData } = useArtists(userId);
+  const artistsOptions =
+    artistsData?.map(artist => ({
+      label: artist.name,
+      value: artist.name,
+    })) || [];
 
   return (
     <FilterDropdown
       label="Artist"
       options={artistsOptions}
-      value={filters.selectedArtist}
-      onChange={value => updateArtist(value === 'all' ? null : value)}
+      value={filters.selectedArtist || 'all'}
+      onChange={value => updateArtist(value === 'all' ? '' : value)}
       placeholder="Select artist..."
     />
   );
 });
 
 export const DrillShapeFilter = React.memo(() => {
-  const { drillShapes, updateDrillShape } = useFilterActionsAndMeta();
-  const { filters } = useFilterStateOnly();
+  const { filters } = useFilters();
+  const { updateDrillShape } = useFilterHelpers();
+
+  const drillShapes = Object.values(ProjectsDrillShapeOptions);
+  const drillShapeOptions = drillShapes.map(shape => ({
+    label: shape.charAt(0).toUpperCase() + shape.slice(1),
+    value: shape,
+  }));
 
   return (
     <FilterDropdown
       label="Drill Shape"
-      options={drillShapes.map(shape => ({ label: shape, value: shape }))}
-      value={filters.selectedDrillShape}
-      onChange={value => updateDrillShape(value === 'all' ? null : value)}
+      options={drillShapeOptions}
+      value={filters.selectedDrillShape || 'all'}
+      onChange={value => updateDrillShape(value === 'all' ? '' : value)}
       placeholder="Select drill shape..."
     />
   );
 });
 
 export const TagFilter = React.memo(() => {
-  const { allTags, updateTags } = useFilterActionsAndMeta();
-  const { filters } = useFilterStateOnly();
+  const { filters } = useFilters();
+  const { updateTags } = useFilterHelpers();
+  const { user } = useAuth();
+  const userId = user?.id;
 
-  const tagOptions = allTags.map(tag => ({ label: tag.name, value: tag.id }));
+  const { data: tagsData } = useTags(userId);
+  const tagOptions =
+    tagsData?.map(tag => ({
+      label: tag.name,
+      value: tag.id,
+    })) || [];
   const selectedTag = filters.selectedTags.length > 0 ? filters.selectedTags[0] : 'all';
 
   return (

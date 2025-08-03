@@ -17,7 +17,6 @@
 
 import { ServerFilters } from './useProjects';
 import { DashboardValidSortField } from '@/features/dashboard/dashboard.constants';
-import { SortDirectionType } from '@/contexts/FilterProvider';
 
 /**
  * Creates a secure hash of user ID for query keys
@@ -100,7 +99,7 @@ const createStableKey = (obj: Record<string, unknown>): string => {
 export interface ProjectQueryParams {
   filters: ServerFilters;
   sortField: DashboardValidSortField;
-  sortDirection: SortDirectionType;
+  sortDirection: 'asc' | 'desc';
   currentPage: number;
   pageSize: number;
   [key: string]: unknown;

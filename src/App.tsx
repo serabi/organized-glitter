@@ -20,6 +20,9 @@ import React, { useEffect } from 'react';
 import { AppProviders } from '@/components/layout/AppProviders.tsx';
 import { AppRoutes } from '@/components/routing/AppRoutes.tsx';
 import { useAppInitialization } from '@/hooks/useAppInitialization.ts';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus.ts';
+import { OfflinePage } from '@/components/OfflinePage.tsx';
+import { PWAInstallPrompt } from '@/components/PWAInstallPrompt.tsx';
 
 /**
  * Main App component
@@ -28,6 +31,35 @@ import { useAppInitialization } from '@/hooks/useAppInitialization.ts';
 const App: React.FC = () => {
   // Initialize global services and error handlers
   useAppInitialization();
+
+  // Track online/offline status
+  const isOnline = useOnlineStatus();
+
+  // Register PWA service worker for auto-updates
+  useEffect(() => {
+    // Register service worker for PWA functionality
+    if ('serviceWorker' in navigator) {
+      import('virtual:pwa-register')
+        .then(({ registerSW }) => {
+          registerSW({
+            onOfflineReady() {
+              // PWA is ready to work offline
+              console.log('PWA is ready to work offline');
+            },
+          });
+        })
+        .catch(() => {
+          // PWA registration failed - not critical, app will still work
+          console.log('PWA registration not available');
+        });
+    }
+  }, []);
+
+  // Handle retry connection attempt
+  const handleRetry = () => {
+    // The useOnlineStatus hook will automatically update when connection is restored
+    // No action needed - just provide user feedback for the retry button
+  };
 
   // Handle PocketBase password reset redirect
   useEffect(() => {
@@ -57,7 +89,12 @@ const App: React.FC = () => {
     >
       <AppProviders>
         <AppRoutes />
+        {/* Show PWA install prompt when applicable */}
+        <PWAInstallPrompt />
       </AppProviders>
+
+      {/* Show offline page when user is offline */}
+      {!isOnline && <OfflinePage onRetry={handleRetry} />}
     </div>
   );
 };

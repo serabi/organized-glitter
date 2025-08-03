@@ -6,7 +6,6 @@
 
 import { ProjectStatus, Project } from './project';
 import { DashboardValidSortField } from '@/features/dashboard/dashboard.constants';
-import { SortDirectionType } from '@/contexts/FilterProvider';
 
 /**
  * Main project filter interface - replaces manual filter string building
@@ -52,7 +51,7 @@ export interface ProjectSort {
   /** Sort field */
   field: DashboardValidSortField;
   /** Sort direction */
-  direction: SortDirectionType;
+  direction: 'asc' | 'desc';
 }
 
 /**
@@ -166,7 +165,7 @@ export interface ProjectServiceConfig {
   /** Default sort field */
   defaultSortField: DashboardValidSortField;
   /** Default sort direction */
-  defaultSortDirection: SortDirectionType;
+  defaultSortDirection: 'asc' | 'desc';
   /** Default expand options */
   defaultExpand: ProjectExpandOptions;
   /** Enable performance logging */
@@ -227,4 +226,3 @@ export interface ProjectCreateData extends Omit<ProjectUpdateData, 'status'> {
 export type { Project } from './project';
 export type { ProjectStatus } from './project';
 export type { DashboardValidSortField } from '@/features/dashboard/dashboard.constants';
-export type { SortDirectionType } from '@/contexts/FilterProvider';

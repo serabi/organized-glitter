@@ -4,6 +4,10 @@ import { ProgressNote } from '@/types/project';
 import { pb } from '@/lib/pocketbase';
 import { queryKeys } from './queryKeys';
 import { requireValidAuthStore } from '@/utils/authGuards';
+import { formatDateForStorage } from '@/utils/dateFormatting';
+import { createLogger } from '@/utils/logger';
+
+const logger = createLogger('useProgressNotes');
 
 interface AddProgressNoteData {
   date: string;
@@ -78,15 +82,28 @@ export function useAddProgressNoteMutation(projectId: string) {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (noteData: AddProgressNoteData): Promise<ProgressNote> => {
+    mutationFn: async (
+      noteData: AddProgressNoteData & { userTimezone?: string }
+    ): Promise<ProgressNote> => {
       // Check authentication
       requireValidAuthStore();
+
+      const convertedDate = formatDateForStorage(noteData.date, noteData.userTimezone);
+
+      // Log what we're about to send to PocketBase
+      logger.debug('📝 Progress note data being sent to PocketBase', {
+        projectId,
+        originalDate: noteData.date,
+        convertedDate,
+        convertedDateType: typeof convertedDate,
+        content: noteData.content.substring(0, 50) + '...',
+      });
 
       // Prepare data for PocketBase
       const data: Record<string, unknown> = {
         project: projectId,
         content: noteData.content,
-        date: noteData.date,
+        date: convertedDate || '',
       };
 
       // Add image file if provided
@@ -95,6 +112,22 @@ export function useAddProgressNoteMutation(projectId: string) {
       }
 
       const record = await pb.collection('progress_notes').create(data);
+
+      // Log what PocketBase actually saved to the database
+      logger.debug('💾 Progress note saved to database', {
+        savedId: record.id,
+        savedDate: record.date,
+        savedDateType: typeof record.date,
+        originalInputDate: noteData.date,
+        convertedDate,
+        dateComparison: {
+          input: noteData.date,
+          converted: convertedDate,
+          saved: record.date,
+          inputEqualsSaved: noteData.date === record.date,
+          convertedEqualsSaved: convertedDate === record.date,
+        },
+      });
 
       // Transform the created record to ProgressNote format
       const progressNote: ProgressNote = {

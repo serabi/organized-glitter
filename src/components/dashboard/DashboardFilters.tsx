@@ -34,7 +34,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { useFiltersFull } from '@/contexts/FilterProvider';
+import { useFilters, useFilterHelpers } from '@/contexts/FilterContext';
 import { useAvailableYears } from '@/hooks/queries/useAvailableYears';
 import { useProjectStatus } from '@/hooks/useProjectStatus';
 import { logger } from '@/utils/logger';
@@ -51,29 +51,54 @@ export type DashboardFiltersProps = Record<string, never>;
 const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(() => {
   const {
     filters,
-    updateSearchTerm,
+    companies,
+    artists,
+    tags: allTags,
+    activeFilterCount,
+    setFilters,
+  } = useFilters();
+  const {
+    updateSearch: updateSearchTerm,
     updateCompany,
     updateArtist,
     updateDrillShape,
     toggleTag,
-    clearAllTags,
     updateYearFinished,
-    updateIncludeMiniKits,
-    updateIncludeWishlist,
-    updateIncludeDestashed,
-    updateIncludeArchived,
-    updateViewType,
-    companiesOptions, // Use computed options for DashboardFilters
-    artistsOptions, // Use computed options for DashboardFilters
-    drillShapesOptions,
-    tags: allTags, // Raw tags for tag filtering (already has id, name)
     updateSort,
     updateStatus,
-    resetAllFilters,
-    getActiveFilterCount,
-    searchInputRef,
-    isSearchPending,
-  } = useFiltersFull();
+    resetFilters,
+    updateViewType,
+    updateTags,
+  } = useFilterHelpers();
+
+  // Transform companies data to options format
+  const companiesOptions = companies.map(company => ({
+    label: company.name,
+    value: company.name,
+  }));
+
+  // Transform artists data to options format
+  const artistsOptions = artists.map(artist => ({
+    label: artist.name,
+    value: artist.name,
+  }));
+
+  // Transform drill shapes to options format
+  const drillShapesOptions = [
+    { label: 'Round', value: 'round' },
+    { label: 'Square', value: 'square' },
+  ];
+
+  // Helper functions for include/exclude options
+  const clearAllTags = () => updateTags([]);
+  const updateIncludeMiniKits = (value: boolean) => setFilters({ includeMiniKits: value });
+  const updateIncludeWishlist = (value: boolean) => setFilters({ includeWishlist: value });
+  const updateIncludeDestashed = (value: boolean) => setFilters({ includeDestashed: value });
+  const updateIncludeArchived = (value: boolean) => setFilters({ includeArchived: value });
+
+  // Search input ref and pending state - simplified for new context
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
+  const isSearchPending = false; // New context handles debouncing internally
 
   // Get available years from the appropriate hook
   const { data: availableYears = [] } = useAvailableYears();
@@ -132,9 +157,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
     >
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold">Filters</h2>
-        {getActiveFilterCount() > 0 && (
-          <Badge variant="secondary">{getActiveFilterCount()} Active</Badge>
-        )}
+        {activeFilterCount > 0 && <Badge variant="secondary">{activeFilterCount} Active</Badge>}
       </div>
 
       {/* Search Section */}
@@ -327,7 +350,7 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
         {/* Reset Button */}
         <Button
           variant="outline"
-          onClick={() => resetAllFilters('user')}
+          onClick={() => resetFilters()}
           className="w-full"
           data-testid="reset-filters-button"
         >

@@ -1,5 +1,7 @@
 /**
- * @fileoverview Recently Edited Project Context Provider
+ * Recently Edited Provider Component
+ * @author @serabi
+ * @created 2025-08-02
  *
  * Simple context for tracking the most recently edited project in the dashboard.
  * Extracted from the monolithic DashboardFiltersContext to improve performance
@@ -16,83 +18,22 @@
  * - Simple API for setting and clearing recently edited state
  * - Comprehensive TypeScript support
  *
- * Usage:
- * ```typescript
- * const { recentlyEditedProjectId, setRecentlyEditedProjectId } = useRecentlyEdited();
- *
- * // Set recently edited project
- * setRecentlyEditedProjectId(projectId);
- *
- * // Clear recently edited state
- * setRecentlyEditedProjectId(null);
- * ```
- *
- * @author serabi
- * @since 2025-07-08
- * @version 1.0.0
- *
  * Performance Considerations:
  * - Uses React.useState for minimal state management
  * - Implements useMemo for context value optimization
  * - Minimal re-renders through focused context scope
  * - No complex state transitions or side effects
- *
- * Dependencies:
- * - React for context and state management
- * - @/utils/secureLogger for debugging
- *
- * @see {@link StatsContext} for statistics state management
- * @see {@link FiltersContext} for filter state management
- * @see {@link UIContext} for UI state management
  */
 
-import React, { createContext, useContext, useState, useMemo, useCallback, ReactNode } from 'react';
+import React, { useState, useMemo, useCallback, ReactNode } from 'react';
+import { RecentlyEditedContext } from './context';
+import type { RecentlyEditedContextType } from './types';
 import { createLogger } from '@/utils/logger';
 
-const logger = createLogger('RecentlyEditedContext');
-
-/**
- * Context interface for recently edited project management
- *
- * Provides simple state management for tracking the most recently
- * edited project in the dashboard interface.
- *
- * @interface RecentlyEditedContextType
- * @since 2025-07-08
- */
-interface RecentlyEditedContextType {
-  /** ID of the most recently edited project, or null if none */
-  recentlyEditedProjectId: string | null;
-
-  /**
-   * Set the recently edited project ID
-   *
-   * @param id - Project ID to set as recently edited, or null to clear
-   */
-  setRecentlyEditedProjectId: (id: string | null) => void;
-
-  /**
-   * Clear the recently edited project state
-   *
-   * Convenience method equivalent to setRecentlyEditedProjectId(null)
-   */
-  clearRecentlyEdited: () => void;
-
-  /**
-   * Check if a specific project is the recently edited one
-   *
-   * @param projectId - Project ID to check
-   * @returns True if the project is recently edited
-   */
-  isRecentlyEdited: (projectId: string) => boolean;
-}
-
-const RecentlyEditedContext = createContext<RecentlyEditedContextType | null>(null);
+const logger = createLogger('RecentlyEditedProvider');
 
 /**
  * Props interface for RecentlyEditedProvider component
- *
- * @interface RecentlyEditedProviderProps
  */
 interface RecentlyEditedProviderProps {
   children: ReactNode;
@@ -180,21 +121,4 @@ export const RecentlyEditedProvider: React.FC<RecentlyEditedProviderProps> = ({ 
   return (
     <RecentlyEditedContext.Provider value={contextValue}>{children}</RecentlyEditedContext.Provider>
   );
-};
-
-/**
- * Hook to use the RecentlyEditedContext
- *
- * Provides access to recently edited project state and management functions.
- * Must be used within a RecentlyEditedProvider component.
- *
- * @returns RecentlyEditedContextType with recently edited state and functions
- * @throws Error if used outside of RecentlyEditedProvider
- */
-export const useRecentlyEdited = (): RecentlyEditedContextType => {
-  const context = useContext(RecentlyEditedContext);
-  if (!context) {
-    throw new Error('useRecentlyEdited must be used within a RecentlyEditedProvider');
-  }
-  return context;
 };

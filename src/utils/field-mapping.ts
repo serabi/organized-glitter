@@ -5,7 +5,7 @@
 
 import type { ProjectFormValues } from '@/types/shared';
 import type { ProjectUpdateData } from '@/types/file-upload';
-import { toUserDateString } from '@/utils/timezoneUtils';
+import { formatDateForStorage } from '@/utils/dateFormatting';
 import { createLogger } from '@/utils/logger';
 import { pb } from '@/lib/pocketbase';
 import { isValidPocketBaseId } from '@/utils/cacheValidation';
@@ -33,32 +33,6 @@ export function mapFormDataToPocketBase(
     return value === '' ? undefined : value;
   };
 
-  // Helper function to format dates for PocketBase (YYYY-MM-DD format only)
-  const formatDateForPocketBase = (
-    value: string | Date | undefined,
-    userTimezone?: string
-  ): string | null => {
-    if (!value || value === '') {
-      fieldMappingLogger.debug('📅 Date formatting: null/empty value', { value, userTimezone });
-      return null;
-    }
-
-    // Always convert through timezone utilities to ensure consistency
-    // This prevents round-trip timezone conversion bugs where database dates
-    // are incorrectly assumed to be user input
-    const result = toUserDateString(value, userTimezone);
-
-    fieldMappingLogger.debug('📅 Date formatting during save', {
-      inputValue: value,
-      inputType: typeof value,
-      userTimezone,
-      outputValue: result,
-      isChanged: String(value) !== result,
-    });
-
-    return result;
-  };
-
   // Log the input form data for debugging
   fieldMappingLogger.debug('🔄 Starting field mapping', {
     userTimezone,
@@ -79,10 +53,10 @@ export function mapFormDataToPocketBase(
     status: formData.status,
     kit_category: safeString(formData.kit_category),
     drill_shape: safeString(formData.drillShape),
-    date_purchased: formatDateForPocketBase(formData.datePurchased, userTimezone),
-    date_started: formatDateForPocketBase(formData.dateStarted, userTimezone),
-    date_completed: formatDateForPocketBase(formData.dateCompleted, userTimezone),
-    date_received: formatDateForPocketBase(formData.dateReceived, userTimezone),
+    date_purchased: formatDateForStorage(formData.datePurchased, userTimezone),
+    date_started: formatDateForStorage(formData.dateStarted, userTimezone),
+    date_completed: formatDateForStorage(formData.dateCompleted, userTimezone),
+    date_received: formatDateForStorage(formData.dateReceived, userTimezone),
     width: safeParseInt(formData.width),
     height: safeParseInt(formData.height),
     total_diamonds: safeParseInt(formData.totalDiamonds),

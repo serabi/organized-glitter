@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Upload, Loader2 } from 'lucide-react';
 import { useImageUpload } from '@/hooks/useImageUpload';
 import { useToast } from '@/hooks/use-toast';
-import { pb } from '@/lib/pocketbase'; // Added import for pb
+import { useAuth } from '@/hooks/useAuth';
 import { AVATAR_CONSTANTS } from '@/components/projects/ProgressNoteForm/constants';
 import { logger } from '@/utils/logger';
 
@@ -29,6 +29,7 @@ export function AvatarUploadDialog({
 }: AvatarUploadDialogProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
   const { file, preview, uploading, error, handleImageChange, upload } = useImageUpload(
     'avatars',
     'avatar'
@@ -98,7 +99,7 @@ export function AvatarUploadDialog({
     // which should resize the image and validate against AVATAR_CONSTANTS.MAX_FILE_SIZE
 
     try {
-      const userId = pb.authStore.model?.id;
+      const userId = user?.id;
       if (!userId) {
         toast({
           title: 'Error',

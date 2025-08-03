@@ -19,7 +19,7 @@
  */
 
 import { useMemo } from 'react';
-import { useStatusFilter } from '@/contexts/FilterProvider';
+import { useFilters } from '@/contexts/FilterContext';
 import { getTabDisplayName } from '@/utils/tabDisplayNames';
 
 /**
@@ -45,22 +45,22 @@ import { getTabDisplayName } from '@/utils/tabDisplayNames';
  * ```
  */
 export const useTabAwareErrorMessage = (): string => {
-  const { activeStatus } = useStatusFilter();
+  const { filters } = useFilters();
 
   // Memoize error message generation for performance
   // Only recalculates when activeStatus changes
   const errorMessage = useMemo(() => {
     // Special case for "Everything" tab - use generic message
-    if (activeStatus === 'everything') {
+    if (filters.activeStatus === 'everything') {
       return 'No projects match your current filters.';
     }
 
     // Get user-friendly display name for the active tab
-    const tabDisplayName = getTabDisplayName(activeStatus);
+    const tabDisplayName = getTabDisplayName(filters.activeStatus);
 
     // Generate dynamic message with tab context
     return `No projects in ${tabDisplayName} match your current filters.`;
-  }, [activeStatus]);
+  }, [filters.activeStatus]);
 
   return errorMessage;
 };

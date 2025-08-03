@@ -34,8 +34,8 @@ import {
   PaginationItem,
   PaginationLink,
 } from '@/components/ui/pagination';
-import { useStatsOptimized, type AllStatusCountsType } from '@/contexts/StatsContextOptimized';
-import { useStatusFilter } from '@/contexts/FilterProvider';
+import { useStatsOptimized, type AllStatusCountsType } from '@/contexts/StatsContext';
+import { useFilters, useFilterHelpers } from '@/contexts/FilterContext';
 import { type ProjectFilterStatus } from '@/types/project-status';
 import StatusCard from './StatusCard';
 import { createLogger } from '@/utils/logger';
@@ -121,8 +121,11 @@ export const StatusCarousel: React.FC<StatusCarouselProps> = memo(({ className =
 
   // Data from contexts
   const { getAllStatusCounts } = useStatsOptimized();
-  const { activeStatus, updateStatus } = useStatusFilter();
+  const { filters } = useFilters();
+  const { updateStatus } = useFilterHelpers();
   const isTouchDevice = useIsTouchDevice();
+
+  const activeStatus = filters.activeStatus;
 
   const counts = getAllStatusCounts();
 

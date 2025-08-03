@@ -24,6 +24,7 @@ import { Trash2, Link2, Loader2, FileText } from 'lucide-react';
 import { pb } from '@/lib/pocketbase';
 import { createFilter } from '@/utils/filterBuilder';
 import { createLogger } from '@/utils/logger';
+import { useAuth } from '@/hooks/useAuth';
 import EditCompanyDialog from './EditCompanyDialog';
 import { Link } from 'react-router-dom';
 import { CompaniesResponse } from '@/types/pocketbase.types';
@@ -88,6 +89,7 @@ const CompanyTable = ({ companies, loading, onCompanyUpdated }: CompanyTableProp
   const [loadingCounts, setLoadingCounts] = useState(true);
   const [showDeleteConfirmDialog, setShowDeleteConfirmDialog] = useState(false);
   const [companyToDelete, setCompanyToDelete] = useState<CompaniesResponse | null>(null);
+  const { user, isAuthenticated } = useAuth();
   const deleteCompanyMutation = useDeleteCompany();
 
   useEffect(() => {
@@ -122,9 +124,9 @@ const CompanyTable = ({ companies, loading, onCompanyUpdated }: CompanyTableProp
       try {
         setLoadingCounts(true);
 
-        if (!pb.authStore.isValid) return;
+        if (!isAuthenticated) return;
 
-        const userId = pb.authStore.model?.id;
+        const userId = user?.id;
         if (!userId) return;
 
         // Fetch counts efficiently for each company using separate queries with pagination (1 item) to get totalItems count
@@ -157,7 +159,7 @@ const CompanyTable = ({ companies, loading, onCompanyUpdated }: CompanyTableProp
     };
 
     fetchProjectCounts();
-  }, [companies]);
+  }, [companies, isAuthenticated, user?.id]);
 
   const handleDeleteCompany = (company: CompaniesResponse) => {
     setCompanyToDelete(company);

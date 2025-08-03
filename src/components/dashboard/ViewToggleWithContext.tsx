@@ -7,8 +7,8 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Grid, List } from 'lucide-react';
-import { useFilterStateOnly, useFilterActionsOnly } from '@/contexts/FilterProvider';
-import type { ViewType } from '@/contexts/FilterStateContext';
+import { useFilters, useFilterHelpers } from '@/contexts/FilterContext';
+import type { ViewType } from '@/contexts/UIContext';
 
 interface ViewToggleProps {
   activeView: ViewType;
@@ -43,8 +43,8 @@ ViewToggle.displayName = 'ViewToggle';
 
 // Context-aware ViewToggle
 export const ViewToggleWithContext = React.memo(() => {
-  const { filters } = useFilterStateOnly();
-  const { updateViewType } = useFilterActionsOnly();
+  const { filters } = useFilters();
+  const { updateViewType } = useFilterHelpers();
 
   return <ViewToggle activeView={filters.viewType} onViewChange={updateViewType} />;
 });

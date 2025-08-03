@@ -486,6 +486,15 @@ export const useImageUpload = (
         return;
       }
 
+      // For project creation scenarios where recordId might not be available yet,
+      // return the file itself to be uploaded later by the mutation
+      if (!recordId && uploadContext === 'project-image') {
+        logger.debug(
+          '[useImageUpload] No recordId provided for project image - returning file for deferred upload'
+        );
+        return 'DEFERRED_UPLOAD';
+      }
+
       logger.log('[useImageUpload] Starting upload process with:', {
         file: fileToUpload.name,
         type: fileToUpload.type,
@@ -586,11 +595,17 @@ export const useImageUpload = (
     ]
   );
 
+  // Method to get the prepared file for upload (without uploading)
+  const getFileForUpload = useCallback(() => {
+    return state.processedFile || state.file;
+  }, [state.processedFile, state.file]);
+
   // Return state and handlers
   return {
     ...state,
     handleImageChange,
     handleImageRemove,
     upload,
+    getFileForUpload,
   };
 };

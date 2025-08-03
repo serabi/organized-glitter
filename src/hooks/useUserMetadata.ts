@@ -1,7 +1,14 @@
+/**
+ * Hook for managing user metadata (companies and artists)
+ * @author @serabi
+ * @created 2025-08-02
+ */
+
 import { useState, useEffect, useRef } from 'react';
 import { pb } from '@/lib/pocketbase';
 import { ServiceResponse, createSuccessResponse, createErrorResponse } from '@/types/shared';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { createLogger } from '@/utils/logger';
 
 const metadataLogger = createLogger('UserMetadata');
@@ -14,14 +21,13 @@ interface ToastHandler {
 }
 
 // Utility functions to fetch company and artist names
-async function fetchCompanyNames(toastHandlers?: ToastHandler): Promise<ServiceResponse<string[]>> {
+async function fetchCompanyNames(
+  userId: string | undefined,
+  toastHandlers?: ToastHandler,
+  signal?: AbortSignal
+): Promise<ServiceResponse<string[]>> {
   try {
-    // Get the current user from PocketBase auth
-    if (!pb.authStore.isValid) {
-      return createErrorResponse(new Error('User not authenticated'));
-    }
-
-    const userId = pb.authStore.model?.id;
+    // Check if user is authenticated
     if (!userId) {
       return createErrorResponse(new Error('User not authenticated'));
     }
@@ -35,6 +41,11 @@ async function fetchCompanyNames(toastHandlers?: ToastHandler): Promise<ServiceR
       requestKey: `companies-${userId}`,
     });
 
+    // Check if operation was aborted
+    if (signal?.aborted) {
+      return createErrorResponse(new Error('Operation was cancelled'));
+    }
+
     metadataLogger.debug('fetchCompanyNames: raw response:', records);
 
     const companyNames = records.items.map(company => company.name);
@@ -43,6 +54,12 @@ async function fetchCompanyNames(toastHandlers?: ToastHandler): Promise<ServiceR
     return createSuccessResponse(companyNames);
   } catch (error) {
     metadataLogger.error('fetchCompanyNames: error caught:', error);
+
+    // Don't show toast for aborted operations
+    if (signal?.aborted) {
+      return createErrorResponse(new Error('Operation was cancelled'));
+    }
+
     if (toastHandlers?.toast) {
       toastHandlers.toast({
         title: 'Failed to load companies',
@@ -58,14 +75,13 @@ async function fetchCompanyNames(toastHandlers?: ToastHandler): Promise<ServiceR
   }
 }
 
-async function fetchArtistNames(toastHandlers?: ToastHandler): Promise<ServiceResponse<string[]>> {
+async function fetchArtistNames(
+  userId: string | undefined,
+  toastHandlers?: ToastHandler,
+  signal?: AbortSignal
+): Promise<ServiceResponse<string[]>> {
   try {
-    // Get the current user from PocketBase auth
-    if (!pb.authStore.isValid) {
-      return createErrorResponse(new Error('User not authenticated'));
-    }
-
-    const userId = pb.authStore.model?.id;
+    // Check if user is authenticated
     if (!userId) {
       return createErrorResponse(new Error('User not authenticated'));
     }
@@ -79,6 +95,11 @@ async function fetchArtistNames(toastHandlers?: ToastHandler): Promise<ServiceRe
       requestKey: `artists-${userId}`,
     });
 
+    // Check if operation was aborted
+    if (signal?.aborted) {
+      return createErrorResponse(new Error('Operation was cancelled'));
+    }
+
     metadataLogger.log('fetchArtistNames: raw response:', records);
 
     const artistNames = records.items.map(artist => artist.name);
@@ -87,6 +108,12 @@ async function fetchArtistNames(toastHandlers?: ToastHandler): Promise<ServiceRe
     return createSuccessResponse(artistNames);
   } catch (error) {
     metadataLogger.error('fetchArtistNames: error caught:', error);
+
+    // Don't show toast for aborted operations
+    if (signal?.aborted) {
+      return createErrorResponse(new Error('Operation was cancelled'));
+    }
+
     if (toastHandlers?.toast) {
       toastHandlers.toast({
         title: 'Failed to load artists',
@@ -108,12 +135,13 @@ export const useUserMetadata = () => {
   const [loading, setLoading] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
   const { toast } = useToast();
+  const { user, isAuthenticated } = useAuth();
 
   // Track if we're currently fetching to prevent duplicate requests
   const fetchingRef = useRef(false);
 
   useEffect(() => {
-    let isMounted = true;
+    const abortController = new AbortController();
 
     async function fetchUserData() {
       // Prevent duplicate concurrent requests
@@ -126,20 +154,20 @@ export const useUserMetadata = () => {
         fetchingRef.current = true;
         metadataLogger.debug('useUserMetadata: Starting data fetch...');
 
-        // First check if user is authenticated with PocketBase
-        if (!pb.authStore.isValid) {
+        // First check if user is authenticated
+        if (!isAuthenticated) {
           metadataLogger.debug('useUserMetadata: No authenticated user found');
-          if (isMounted) {
+          if (!abortController.signal.aborted) {
             setLoading(false);
             setAuthChecked(true);
           }
           return;
         }
 
-        const userId = pb.authStore.model?.id;
+        const userId = user?.id;
         if (!userId) {
           metadataLogger.debug('useUserMetadata: No user ID found');
-          if (isMounted) {
+          if (!abortController.signal.aborted) {
             setLoading(false);
             setAuthChecked(true);
           }
@@ -151,27 +179,25 @@ export const useUserMetadata = () => {
         // Add a small delay to let other components settle
         await new Promise(resolve => setTimeout(resolve, 100));
 
-        // Check if still mounted after delay
-        if (!isMounted) return;
+        // Check if operation was aborted after delay
+        if (abortController.signal.aborted) return;
 
         // Fetch companies and artists with sequential requests to avoid auto-cancellation
         let companiesResponse: ServiceResponse<string[]>;
         let artistsResponse: ServiceResponse<string[]>;
 
         try {
-          companiesResponse = await fetchCompanyNames({ toast });
-          // Check if still mounted
-          if (!isMounted) return;
+          companiesResponse = await fetchCompanyNames(userId, { toast }, abortController.signal);
+          // Check if operation was aborted
+          if (abortController.signal.aborted) return;
 
-          artistsResponse = await fetchArtistNames({ toast });
-          // Check if still mounted
-          if (!isMounted) return;
+          artistsResponse = await fetchArtistNames(userId, { toast }, abortController.signal);
+          // Check if operation was aborted
+          if (abortController.signal.aborted) return;
         } catch (error) {
           // Handle cancellation gracefully
-          if (error && typeof error === 'object' && 'status' in error && error.status === 0) {
-            metadataLogger.debug(
-              'useUserMetadata: Request was cancelled, component likely unmounted'
-            );
+          if (abortController.signal.aborted) {
+            metadataLogger.debug('useUserMetadata: Request was cancelled');
             return;
           }
           throw error;
@@ -184,17 +210,19 @@ export const useUserMetadata = () => {
             companiesResponse.data.length,
             companiesResponse.data
           );
-          if (!isMounted) return;
-          setCompanies(companiesResponse.data);
+          if (!abortController.signal.aborted) {
+            setCompanies(companiesResponse.data);
+          }
         } else if (companiesResponse.error) {
           metadataLogger.error(
             'useUserMetadata: Error fetching companies:',
             companiesResponse.error
           );
-          // Only show toast for actual errors, not empty data
+          // Only show toast for actual errors, not cancelled operations
           if (
+            !abortController.signal.aborted &&
             !companiesResponse.error.message?.includes('not authenticated') &&
-            !companiesResponse.error.message?.includes('autocancelled')
+            !companiesResponse.error.message?.includes('cancelled')
           ) {
             toast({
               title: 'Warning',
@@ -211,14 +239,16 @@ export const useUserMetadata = () => {
             artistsResponse.data.length,
             artistsResponse.data
           );
-          if (!isMounted) return;
-          setArtists(artistsResponse.data);
+          if (!abortController.signal.aborted) {
+            setArtists(artistsResponse.data);
+          }
         } else if (artistsResponse.error) {
           metadataLogger.error('useUserMetadata: Error fetching artists:', artistsResponse.error);
-          // Only show toast for actual errors, not empty data
+          // Only show toast for actual errors, not cancelled operations
           if (
+            !abortController.signal.aborted &&
             !artistsResponse.error.message?.includes('not authenticated') &&
-            !artistsResponse.error.message?.includes('autocancelled')
+            !artistsResponse.error.message?.includes('cancelled')
           ) {
             toast({
               title: 'Warning',
@@ -228,11 +258,13 @@ export const useUserMetadata = () => {
           }
         }
 
-        setAuthChecked(true);
+        if (!abortController.signal.aborted) {
+          setAuthChecked(true);
+        }
       } catch (error) {
         metadataLogger.error('Error in fetchUserData:', error);
         // Don't show toast for cancellation errors
-        if (error && typeof error === 'object' && 'status' in error && error.status === 0) {
+        if (abortController.signal.aborted) {
           metadataLogger.debug('useUserMetadata: Request cancelled during fetch');
           return;
         }
@@ -243,7 +275,7 @@ export const useUserMetadata = () => {
         });
       } finally {
         fetchingRef.current = false;
-        if (isMounted) {
+        if (!abortController.signal.aborted) {
           setLoading(false);
         }
       }
@@ -252,10 +284,10 @@ export const useUserMetadata = () => {
     fetchUserData();
 
     return () => {
-      isMounted = false;
+      abortController.abort();
       fetchingRef.current = false;
     };
-  }, [toast]); // Include toast as dependency
+  }, [toast, user, isAuthenticated]); // Include auth dependencies
 
   // Function to refresh metadata
   const refreshMetadata = async () => {
@@ -265,24 +297,33 @@ export const useUserMetadata = () => {
     }
 
     setLoading(true);
+    const abortController = new AbortController();
+
     try {
       fetchingRef.current = true;
 
-      const [companiesResponse, artistsResponse] = await Promise.all([
-        fetchCompanyNames({ toast }),
-        fetchArtistNames({ toast }),
-      ]);
-
-      if (companiesResponse.status === 'success' && companiesResponse.data) {
-        setCompanies(companiesResponse.data);
+      const userId = user?.id;
+      if (!userId) {
+        throw new Error('User not authenticated');
       }
 
-      if (artistsResponse.status === 'success' && artistsResponse.data) {
-        setArtists(artistsResponse.data);
+      const [companiesResponse, artistsResponse] = await Promise.all([
+        fetchCompanyNames(userId, { toast }, abortController.signal),
+        fetchArtistNames(userId, { toast }, abortController.signal),
+      ]);
+
+      if (!abortController.signal.aborted) {
+        if (companiesResponse.status === 'success' && companiesResponse.data) {
+          setCompanies(companiesResponse.data);
+        }
+
+        if (artistsResponse.status === 'success' && artistsResponse.data) {
+          setArtists(artistsResponse.data);
+        }
       }
     } catch (error) {
       metadataLogger.error('Error refreshing metadata:', error);
-      if (!(error && typeof error === 'object' && 'status' in error && error.status === 0)) {
+      if (!abortController.signal.aborted) {
         toast({
           title: 'Error',
           description: 'Failed to refresh data',
@@ -291,7 +332,9 @@ export const useUserMetadata = () => {
       }
     } finally {
       fetchingRef.current = false;
-      setLoading(false);
+      if (!abortController.signal.aborted) {
+        setLoading(false);
+      }
     }
   };
 
