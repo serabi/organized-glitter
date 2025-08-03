@@ -8,6 +8,7 @@ import { useState, useEffect, useRef } from 'react';
 import { pb } from '@/lib/pocketbase';
 import { ServiceResponse, createSuccessResponse, createErrorResponse } from '@/types/shared';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { createLogger } from '@/utils/logger';
 
 const metadataLogger = createLogger('UserMetadata');
@@ -21,16 +22,12 @@ interface ToastHandler {
 
 // Utility functions to fetch company and artist names
 async function fetchCompanyNames(
+  userId: string | undefined,
   toastHandlers?: ToastHandler,
   signal?: AbortSignal
 ): Promise<ServiceResponse<string[]>> {
   try {
-    // Get the current user from PocketBase auth
-    if (!pb.authStore.isValid) {
-      return createErrorResponse(new Error('User not authenticated'));
-    }
-
-    const userId = pb.authStore.model?.id;
+    // Check if user is authenticated
     if (!userId) {
       return createErrorResponse(new Error('User not authenticated'));
     }
@@ -79,16 +76,12 @@ async function fetchCompanyNames(
 }
 
 async function fetchArtistNames(
+  userId: string | undefined,
   toastHandlers?: ToastHandler,
   signal?: AbortSignal
 ): Promise<ServiceResponse<string[]>> {
   try {
-    // Get the current user from PocketBase auth
-    if (!pb.authStore.isValid) {
-      return createErrorResponse(new Error('User not authenticated'));
-    }
-
-    const userId = pb.authStore.model?.id;
+    // Check if user is authenticated
     if (!userId) {
       return createErrorResponse(new Error('User not authenticated'));
     }
@@ -142,6 +135,7 @@ export const useUserMetadata = () => {
   const [loading, setLoading] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
   const { toast } = useToast();
+  const { user, isAuthenticated } = useAuth();
 
   // Track if we're currently fetching to prevent duplicate requests
   const fetchingRef = useRef(false);
@@ -160,8 +154,8 @@ export const useUserMetadata = () => {
         fetchingRef.current = true;
         metadataLogger.debug('useUserMetadata: Starting data fetch...');
 
-        // First check if user is authenticated with PocketBase
-        if (!pb.authStore.isValid) {
+        // First check if user is authenticated
+        if (!isAuthenticated) {
           metadataLogger.debug('useUserMetadata: No authenticated user found');
           if (!abortController.signal.aborted) {
             setLoading(false);
@@ -170,7 +164,7 @@ export const useUserMetadata = () => {
           return;
         }
 
-        const userId = pb.authStore.model?.id;
+        const userId = user?.id;
         if (!userId) {
           metadataLogger.debug('useUserMetadata: No user ID found');
           if (!abortController.signal.aborted) {
@@ -193,11 +187,11 @@ export const useUserMetadata = () => {
         let artistsResponse: ServiceResponse<string[]>;
 
         try {
-          companiesResponse = await fetchCompanyNames({ toast }, abortController.signal);
+          companiesResponse = await fetchCompanyNames(userId, { toast }, abortController.signal);
           // Check if operation was aborted
           if (abortController.signal.aborted) return;
 
-          artistsResponse = await fetchArtistNames({ toast }, abortController.signal);
+          artistsResponse = await fetchArtistNames(userId, { toast }, abortController.signal);
           // Check if operation was aborted
           if (abortController.signal.aborted) return;
         } catch (error) {
@@ -293,7 +287,7 @@ export const useUserMetadata = () => {
       abortController.abort();
       fetchingRef.current = false;
     };
-  }, [toast]); // Include toast as dependency
+  }, [toast, user, isAuthenticated]); // Include auth dependencies
 
   // Function to refresh metadata
   const refreshMetadata = async () => {
@@ -308,9 +302,14 @@ export const useUserMetadata = () => {
     try {
       fetchingRef.current = true;
 
+      const userId = user?.id;
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+
       const [companiesResponse, artistsResponse] = await Promise.all([
-        fetchCompanyNames({ toast }, abortController.signal),
-        fetchArtistNames({ toast }, abortController.signal),
+        fetchCompanyNames(userId, { toast }, abortController.signal),
+        fetchArtistNames(userId, { toast }, abortController.signal),
       ]);
 
       if (!abortController.signal.aborted) {

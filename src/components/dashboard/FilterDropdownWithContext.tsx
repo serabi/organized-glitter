@@ -17,7 +17,7 @@ import { useAllCompanies } from '@/hooks/queries/useCompanies';
 import { useArtists } from '@/hooks/queries/useArtists';
 import { useTags } from '@/hooks/queries/useTags';
 import { ProjectsDrillShapeOptions } from '@/types/pocketbase.types';
-import { pb } from '@/lib/pocketbase';
+import { useAuth } from '@/hooks/useAuth';
 
 interface OptionType {
   label: string;
@@ -87,7 +87,8 @@ FilterDropdown.displayName = 'FilterDropdown';
 export const CompanyFilter = React.memo(() => {
   const { filters } = useFilters();
   const { updateCompany } = useFilterHelpers();
-  const userId = pb.authStore.model?.id;
+  const { user } = useAuth();
+  const userId = user?.id;
 
   const { data: companiesData } = useAllCompanies(userId);
   const companiesOptions =
@@ -110,7 +111,8 @@ export const CompanyFilter = React.memo(() => {
 export const ArtistFilter = React.memo(() => {
   const { filters } = useFilters();
   const { updateArtist } = useFilterHelpers();
-  const userId = pb.authStore.model?.id;
+  const { user } = useAuth();
+  const userId = user?.id;
 
   const { data: artistsData } = useArtists(userId);
   const artistsOptions =
@@ -154,7 +156,8 @@ export const DrillShapeFilter = React.memo(() => {
 export const TagFilter = React.memo(() => {
   const { filters } = useFilters();
   const { updateTags } = useFilterHelpers();
-  const userId = pb.authStore.model?.id;
+  const { user } = useAuth();
+  const userId = user?.id;
 
   const { data: tagsData } = useTags(userId);
   const tagOptions =
