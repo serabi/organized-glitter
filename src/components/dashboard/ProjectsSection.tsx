@@ -4,17 +4,18 @@ import { useDashboardData } from '@/hooks/useDashboardData';
 import { useAuth } from '@/hooks/useAuth';
 import { useFilters } from '@/contexts/FilterContext';
 import { createLogger } from '@/utils/logger';
+import useDebounce from '@/hooks/useDebounce';
 
 const logger = createLogger('ProjectsSection');
 
 const ProjectsSectionComponent = () => {
   const { user } = useAuth();
-  const { filters } = useFilters();
-  const debouncedSearchTerm = filters.searchTerm; // Direct access since new context handles debouncing internally
-  const isInitialized = true; // New context is always initialized
+  const { filters, isLoading } = useFilters();
+  const debouncedSearchTerm = useDebounce(filters.searchTerm, 300);
+  const isInitialized = !isLoading;
 
   // Single shared dashboard data call to prevent duplicate useProjects calls
-  // Only fetch data once filter initialization is complete
+  // Only fetch data once metadata loading is complete
   const dashboardData = useDashboardData(
     user?.id || 'guest',
     filters,
