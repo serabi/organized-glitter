@@ -139,12 +139,24 @@ export const useNavigateToProject = () => {
 
         logger.debug('Navigation context before execute:', beforeNavigation);
 
-        navigate(`/projects/${projectId}`, {
-          replace,
-          state: navigationState,
-        });
+        // Force navigation by using window.location if replace is true and we're coming from /projects/new
+        if (replace && window.location.pathname === '/projects/new') {
+          logger.debug('🔄 Using window.location.replace for reliable navigation from form');
+          window.location.replace(`/projects/${projectId}`);
+          // Return immediately since window.location.replace will reload the page
+          return {
+            success: true,
+            projectId,
+          };
+        } else {
+          logger.debug('🧭 Using React Router navigate function');
+          navigate(`/projects/${projectId}`, {
+            replace,
+            state: navigationState,
+          });
+        }
 
-        // Add a small delay to check if navigation actually happened
+        // Add verification to check if navigation actually happened
         setTimeout(() => {
           const afterNavigation = {
             currentUrl: window.location.href,
@@ -162,9 +174,25 @@ export const useNavigateToProject = () => {
               actual: window.location.pathname,
               beforeNavigation,
               afterNavigation,
+              userAgent: navigator.userAgent,
+              browserInfo: {
+                cookieEnabled: navigator.cookieEnabled,
+                onLine: navigator.onLine,
+                language: navigator.language,
+              },
             });
+
+            // Attempt a fallback navigation
+            logger.debug('Attempting fallback navigation via window.location');
+            try {
+              window.location.href = `/projects/${projectId}`;
+            } catch (fallbackError) {
+              logger.error('❌ Fallback navigation failed:', fallbackError);
+            }
+          } else {
+            logger.info('✅ Navigation verification successful - URL changed as expected');
           }
-        }, 100);
+        }, 150); // Slightly longer delay for verification
 
         logger.info('✅ Navigation executed successfully', {
           projectId,

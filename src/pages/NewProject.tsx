@@ -104,6 +104,12 @@ const NewProject = () => {
     setError(null);
 
     try {
+      logger.debug('Starting project creation process', {
+        title: data.title,
+        hasImage: !!data.imageFile,
+        userId: user.id,
+      });
+
       // Create metadata entities first if needed
       const metadataErrors: string[] = [];
 
@@ -148,17 +154,68 @@ const NewProject = () => {
         tagIds: data.tags?.map(tag => tag.id) || [],
       };
 
+      logger.debug('Calling project creation mutation', {
+        hasImage: !!projectData.image,
+        imageFileName: projectData.image?.name,
+      });
+
       await createProjectMutation.mutateAsync(projectData);
 
       // Success toast and navigation are handled by the mutation hook
       // No manual navigation needed - the hook handles redirect before cache invalidation
     } catch (error) {
       logger.error('Failed to create project', error);
-      setError('Failed to create project. Please try again.');
+
+      // Provide more specific error messages based on error type
+      let errorMessage = 'Failed to create project. Please try again.';
+      let errorTitle = 'Error';
+
+      if (error instanceof Error) {
+        if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = 'Network error occurred. Please check your connection and try again.';
+          errorTitle = 'Network Error';
+        } else if (error.message.includes('validation') || error.message.includes('required')) {
+          errorMessage = 'Please check that all required fields are filled correctly.';
+          errorTitle = 'Validation Error';
+        } else if (error.message.includes('authentication') || error.message.includes('auth')) {
+          errorMessage = 'Authentication error. Please log out and log back in.';
+          errorTitle = 'Authentication Error';
+        } else if (error.message.includes('413') || error.message.includes('too large')) {
+          errorMessage = 'File size is too large. Please use a smaller image.';
+          errorTitle = 'File Size Error';
+        }
+      }
+
+      setError(errorMessage);
       toast({
-        title: 'Error',
-        description: 'Failed to create project. Please try again.',
+        title: errorTitle,
+        description: errorMessage,
         variant: 'destructive',
+      });
+
+      // Log additional context for debugging
+      logger.error('Project creation error context:', {
+        formData: {
+          title: data.title,
+          hasImage: !!data.imageFile,
+          imageSize: data.imageFile?.size,
+          company: data.company,
+          artist: data.artist,
+          status: data.status,
+        },
+        userContext: {
+          userId: user?.id,
+          isAuthenticated: !!user,
+        },
+        timestamp: new Date().toISOString(),
+        error:
+          error instanceof Error
+            ? {
+                name: error.name,
+                message: error.message,
+                stack: error.stack,
+              }
+            : error,
       });
     } finally {
       setSubmitting(false);

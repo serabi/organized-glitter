@@ -63,6 +63,7 @@ export const useCreateProjectWithRedirect = () => {
       const formData = new FormData();
 
       // Add all fields except image, company, artist, and tagIds first
+      // Note: Image will be uploaded separately after project creation
       Object.entries(data).forEach(([key, value]) => {
         if (
           key !== 'image' &&
@@ -96,10 +97,7 @@ export const useCreateProjectWithRedirect = () => {
         formData.set('kit_category', 'full');
       }
 
-      // Add image file if present
-      if (data.image) {
-        formData.append('image', data.image);
-      }
+      // Note: Image upload is deferred until after project creation to avoid recordId issues
 
       try {
         // Log form data for debugging (excluding file data)
@@ -115,6 +113,32 @@ export const useCreateProjectWithRedirect = () => {
 
         const result = await pb.collection(Collections.Projects).create(formData);
         logger.info('Project created successfully:', result.id);
+
+        // Handle image upload after project creation if image was provided
+        if (data.image && result.id) {
+          logger.debug('Project created, now uploading image with record ID:', result.id);
+
+          try {
+            // Re-upload the image with the new project record ID
+            const formDataWithImage = new FormData();
+            formDataWithImage.append('image', data.image);
+
+            const updatedResult = await pb
+              .collection(Collections.Projects)
+              .update(result.id, formDataWithImage);
+            logger.info('Image uploaded successfully after project creation:', {
+              projectId: result.id,
+              hasImage: !!updatedResult.image,
+            });
+
+            // Update the result with the image information
+            result.image = updatedResult.image;
+          } catch (imageError) {
+            logger.error('Failed to upload image after project creation:', imageError);
+            // Don't fail the entire operation, but log the issue
+            // The project was created successfully, just without the image
+          }
+        }
 
         // Handle tags after project creation
         if (data.tagIds && data.tagIds.length > 0) {
@@ -202,63 +226,97 @@ export const useCreateProjectWithRedirect = () => {
     onSuccess: async data => {
       logger.info('✅ Project created successfully, initiating navigation');
 
-      // Update dashboard stats table for new project (async, non-blocking)
-      if (user?.id) {
-        // Note: With optimized architecture, stats are automatically recalculated
-        // when projects data changes, so no manual stats updates needed
-      }
-
-      // Ensure React state updates are flushed before navigation
-      await new Promise(resolve => setTimeout(resolve, 0));
-
-      // Use our new navigation system for optimistic navigation
-      const navigationResult = navigateToProject(data.id, {
-        projectData: data,
-        successMessage: `"${data.title}" has been added to your collection.`,
-        replace: true, // Replace current history entry since we're coming from form
-        showLoadingFeedback: true,
-      });
-
-      if (!navigationResult.success) {
-        logger.error('❌ Navigation failed:', navigationResult.error);
-        // Show fallback toast since navigation failed
+      try {
+        // Show immediate success feedback
         toast({
-          title: 'Navigation Warning',
-          description: `Project "${data.title}" was created but navigation failed. Please check your project list.`,
+          title: 'Success',
+          description: `"${data.title}" has been added to your collection.`,
           variant: 'default',
         });
-      } else {
-        logger.info('✅ Navigation to project detail successful');
-      }
 
-      // Add delay before cache invalidation to ensure navigation is complete
-      // Removed startTransition wrapper to prevent React Router conflicts
-      setTimeout(() => {
-        // Invalidate all project lists for this user
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.projects.lists(),
+        // Ensure all React state updates and DOM changes are complete
+        // Wait longer to ensure the form submission state is fully settled
+        await new Promise(resolve => setTimeout(resolve, 250));
+
+        logger.debug('Attempting navigation to project detail page', {
+          projectId: data.id,
+          projectTitle: data.title,
+          hasImage: !!data.image,
         });
 
-        // Invalidate the project detail query to ensure fresh data with proper imageUrl
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.projects.detail(data.id),
+        // Use our navigation system with enhanced error handling
+        const navigationResult = navigateToProject(data.id, {
+          projectData: data,
+          replace: true, // Replace current history entry since we're coming from form
+          showLoadingFeedback: false, // Already showed success toast
         });
 
-        // Invalidate tag stats queries (since new projects affect tag counts)
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.tags.stats(),
-        });
-
-        // Invalidate dashboard stats cache when project is created
-        if (user?.id) {
-          queryClient.invalidateQueries({
-            queryKey: queryKeys.stats.overview(user.id),
+        if (!navigationResult.success) {
+          logger.error('❌ Navigation failed:', navigationResult.error);
+          // Show fallback toast since navigation failed
+          toast({
+            title: 'Navigation Warning',
+            description: `Project "${data.title}" was created but navigation failed. Please check your project list.`,
+            variant: 'default',
           });
-          logger.info('Dashboard stats cache invalidated after project creation');
+
+          // Fallback navigation attempt
+          setTimeout(() => {
+            logger.debug('Attempting fallback navigation');
+            try {
+              window.location.href = `/projects/${data.id}`;
+            } catch (fallbackError) {
+              logger.error('Fallback navigation also failed:', fallbackError);
+            }
+          }, 1000);
+        } else {
+          logger.info('✅ Navigation to project detail successful');
         }
 
-        logger.info('Project creation cache invalidation completed');
-      }, 300); // Increased delay to ensure navigation completes
+        // Schedule cache invalidation after navigation has had time to complete
+        // This prevents race conditions that can cause app freezing
+        setTimeout(() => {
+          logger.debug('Starting cache invalidation process');
+
+          try {
+            // Invalidate all project lists for this user
+            queryClient.invalidateQueries({
+              queryKey: queryKeys.projects.lists(),
+            });
+
+            // Invalidate the project detail query to ensure fresh data with proper imageUrl
+            queryClient.invalidateQueries({
+              queryKey: queryKeys.projects.detail(data.id),
+            });
+
+            // Invalidate tag stats queries (since new projects affect tag counts)
+            queryClient.invalidateQueries({
+              queryKey: queryKeys.tags.stats(),
+            });
+
+            // Invalidate dashboard stats cache when project is created
+            if (user?.id) {
+              queryClient.invalidateQueries({
+                queryKey: queryKeys.stats.overview(user.id),
+              });
+              logger.debug('Dashboard stats cache invalidated after project creation');
+            }
+
+            logger.info('✅ Project creation cache invalidation completed successfully');
+          } catch (cacheError) {
+            logger.error('❌ Error during cache invalidation:', cacheError);
+            // Don't fail the operation for cache errors
+          }
+        }, 500); // Increased delay to ensure navigation completes first
+      } catch (successHandlerError) {
+        logger.error('❌ Error in success handler:', successHandlerError);
+        // Show error feedback but don't re-throw
+        toast({
+          title: 'Warning',
+          description: 'Project was created but there was an issue with post-creation tasks.',
+          variant: 'default',
+        });
+      }
     },
 
     onError: error => {

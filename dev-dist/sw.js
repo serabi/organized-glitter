@@ -3576,7 +3576,7 @@ define([], function () {
     [
       {
         url: 'index.html',
-        revision: '0.t0lmig4u9jo',
+        revision: '0.77a98s0rs3g',
       },
     ],
     {}
