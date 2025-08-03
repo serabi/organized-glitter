@@ -307,6 +307,7 @@ export const useUpdateProjectNotesMutation = () => {
 export const useAddProgressNoteMutation = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const userTimezone = useUserTimezone();
 
   return useMutation({
     mutationFn: async ({
@@ -319,7 +320,10 @@ export const useAddProgressNoteMutation = () => {
       const formData = new FormData();
       formData.append('project', projectId);
       formData.append('content', noteData.content);
-      formData.append('date', noteData.date);
+
+      // Convert date through timezone utilities to ensure consistency
+      const convertedDate = toUserDateString(noteData.date, userTimezone);
+      formData.append('date', convertedDate || '');
 
       if (noteData.imageFile) {
         formData.append('image', noteData.imageFile);

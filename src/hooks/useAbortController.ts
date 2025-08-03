@@ -31,9 +31,7 @@ export const useAbortController = () => {
 
   // Reset controller (creates a new one)
   const reset = () => {
-    if (!abortControllerRef.current.signal.aborted) {
-      abortControllerRef.current.abort();
-    }
+    abortControllerRef.current.abort();
     abortControllerRef.current = new AbortController();
   };
 
