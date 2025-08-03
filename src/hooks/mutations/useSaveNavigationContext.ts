@@ -134,11 +134,11 @@ const saveNavigationContext = async ({
  * }
  * ```
  */
-export const useSaveNavigationContext = () => {
+export const useSaveNavigationContext = (userId?: string) => {
   return useMutation({
     mutationFn: saveNavigationContext,
     // Add mutation key to prevent duplicate concurrent saves for the same user
-    mutationKey: ['saveNavigationContext'],
+    mutationKey: ['saveNavigationContext', userId],
 
     onSuccess: (_, variables) => {
       const { userId } = variables;

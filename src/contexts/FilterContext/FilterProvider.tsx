@@ -1,13 +1,14 @@
 /**
- * Filter Provider
+ * Filter Provider with debounced auto-save functionality
  * @author @serabi
  * @created 2025-08-02
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useMetadata } from '@/contexts/useMetadata';
 import { useMobileDevice } from '@/hooks/use-mobile';
 import { useSaveNavigationContext } from '@/hooks/mutations/useSaveNavigationContext';
+import useDebounce from '@/hooks/useDebounce';
 import { FilterState, getDefaultFilters } from './types';
 import { FilterContext, FilterContextType } from './context';
 import { createLogger } from '@/utils/logger';
@@ -26,59 +27,64 @@ export const FilterProvider: React.FC<FilterProviderProps> = ({ children, user }
   const { isMobile, isTablet } = useMobileDevice();
   const isMobilePhone = isMobile && !isTablet;
   const metadata = useMetadata();
-  const saveFiltersMutation = useSaveNavigationContext();
+  const saveFiltersMutation = useSaveNavigationContext(user?.id);
 
   // Simple state - no complex reducers or refs
   const [filters, setFiltersState] = useState<FilterState>(() => getDefaultFilters(isMobilePhone));
 
-  // Simple update function with auto-save
+  // Debounced filters for auto-save (1000ms delay to prevent excessive database requests)
+  const debouncedFilters = useDebounce(filters, 1000);
+
+  // Simple update function - immediate local state updates, debounced auto-save
   const setFilters = useCallback(
     (updates: Partial<FilterState> | ((current: FilterState) => Partial<FilterState>)) => {
-      const updateObj = typeof updates === 'function' ? updates(filters) : updates;
-      const newFilters = {
-        ...filters,
-        ...updateObj,
-        // Reset page when filters change (except when explicitly setting page)
-        currentPage: 'currentPage' in updateObj ? updateObj.currentPage! : 1,
-      };
-
-      setFiltersState(newFilters);
-
-      // Simple auto-save - no complex rate limiting
-      if (user?.id) {
-        logger.debug('Auto-saving filters', { userId: user.id });
-
-        saveFiltersMutation.mutate({
-          userId: user.id,
-          navigationContext: {
-            filters: {
-              status: newFilters.activeStatus,
-              company: newFilters.selectedCompany,
-              artist: newFilters.selectedArtist,
-              drillShape: newFilters.selectedDrillShape,
-              yearFinished: newFilters.selectedYearFinished,
-              includeMiniKits: newFilters.includeMiniKits,
-              includeDestashed: newFilters.includeDestashed,
-              includeArchived: newFilters.includeArchived,
-              includeWishlist: newFilters.includeWishlist,
-              includeOnHold: newFilters.includeOnHold,
-              searchTerm: newFilters.searchTerm,
-              selectedTags: newFilters.selectedTags,
-            },
-            sortField: newFilters.sortField,
-            sortDirection: newFilters.sortDirection,
-            currentPage: newFilters.currentPage,
-            pageSize: newFilters.pageSize,
-            preservationContext: {
-              scrollPosition: window.scrollY || 0,
-              timestamp: Date.now(),
-            },
-          },
-        });
-      }
+      setFiltersState(currentFilters => {
+        const updateObj = typeof updates === 'function' ? updates(currentFilters) : updates;
+        return {
+          ...currentFilters,
+          ...updateObj,
+          // Reset page when filters change (except when explicitly setting page)
+          currentPage: 'currentPage' in updateObj ? updateObj.currentPage! : 1,
+        };
+      });
     },
-    [filters, user?.id, saveFiltersMutation]
+    []
   );
+
+  // Debounced auto-save effect - triggers only after user stops changing filters
+  useEffect(() => {
+    if (user?.id && debouncedFilters) {
+      logger.debug('Auto-saving filters (debounced)', { userId: user.id });
+
+      saveFiltersMutation.mutate({
+        userId: user.id,
+        navigationContext: {
+          filters: {
+            status: debouncedFilters.activeStatus,
+            company: debouncedFilters.selectedCompany,
+            artist: debouncedFilters.selectedArtist,
+            drillShape: debouncedFilters.selectedDrillShape,
+            yearFinished: debouncedFilters.selectedYearFinished,
+            includeMiniKits: debouncedFilters.includeMiniKits,
+            includeDestashed: debouncedFilters.includeDestashed,
+            includeArchived: debouncedFilters.includeArchived,
+            includeWishlist: debouncedFilters.includeWishlist,
+            includeOnHold: debouncedFilters.includeOnHold,
+            searchTerm: debouncedFilters.searchTerm,
+            selectedTags: debouncedFilters.selectedTags,
+          },
+          sortField: debouncedFilters.sortField,
+          sortDirection: debouncedFilters.sortDirection,
+          currentPage: debouncedFilters.currentPage,
+          pageSize: debouncedFilters.pageSize,
+          preservationContext: {
+            scrollPosition: window.scrollY || 0,
+            timestamp: Date.now(),
+          },
+        },
+      });
+    }
+  }, [debouncedFilters, user?.id, saveFiltersMutation]);
 
   // Simple computed values
   const activeFilterCount = useMemo(() => {
