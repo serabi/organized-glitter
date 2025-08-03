@@ -41,7 +41,7 @@ import { useDynamicSeparatorProps } from '@/hooks/useDynamicSeparatorProps';
 import { useAuth } from '@/hooks/useAuth';
 import ProjectPagination from '@/components/ui/ProjectPagination';
 import { useNavigateToProject } from '@/hooks/useNavigateToProject';
-import { useRecentlyEdited } from '@/contexts/RecentlyEditedContext/';
+import { useRecentlyEdited } from '@/contexts/RecentlyEditedContext';
 import { logger } from '@/utils/logger';
 import { useTabAwareErrorMessage } from '@/hooks/useTabAwareErrorMessage';
 

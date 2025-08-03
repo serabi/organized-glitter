@@ -32,10 +32,10 @@ import DashboardFilterSection from '@/components/dashboard/DashboardFilterSectio
 import ProjectsSection from '@/components/dashboard/ProjectsSection';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/hooks/useAuth';
-import { useRecentlyEdited, RecentlyEditedProvider } from '@/contexts/RecentlyEditedContext/';
-import { StatsProvider } from '@/contexts/StatsContext/';
+import { useRecentlyEdited, RecentlyEditedProvider } from '@/contexts/RecentlyEditedContext';
+import { StatsProvider } from '@/contexts/StatsContext';
 import { FilterProvider } from '@/contexts/FilterContext';
-import { UIProvider } from '@/contexts/UIContext/';
+import { UIProvider } from '@/contexts/UIContext';
 import { DashboardFilterContext } from '@/hooks/mutations/useSaveNavigationContext';
 import { createLogger } from '@/utils/logger';
 import { useToast } from '@/hooks/use-toast';

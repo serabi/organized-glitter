@@ -7,7 +7,7 @@
 import { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAuth } from '@/hooks/useAuth';
-import { useMetadata } from '@/contexts/MetadataContext/';
+import { useMetadata } from '@/contexts/MetadataContext';
 import { useCreateProjectWithRedirect } from '@/hooks/mutations/useCreateProjectWithRedirect';
 import { useCreateCompany } from '@/hooks/mutations/useCompanyMutations';
 import { useCreateArtist } from '@/hooks/mutations/useArtistMutations';

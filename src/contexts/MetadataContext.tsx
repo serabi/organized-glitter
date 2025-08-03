@@ -8,3 +8,4 @@
 
 // Re-export from the new MetadataContext folder for backward compatibility
 export { MetadataProvider } from './MetadataContext/MetadataProvider';
+export { useMetadata } from './MetadataContext/hooks';
