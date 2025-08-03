@@ -60,13 +60,13 @@ const ProgressNoteItem = React.memo(
         const [year, month, day] = note.date.split('-').map(Number);
         const date = new Date(year, month - 1, day); // Create date in local timezone
         const result = format(date, 'MMMM d, yyyy');
-        
+
         displayLogger.debug('📅 Date display: YYYY-MM-DD format (no timezone conversion)', {
           input: note.date,
           output: result,
           method: 'direct date construction',
         });
-        
+
         return result;
       }
 
@@ -77,26 +77,29 @@ const ProgressNoteItem = React.memo(
         const [year, month, day] = dateOnly.split('-').map(Number);
         const date = new Date(year, month - 1, day); // Create date in local timezone
         const result = format(date, 'MMMM d, yyyy');
-        
-        displayLogger.debug('📅 Date display: Database datetime format detected (treating as date-only)', {
-          input: note.date,
-          extractedDate: dateOnly,
-          output: result,
-          method: 'datetime extraction + direct date construction',
-        });
-        
+
+        displayLogger.debug(
+          '📅 Date display: Database datetime format detected (treating as date-only)',
+          {
+            input: note.date,
+            extractedDate: dateOnly,
+            output: result,
+            method: 'datetime extraction + direct date construction',
+          }
+        );
+
         return result;
       }
 
       // For other formats, use parseISO (fallback)
       const result = format(parseISO(note.date), 'MMMM d, yyyy');
-      
+
       displayLogger.debug('📅 Date display: Using parseISO fallback', {
         input: note.date,
         output: result,
         method: 'parseISO + timezone conversion',
       });
-      
+
       return result;
     }, [note.date, note.id]);
 

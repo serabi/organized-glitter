@@ -5,7 +5,7 @@
 
 import type { ProjectFormValues } from '@/types/shared';
 import type { ProjectUpdateData } from '@/types/file-upload';
-import { toUserDateString } from '@/utils/timezoneUtils';
+import { formatDateForStorage } from '@/utils/dateFormatting';
 import { createLogger } from '@/utils/logger';
 import { pb } from '@/lib/pocketbase';
 import { isValidPocketBaseId } from '@/utils/cacheValidation';
@@ -33,49 +33,6 @@ export function mapFormDataToPocketBase(
     return value === '' ? undefined : value;
   };
 
-  // Helper function to format dates for PocketBase (YYYY-MM-DD format only)
-  const formatDateForPocketBase = (
-    value: string | Date | undefined,
-    userTimezone?: string
-  ): string | null => {
-    if (!value || value === '') {
-      fieldMappingLogger.debug('📅 Date formatting: null/empty value', { value, userTimezone });
-      return null;
-    }
-
-    fieldMappingLogger.debug('📅 Date formatting input', {
-      inputValue: value,
-      inputType: typeof value,
-      userTimezone,
-      isYYYYMMDD: typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value),
-    });
-
-    // For YYYY-MM-DD strings from HTML date inputs, treat as date-only values
-    // This prevents the double timezone conversion bug in toUserDateString()
-    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
-      fieldMappingLogger.debug('📅 Project date: using date-only format (no timezone conversion)', {
-        inputValue: value,
-        outputValue: value,
-        userTimezone,
-        reason: 'YYYY-MM-DD strings represent calendar dates, not moments in time',
-      });
-      return value; // Return as-is for date-only values
-    }
-
-    // For other date formats, use the timezone conversion utilities
-    const result = toUserDateString(value, userTimezone);
-
-    fieldMappingLogger.debug('📅 Date formatting during save', {
-      inputValue: value,
-      inputType: typeof value,
-      userTimezone,
-      outputValue: result,
-      isChanged: String(value) !== result,
-    });
-
-    return result;
-  };
-
   // Log the input form data for debugging
   fieldMappingLogger.debug('🔄 Starting field mapping', {
     userTimezone,
@@ -96,10 +53,10 @@ export function mapFormDataToPocketBase(
     status: formData.status,
     kit_category: safeString(formData.kit_category),
     drill_shape: safeString(formData.drillShape),
-    date_purchased: formatDateForPocketBase(formData.datePurchased, userTimezone),
-    date_started: formatDateForPocketBase(formData.dateStarted, userTimezone),
-    date_completed: formatDateForPocketBase(formData.dateCompleted, userTimezone),
-    date_received: formatDateForPocketBase(formData.dateReceived, userTimezone),
+    date_purchased: formatDateForStorage(formData.datePurchased, userTimezone),
+    date_started: formatDateForStorage(formData.dateStarted, userTimezone),
+    date_completed: formatDateForStorage(formData.dateCompleted, userTimezone),
+    date_received: formatDateForStorage(formData.dateReceived, userTimezone),
     width: safeParseInt(formData.width),
     height: safeParseInt(formData.height),
     total_diamonds: safeParseInt(formData.totalDiamonds),
