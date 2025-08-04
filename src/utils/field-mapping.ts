@@ -21,12 +21,12 @@ export function mapFormDataToPocketBase(
   formData: ProjectFormValues,
   userTimezone?: string
 ): ProjectUpdateData {
-  // Helper function to safely parse integers
-  const safeParseInt = (value: string | number | undefined): number | null => {
+  // Helper function to safely parse numbers (integers and decimals)
+  const safeParseNumber = (value: string | number | undefined): number | null => {
     if (value === undefined || value === null || value === '') return null;
 
     if (typeof value === 'number') {
-      return isNaN(value) ? null : Math.floor(value);
+      return isNaN(value) ? null : value;
     }
 
     // Handle string values - remove commas and other non-numeric characters
@@ -34,7 +34,7 @@ export function mapFormDataToPocketBase(
     if (cleanStr === '' || cleanStr === '-') return null;
 
     const num = Number(cleanStr);
-    return isNaN(num) ? null : Math.floor(num);
+    return isNaN(num) ? null : num;
   };
 
   // Helper function to handle optional string fields
@@ -66,9 +66,9 @@ export function mapFormDataToPocketBase(
     date_started: formatDateForStorage(formData.dateStarted, userTimezone),
     date_completed: formatDateForStorage(formData.dateCompleted, userTimezone),
     date_received: formatDateForStorage(formData.dateReceived, userTimezone),
-    width: safeParseInt(formData.width),
-    height: safeParseInt(formData.height),
-    total_diamonds: safeParseInt(formData.totalDiamonds),
+    width: safeParseNumber(formData.width),
+    height: safeParseNumber(formData.height),
+    total_diamonds: safeParseNumber(formData.totalDiamonds),
     general_notes: safeString(formData.generalNotes),
     source_url: safeString(formData.sourceUrl),
   };
