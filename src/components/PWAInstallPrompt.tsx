@@ -52,30 +52,22 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ className = 
       setIsAnimating(false);
       setIsVisible(false);
     }
-  }, [canShowPrompt, shouldShowEnhancedIOSPrompt, isAuthenticated, initialCheckComplete, isVisible]);
+  }, [canShowPrompt, shouldShowEnhancedIOSPrompt, isAuthenticated, initialCheckComplete]);
 
-  // Handle temporary dismiss (Got it button) - only dismisses for current session
-  const handleTemporaryDismiss = () => {
+  // Handle dismiss with animation
+  const handleDismiss = () => {
     setIsAnimating(false);
-    setIsVisible(false);
-    dismissPrompt();
-  };
-
-  // Handle permanent dismiss (Don't show again button) - persists preference
-  const handleDontShowAgain = () => {
-    setIsAnimating(false);
-    setIsVisible(false);
-    dismissPrompt();
-    // Persist the dismissal preference in localStorage
-    localStorage.setItem('pwa-install-dismissed', 'true');
-    logger.debug('PWA install prompt permanently dismissed');
+    setTimeout(() => {
+      setIsVisible(false);
+      dismissPrompt();
+    }, 300); // Wait for animation to complete
   };
 
   // Handle install button click
   const handleInstall = async () => {
     try {
       await promptInstall();
-      handleTemporaryDismiss();
+      handleDismiss();
     } catch (error) {
       logger.error('Failed to trigger install prompt', error);
     }
@@ -89,19 +81,14 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ className = 
   // Enhanced iOS Safari installation guide
   if (shouldShowEnhancedIOSPrompt) {
     return (
-      <div className={`fixed top-0 left-0 right-0 z-50 ${className}`}>
-        <div
-          className={`transform transition-transform duration-300 ease-out ${
-            isAnimating ? 'translate-y-0' : '-translate-y-full'
+      <div className={`fixed bottom-20 left-4 right-4 z-50 ${className}`}>
+        <Card
+          className={`transform border bg-background/95 p-4 shadow-lg backdrop-blur-sm transition-all duration-300 ease-out ${
+            isAnimating ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
           }`}
         >
-          {/* Backdrop */}
-          <div className="bg-black/20 backdrop-blur-sm">
-            {/* Banner Content */}
-            <Card className="border-b border-border shadow-lg rounded-none">
-              <div className="px-4 py-3 max-w-md mx-auto">
-                {/* Header with close button */}
-                <div className="flex items-start justify-between mb-3">
+          {/* Header with close button */}
+          <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center space-x-2">
                     <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
                       <Home className="w-4 h-4 text-primary" />
@@ -118,7 +105,7 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ className = 
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={handleTemporaryDismiss}
+                    onClick={handleDismiss}
                     className="h-6 w-6 p-0 hover:bg-muted flex-shrink-0"
                     aria-label="Close install banner"
                   >
@@ -156,27 +143,16 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ className = 
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex space-x-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleDontShowAgain}
-                    className="flex-1 text-xs text-muted-foreground hover:text-foreground"
-                  >
-                    Don't show again
-                  </Button>
+                <div className="flex justify-end">
                   <Button
                     size="sm"
-                    onClick={handleTemporaryDismiss}
+                    onClick={handleDismiss}
                     className="px-4 text-xs font-medium"
                   >
                     Got it
                   </Button>
                 </div>
-              </div>
-            </Card>
-          </div>
-        </div>
+        </Card>
       </div>
     );
   }
@@ -207,7 +183,7 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ className = 
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleTemporaryDismiss}
+              onClick={handleDismiss}
               className="h-6 w-6 p-0 hover:bg-muted"
               aria-label="Dismiss install prompt"
             >
