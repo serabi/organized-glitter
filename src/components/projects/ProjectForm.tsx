@@ -8,11 +8,11 @@ import FormValidationError from './form/FormValidationError';
 import { Form } from '@/components/ui/form';
 import {
   BasicInfoSection,
-  ProjectSpecsSection,
   ProjectStatusSection,
   ProjectNotesSection,
   ProjectImageSection,
 } from './form-sections';
+import ProjectSpecs from './form/ProjectSpecs';
 import { useProjectFormLogic } from '@/hooks/useProjectFormLogic';
 import { useProjectFormHandlers, ProjectFormRef } from '@/hooks/useProjectFormHandlers';
 
@@ -116,12 +116,12 @@ const ProjectForm = forwardRef<ProjectFormRef, ProjectFormProps>(
 
           {/* Project Specs Section */}
           <div className="space-y-6">
-            <ProjectSpecsSection
+            <ProjectSpecs
               width={String(formLogic.currentWatchedData.width ?? '')}
               height={String(formLogic.currentWatchedData.height ?? '')}
               drillShape={formLogic.currentWatchedData.drillShape ?? ''}
               sourceUrl={formLogic.currentWatchedData.sourceUrl ?? ''}
-              totalDiamonds={formLogic.currentWatchedData.totalDiamonds ?? undefined}
+              totalDiamonds={String(formLogic.currentWatchedData.totalDiamonds ?? '')}
               kit_category={formLogic.currentWatchedData.kit_category ?? undefined}
               isSubmitting={formLogic.RHFisSubmitting || formLogic.isSubmitting}
               onWidthChange={handlers.genericHandleChange}

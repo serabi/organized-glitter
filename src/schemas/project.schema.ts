@@ -174,7 +174,11 @@ export const BaseProjectFormObjectSchema = z.object({
     .nullable()
     .or(z.literal('')),
   totalDiamonds: z.preprocess(
-    val => (val === '' || val === undefined || val === null ? undefined : Number(val)),
+    val => {
+      if (val === '' || val === undefined || val === null) return undefined;
+      const cleanVal = typeof val === 'string' ? val.replace(/[^-\d.]/g, '') : val;
+      return Number(cleanVal);
+    },
     z
       .number({ invalid_type_error: 'Total diamonds must be a number' })
       .int('Total diamonds must be an integer')

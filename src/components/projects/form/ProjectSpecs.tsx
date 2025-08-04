@@ -20,6 +20,9 @@ interface ProjectSpecsProps {
   onSourceUrlChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   totalDiamonds?: string;
   onTotalDiamondsChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  kit_category?: 'full' | 'mini';
+  onKitCategoryChange?: (value: 'full' | 'mini') => void;
+  isSubmitting?: boolean;
 }
 
 const ProjectSpecs = ({
@@ -33,6 +36,9 @@ const ProjectSpecs = ({
   onSourceUrlChange,
   totalDiamonds = '',
   onTotalDiamondsChange,
+  kit_category,
+  onKitCategoryChange,
+  isSubmitting = false,
 }: ProjectSpecsProps) => {
   return (
     <div className="space-y-4">
@@ -48,6 +54,7 @@ const ProjectSpecs = ({
               onChange={onWidthChange}
               placeholder="Width"
               className="w-full"
+              disabled={isSubmitting}
             />
             <span className="text-lg font-medium">x</span>
             <Input
@@ -59,12 +66,13 @@ const ProjectSpecs = ({
               onChange={onHeightChange}
               placeholder="Height"
               className="w-full"
+              disabled={isSubmitting}
             />
           </div>
         </FormField>
 
         <FormField id="drillShape" label="Drill Shape">
-          <Select value={drillShape} onValueChange={onDrillShapeChange}>
+          <Select value={drillShape} onValueChange={onDrillShapeChange} disabled={isSubmitting}>
             <SelectTrigger id="drillShape">
               <SelectValue placeholder="Select drill shape" />
             </SelectTrigger>
@@ -76,7 +84,7 @@ const ProjectSpecs = ({
         </FormField>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <FormField id="totalDiamonds" label="Total Diamonds">
           <Input
             id="totalDiamonds"
@@ -100,6 +108,7 @@ const ProjectSpecs = ({
             }}
             placeholder="e.g., 1,000"
             className="w-full"
+            disabled={isSubmitting}
           />
         </FormField>
 
@@ -112,7 +121,24 @@ const ProjectSpecs = ({
             onChange={onSourceUrlChange}
             placeholder="https://example.com/product"
             className="w-full"
+            disabled={isSubmitting}
           />
+        </FormField>
+
+        <FormField id="kit_category" label="Type of Kit">
+          <Select
+            value={kit_category || 'full'}
+            onValueChange={onKitCategoryChange}
+            disabled={isSubmitting}
+          >
+            <SelectTrigger id="kit_category" name="kit_category">
+              <SelectValue placeholder="Select type of kit" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="full">Full Sized</SelectItem>
+              <SelectItem value="mini">Mini</SelectItem>
+            </SelectContent>
+          </Select>
         </FormField>
       </div>
     </div>
