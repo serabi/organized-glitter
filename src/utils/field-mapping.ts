@@ -24,8 +24,17 @@ export function mapFormDataToPocketBase(
   // Helper function to safely parse integers
   const safeParseInt = (value: string | number | undefined): number | null => {
     if (value === undefined || value === null || value === '') return null;
-    const num = typeof value === 'string' ? Number(value) : value;
-    return isNaN(num) ? null : num;
+
+    if (typeof value === 'number') {
+      return isNaN(value) ? null : Math.floor(value);
+    }
+
+    // Handle string values - remove commas and other non-numeric characters
+    const cleanStr = value.toString().replace(/[^-\d.]/g, '');
+    if (cleanStr === '' || cleanStr === '-') return null;
+
+    const num = Number(cleanStr);
+    return isNaN(num) ? null : Math.floor(num);
   };
 
   // Helper function to handle optional string fields

@@ -128,7 +128,8 @@ const ProjectForm = forwardRef<ProjectFormRef, ProjectFormProps>(
               onHeightChange={handlers.genericHandleChange}
               onDrillShapeChange={value => handlers.genericHandleSelectChange('drillShape', value)}
               onSourceUrlChange={handlers.genericHandleChange}
-              onTotalDiamondsChange={value => {
+              onTotalDiamondsChange={e => {
+                const value = e.target.value === '' ? undefined : Number(e.target.value);
                 formLogic.setValue('totalDiamonds', value, { shouldValidate: true });
               }}
               onKitCategoryChange={value => {

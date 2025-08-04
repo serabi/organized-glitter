@@ -1,7 +1,6 @@
 import React from 'react';
 import FormField from '../form/FormField';
 import { Input } from '@/components/ui/input';
-import { CommaFormattedNumberInput } from '@/components/ui/number-input';
 import {
   Select,
   SelectContent,
@@ -22,7 +21,7 @@ interface ProjectSpecsSectionProps {
   onHeightChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onDrillShapeChange: (value: string) => void;
   onSourceUrlChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onTotalDiamondsChange: (value: number | undefined) => void;
+  onTotalDiamondsChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onKitCategoryChange: (value: 'full' | 'mini') => void;
 }
 
@@ -104,14 +103,16 @@ export const ProjectSpecsSection: React.FC<ProjectSpecsSectionProps> = ({
           />
         </FormField>
         <FormField id="totalDiamonds" label="Total Diamonds">
-          <CommaFormattedNumberInput
+          <Input
             id="totalDiamonds"
             name="totalDiamonds"
-            value={totalDiamonds}
+            type="number"
+            value={totalDiamonds || ''}
             onChange={onTotalDiamondsChange}
             placeholder="Total number of diamonds"
             disabled={isSubmitting}
-            minValue={0}
+            min="0"
+            step="1"
           />
         </FormField>
         <FormField id="kit_category" label="Type of Kit">

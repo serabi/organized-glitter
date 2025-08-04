@@ -8,9 +8,6 @@ import {
 } from '@/schemas/project.schema';
 import { useToast } from '@/hooks/use-toast';
 import { logger } from '@/utils/logger';
-// Removed useAuth import - userId validation is handled upstream
-
-// Helper functions for file size limits (can be moved or kept if still used for display)
 
 interface UseProjectFormProps {
   initialData?: Partial<ProjectFormSchemaType>; // Use Zod schema type
@@ -47,7 +44,7 @@ export const useProjectForm = ({
     dateCompleted: null,
     generalNotes: null,
     sourceUrl: null,
-    totalDiamonds: null,
+    totalDiamonds: undefined,
     imageUrl: null,
     width: null,
     height: null,
