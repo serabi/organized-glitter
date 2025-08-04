@@ -54,11 +54,21 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ className = 
     }
   }, [canShowPrompt, shouldShowEnhancedIOSPrompt, isAuthenticated, initialCheckComplete, isVisible]);
 
-  // Handle dismiss with immediate state changes (CSS handles animation)
-  const handleDismiss = () => {
+  // Handle temporary dismiss (Got it button) - only dismisses for current session
+  const handleTemporaryDismiss = () => {
     setIsAnimating(false);
     setIsVisible(false);
     dismissPrompt();
+  };
+
+  // Handle permanent dismiss (Don't show again button) - persists preference
+  const handleDontShowAgain = () => {
+    setIsAnimating(false);
+    setIsVisible(false);
+    dismissPrompt();
+    // Persist the dismissal preference in localStorage
+    localStorage.setItem('pwa-install-dismissed', 'true');
+    logger.debug('PWA install prompt permanently dismissed');
   };
 
   // Handle install button click
