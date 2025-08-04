@@ -75,7 +75,7 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ className = 
   const handleInstall = async () => {
     try {
       await promptInstall();
-      handleDismiss();
+      handleTemporaryDismiss();
     } catch (error) {
       logger.error('Failed to trigger install prompt', error);
     }
@@ -118,7 +118,7 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ className = 
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={handleDismiss}
+                    onClick={handleTemporaryDismiss}
                     className="h-6 w-6 p-0 hover:bg-muted flex-shrink-0"
                     aria-label="Close install banner"
                   >
@@ -160,14 +160,14 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ className = 
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={handleDismiss}
+                    onClick={handleDontShowAgain}
                     className="flex-1 text-xs text-muted-foreground hover:text-foreground"
                   >
                     Don't show again
                   </Button>
                   <Button
                     size="sm"
-                    onClick={handleDismiss}
+                    onClick={handleTemporaryDismiss}
                     className="px-4 text-xs font-medium"
                   >
                     Got it
@@ -207,7 +207,7 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ className = 
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleDismiss}
+              onClick={handleTemporaryDismiss}
               className="h-6 w-6 p-0 hover:bg-muted"
               aria-label="Dismiss install prompt"
             >
