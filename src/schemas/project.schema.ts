@@ -176,8 +176,7 @@ export const BaseProjectFormObjectSchema = z.object({
   totalDiamonds: z.preprocess(
     val => {
       if (val === '' || val === undefined || val === null) return undefined;
-      const cleanVal = typeof val === 'string' ? val.replace(/[^-\d.]/g, '') : val;
-      return Number(cleanVal);
+      return Number(val);
     },
     z
       .number({ invalid_type_error: 'Total diamonds must be a number' })

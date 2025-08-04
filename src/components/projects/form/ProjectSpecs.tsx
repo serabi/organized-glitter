@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import FormField from './FormField';
+import { createLogger } from '@/utils/logger';
 
 interface ProjectSpecsProps {
   width: string;
@@ -19,11 +20,17 @@ interface ProjectSpecsProps {
   sourceUrl?: string;
   onSourceUrlChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   totalDiamonds?: string;
-  onTotalDiamondsChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  setValue: (
+    name: string,
+    value: unknown,
+    options?: { shouldValidate?: boolean; shouldDirty?: boolean }
+  ) => void;
   kit_category?: 'full' | 'mini';
   onKitCategoryChange?: (value: 'full' | 'mini') => void;
   isSubmitting?: boolean;
 }
+
+const logger = createLogger('TotalDiamonds');
 
 const ProjectSpecs = ({
   width,
@@ -35,7 +42,7 @@ const ProjectSpecs = ({
   sourceUrl = '',
   onSourceUrlChange,
   totalDiamonds = '',
-  onTotalDiamondsChange,
+  setValue,
   kit_category,
   onKitCategoryChange,
   isSubmitting = false,
@@ -90,23 +97,19 @@ const ProjectSpecs = ({
             id="totalDiamonds"
             name="totalDiamonds"
             type="text"
-            inputMode="text"
+            inputMode="numeric"
             value={totalDiamonds}
             onChange={e => {
-              // Allow only numbers and commas
-              const value = e.target.value.replace(/[^0-9,]/g, '');
-              // Create a synthetic event with the cleaned value
-              const syntheticEvent = {
-                ...e,
-                target: {
-                  ...e.target,
-                  name: 'totalDiamonds',
-                  value,
-                },
-              };
-              onTotalDiamondsChange(syntheticEvent as React.ChangeEvent<HTMLInputElement>);
+              logger.debug('Raw input:', e.target.value);
+              const cleaned = e.target.value.replace(/[^0-9]/g, '');
+              logger.debug('After cleaning:', cleaned);
+              const value = cleaned === '' ? undefined : Number(cleaned);
+              logger.debug('Final value:', { value, type: typeof value });
+              logger.debug('Calling setValue...');
+              setValue('totalDiamonds', value, { shouldValidate: true });
+              logger.debug('setValue completed');
             }}
-            placeholder="e.g., 1,000"
+            placeholder="e.g., 1000"
             className="w-full"
             disabled={isSubmitting}
           />

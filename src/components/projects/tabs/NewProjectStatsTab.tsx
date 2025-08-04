@@ -2,6 +2,7 @@ import { ProjectFormValues } from '@/types/project';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useNumberInput } from '@/hooks/useNumberInput';
 
 interface NewProjectStatsTabProps {
   formData: ProjectFormValues;
@@ -26,11 +27,12 @@ export const NewProjectStatsTab = ({
     handleInputChange(field, dateValue);
   };
 
-  // Handle number changes
-  const handleNumberChange = (field: keyof ProjectFormValues, value: string) => {
-    const numValue = value ? Number(value) : null;
-    handleInputChange(field, numValue);
-  };
+  // Number input handlers
+  const totalDiamondsProps = useNumberInput(value => handleInputChange('totalDiamonds', value));
+
+  const widthProps = useNumberInput(value => handleInputChange('width', value));
+
+  const heightProps = useNumberInput(value => handleInputChange('height', value));
 
   return (
     <div className="space-y-6">
@@ -99,7 +101,7 @@ export const NewProjectStatsTab = ({
                 min="0"
                 step="0.1"
                 value={formData.width || ''}
-                onChange={e => handleNumberChange('width', e.target.value)}
+                {...widthProps}
                 placeholder="Enter width"
                 disabled={isSubmitting}
               />
@@ -113,7 +115,7 @@ export const NewProjectStatsTab = ({
                 min="0"
                 step="0.1"
                 value={formData.height || ''}
-                onChange={e => handleNumberChange('height', e.target.value)}
+                {...heightProps}
                 placeholder="Enter height"
                 disabled={isSubmitting}
               />
@@ -126,7 +128,7 @@ export const NewProjectStatsTab = ({
                 type="number"
                 min="0"
                 value={formData.totalDiamonds || ''}
-                onChange={e => handleNumberChange('totalDiamonds', e.target.value)}
+                {...totalDiamondsProps}
                 placeholder="Enter total diamonds"
                 disabled={isSubmitting}
               />

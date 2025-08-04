@@ -8,6 +8,7 @@ import {
 } from '@/schemas/project.schema';
 import { useToast } from '@/hooks/use-toast';
 import { logger } from '@/utils/logger';
+import { createLogger } from '@/utils/logger';
 
 interface UseProjectFormProps {
   initialData?: Partial<ProjectFormSchemaType>; // Use Zod schema type
@@ -26,6 +27,7 @@ export const useProjectForm = ({
   onChange,
 }: UseProjectFormProps) => {
   const { toast } = useToast();
+  const formLogger = createLogger('FormSubmit');
   // Removed useAuth - userId validation is handled upstream in NewProject component
 
   // Memoize the resolver to prevent recreation on every render
@@ -190,10 +192,13 @@ export const useProjectForm = ({
 
   // The actual submit handler passed to RHF's handleSubmit
   const processFormSubmit = (data: ProjectFormSchemaType) => {
-    // Type assertion might be needed if onSubmit expects ProjectFormValues strictly
-    // and ProjectFormSchemaType has slight differences (e.g. File object)
-    // For now, assuming ProjectFormSchemaType is compatible enough or onSubmit is adapted
-    onSubmit(data as ProjectFormSchemaType);
+    formLogger.debug('Form data being submitted');
+    formLogger.debug('totalDiamonds:', {
+      value: data.totalDiamonds,
+      type: typeof data.totalDiamonds,
+    });
+    formLogger.debug('Full form data:', data);
+    onSubmit(data);
   };
 
   // Display Zod errors via toast

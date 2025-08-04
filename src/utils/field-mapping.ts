@@ -29,11 +29,7 @@ export function mapFormDataToPocketBase(
       return isNaN(value) ? null : value;
     }
 
-    // Handle string values - remove commas and other non-numeric characters
-    const cleanStr = value.toString().replace(/[^-\d.]/g, '');
-    if (cleanStr === '' || cleanStr === '-') return null;
-
-    const num = Number(cleanStr);
+    const num = Number(value);
     return isNaN(num) ? null : num;
   };
 
@@ -57,6 +53,16 @@ export function mapFormDataToPocketBase(
     },
   });
 
+  fieldMappingLogger.debug('Input totalDiamonds:', {
+    value: formData.totalDiamonds,
+    type: typeof formData.totalDiamonds,
+  });
+  const totalDiamondsResult = safeParseNumber(formData.totalDiamonds);
+  fieldMappingLogger.debug('After safeParseNumber:', {
+    result: totalDiamondsResult,
+    type: typeof totalDiamondsResult,
+  });
+
   const result: ProjectUpdateData = {
     title: formData.title,
     status: formData.status,
@@ -68,12 +74,16 @@ export function mapFormDataToPocketBase(
     date_received: formatDateForStorage(formData.dateReceived, userTimezone),
     width: safeParseNumber(formData.width),
     height: safeParseNumber(formData.height),
-    total_diamonds: safeParseNumber(formData.totalDiamonds),
+    total_diamonds: totalDiamondsResult,
     general_notes: safeString(formData.generalNotes),
     source_url: safeString(formData.sourceUrl),
   };
 
   // Log the final mapped result for debugging
+  fieldMappingLogger.debug('Final result.total_diamonds:', {
+    value: result.total_diamonds,
+    type: typeof result.total_diamonds,
+  });
   fieldMappingLogger.debug('✅ Field mapping completed', {
     mappedDates: {
       date_purchased: result.date_purchased,
@@ -81,6 +91,7 @@ export function mapFormDataToPocketBase(
       date_completed: result.date_completed,
       date_received: result.date_received,
     },
+    totalDiamonds: result.total_diamonds,
   });
 
   // Handle company and artist - they may be names or IDs

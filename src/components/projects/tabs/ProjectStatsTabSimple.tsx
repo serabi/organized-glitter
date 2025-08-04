@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { toUserDateString, detectUserTimezone } from '@/utils/timezoneUtils';
+import { useNumberInput } from '@/hooks/useNumberInput';
 
 interface ProjectStatsTabSimpleProps {
   formData: ProjectFormValues | null;
@@ -30,6 +31,13 @@ export const ProjectStatsTabSimple = ({
     const updatedData = { ...formData, [field]: value };
     onChange(updatedData);
   };
+
+  // Number input handlers
+  const totalDiamondsProps = useNumberInput(value => handleInputChange('totalDiamonds', value));
+
+  const widthProps = useNumberInput(value => handleInputChange('width', value));
+
+  const heightProps = useNumberInput(value => handleInputChange('height', value));
 
   const drillShapeOptions = [
     { value: 'round', label: 'Round' },
@@ -115,7 +123,7 @@ export const ProjectStatsTabSimple = ({
               <Input
                 id="width"
                 value={formData.width || ''}
-                onChange={e => handleInputChange('width', e.target.value)}
+                {...widthProps}
                 type="number"
                 step="0.1"
                 min="0"
@@ -129,7 +137,7 @@ export const ProjectStatsTabSimple = ({
               <Input
                 id="height"
                 value={formData.height || ''}
-                onChange={e => handleInputChange('height', e.target.value)}
+                {...heightProps}
                 type="number"
                 step="0.1"
                 min="0"
@@ -170,10 +178,7 @@ export const ProjectStatsTabSimple = ({
               <Input
                 id="totalDiamonds"
                 value={formData.totalDiamonds || ''}
-                onChange={e => {
-                  const value = e.target.value;
-                  handleInputChange('totalDiamonds', value ? parseInt(value, 10) : 0);
-                }}
+                {...totalDiamondsProps}
                 type="number"
                 min="0"
                 step="1"

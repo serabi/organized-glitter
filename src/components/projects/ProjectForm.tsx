@@ -121,17 +121,18 @@ const ProjectForm = forwardRef<ProjectFormRef, ProjectFormProps>(
               height={String(formLogic.currentWatchedData.height ?? '')}
               drillShape={formLogic.currentWatchedData.drillShape ?? ''}
               sourceUrl={formLogic.currentWatchedData.sourceUrl ?? ''}
-              totalDiamonds={String(formLogic.currentWatchedData.totalDiamonds ?? '')}
+              totalDiamonds={
+                formLogic.currentWatchedData.totalDiamonds
+                  ? String(formLogic.currentWatchedData.totalDiamonds)
+                  : ''
+              }
               kit_category={formLogic.currentWatchedData.kit_category ?? undefined}
               isSubmitting={formLogic.RHFisSubmitting || formLogic.isSubmitting}
               onWidthChange={handlers.genericHandleChange}
               onHeightChange={handlers.genericHandleChange}
               onDrillShapeChange={value => handlers.genericHandleSelectChange('drillShape', value)}
               onSourceUrlChange={handlers.genericHandleChange}
-              onTotalDiamondsChange={e => {
-                const value = e.target.value === '' ? undefined : Number(e.target.value);
-                formLogic.setValue('totalDiamonds', value, { shouldValidate: true });
-              }}
+              setValue={formLogic.setValue}
               onKitCategoryChange={value => {
                 handlers.genericHandleSelectChange('kit_category', value);
               }}
