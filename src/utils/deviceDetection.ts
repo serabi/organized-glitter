@@ -49,10 +49,33 @@ export const isStandalone = (): boolean => {
 };
 
 /**
+ * Detects if the current device is macOS Safari
+ */
+export const isMacOSSafari = (): boolean => {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+    return false;
+  }
+  
+  const userAgent = navigator.userAgent;
+  const platform = navigator.platform;
+  
+  return /Safari/.test(userAgent) && 
+         /Mac/.test(platform) && 
+         !/Chrome|CriOS|FxiOS|EdgiOS/.test(userAgent);
+};
+
+/**
  * Detects if the current device is iOS Safari and not already installed as PWA
  */
 export const shouldShowIOSInstallPrompt = (): boolean => {
   return isIOS() && isSafari() && !isStandalone();
+};
+
+/**
+ * Detects if the current device is macOS Safari and not already installed as PWA
+ */
+export const shouldShowMacOSInstallPrompt = (): boolean => {
+  return isMacOSSafari() && !isStandalone();
 };
 
 /**
@@ -90,6 +113,11 @@ export const supportsPWAInstallation = (): boolean => {
   
   // iOS Safari supports manual installation
   if (isIOS() && isSafari()) {
+    return true;
+  }
+  
+  // macOS Safari supports manual installation (Sonoma 14+)
+  if (isMacOSSafari()) {
     return true;
   }
   
