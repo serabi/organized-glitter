@@ -13,7 +13,7 @@ import { Card } from '@/components/ui/card';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { useAuth } from '@/hooks/useAuth';
 import { createLogger } from '@/utils/logger';
-import { shouldShowIOSInstallPrompt, shouldShowMacOSInstallPrompt } from '@/utils/deviceDetection';
+import { shouldShowIOSInstallPrompt, isMacOSSafari } from '@/utils/deviceDetection';
 
 const logger = createLogger('PWAInstallPrompt');
 
@@ -32,21 +32,21 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ className = 
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
 
-  // Use enhanced platform detection
+  // Use enhanced platform detection for UI rendering only
   const shouldShowEnhancedIOSPrompt = shouldShowIOSInstallPrompt();
-  const shouldShowMacOSPrompt = shouldShowMacOSInstallPrompt();
+  const isMacOSDevice = isMacOSSafari();
 
   // Show prompt with immediate animation - only for authenticated users
   useEffect(() => {
-    // Show enhanced iOS/macOS prompt or standard prompt for other platforms
-    const shouldShow = (canShowPrompt || shouldShowEnhancedIOSPrompt || shouldShowMacOSPrompt) && isAuthenticated && initialCheckComplete;
+    // Show enhanced iOS prompt or standard prompt for other platforms (including macOS Safari)
+    const shouldShow = (canShowPrompt || shouldShowEnhancedIOSPrompt) && isAuthenticated && initialCheckComplete;
     
     if (shouldShow) {
       setIsVisible(true);
       setIsAnimating(true);
       logger.debug('PWA install prompt displayed', { 
         isIOSEnhanced: shouldShowEnhancedIOSPrompt,
-        isMacOSPrompt: shouldShowMacOSPrompt,
+        isMacOSDevice: isMacOSDevice,
         canShowPrompt 
       });
     } else if (!isAuthenticated && isVisible) {
@@ -54,7 +54,7 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ className = 
       setIsAnimating(false);
       setIsVisible(false);
     }
-  }, [canShowPrompt, shouldShowEnhancedIOSPrompt, shouldShowMacOSPrompt, isAuthenticated, initialCheckComplete, isVisible]);
+  }, [canShowPrompt, shouldShowEnhancedIOSPrompt, isMacOSDevice, isAuthenticated, initialCheckComplete, isVisible]);
 
   // Handle dismiss with animation
   const handleDismiss = () => {
@@ -160,7 +160,7 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ className = 
   }
 
   // Enhanced macOS Safari installation guide
-  if (shouldShowMacOSPrompt) {
+  if (isMacOSDevice && !shouldShowEnhancedIOSPrompt) {
     return (
       <div className={`fixed bottom-20 left-4 right-4 z-50 ${className}`}>
         <Card

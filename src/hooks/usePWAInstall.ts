@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createLogger } from '@/utils/secureLogger';
+import { shouldShowMacOSInstallPrompt } from '@/utils/deviceDetection';
 
 const logger = createLogger('PWAInstall');
 
@@ -139,6 +140,17 @@ export const usePWAInstall = (): PWAInstallHook => {
     // Initial checks
     checkDismissalStatus();
     checkInstallStatus();
+    
+    // Check for macOS Safari PWA support
+    const isMacOSInstallable = shouldShowMacOSInstallPrompt();
+    if (isMacOSInstallable) {
+      setIsInstallable(true);
+      // Delay showing prompt to allow user interaction first
+      setTimeout(() => {
+        setCanShowPrompt(true);
+      }, INTERACTION_DELAY);
+      logger.debug('macOS Safari PWA install capability detected');
+    }
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
