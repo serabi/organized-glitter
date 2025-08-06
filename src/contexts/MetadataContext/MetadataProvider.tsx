@@ -43,7 +43,7 @@ export const MetadataProvider = React.memo(({ children }: MetadataProviderProps)
     });
   }
 
-  const artistsQuery = useArtists(userId);
+  const artistsQuery = useArtists();
   if (import.meta.env.DEV) {
     logger.debug('MetadataProvider: useArtists completed', {
       isLoading: artistsQuery.isLoading,
@@ -53,7 +53,7 @@ export const MetadataProvider = React.memo(({ children }: MetadataProviderProps)
     });
   }
 
-  const tagsQuery = useTags(userId);
+  const tagsQuery = useTags();
   if (import.meta.env.DEV) {
     logger.debug('MetadataProvider: useTags completed', {
       isLoading: tagsQuery.isLoading,

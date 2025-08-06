@@ -111,10 +111,8 @@ export const CompanyFilter = React.memo(() => {
 export const ArtistFilter = React.memo(() => {
   const { filters } = useFilters();
   const { updateArtist } = useFilterHelpers();
-  const { user } = useAuth();
-  const userId = user?.id;
 
-  const { data: artistsData } = useArtists(userId);
+  const { data: artistsData } = useArtists();
   const artistsOptions =
     artistsData?.map(artist => ({
       label: artist.name,
@@ -156,10 +154,8 @@ export const DrillShapeFilter = React.memo(() => {
 export const TagFilter = React.memo(() => {
   const { filters } = useFilters();
   const { updateTags } = useFilterHelpers();
-  const { user } = useAuth();
-  const userId = user?.id;
 
-  const { data: tagsData } = useTags(userId);
+  const { data: tagsData } = useTags();
   const tagOptions =
     tagsData?.map(tag => ({
       label: tag.name,
