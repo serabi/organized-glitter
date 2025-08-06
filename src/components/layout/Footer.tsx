@@ -24,6 +24,14 @@ const Footer = () => {
               </li>
               <li>
                 <Link
+                  to="/changelog"
+                  className="text-muted-foreground transition-colors hover:text-accent"
+                >
+                  Changelog
+                </Link>
+              </li>
+              <li>
+                <Link
                   to="/links"
                   className="text-muted-foreground transition-colors hover:text-accent"
                 >
