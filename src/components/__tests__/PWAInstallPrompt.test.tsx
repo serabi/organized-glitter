@@ -10,6 +10,11 @@ import userEvent from '@testing-library/user-event';
 import { PWAInstallPrompt } from '../PWAInstallPrompt';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { useAuth } from '@/hooks/useAuth';
+// Mock device detection utilities BEFORE importing them to ensure mock is applied
+vi.mock('@/utils/deviceDetection', () => ({
+  shouldShowIOSInstallPrompt: vi.fn(() => false),
+  isMacOSSafari: vi.fn(() => false),
+}));
 import { shouldShowIOSInstallPrompt, isMacOSSafari } from '@/utils/deviceDetection';
 
 // Mock the hooks
@@ -22,11 +27,6 @@ vi.mock('@/utils/logger', () => ({
   })),
 }));
 
-// Mock device detection utilities
-vi.mock('@/utils/deviceDetection', () => ({
-  shouldShowIOSInstallPrompt: vi.fn(() => false),
-  isMacOSSafari: vi.fn(() => false),
-}));
 
 const mockUsePWAInstall = vi.mocked(usePWAInstall);
 const mockUseAuth = vi.mocked(useAuth);

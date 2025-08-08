@@ -11,8 +11,17 @@ export const isIOS = (): boolean => {
   if (typeof window === 'undefined' || typeof navigator === 'undefined') {
     return false;
   }
-  
-  return /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+  const userAgent = navigator.userAgent;
+  const platform = navigator.platform;
+  const isiOSByUA = /iPad|iPhone|iPod/.test(userAgent);
+
+  // iPadOS 13+ reports as MacIntel and removes "iPad" from UA.
+  // Detect by Mac platform combined with touch capability.
+  const hasTouchSupport = typeof document !== 'undefined' && 'ontouchend' in document;
+  const isModernIPad = platform === 'MacIntel' && hasTouchSupport;
+
+  return isiOSByUA || isModernIPad;
 };
 
 /**
@@ -122,6 +131,5 @@ export const supportsPWAInstallation = (): boolean => {
   }
   
   // Check for beforeinstallprompt event support (Chrome/Edge)
-  return 'BeforeInstallPromptEvent' in window || 
-         'onbeforeinstallprompt' in window;
+  return 'onbeforeinstallprompt' in window;
 };

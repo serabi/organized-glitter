@@ -144,12 +144,13 @@ export const usePWAInstall = (): PWAInstallHook => {
     // Check for macOS Safari PWA support
     const isMacOSInstallable = shouldShowMacOSInstallPrompt();
     if (isMacOSInstallable) {
-      setIsInstallable(true);
-      // Delay showing prompt to allow user interaction first
+      // Do NOT set isInstallable here because there is no beforeinstallprompt event on macOS Safari.
+      // Keeping isInstallable=false ensures downstream logic won't attempt promptInstall.
+      // We can still allow showing a manual-install UI via canShowPrompt.
       setTimeout(() => {
         setCanShowPrompt(true);
       }, INTERACTION_DELAY);
-      logger.debug('macOS Safari PWA install capability detected');
+      logger.debug('macOS Safari detected; showing manual install guidance without beforeinstallprompt');
     }
 
     return () => {
