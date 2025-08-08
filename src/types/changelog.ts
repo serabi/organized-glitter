@@ -4,6 +4,8 @@
  * @created 2025-08-06
  */
 
+import type { ReactNode } from 'react';
+
 export interface ChangelogCategories {
   newFeatures?: string[];
   improvements?: string[];
@@ -26,5 +28,5 @@ export interface ChangelogItemProps {
 export interface CategorySectionProps {
   title: string;
   items: string[];
-  icon: React.ReactNode;
+  icon: ReactNode;
 }
