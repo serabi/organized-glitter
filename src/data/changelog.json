@@ -1,0 +1,29 @@
+[
+  {
+    "date": "2025-08-01",
+    "displayDate": "2025-08-01",
+    "categories": {
+      "newFeatures": [
+        "New dashboard navigation - The dashboard now features a new carousel navigation system that allows you to easily switch between different views while also providing \"at a glance\" statistics",
+        "New \"On Hold\" project status - You can now mark projects as \"On Hold\" for better organization of temporarily paused projects",
+        "Enhanced project filtering - The Dashboard now includes a dedicated filter for \"On Hold\" projects, making it easier to manage and track paused work",
+        "Redesigned project cards - Both Dashboard and Overview project cards have been updated with a more compact, grid-friendly layout that lets you see more projects at a glance"
+      ],
+      "bugFixes": [
+        "Fixed dashboard stats counts - Corrected a bug where project counts in the dashboard overview cards were showing incorrect totals. The \"Total Projects\" count now properly includes only active projects (purchased, in stash, in progress, and on hold)",
+        "Fixed CSV import - Fixed a bug where tags were duplicated when imported via CSV"
+      ]
+    }
+  },
+  {
+    "date": "2025-07-29",
+    "displayDate": "2025-07-29",
+    "categories": {
+      "newFeatures": [
+        "Added a bottom navigation bar for tablet and phone screens to make it easier to navigate between Overview, Dashboard, Randomizer, and Profile",
+        "The bottom navigation automatically appears on mobile and tablet devices for easier thumb navigation",
+        "Desktop users will continue to use the top navigation menu as before"
+      ]
+    }
+  }
+]

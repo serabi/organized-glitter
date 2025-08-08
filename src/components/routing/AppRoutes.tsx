@@ -23,6 +23,7 @@ import About from '@/pages/About';
 import Privacy from '@/pages/Privacy';
 import Terms from '@/pages/Terms';
 import LinksPage from '@/pages/LinksPage';
+import Changelog from '@/pages/Changelog';
 
 // Enhanced chunk loading with retry logic and comprehensive debugging
 const createLazyComponent = (
@@ -349,6 +350,7 @@ export const AppRoutes: React.FC = () => {
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/links" element={<LinksPage />} />
+      <Route path="/changelog" element={<Changelog />} />
 
       {/* 404 catch-all route */}
       <Route path="*" element={<NotFound />} />
