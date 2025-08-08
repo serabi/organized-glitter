@@ -11,6 +11,11 @@ import {
 import { Loader2, Search } from 'lucide-react';
 import { useTags } from '@/hooks/queries/useTags';
 
+/**
+ * Tag list tab component for profile page
+ * @author @serabi
+ * @created 2025-08-08
+ */
 const TagListTab = () => {
   const { data: tagsData = [], isLoading: loading } = useTags();
   const tags = Array.isArray(tagsData) ? tagsData : [];

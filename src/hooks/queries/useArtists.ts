@@ -6,13 +6,15 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { artistsOptions } from './shared/queryOptionsFactory';
+import { useAuth } from '@/hooks/useAuth';
 
 /**
  * Hook for fetching all artists for the current user (modernized with queryOptions)
+ * Self-contained hook that automatically handles user authentication
  * @author @serabi
- * @param userId - User ID to fetch artists for
  * @returns React Query result with artists data
  */
-export const useArtists = (userId?: string) => {
-  return useQuery(artistsOptions(userId || ''));
+export const useArtists = () => {
+  const { user } = useAuth();
+  return useQuery(artistsOptions(user?.id || ''));
 };

@@ -10,19 +10,28 @@ import userEvent from '@testing-library/user-event';
 import { PWAInstallPrompt } from '../PWAInstallPrompt';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { useAuth } from '@/hooks/useAuth';
+// Mock device detection utilities BEFORE importing them to ensure mock is applied
+vi.mock('@/utils/deviceDetection', () => ({
+  shouldShowIOSInstallPrompt: vi.fn(() => false),
+  isMacOSSafari: vi.fn(() => false),
+}));
+import { shouldShowIOSInstallPrompt, isMacOSSafari } from '@/utils/deviceDetection';
 
 // Mock the hooks
 vi.mock('@/hooks/usePWAInstall');
 vi.mock('@/hooks/useAuth');
-vi.mock('@/utils/secureLogger', () => ({
+vi.mock('@/utils/logger', () => ({
   createLogger: vi.fn(() => ({
     debug: vi.fn(),
     error: vi.fn(),
   })),
 }));
 
+
 const mockUsePWAInstall = vi.mocked(usePWAInstall);
 const mockUseAuth = vi.mocked(useAuth);
+const mockShouldShowIOSInstallPrompt = vi.mocked(shouldShowIOSInstallPrompt);
+const mockIsMacOSSafari = vi.mocked(isMacOSSafari);
 
 describe('PWAInstallPrompt', () => {
   beforeEach(() => {
@@ -37,6 +46,10 @@ describe('PWAInstallPrompt', () => {
       isAuthenticated: true,
       initialCheckComplete: true,
     });
+
+    // Set up default device detection mocks
+    mockShouldShowIOSInstallPrompt.mockReturnValue(false);
+    mockIsMacOSSafari.mockReturnValue(false);
 
     // Mock navigator.userAgent to avoid iOS detection
     Object.defineProperty(window.navigator, 'userAgent', {
@@ -79,8 +92,10 @@ describe('PWAInstallPrompt', () => {
     const dismissButton = screen.getByLabelText('Dismiss install prompt');
     await user.click(dismissButton);
 
-    // Dismiss should be called immediately
-    expect(mockDismissPrompt).toHaveBeenCalledTimes(1);
+    // Wait for the 300ms timeout to complete
+    await waitFor(() => {
+      expect(mockDismissPrompt).toHaveBeenCalledTimes(1);
+    }, { timeout: 1000 });
 
     // Unmount immediately after dismiss
     unmount();
@@ -154,17 +169,14 @@ describe('PWAInstallPrompt', () => {
   });
 
   it('renders iOS-specific UI without memory leaks', () => {
-    // Mock iOS Safari
-    Object.defineProperty(window.navigator, 'userAgent', {
-      writable: true,
-      value:
-        'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1',
-    });
+    // Mock iOS detection to return true
+    mockShouldShowIOSInstallPrompt.mockReturnValue(true);
 
     const { unmount } = render(<PWAInstallPrompt />);
 
-    // Should show iOS-specific messaging
-    expect(screen.getByText(/Tap the share button/)).toBeInTheDocument();
+    // Should show iOS-specific messaging (text split across elements)
+    expect(screen.getByText('Tap the')).toBeInTheDocument();
+    expect(screen.getByText('share button')).toBeInTheDocument();
 
     // Unmount immediately
     unmount();
@@ -172,7 +184,7 @@ describe('PWAInstallPrompt', () => {
     // No memory leaks should occur
   });
 
-  it('handles localStorage SecurityError gracefully', () => {
+  it('handles localStorage SecurityError gracefully', async () => {
     // Mock localStorage to throw SecurityError
     const originalLocalStorage = window.localStorage;
     const mockGetItem = vi.fn(() => {
@@ -208,9 +220,13 @@ describe('PWAInstallPrompt', () => {
 
     // Dismiss should still work despite localStorage errors
     const dismissButton = screen.getByLabelText('Dismiss install prompt');
-    dismissButton.click();
+    const user = userEvent.setup();
+    await user.click(dismissButton);
 
-    expect(mockDismissPrompt).toHaveBeenCalledTimes(1);
+    // Wait for the dismiss function to be called after animation
+    await waitFor(() => {
+      expect(mockDismissPrompt).toHaveBeenCalledTimes(1);
+    }, { timeout: 1000 });
 
     // Clean up
     unmount();

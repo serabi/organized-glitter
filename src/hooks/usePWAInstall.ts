@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createLogger } from '@/utils/secureLogger';
+import { shouldShowMacOSInstallPrompt } from '@/utils/deviceDetection';
 
 const logger = createLogger('PWAInstall');
 
@@ -139,6 +140,18 @@ export const usePWAInstall = (): PWAInstallHook => {
     // Initial checks
     checkDismissalStatus();
     checkInstallStatus();
+    
+    // Check for macOS Safari PWA support
+    const isMacOSInstallable = shouldShowMacOSInstallPrompt();
+    if (isMacOSInstallable) {
+      // Do NOT set isInstallable here because there is no beforeinstallprompt event on macOS Safari.
+      // Keeping isInstallable=false ensures downstream logic won't attempt promptInstall.
+      // We can still allow showing a manual-install UI via canShowPrompt.
+      setTimeout(() => {
+        setCanShowPrompt(true);
+      }, INTERACTION_DELAY);
+      logger.debug('macOS Safari detected; showing manual install guidance without beforeinstallprompt');
+    }
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
