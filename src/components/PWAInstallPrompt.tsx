@@ -26,7 +26,7 @@ interface PWAInstallPromptProps {
  * Shows platform-specific instructions and handles installation flow
  */
 export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ className = '' }) => {
-  const { canShowPrompt, promptInstall, dismissPrompt } = usePWAInstall();
+  const { canShowPrompt, promptInstall, dismissPrompt, isPromptDismissed } = usePWAInstall();
   const { isAuthenticated, initialCheckComplete } = useAuth();
 
   const [isVisible, setIsVisible] = useState(false);
@@ -39,7 +39,9 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ className = 
   // Show prompt with immediate animation - only for authenticated users
   useEffect(() => {
     // Show enhanced iOS prompt or standard prompt for other platforms (including macOS Safari)
-    const shouldShow = (canShowPrompt || shouldShowEnhancedIOSPrompt) && isAuthenticated && initialCheckComplete;
+    // IMPORTANT: Respect dismissal state for iOS as well
+    const iosEligible = shouldShowEnhancedIOSPrompt && !isPromptDismissed;
+    const shouldShow = (canShowPrompt || iosEligible) && isAuthenticated && initialCheckComplete;
     
     if (shouldShow) {
       setIsVisible(true);
@@ -54,7 +56,7 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ className = 
       setIsAnimating(false);
       setIsVisible(false);
     }
-  }, [canShowPrompt, shouldShowEnhancedIOSPrompt, isMacOSDevice, isAuthenticated, initialCheckComplete, isVisible]);
+  }, [canShowPrompt, shouldShowEnhancedIOSPrompt, isPromptDismissed, isMacOSDevice, isAuthenticated, initialCheckComplete, isVisible]);
 
   // Handle dismiss with animation
   const handleDismiss = () => {
