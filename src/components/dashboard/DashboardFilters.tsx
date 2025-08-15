@@ -27,7 +27,6 @@
  */
 
 import React, { useMemo } from 'react';
-import SearchProjects from '@/components/dashboard/SearchProjects';
 import FilterDropdown from '@/components/dashboard/FilterDropdown';
 import ViewToggle from '@/components/dashboard/ViewToggle';
 import { Button } from '@/components/ui/button';
@@ -58,7 +57,6 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
     setFilters,
   } = useFilters();
   const {
-    updateSearch: updateSearchTerm,
     updateCompany,
     updateArtist,
     updateDrillShape,
@@ -96,10 +94,6 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
   const updateIncludeDestashed = (value: boolean) => setFilters({ includeDestashed: value });
   const updateIncludeArchived = (value: boolean) => setFilters({ includeArchived: value });
 
-  // Search input ref and pending state - simplified for new context
-  const searchInputRef = React.useRef<HTMLInputElement>(null);
-  const isSearchPending = false; // New context handles debouncing internally
-
   // Get available years from the appropriate hook
   const { data: availableYears = [] } = useAvailableYears();
   // Transform available years to the expected format for the dropdown
@@ -124,7 +118,6 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
   );
 
   // Extract values from filters with defaults
-  const searchTerm = filters.searchTerm;
   const activeStatus = filters.activeStatus;
   const selectedCompany = filters.selectedCompany;
   const selectedArtist = filters.selectedArtist;
@@ -158,17 +151,6 @@ const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = React.memo(()
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold">Filters</h2>
         {activeFilterCount > 0 && <Badge variant="secondary">{activeFilterCount} Active</Badge>}
-      </div>
-
-      {/* Search Section */}
-      <div className="mb-6">
-        <label className="mb-2 block text-sm font-medium text-muted-foreground">Search</label>
-        <SearchProjects
-          searchTerm={searchTerm}
-          onSearchChange={updateSearchTerm}
-          inputRef={searchInputRef}
-          isPending={isSearchPending}
-        />
       </div>
 
       <div className="space-y-4 md:space-y-5">

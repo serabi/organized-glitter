@@ -142,13 +142,14 @@ export class ProjectsService {
       logger.debug('📦 Added mini kits exclusion filter');
     }
 
-    // Search term filtering
+    // Search term filtering - project title only
     if (filters.searchTerm && filters.searchTerm.trim()) {
       const searchTerm = filters.searchTerm.trim().replace(/"/g, '\\"');
-      conditions.push(`(title ~ "${searchTerm}" || general_notes ~ "${searchTerm}")`);
-      logger.debug('🔍 Added search filter:', {
+      conditions.push(`title ~ "${searchTerm}"`);
+      logger.debug('🔍 Added title search filter:', {
         originalTerm: filters.searchTerm,
         escapedTerm: searchTerm,
+        field: 'title',
       });
     }
 
@@ -309,10 +310,10 @@ export class ProjectsService {
       }
     }
 
-    // Search term filtering
+    // Search term filtering - project title only
     if (filters.searchTerm && filters.searchTerm.trim()) {
       const searchTerm = filters.searchTerm.trim().replace(/"/g, '\\"');
-      conditions.push(`(title ~ "${searchTerm}" || general_notes ~ "${searchTerm}")`);
+      conditions.push(`title ~ "${searchTerm}"`);
     }
 
     // Tag filtering

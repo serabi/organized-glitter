@@ -114,40 +114,57 @@ export interface StatusCarouselProps {
  * Professional status carousel using ShadCN UI components
  */
 export const StatusCarousel: React.FC<StatusCarouselProps> = memo(({ className = '' }) => {
-  // Carousel API state tracking
+  // Carousel API state tracking - optimized to prevent excessive re-renders
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
   const [count, setCount] = useState(0);
 
-  // Data from contexts
+  // Data from contexts - memoized to prevent re-renders from context changes
   const { getAllStatusCounts } = useStatsOptimized();
   const { filters } = useFilters();
   const { updateStatus } = useFilterHelpers();
   const isTouchDevice = useIsTouchDevice();
 
-  const activeStatus = filters.activeStatus;
+  // Memoize activeStatus to prevent unnecessary re-renders
+  const activeStatus = React.useMemo(() => filters.activeStatus, [filters.activeStatus]);
 
-  const counts = getAllStatusCounts();
+  // Memoize counts to prevent re-computation on every render
+  const counts = React.useMemo(() => getAllStatusCounts(), [getAllStatusCounts]);
 
-  // Track carousel API state changes
+  // Track carousel API state changes - optimized with useCallback
+  const handleApiSelect = React.useCallback((api: CarouselApi) => {
+    if (!api) return;
+
+    // Only update state if values actually changed
+    const newCurrent = api.selectedScrollSnap() + 1;
+    setCurrent(prev => (prev !== newCurrent ? newCurrent : prev));
+  }, []);
+
   useEffect(() => {
     if (!api) {
       return;
     }
 
-    setCount(api.scrollSnapList().length);
+    const newCount = api.scrollSnapList().length;
+    setCount(prev => (prev !== newCount ? newCount : prev));
     setCurrent(api.selectedScrollSnap() + 1);
 
-    api.on('select', () => {
-      setCurrent(api.selectedScrollSnap() + 1);
-    });
-  }, [api]);
+    // Use the memoized callback to prevent creating new functions on each render
+    api.on('select', handleApiSelect);
 
-  // Handle status filtering
-  const handleStatusFilter = (status: ProjectFilterStatus) => {
-    logger.debug('Status carousel filtering by:', status);
-    updateStatus(status);
-  };
+    return () => {
+      api.off('select', handleApiSelect);
+    };
+  }, [api, handleApiSelect]);
+
+  // Handle status filtering - memoized to prevent new functions on each render
+  const handleStatusFilter = React.useCallback(
+    (status: ProjectFilterStatus) => {
+      logger.debug('Status carousel filtering by:', status);
+      updateStatus(status);
+    },
+    [updateStatus]
+  );
 
   return (
     <div className={`w-full ${className}`}>
