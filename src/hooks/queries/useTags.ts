@@ -6,13 +6,15 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { tagsOptions } from './shared/queryOptionsFactory';
+import { useAuth } from '@/hooks/useAuth';
 
 /**
  * Hook for fetching all tags for the current user using TagService (modernized with queryOptions)
+ * Self-contained hook that automatically handles user authentication
  * @author @serabi
- * @param userId - User ID to fetch tags for
  * @returns React Query result with tags data
  */
-export function useTags(userId?: string) {
-  return useQuery(tagsOptions(userId || ''));
+export function useTags() {
+  const { user } = useAuth();
+  return useQuery(tagsOptions(user?.id || ''));
 }
