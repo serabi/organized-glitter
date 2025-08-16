@@ -9,6 +9,12 @@ import { pb } from '@/lib/pocketbase';
 import { AuthContext } from './context';
 import { AuthProviderProps, PocketBaseUser } from '../AuthContext.types';
 import { createLogger } from '@/utils/logger';
+import { queryClient } from '@/lib/queryClient';
+import {
+  allCompaniesOptions,
+  artistsOptions,
+  tagsOptions,
+} from '@/hooks/queries/shared/queryOptionsFactory';
 
 const authLogger = createLogger('AuthProvider');
 
@@ -72,6 +78,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             });
             setUser(currentUser);
             setIsAuthenticated(true);
+
+            // 🔥 Fire-and-forget metadata prefetching for instant dashboard loading
+            authLogger.debug('Starting metadata prefetch for user:', currentUser.id);
+            queryClient.prefetchQuery(allCompaniesOptions(currentUser.id));
+            queryClient.prefetchQuery(artistsOptions(currentUser.id));
+            queryClient.prefetchQuery(tagsOptions(currentUser.id));
           } else {
             authLogger.debug('No valid session found');
             authLogger.debug('Initial auth check: User IS NOT valid or present.');
