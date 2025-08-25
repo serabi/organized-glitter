@@ -109,36 +109,55 @@ export const FilterProvider: React.FC<FilterProviderProps> = ({ children, user }
         newFilters: debouncedFilters,
       });
 
-      // Update the last saved filters reference
-      lastSavedFiltersRef.current = debouncedFilters;
-
-      saveFiltersMutation.mutate({
-        userId: user.id,
-        navigationContext: {
-          filters: {
-            status: debouncedFilters.activeStatus,
-            company: debouncedFilters.selectedCompany,
-            artist: debouncedFilters.selectedArtist,
-            drillShape: debouncedFilters.selectedDrillShape,
-            yearFinished: debouncedFilters.selectedYearFinished,
-            includeMiniKits: debouncedFilters.includeMiniKits,
-            includeDestashed: debouncedFilters.includeDestashed,
-            includeArchived: debouncedFilters.includeArchived,
-            includeWishlist: debouncedFilters.includeWishlist,
-            includeOnHold: debouncedFilters.includeOnHold,
-            searchTerm: debouncedFilters.searchTerm,
-            selectedTags: debouncedFilters.selectedTags,
-          },
-          sortField: debouncedFilters.sortField,
-          sortDirection: debouncedFilters.sortDirection,
-          currentPage: debouncedFilters.currentPage,
-          pageSize: debouncedFilters.pageSize,
-          preservationContext: {
-            scrollPosition: window.scrollY || 0,
-            timestamp: Date.now(),
+      saveFiltersMutation.mutate(
+        {
+          userId: user.id,
+          navigationContext: {
+            filters: {
+              status: debouncedFilters.activeStatus,
+              company: debouncedFilters.selectedCompany,
+              artist: debouncedFilters.selectedArtist,
+              drillShape: debouncedFilters.selectedDrillShape,
+              yearFinished: debouncedFilters.selectedYearFinished,
+              includeMiniKits: debouncedFilters.includeMiniKits,
+              includeDestashed: debouncedFilters.includeDestashed,
+              includeArchived: debouncedFilters.includeArchived,
+              includeWishlist: debouncedFilters.includeWishlist,
+              includeOnHold: debouncedFilters.includeOnHold,
+              searchTerm: debouncedFilters.searchTerm,
+              selectedTags: debouncedFilters.selectedTags,
+            },
+            sortField: debouncedFilters.sortField,
+            sortDirection: debouncedFilters.sortDirection,
+            currentPage: debouncedFilters.currentPage,
+            pageSize: debouncedFilters.pageSize,
+            preservationContext: {
+              scrollPosition: window.scrollY || 0,
+              timestamp: Date.now(),
+            },
           },
         },
-      });
+        {
+          onSuccess: () => {
+            // Update the last saved filters reference only after confirmed save
+            lastSavedFiltersRef.current = debouncedFilters;
+            logger.debug('Auto-save successful - filters synchronized');
+          },
+          onError: (error, variables) => {
+            logger.error('Auto-save failed - filters not synchronized:', {
+              userId: user.id,
+              previousFilters: lastSavedFiltersRef.current,
+              attemptedFilters: debouncedFilters,
+              error: error?.message,
+              errorStatus:
+                error && typeof error === 'object' && 'status' in error
+                  ? (error as { status: unknown }).status
+                  : undefined,
+              timestamp: Date.now(),
+            });
+          },
+        }
+      );
     }
   }, [debouncedFilters, user?.id, saveFiltersMutation]);
 
