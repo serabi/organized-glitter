@@ -40,7 +40,32 @@ export interface DashboardFilterContext {
 
 const logger = createLogger('useSaveNavigationContext');
 // Cache settings record id per user to avoid redundant lookups on each save
+const CACHE_MAX_SIZE = 100; // Adjust based on expected concurrent users/sessions
 const settingsIdCache = new Map<string, string>();
+
+// Simple LRU-like eviction when cache exceeds max size
+const setCacheEntry = (userId: string, id: string) => {
+  if (settingsIdCache.size >= CACHE_MAX_SIZE && !settingsIdCache.has(userId)) {
+    const firstKey = settingsIdCache.keys().next().value as string | undefined;
+    if (firstKey) settingsIdCache.delete(firstKey);
+  }
+  settingsIdCache.set(userId, id);
+};
+
+// Track last authenticated user to clear only relevant cache entry on auth changes
+let lastUserId: string | null = null;
+
+// Clear cache entry on logout or user switch; keep cache on token refresh for same user
+pb.authStore.onChange((_token, record) => {
+  const currentId = (record as { id?: string } | null)?.id ?? null;
+
+  if (lastUserId && currentId !== lastUserId) {
+    // User switched or logged out: remove the previous user's cached id
+    settingsIdCache.delete(lastUserId);
+  }
+
+  lastUserId = currentId;
+}, true);
 
 /**
  * Parameters for saving navigation context
@@ -105,7 +130,7 @@ const saveNavigationContext = async ({
       await pb.collection('user_dashboard_settings').update(record.id, {
         navigation_context: navigationContext,
       });
-      settingsIdCache.set(userId, record.id);
+      setCacheEntry(userId, record.id);
       logger.info(`✅ Updated existing navigation context for user ${userId}`);
     } else {
       const created = await pb.collection('user_dashboard_settings').create({
@@ -113,7 +138,7 @@ const saveNavigationContext = async ({
         navigation_context: navigationContext,
       });
       const id = (created as { id: string }).id;
-      settingsIdCache.set(userId, id);
+      setCacheEntry(userId, id);
       logger.info(`✅ Created new navigation context for user ${userId}`);
     }
 
