@@ -149,6 +149,7 @@ debug-console.js
 debug-stats.js
 llms-full.txt
 performance-reports/
+localhost_*.json
 
 # Scripts directory (may contain credentials)
 scripts/
