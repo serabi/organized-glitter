@@ -144,8 +144,8 @@ export class ProjectsService {
 
     // Search term filtering - project title only
     if (filters.searchTerm && filters.searchTerm.trim()) {
-      const searchTerm = filters.searchTerm.trim().replace(/"/g, '\\"');
-      conditions.push(`title ~ "${searchTerm}"`);
+      const searchTerm = this.sanitizeSearchTerm(filters.searchTerm);
+      conditions.push(pb.filter('title ~ {:searchTerm}', { searchTerm }));
       logger.debug('🔍 Added title search filter:', {
         originalTerm: filters.searchTerm,
         escapedTerm: searchTerm,
@@ -312,8 +312,8 @@ export class ProjectsService {
 
     // Search term filtering - project title only
     if (filters.searchTerm && filters.searchTerm.trim()) {
-      const searchTerm = filters.searchTerm.trim().replace(/"/g, '\\"');
-      conditions.push(`title ~ "${searchTerm}"`);
+      const searchTerm = this.sanitizeSearchTerm(filters.searchTerm);
+      conditions.push(pb.filter('title ~ {:searchTerm}', { searchTerm }));
     }
 
     // Tag filtering
@@ -325,6 +325,13 @@ export class ProjectsService {
     }
 
     return conditions.join(' && ');
+  }
+
+  /**
+   * Sanitize search term consistently (trim + escape double quotes)
+   */
+  private sanitizeSearchTerm(term: string): string {
+    return term.trim().replace(/"/g, '\\"');
   }
 
   /**
