@@ -17,6 +17,7 @@
  */
 
 import React, { useEffect } from 'react';
+import { createLogger } from '@/utils/logger';
 import { AppProviders } from '@/components/layout/AppProviders.tsx';
 import { AppRoutes } from '@/components/routing/AppRoutes.tsx';
 import { useAppInitialization } from '@/hooks/useAppInitialization.ts';
@@ -44,13 +45,15 @@ const App: React.FC = () => {
           registerSW({
             onOfflineReady() {
               // PWA is ready to work offline
-              console.log('PWA is ready to work offline');
+              const pwaLogger = createLogger('PWA');
+              pwaLogger.info('PWA is ready to work offline');
             },
           });
         })
         .catch(() => {
           // PWA registration failed - not critical, app will still work
-          console.log('PWA registration not available');
+          const pwaLogger = createLogger('PWA');
+          pwaLogger.debug('PWA registration not available');
         });
     }
   }, []);

@@ -100,8 +100,9 @@ export const useDashboardData = (
     ]
   );
 
-  // Use render guard to track excessive re-renders (lowered threshold after optimizations)
-  const { renderCount, isExcessive } = useRenderGuard('useDashboardData', 5);
+  // Use render guard to track excessive re-renders
+  // Raise threshold to reduce false positives from context + query updates
+  const { renderCount, isExcessive } = useRenderGuard('useDashboardData', 10);
   const { shouldLog } = useThrottledLogger('useDashboardData', 1000);
 
   // Only fetch data if user exists and initialization is complete

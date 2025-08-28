@@ -15,6 +15,19 @@ export default defineConfig(({ mode }) => {
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+          // Silence noisy "No route found" by explicitly handling external API/files
+          runtimeCaching: [
+            {
+              urlPattern: /^https:\/\/data\.organizedglitter\.app\/api\/collections\//i,
+              handler: 'NetworkOnly',
+              method: 'GET',
+            },
+            {
+              urlPattern: /^https:\/\/data\.organizedglitter\.app\/api\/files\//i,
+              handler: 'NetworkOnly',
+              method: 'GET',
+            },
+          ],
         },
         includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
         manifest: {

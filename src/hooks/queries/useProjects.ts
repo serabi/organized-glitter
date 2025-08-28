@@ -5,7 +5,7 @@
  * @created 2025-01-16
  */
 
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createLogger } from '@/utils/logger';
 import { DashboardValidSortField } from '@/features/dashboard/dashboard.constants';
@@ -219,8 +219,9 @@ export const useProjects = (
     [stableFilters, sortField, sortDirection, currentPage, pageSize]
   );
 
-  // Use render guard to track excessive re-renders (lowered threshold after optimizations)
-  const { renderCount, isExcessive } = useRenderGuard('useProjects', 4);
+  // Use render guard to track excessive re-renders
+  // Raise threshold to account for React Query lifecycle updates
+  const { renderCount, isExcessive } = useRenderGuard('useProjects', 8);
   const { shouldLog } = useThrottledLogger('useProjects', 1000);
 
   // Stabilize metadata signatures for query key
@@ -300,12 +301,25 @@ export const useProjects = (
   );
 
   // Prefetch next page for better UX with stabilized dependencies
+  // Prevent redundant prefetches across quick re-renders using a content key
+  const lastPrefetchKeyRef = useRef<string | null>(null);
   useEffect(() => {
     if (shouldPrefetch) {
       const nextPageParams: ProjectQueryParams = {
         ...queryParams,
         currentPage: currentPage + 1,
       };
+
+      const prefetchKey = JSON.stringify({
+        userId,
+        nextPageParams,
+        companiesSignature,
+        artistsSignature,
+      });
+
+      if (lastPrefetchKeyRef.current === prefetchKey) {
+        return; // already prefetched with same parameters
+      }
 
       queryClient.prefetchQuery({
         queryKey: [
@@ -346,6 +360,7 @@ export const useProjects = (
         staleTime: 2 * 60 * 1000, // Same as main query
       });
 
+      lastPrefetchKeyRef.current = prefetchKey;
       logger.debug('🔄 Prefetched next page:', currentPage + 1);
     }
   }, [
