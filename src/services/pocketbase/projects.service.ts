@@ -347,7 +347,8 @@ export class ProjectsService {
     mode: 'prefix' | 'contains'
   ): string {
     const t = this.sanitizeSearchTerm(term);
-    if (mode === 'prefix' && !t.includes('%') && !t.includes('_')) {
+    // Check original term for wildcards to preserve user intent
+    if (mode === 'prefix' && !term.includes('%') && !term.includes('_')) {
       return `${t}%`;
     }
     return t;
