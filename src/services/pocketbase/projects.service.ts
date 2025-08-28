@@ -366,6 +366,7 @@ export class ProjectsService {
     filter: string;
     sort: string;
     expand?: string;
+    fields: string;
   } {
     const { filters, sort, expand } = options;
 
@@ -374,10 +375,36 @@ export class ProjectsService {
     const pbSort = `${sort.direction === 'desc' ? '-' : '+'}${pbSortField}`;
     const expandStr = this.buildExpandString(expand);
 
+    // Minimal field selection for dashboard/grid consumption
+    // Includes all properties required by transformRecord and grid rendering
+    const fields = [
+      'id',
+      'user',
+      'title',
+      'company',
+      'artist',
+      'status',
+      'kit_category',
+      'drill_shape',
+      'date_purchased',
+      'date_received',
+      'date_started',
+      'date_completed',
+      'width',
+      'height',
+      'total_diamonds',
+      'general_notes',
+      'image',
+      'source_url',
+      'created',
+      'updated',
+    ].join(',');
+
     return {
       filter,
       sort: pbSort,
       expand: expandStr || undefined,
+      fields,
     };
   }
 
@@ -454,7 +481,7 @@ export class ProjectsService {
     const startTime = this.config.enablePerformanceLogging ? performance.now() : 0;
 
     try {
-      const { filter, sort, expand } = this.buildFilterConfig(options);
+      const { filter, sort, expand, fields } = this.buildFilterConfig(options);
       const { page, pageSize } = options;
 
       // Enhanced dev logging for Dashboard performance monitoring
@@ -474,10 +501,16 @@ export class ProjectsService {
 
       // Use optimized single query instead of fallback pattern
       const result = await ErrorHandler.handleAsync(async () => {
+        // Build a deterministic request key to leverage SDK auto-cancellation
+        const requestKey = `projects-list:${options.filters.userId || 'unknown'}:${page}:${pageSize}:${sort}:${filter.length}`;
+
         return await pb.collection('projects').getList(page, pageSize, {
           filter,
           sort,
           expand,
+          fields,
+          requestKey,
+          $cancelKey: 'projects-list',
         });
       }, 'Project query');
 

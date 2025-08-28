@@ -39,6 +39,8 @@ export interface DashboardFilterContext {
 }
 
 const logger = createLogger('useSaveNavigationContext');
+// Cache settings record id per user to avoid redundant lookups on each save
+const settingsIdCache = new Map<string, string>();
 
 /**
  * Parameters for saving navigation context
@@ -67,29 +69,51 @@ const saveNavigationContext = async ({
   const startTime = performance.now();
 
   try {
-    // Try to find existing record
+    // Fast path: try update using cached id
+    const cachedId = settingsIdCache.get(userId);
+    if (cachedId) {
+      try {
+        await pb.collection('user_dashboard_settings').update(cachedId, {
+          navigation_context: navigationContext,
+        });
+        logger.info(`✅ Updated cached navigation context for user ${userId}`);
+        const endTime = performance.now();
+        logger.info(`✅ Navigation context save completed in ${Math.round(endTime - startTime)}ms`);
+        return;
+      } catch (updateErr) {
+        if ((updateErr as { status?: number })?.status === 404) {
+          // Cache invalid, fallback to lookup
+          settingsIdCache.delete(userId);
+          logger.warn('Cached settings id invalidated; falling back to lookup');
+        } else {
+          throw updateErr;
+        }
+      }
+    }
+
+    // Lookup existing record or create a new one
     let record: UserDashboardSettingsResponse<DashboardFilterContext> | undefined;
     try {
       record = await pb.collection('user_dashboard_settings').getFirstListItem(`user="${userId}"`);
     } catch (error) {
-      // Record doesn't exist yet, we'll create it
-      if (error?.status !== 404) {
+      if ((error as { status?: number })?.status !== 404) {
         throw error;
       }
     }
 
     if (record) {
-      // Update existing record
       await pb.collection('user_dashboard_settings').update(record.id, {
         navigation_context: navigationContext,
       });
+      settingsIdCache.set(userId, record.id);
       logger.info(`✅ Updated existing navigation context for user ${userId}`);
     } else {
-      // Create new record
-      await pb.collection('user_dashboard_settings').create({
+      const created = await pb.collection('user_dashboard_settings').create({
         user: userId,
         navigation_context: navigationContext,
       });
+      const id = (created as { id: string }).id;
+      settingsIdCache.set(userId, id);
       logger.info(`✅ Created new navigation context for user ${userId}`);
     }
 

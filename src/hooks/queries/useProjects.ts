@@ -120,12 +120,14 @@ const fetchProjects = async (
     page: currentPage,
     pageSize,
     expand: {
-      tags: true,
+      // Dashboard grid does not render tags; disable to reduce payload
+      tags: false,
       company: false,
       artist: false,
       user: false,
     },
-    includeStatusCounts: true,
+    // Rely on StatsContext/useProjectsForStats for counts to avoid duplicate queries
+    includeStatusCounts: false,
   };
 
   // Use optimized service query
@@ -322,7 +324,8 @@ export const useProjects = (
             page: nextPageParams.currentPage,
             pageSize: nextPageParams.pageSize,
             expand: {
-              tags: true,
+              // Prefetch keeps payload minimal too
+              tags: false,
               company: false,
               artist: false,
               user: false,
