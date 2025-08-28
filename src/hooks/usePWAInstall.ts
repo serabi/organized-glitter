@@ -140,7 +140,7 @@ export const usePWAInstall = (): PWAInstallHook => {
     // Initial checks
     checkDismissalStatus();
     checkInstallStatus();
-    
+
     // Check for macOS Safari PWA support
     const isMacOSInstallable = shouldShowMacOSInstallPrompt();
     if (isMacOSInstallable) {
@@ -150,7 +150,9 @@ export const usePWAInstall = (): PWAInstallHook => {
       setTimeout(() => {
         setCanShowPrompt(true);
       }, INTERACTION_DELAY);
-      logger.debug('macOS Safari detected; showing manual install guidance without beforeinstallprompt');
+      logger.debug(
+        'macOS Safari detected; showing manual install guidance without beforeinstallprompt'
+      );
     }
 
     return () => {

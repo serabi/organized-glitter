@@ -19,7 +19,6 @@ Currently built with React, TypeScript, and PocketBase.
 ## Project Management Features
 
 - **Project Tracking**: Comprehensive project management with multiple status levels:
-
   - Wishlist: Projects you want to buy
   - Purchased: Projects bought but not yet received
   - In Stash: Projects in your collection/stash, but not started
@@ -30,7 +29,6 @@ Currently built with React, TypeScript, and PocketBase.
 
 - **Progress Documentation**: Add detailed progress notes with photos and dates
 - **Project Details**: Track comprehensive information:
-
   - Project title, company, and artist
   - Drill shape (round/square)
   - Dimensions and diamond count
@@ -39,7 +37,6 @@ Currently built with React, TypeScript, and PocketBase.
   - Kit category (full/mini)
 
 - **Organization Tools**:
-
   - Tag system for custom categorization
   - Company and artist management
   - Advanced filtering and sorting

@@ -27,7 +27,6 @@ vi.mock('@/utils/logger', () => ({
   })),
 }));
 
-
 const mockUsePWAInstall = vi.mocked(usePWAInstall);
 const mockUseAuth = vi.mocked(useAuth);
 const mockShouldShowIOSInstallPrompt = vi.mocked(shouldShowIOSInstallPrompt);
@@ -93,9 +92,12 @@ describe('PWAInstallPrompt', () => {
     await user.click(dismissButton);
 
     // Wait for the 300ms timeout to complete
-    await waitFor(() => {
-      expect(mockDismissPrompt).toHaveBeenCalledTimes(1);
-    }, { timeout: 1000 });
+    await waitFor(
+      () => {
+        expect(mockDismissPrompt).toHaveBeenCalledTimes(1);
+      },
+      { timeout: 1000 }
+    );
 
     // Unmount immediately after dismiss
     unmount();
@@ -224,9 +226,12 @@ describe('PWAInstallPrompt', () => {
     await user.click(dismissButton);
 
     // Wait for the dismiss function to be called after animation
-    await waitFor(() => {
-      expect(mockDismissPrompt).toHaveBeenCalledTimes(1);
-    }, { timeout: 1000 });
+    await waitFor(
+      () => {
+        expect(mockDismissPrompt).toHaveBeenCalledTimes(1);
+      },
+      { timeout: 1000 }
+    );
 
     // Clean up
     unmount();
