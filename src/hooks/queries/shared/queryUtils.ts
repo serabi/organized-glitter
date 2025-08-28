@@ -195,7 +195,7 @@ export const createQueryTimer = (hookName: string, operation: string) => {
  * @returns Query configuration with 30-second stale time for accurate data
  */
 export const getStatusCountQueryConfig = () => ({
-  staleTime: 30 * 1000, // 30 seconds - moderate caching for accuracy
+  staleTime: 2 * 60 * 1000, // 2 minutes - balanced caching for accuracy
   gcTime: 5 * 60 * 1000, // 5 minutes garbage collection
   refetchOnWindowFocus: false, // Never refetch on focus - rely on invalidation
   refetchOnReconnect: false, // Never refetch on reconnect - rely on invalidation

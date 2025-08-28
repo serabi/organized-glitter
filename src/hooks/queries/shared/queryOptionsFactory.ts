@@ -42,6 +42,7 @@ async function fetchCompanies(params: CompanyQueryParams & { userId: string }): 
   const resultList = await pb.collection(Collections.Companies).getList(currentPage, pageSize, {
     filter: `user = "${userId}"`,
     sort: 'name',
+    fields: 'id,name', // Only fetch needed fields for better performance
     requestKey,
   });
 
@@ -70,6 +71,7 @@ async function fetchAllCompanies(userId: string): Promise<CompaniesResponse[]> {
   const resultList = await pb.collection(Collections.Companies).getList(1, 500, {
     filter: `user = "${userId}"`,
     sort: 'name',
+    fields: 'id,name', // Only fetch needed fields for better performance
     requestKey,
   });
 
@@ -94,6 +96,7 @@ async function fetchArtists(userId: string): Promise<ArtistsResponse[]> {
   const resultList = await pb.collection(Collections.Artists).getList(1, 500, {
     filter: `user = "${userId}"`,
     sort: 'name',
+    fields: 'id,name', // Only fetch needed fields for better performance
     requestKey,
   });
 

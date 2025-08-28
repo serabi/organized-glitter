@@ -24,7 +24,7 @@ const SearchProjects = ({
   return (
     <div className="relative">
       <label htmlFor="project-search" className="sr-only">
-        Search projects
+        Search project name
       </label>
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -44,7 +44,7 @@ const SearchProjects = ({
       <Input
         id="project-search"
         type="text"
-        placeholder="Search projects..."
+        placeholder="Search project name:"
         value={searchTerm}
         onChange={e => onSearchChange(e.target.value)}
         className="h-12 w-full border-2 bg-background pl-12 pr-12 text-base transition-colors duration-200 focus:border-primary"
@@ -57,7 +57,7 @@ const SearchProjects = ({
         </div>
       )}
       <div id="search-help" className="sr-only">
-        Search by project title, company, or artist name
+        Search project names by title
       </div>
     </div>
   );
