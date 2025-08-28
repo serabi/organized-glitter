@@ -11,6 +11,11 @@ import {
 import { Loader2, Search } from 'lucide-react';
 import { useArtists } from '@/hooks/queries/useArtists';
 
+/**
+ * Artist list tab component for profile page
+ * @author @serabi
+ * @created 2025-08-08
+ */
 const ArtistListTab = () => {
   const { data: artistsData = [], isLoading: loading } = useArtists();
   const artists = Array.isArray(artistsData) ? artistsData : [];

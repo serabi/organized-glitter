@@ -82,6 +82,15 @@ export const MetadataProvider = React.memo(({ children }: MetadataProviderProps)
     });
   }
 
+  // Debug logging to track re-renders
+  useEffect(() => {
+    logger.debug('MetadataProvider rendered/re-rendered', {
+      companiesLoading: companiesQuery.isLoading,
+      artistsLoading: artistsQuery.isLoading,
+      tagsLoading: tagsQuery.isLoading,
+    });
+  }, [companiesQuery.isLoading, artistsQuery.isLoading, tagsQuery.isLoading]);
+
   // Performance logging for parallel metadata loading optimization
   useEffect(() => {
     if (import.meta.env.DEV) {
