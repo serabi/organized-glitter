@@ -77,7 +77,11 @@ export const useDashboardData = (
       includeArchived: filters.includeArchived,
       includeWishlist: filters.includeWishlist,
       includeOnHold: filters.includeOnHold,
-      searchTerm: debouncedSearchTerm,
+      // Only include searchTerm once it has a meaningful length
+      searchTerm:
+        debouncedSearchTerm && debouncedSearchTerm.length >= 2
+          ? debouncedSearchTerm
+          : undefined,
       selectedTags: filters.selectedTags,
     }),
     [

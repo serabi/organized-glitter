@@ -142,14 +142,17 @@ export class ProjectsService {
       logger.debug('📦 Added mini kits exclusion filter');
     }
 
-    // Search term filtering - project title only
+    // Search term filtering - project title only (optimize for prefix on short terms)
     if (filters.searchTerm && filters.searchTerm.trim()) {
-      const searchTerm = this.sanitizeSearchTerm(filters.searchTerm);
+      const mode: 'prefix' | 'contains' =
+        filters.searchTerm.trim().length <= 3 ? 'prefix' : 'contains';
+      const searchTerm = this.sanitizeSearchTermWithMode(filters.searchTerm, mode);
       conditions.push(pb.filter('title ~ {:searchTerm}', { searchTerm }));
       logger.debug('🔍 Added title search filter:', {
         originalTerm: filters.searchTerm,
         escapedTerm: searchTerm,
         field: 'title',
+        mode,
       });
     }
 
@@ -310,9 +313,11 @@ export class ProjectsService {
       }
     }
 
-    // Search term filtering - project title only
+    // Search term filtering - project title only (optimize for prefix on short terms)
     if (filters.searchTerm && filters.searchTerm.trim()) {
-      const searchTerm = this.sanitizeSearchTerm(filters.searchTerm);
+      const mode: 'prefix' | 'contains' =
+        filters.searchTerm.trim().length <= 3 ? 'prefix' : 'contains';
+      const searchTerm = this.sanitizeSearchTermWithMode(filters.searchTerm, mode);
       conditions.push(pb.filter('title ~ {:searchTerm}', { searchTerm }));
     }
 
@@ -332,6 +337,20 @@ export class ProjectsService {
    */
   private sanitizeSearchTerm(term: string): string {
     return term.trim().replace(/"/g, '\\"');
+  }
+
+  /**
+   * Sanitize search term with mode awareness (prefix vs contains)
+   */
+  private sanitizeSearchTermWithMode(
+    term: string,
+    mode: 'prefix' | 'contains'
+  ): string {
+    const t = this.sanitizeSearchTerm(term);
+    if (mode === 'prefix' && !t.includes('%') && !t.includes('_')) {
+      return `${t}%`;
+    }
+    return t;
   }
 
   /**
@@ -504,11 +523,19 @@ export class ProjectsService {
         // Build a deterministic request key to leverage SDK auto-cancellation
         const requestKey = `projects-list:${options.filters.userId || 'unknown'}:${page}:${pageSize}:${sort}:${filter.length}`;
 
+        // For short interactive searches on the first page, skip totals for speed
+        const isInteractiveSearch = Boolean(
+          options.filters.searchTerm &&
+            options.filters.searchTerm.trim().length <= 3 &&
+            page === 1
+        );
+
         return await pb.collection('projects').getList(page, pageSize, {
           filter,
           sort,
           expand,
           fields,
+          skipTotal: isInteractiveSearch,
           requestKey,
           $cancelKey: 'projects-list',
         });

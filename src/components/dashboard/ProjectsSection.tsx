@@ -11,7 +11,7 @@ const logger = createLogger('ProjectsSection');
 const ProjectsSectionComponent = () => {
   const { user } = useAuth();
   const { filters, isLoading } = useFilters();
-  const debouncedSearchTerm = useDebounce(filters.searchTerm, 300);
+  const debouncedSearchTerm = useDebounce(filters.searchTerm, 400);
   const isInitialized = !isLoading;
 
   // Single shared dashboard data call to prevent duplicate useProjects calls
