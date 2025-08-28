@@ -143,7 +143,7 @@ export const FilterProvider: React.FC<FilterProviderProps> = ({ children, user }
             lastSavedFiltersRef.current = debouncedFilters;
             logger.debug('Auto-save successful - filters synchronized');
           },
-          onError: (error, variables) => {
+          onError: error => {
             logger.error('Auto-save failed - filters not synchronized:', {
               userId: user.id,
               previousFilters: lastSavedFiltersRef.current,
